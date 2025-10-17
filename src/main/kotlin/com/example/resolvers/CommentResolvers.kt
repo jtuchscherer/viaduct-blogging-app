@@ -15,7 +15,7 @@ import java.util.*
 class CreateCommentResolver : MutationResolvers.CreateComment() {
     override suspend fun resolve(ctx: Context): ViaductComment {
         val input = ctx.arguments.input
-        val authenticatedUser = ctx.requireAuthenticatedUser()
+        val authenticatedUser = ctx.requestContext as? com.example.database.User ?: throw RuntimeException("Authentication required. Please provide a valid JWT token.")
 
         return transaction {
             val postId = UUID.fromString(input.postId)
@@ -42,7 +42,7 @@ class CreateCommentResolver : MutationResolvers.CreateComment() {
 class DeleteCommentResolver : MutationResolvers.DeleteComment() {
     override suspend fun resolve(ctx: Context): Boolean {
         val commentId = UUID.fromString(ctx.arguments.id)
-        val authenticatedUser = ctx.requireAuthenticatedUser()
+        val authenticatedUser = ctx.requestContext as? com.example.database.User ?: throw RuntimeException("Authentication required. Please provide a valid JWT token.")
 
         return transaction {
             val comment = DatabaseComment.findById(commentId)

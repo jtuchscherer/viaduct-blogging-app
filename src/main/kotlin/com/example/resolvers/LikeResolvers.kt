@@ -15,7 +15,7 @@ import java.util.*
 class LikePostMutationResolver : MutationResolvers.LikePost() {
     override suspend fun resolve(ctx: Context): ViaductLike {
         val postId = UUID.fromString(ctx.arguments.postId)
-        val authenticatedUser = ctx.requireAuthenticatedUser()
+        val authenticatedUser = ctx.requestContext as? com.example.database.User ?: throw RuntimeException("Authentication required. Please provide a valid JWT token.")
 
         return transaction {
             val post = DatabasePost.findById(postId)
@@ -53,7 +53,7 @@ class LikePostMutationResolver : MutationResolvers.LikePost() {
 class UnlikePostResolver : MutationResolvers.UnlikePost() {
     override suspend fun resolve(ctx: Context): Boolean {
         val postId = UUID.fromString(ctx.arguments.postId)
-        val authenticatedUser = ctx.requireAuthenticatedUser()
+        val authenticatedUser = ctx.requestContext as? com.example.database.User ?: throw RuntimeException("Authentication required. Please provide a valid JWT token.")
 
         return transaction {
             val like = DatabaseLike.find {

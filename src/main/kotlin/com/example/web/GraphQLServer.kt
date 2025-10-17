@@ -1,5 +1,6 @@
 package com.example.web
 
+import com.example.auth.JwtService
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.ktor.http.*
 import io.ktor.serialization.jackson.*
@@ -24,6 +25,7 @@ data class GraphQLRequest(
 
 object GraphQLServer {
     private val logger = LoggerFactory.getLogger(GraphQLServer::class.java)
+    private val jwtService = JwtService()
 
     // Create Viaduct engine instance
     private val viaduct = BasicViaductFactory.create(
@@ -43,10 +45,19 @@ object GraphQLServer {
                     try {
                         val graphqlRequest = call.receive<GraphQLRequest>()
 
+                        // Extract JWT token from Authorization header
+                        val authHeader = call.request.headers["Authorization"]
+                        val token = authHeader?.removePrefix("Bearer ")?.trim()
+
+                        // Get user from token if present (null if no token or invalid)
+                        val user = token?.let { jwtService.getUserFromToken(it) }
+
                         // Execute GraphQL query using Viaduct 0.5.0 API
+                        // Pass the authenticated user through requestContext
                         val executionInput = ExecutionInput.create(
                             operationText = graphqlRequest.query,
-                            variables = graphqlRequest.variables ?: emptyMap()
+                            variables = graphqlRequest.variables ?: emptyMap(),
+                            requestContext = user
                         )
 
                         val result = viaduct.execute(executionInput)

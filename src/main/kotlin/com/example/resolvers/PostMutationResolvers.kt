@@ -13,7 +13,8 @@ import java.util.*
 class CreatePostResolver : MutationResolvers.CreatePost() {
     override suspend fun resolve(ctx: Context): ViaductPost {
         val input = ctx.arguments.input
-        val authenticatedUser = ctx.requireAuthenticatedUser()
+        val authenticatedUser = (ctx.requestContext as? DatabaseUser)
+            ?: throw RuntimeException("Authentication required. Please provide a valid JWT token.")
 
         return transaction {
             val post = DatabasePost.new {
@@ -40,7 +41,8 @@ class UpdatePostResolver : MutationResolvers.UpdatePost() {
     override suspend fun resolve(ctx: Context): ViaductPost {
         val input = ctx.arguments.input
         val postId = UUID.fromString(input.id)
-        val authenticatedUser = ctx.requireAuthenticatedUser()
+        val authenticatedUser = (ctx.requestContext as? DatabaseUser)
+            ?: throw RuntimeException("Authentication required. Please provide a valid JWT token.")
 
         return transaction {
             val post = DatabasePost.findById(postId)
@@ -70,7 +72,8 @@ class UpdatePostResolver : MutationResolvers.UpdatePost() {
 class DeletePostResolver : MutationResolvers.DeletePost() {
     override suspend fun resolve(ctx: Context): Boolean {
         val postId = UUID.fromString(ctx.arguments.id)
-        val authenticatedUser = ctx.requireAuthenticatedUser()
+        val authenticatedUser = (ctx.requestContext as? DatabaseUser)
+            ?: throw RuntimeException("Authentication required. Please provide a valid JWT token.")
 
         return transaction {
             val post = DatabasePost.findById(postId)

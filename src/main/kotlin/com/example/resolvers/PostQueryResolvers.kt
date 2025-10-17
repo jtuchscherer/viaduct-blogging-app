@@ -45,7 +45,7 @@ class PostResolver : QueryResolvers.Post() {
 @Resolver
 class MyPostsResolver : QueryResolvers.MyPosts() {
     override suspend fun resolve(ctx: Context): List<ViaductPost> {
-        val authenticatedUser = ctx.requireAuthenticatedUser()
+        val authenticatedUser = ctx.requestContext as? com.example.database.User ?: throw RuntimeException("Authentication required. Please provide a valid JWT token.")
 
         return transaction {
             DatabasePost.find { com.example.database.Posts.authorId eq authenticatedUser.id }.map { post ->

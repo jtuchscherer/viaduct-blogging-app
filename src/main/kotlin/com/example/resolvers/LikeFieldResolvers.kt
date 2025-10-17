@@ -46,7 +46,7 @@ class PostIsLikedByMeResolver : PostResolvers.IsLikedByMe() {
         val postId = UUID.fromString(postIdString)
 
         // Get authenticated user (optional for this field)
-        val user = ctx.getAuthenticatedUser()
+        val user = ctx.requestContext as? com.example.database.User
 
         if (user == null) {
             return false

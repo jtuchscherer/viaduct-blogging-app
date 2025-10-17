@@ -169,11 +169,11 @@ type Mutation {
 - [x] Implement JWT token authentication
 - [x] Test basic authentication flow
 
-### Phase 3: Core GraphQL Operations
-- [ ] Implement post queries and mutations
-- [ ] Add comment functionality
-- [ ] Implement like/unlike operations
-- [ ] Add authorization checks (users can only edit/delete their own posts)
+### Phase 3: Core GraphQL Operations ✅ COMPLETED
+- [x] Implement post queries and mutations
+- [x] Add comment functionality
+- [x] Implement like/unlike operations
+- [x] Add authorization checks (users can only edit/delete their own posts)
 
 ### Phase 4: Frontend Setup
 - [ ] Create React app with TypeScript
@@ -193,30 +193,41 @@ type Mutation {
 - [ ] Handle error states
 - [ ] Add basic styling
 
-## Current Status (End of Day 1)
+## Current Status
 
 ### What's Implemented
 - ✅ Complete database schema with SQLite
 - ✅ Username/password authentication with salted hashing
 - ✅ REST API for auth endpoints with JWT tokens
-- ✅ GraphQL schema defined (without auth mutations)
-- ✅ Viaduct project structure and resolver base classes generated
-- ✅ Ktor server running on port 8081 for authentication
+- ✅ GraphQL schema fully defined and implemented
+- ✅ Viaduct 0.5.0 with proper request context authentication
+- ✅ All GraphQL post queries and mutations
+- ✅ Comment functionality with authorization
+- ✅ Like/unlike operations with idempotency
+- ✅ Authorization checks (users can only edit/delete their own content)
+- ✅ Complete e2e test suite (28/28 tests passing)
 
 ### Auth API Endpoints
 - `POST /auth/register` - Create new user account
 - `POST /auth/login` - Authenticate and get JWT token
 - `GET /auth/me` - Get current user info (requires JWT)
 
-### Next Steps (Tomorrow)
-1. Implement GraphQL post resolvers (queries and mutations)
-2. Add JWT authentication context to GraphQL resolvers
-3. Implement comment and like functionality
-4. Begin React frontend development
+### GraphQL API (Port 8080)
+- Queries: `posts`, `post(id)`, `myPosts`, `postComments(postId)`
+- Mutations: All post, comment, and like operations
+- Authentication: JWT token via Authorization header
+- Context: Authenticated user passed through `ExecutionInput.requestContext`
+
+### Next Steps
+1. Begin React frontend development (Phase 4)
+2. Set up Apollo Client for GraphQL integration
+3. Build UI components for posts, comments, and likes
+4. Implement frontend authentication flow
 
 ### Architecture Notes
 - Clean separation: REST for auth, GraphQL for content
 - JWT tokens for stateless authentication
+- Viaduct 0.5.0 request context for auth propagation
 - Schema-first development with Viaduct
 - SQLite for simplicity in demo environment
 - Showcases Viaduct platform capabilities
