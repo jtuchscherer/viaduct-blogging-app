@@ -1,4 +1,4 @@
-# Viaduct CLI Starter app
+# Viaduct Blogging app
 
 ## Requirements
 
@@ -7,33 +7,9 @@
 
 ## Quick Start
 
-Check out the [Getting Started](https://airbnb.io/viaduct/docs/getting_started/) docs
+`./start.sh`
 
-### Run the demo
-
+### Run the e2e tests (currently only testing GraphQL queries
 ```bash
-./gradlew -q run
-```
-This will execute a default GraphQL query called `greeting`. You should see the following output
-```bash
-{
-  "data" : {
-    "greeting" : "Hello, World!"
-  }
-}
-```
-
-Try a different GraphQL query by adding it as an argument to the run command:
-
-```bash
-./gradlew -q run --args="'{ author }'"
-```
-You should see the following output
-
-```bash
-{
-  "data" : {
-    "author" : "Brian Kernighan"
-  }
-}
+./e2e.sh
 ```
