@@ -4,8 +4,8 @@ import { gql } from '@apollo/client';
 import { useMutation } from '@apollo/client/react';
 
 const CREATE_POST = gql`
-  mutation CreatePost($title: String!, $content: String!) {
-    createPost(title: $title, content: $content) {
+  mutation CreatePost($input: CreatePostInput!) {
+    createPost(input: $input) {
       id
       title
       content
@@ -46,7 +46,12 @@ export default function CreatePostPage() {
     }
 
     await createPost({
-      variables: { title: title.trim(), content: content.trim() },
+      variables: {
+        input: {
+          title: title.trim(),
+          content: content.trim()
+        }
+      },
     });
   };
 

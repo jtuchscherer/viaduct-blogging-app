@@ -17,8 +17,8 @@ const GET_POST = gql`
 `;
 
 const UPDATE_POST = gql`
-  mutation UpdatePost($id: ID!, $title: String!, $content: String!) {
-    updatePost(id: $id, title: $title, content: $content) {
+  mutation UpdatePost($input: UpdatePostInput!) {
+    updatePost(input: $input) {
       id
       title
       content
@@ -77,7 +77,13 @@ export default function EditPostPage() {
     }
 
     await updatePost({
-      variables: { id, title: title.trim(), content: content.trim() },
+      variables: {
+        input: {
+          id,
+          title: title.trim(),
+          content: content.trim()
+        }
+      },
     });
   };
 

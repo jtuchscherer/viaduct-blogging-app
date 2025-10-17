@@ -12,6 +12,7 @@ import io.ktor.server.auth.jwt.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.plugins.contentnegotiation.*
+import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -53,6 +54,18 @@ object AuthServer {
         embeddedServer(Netty, port = 8081) {
             install(ContentNegotiation) {
                 jackson()
+            }
+
+            install(CORS) {
+                allowHost("localhost:5173")
+                allowHeader(HttpHeaders.ContentType)
+                allowHeader(HttpHeaders.Authorization)
+                allowMethod(HttpMethod.Get)
+                allowMethod(HttpMethod.Post)
+                allowMethod(HttpMethod.Put)
+                allowMethod(HttpMethod.Delete)
+                allowMethod(HttpMethod.Options)
+                allowCredentials = true
             }
 
             install(Authentication) {

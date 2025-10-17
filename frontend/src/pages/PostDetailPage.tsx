@@ -17,7 +17,7 @@ const GET_POST = gql`
       }
       createdAt
       likeCount
-      isLikedByCurrentUser
+      isLikedByMe
       comments {
         id
         content
@@ -36,25 +36,20 @@ const LIKE_POST = gql`
   mutation LikePost($postId: ID!) {
     likePost(postId: $postId) {
       id
-      likeCount
-      isLikedByCurrentUser
+      createdAt
     }
   }
 `;
 
 const UNLIKE_POST = gql`
   mutation UnlikePost($postId: ID!) {
-    unlikePost(postId: $postId) {
-      id
-      likeCount
-      isLikedByCurrentUser
-    }
+    unlikePost(postId: $postId)
   }
 `;
 
 const ADD_COMMENT = gql`
-  mutation AddComment($postId: ID!, $content: String!) {
-    addComment(postId: $postId, content: $content) {
+  mutation AddComment($input: CreateCommentInput!) {
+    createComment(input: $input) {
       id
       content
       author {
@@ -93,7 +88,7 @@ interface Post {
   author: Author;
   createdAt: string;
   likeCount: number;
-  isLikedByCurrentUser: boolean;
+  isLikedByMe: boolean;
   comments: Comment[];
 }
 
@@ -138,7 +133,7 @@ export default function PostDetailPage() {
       return;
     }
 
-    if (data?.post.isLikedByCurrentUser) {
+    if (data?.post.isLikedByMe) {
       await unlikePost({ variables: { postId: id } });
     } else {
       await likePost({ variables: { postId: id } });
@@ -150,7 +145,12 @@ export default function PostDetailPage() {
     if (!commentContent.trim()) return;
 
     await addComment({
-      variables: { postId: id, content: commentContent },
+      variables: {
+        input: {
+          postId: id,
+          content: commentContent
+        }
+      },
     });
   };
 
@@ -185,7 +185,7 @@ export default function PostDetailPage() {
         </div>
 
         <div className="post-actions">
-          <button onClick={handleLikeToggle} className={post.isLikedByCurrentUser ? 'liked' : ''}>
+          <button onClick={handleLikeToggle} className={post.isLikedByMe ? 'liked' : ''}>
             ❤️ {post.likeCount}
           </button>
 

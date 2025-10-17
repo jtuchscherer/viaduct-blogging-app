@@ -8,6 +8,7 @@ import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.plugins.contentnegotiation.*
+import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -20,7 +21,8 @@ import viaduct.service.api.ExecutionInput
 data class GraphQLRequest(
     val query: String,
     val variables: Map<String, Any?>? = null,
-    val operationName: String? = null
+    val operationName: String? = null,
+    val extensions: Map<String, Any?>? = null  // Apollo Client includes this field
 )
 
 object GraphQLServer {
@@ -38,6 +40,18 @@ object GraphQLServer {
         embeddedServer(Netty, port = 8080) {
             install(ContentNegotiation) {
                 jackson()
+            }
+
+            install(CORS) {
+                allowHost("localhost:5173")
+                allowHeader(HttpHeaders.ContentType)
+                allowHeader(HttpHeaders.Authorization)
+                allowMethod(HttpMethod.Get)
+                allowMethod(HttpMethod.Post)
+                allowMethod(HttpMethod.Put)
+                allowMethod(HttpMethod.Delete)
+                allowMethod(HttpMethod.Options)
+                allowCredentials = true
             }
 
             routing {
