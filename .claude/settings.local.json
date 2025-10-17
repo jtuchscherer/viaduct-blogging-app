@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:airbnb.io)",
+      "Bash(javap:*)",
+      "Bash(./gradlew build:*)",
+      "Bash(./gradlew dependencies:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
