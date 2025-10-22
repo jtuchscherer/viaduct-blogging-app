@@ -1,4 +1,4 @@
-rootProject.name = "viaduct-cli-starter"
+rootProject.name = "viaduct-blogging-app"
 
 val viaductVersion: String by settings
 
