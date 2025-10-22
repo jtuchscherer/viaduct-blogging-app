@@ -7,7 +7,9 @@
 
 ## Quick Start
 
-`./start.sh`
+```
+./start.sh
+```
 
 ### Run the e2e tests (currently only testing GraphQL queries
 ```bash
