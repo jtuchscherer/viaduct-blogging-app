@@ -1,6 +1,7 @@
 package com.example.web
 
 import com.example.auth.JwtService
+import com.example.config.ServerConfig
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.ktor.http.*
 import io.ktor.serialization.jackson.*
@@ -12,8 +13,6 @@ import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import org.koin.core.component.KoinComponent
-import org.koin.core.component.inject
 import org.slf4j.LoggerFactory
 import viaduct.service.api.ExecutionInput
 import viaduct.service.BasicViaductFactory
@@ -27,13 +26,19 @@ data class GraphQLRequest(
     val extensions: Map<String, Any?>? = null  // Apollo Client includes this field
 )
 
-object GraphQLServer : KoinComponent {
-    const val AUTHENTICATED_USER_KEY = "authenticatedUser"
+/**
+ * GraphQL server using Ktor and Viaduct.
+ * Now a class instead of object for better testability and dependency injection.
+ */
+class GraphQLServer(
+    private val jwtService: JwtService,
+    private val serverConfig: ServerConfig
+) {
+    companion object {
+        const val AUTHENTICATED_USER_KEY = "authenticatedUser"
+    }
 
     private val logger = LoggerFactory.getLogger(GraphQLServer::class.java)
-
-    // Inject dependencies from Koin
-    private val jwtService: JwtService by inject()
 
     // Viaduct instance - created directly as it has no injectable dependencies
     private val viaduct = BasicViaductFactory.create(
@@ -43,7 +48,7 @@ object GraphQLServer : KoinComponent {
     )
 
     fun start() {
-        embeddedServer(Netty, port = 8080) {
+        embeddedServer(Netty, port = serverConfig.graphqlPort) {
             install(ContentNegotiation) {
                 jackson()
             }

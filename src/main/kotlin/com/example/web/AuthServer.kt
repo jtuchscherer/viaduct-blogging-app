@@ -5,6 +5,7 @@ import com.auth0.jwt.algorithms.Algorithm
 import com.example.auth.AuthenticationService
 import com.example.auth.JwtService
 import com.example.config.JwtConfig
+import com.example.config.ServerConfig
 import com.fasterxml.jackson.annotation.JsonProperty
 import io.ktor.http.*
 import io.ktor.serialization.jackson.*
@@ -19,8 +20,6 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.koin.core.component.KoinComponent
-import org.koin.core.component.inject
 
 data class RegisterRequest(
     val username: String,
@@ -48,16 +47,20 @@ data class UserResponse(
     val createdAt: String
 )
 
-object AuthServer : KoinComponent {
-    // Inject dependencies from Koin
-    private val authService: AuthenticationService by inject()
-    private val jwtService: JwtService by inject()
-    private val jwtConfig: JwtConfig by inject()
-
+/**
+ * Authentication server using Ktor with JWT support.
+ * Now a class instead of object for better testability and dependency injection.
+ */
+class AuthServer(
+    private val authService: AuthenticationService,
+    private val jwtService: JwtService,
+    private val jwtConfig: JwtConfig,
+    private val serverConfig: ServerConfig
+) {
     private val jwtAlgorithm by lazy { Algorithm.HMAC256(jwtConfig.secret) }
 
     fun start() {
-        embeddedServer(Netty, port = 8081) {
+        embeddedServer(Netty, port = serverConfig.authPort) {
             install(ContentNegotiation) {
                 jackson()
             }

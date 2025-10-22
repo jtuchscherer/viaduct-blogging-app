@@ -4,7 +4,31 @@
 
 This document outlines the plan to add a comprehensive unit test suite to the viaduct-blogs application. The current codebase has no unit tests and has several testability issues that need to be addressed. We will introduce **Koin** as a dependency injection framework to make the code testable and maintainable.
 
-**Status**: ✅ Evaluation Complete - Ready for Implementation
+**Status**: 🚀 In Progress - Phase 5 Complete, Phase 6 Next
+
+## Current Progress (Last Updated: 2025-10-21)
+
+### ✅ Completed Phases
+
+- **Phase 1: Setup Foundation** - Test infrastructure created
+- **Phase 2: Repository Pattern** - All repositories implemented with 52 tests
+- **Phase 3: Service Layer Refactoring** - Services refactored with 35 tests
+- **Phase 4: Koin Dependency Injection** - DI fully integrated with 14 tests
+- **Phase 5: Convert Singletons to Classes** - All objects converted to classes
+
+### 📊 Test Statistics
+
+- **Total Unit Tests**: 100 (96 passing, 4 skipped)
+- **E2E Tests**: 28 (all passing)
+- **Total Tests**: 128
+
+### 🎯 Next Steps
+
+- **Phase 5.5**: Consolidate Auth and GraphQL servers into single server on port 8080
+- **Phase 6**: Refactor Resolvers to use repositories (remove direct database access)
+- **Phase 7**: Complete resolver unit tests
+- **Phase 8**: Add integration tests for workflows
+- **Phase 9**: Create Dockerfile for containerized deployment
 
 ---
 
@@ -204,7 +228,7 @@ return transaction {
 
 ## Implementation Plan
 
-### Phase 1: Setup Foundation (Low Risk, High Value)
+### Phase 1: Setup Foundation ✅ COMPLETE (Low Risk, High Value)
 
 **Goal**: Set up test infrastructure and dependencies without touching production code.
 
@@ -238,7 +262,7 @@ return transaction {
 
 ---
 
-### Phase 2: Extract Repository Layer (Medium Risk)
+### Phase 2: Extract Repository Layer ✅ COMPLETE (Medium Risk)
 
 **Goal**: Create a repository pattern to abstract database access.
 
@@ -277,7 +301,7 @@ return transaction {
 
 ---
 
-### Phase 3: Refactor Services (Medium Risk)
+### Phase 3: Refactor Services ✅ COMPLETE (Medium Risk)
 
 **Goal**: Update existing services to use dependency injection and repositories.
 
@@ -346,7 +370,7 @@ return transaction {
 
 ---
 
-### Phase 4: Create Koin Modules (Medium Risk)
+### Phase 4: Create Koin Modules ✅ COMPLETE (Medium Risk)
 
 **Goal**: Set up Koin dependency injection configuration.
 
@@ -401,7 +425,7 @@ return transaction {
 
 ---
 
-### Phase 5: Convert Singletons to Classes (Medium-High Risk)
+### Phase 5: Convert Singletons to Classes ✅ COMPLETE (Medium-High Risk)
 
 **Goal**: Remove `object` keyword and make classes injectable.
 
@@ -467,7 +491,44 @@ return transaction {
 
 ---
 
-### Phase 6: Refactor Resolvers (Medium Risk)
+### Phase 5.5: Consolidate Servers ⏳ TODO (Low-Medium Risk)
+
+**Goal**: Merge AuthServer routing into GraphQLServer to run on a single port.
+
+**Motivation**: Currently running two separate servers (GraphQL on 8080, Auth on 8081) is unnecessary complexity. Both servers can run on the same port with different routes, simplifying deployment and potentially eliminating CORS issues.
+
+#### Tasks:
+
+- ⏳ Move auth routes (`/auth/register`, `/auth/login`, `/auth/me`) from AuthServer into GraphQLServer
+- ⏳ Consolidate to single port (8080) with routes:
+  - `POST /graphql` - GraphQL endpoint
+  - `POST /auth/register` - User registration
+  - `POST /auth/login` - User login
+  - `GET /auth/me` - Get current user (JWT protected)
+  - `GET /health` - Health check
+- ⏳ Evaluate CORS configuration:
+  - If frontend served from same origin (port 8080), CORS may not be needed
+  - If frontend on different port (5173), keep CORS but simplify to single origin
+  - Current CORS allows `localhost:5173` - maintain this if frontend stays separate
+- ⏳ Update GraphQLServer to accept AuthenticationService and JwtService
+- ⏳ Remove AuthServer class entirely
+- ⏳ Update ViaductApplication to only start GraphQLServer
+- ⏳ Update e2e-test.sh to use port 8080 for auth endpoints (change AUTH_URL variable)
+- ⏳ Update frontend files to use port 8080:
+  - `frontend/src/pages/RegisterPage.tsx` (line 21)
+  - `frontend/src/pages/LoginPage.tsx` (line 19)
+
+**Benefits**:
+- Simpler deployment (one port instead of two)
+- No CORS complexity for same-origin requests
+- Easier local development
+- Reduced process management complexity
+
+**Success Criteria**: Single server on port 8080, all auth and GraphQL routes working, all 28 e2e tests passing
+
+---
+
+### Phase 6: Refactor Resolvers ⏳ TODO (Medium Risk)
 
 **Goal**: Update resolvers to use repositories instead of direct database access.
 
@@ -492,7 +553,7 @@ return transaction {
 
 ---
 
-### Phase 7: Write Comprehensive Unit Tests (High Value)
+### Phase 7: Write Comprehensive Unit Tests 🔄 PARTIAL (High Value)
 
 **Goal**: Achieve >80% code coverage with unit tests.
 
@@ -606,7 +667,7 @@ return transaction {
 
 ---
 
-### Phase 8: Integration Tests (High Value)
+### Phase 8: Integration Tests ⏳ TODO (High Value)
 
 **Goal**: Test complete workflows with real dependencies.
 
@@ -628,6 +689,99 @@ return transaction {
     - E2E tests cover the full stack
 
 **Success Criteria**: Integration tests pass, e2e tests pass, full stack tested
+
+---
+
+### Phase 9: Docker Deployment ⏳ TODO (Medium Risk)
+
+**Goal**: Create Docker container for easy deployment and distribution.
+
+**Motivation**: Containerizing the application makes it easy to:
+- Deploy to cloud platforms (AWS, GCP, Azure)
+- Run consistently across different environments
+- Simplify local development setup for new developers
+- Include all dependencies in a single image
+
+#### Tasks:
+
+29. ⏳ Create Dockerfile
+    - Use multi-stage build to optimize image size
+    - Stage 1: Build with Gradle (include all build dependencies)
+    - Stage 2: Runtime with minimal JRE
+    - Copy compiled JAR and resources to runtime stage
+
+30. ⏳ Configure application for Docker
+    - Make database path configurable via environment variables
+    - Support SQLite database in Docker volume
+    - Configure server ports via environment variables
+    - Add health check endpoint support
+
+31. ⏳ Create .dockerignore file
+    - Exclude build artifacts, node_modules, etc.
+    - Reduce build context size
+
+32. ⏳ Add docker-compose.yml (optional)
+    - Define application service
+    - Set up volume for database persistence
+    - Configure environment variables
+    - Optional: Include frontend service
+
+33. ⏳ Update README with Docker instructions
+    - How to build Docker image
+    - How to run container
+    - Environment variable documentation
+    - Volume mount instructions
+
+**Example Dockerfile Structure**:
+```dockerfile
+# Stage 1: Build
+FROM gradle:8.5-jdk21 AS builder
+WORKDIR /app
+COPY . .
+RUN ./gradlew build --no-daemon
+
+# Stage 2: Runtime
+FROM eclipse-temurin:21-jre-alpine
+WORKDIR /app
+COPY --from=builder /app/build/libs/*.jar app.jar
+
+# Create directory for database
+RUN mkdir -p /app/data
+
+# Environment variables
+ENV DATABASE_PATH=/app/data/blog.db
+ENV SERVER_PORT=8080
+ENV JWT_SECRET=change-me-in-production
+
+EXPOSE 8080
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s \
+  CMD wget --quiet --tries=1 --spider http://localhost:8080/health || exit 1
+
+ENTRYPOINT ["java", "-jar", "app.jar"]
+```
+
+**Environment Variables**:
+- `DATABASE_PATH`: Path to SQLite database file (default: `/app/data/blog.db`)
+- `SERVER_PORT`: Server port (default: `8080`)
+- `JWT_SECRET`: JWT signing secret (must be set in production)
+- `JWT_ISSUER`: JWT issuer (default: `blog-app`)
+- `APP_ENV`: Environment (test/dev/prod)
+
+**Benefits**:
+- ✅ Consistent deployment across environments
+- ✅ Simplified dependency management
+- ✅ Easy scaling and orchestration
+- ✅ Isolated runtime environment
+- ✅ Version control for entire stack
+
+**Success Criteria**:
+- Docker image builds successfully
+- Container runs and serves application on port 8080
+- Database persists in mounted volume
+- All e2e tests pass against Dockerized application
+- Image size optimized (<200MB for runtime)
 
 ---
 
@@ -690,25 +844,29 @@ fun testKoinModule() = module {
 - ✅ Repository layer exists and tested
 - ✅ 10+ repository tests passing
 
-### Phase 3-5 Complete
+### Phase 3-5 Complete ✅
 - ✅ All services use dependency injection
-- ✅ No hardcoded dependencies
+- ✅ No hardcoded dependencies (all objects converted to classes)
 - ✅ Application starts with Koin
-- ✅ All e2e tests still pass (no regressions)
-- ✅ 30+ unit tests passing
+- ✅ All e2e tests still pass (no regressions - 28/28)
+- ✅ 100 unit tests passing (96 passed, 4 skipped)
+- ✅ DatabaseFactory, GraphQLServer, AuthServer all injectable
+- ✅ ViaductApplication uses Koin DI
 
-### Phase 6-7 Complete
-- ✅ Resolvers use repositories
-- ✅ No direct `transaction {}` in resolvers
-- ✅ 50+ unit tests passing
-- ✅ >80% code coverage
+### Phase 6-7 Complete ⏳ TODO
+- ⏳ Resolvers use repositories
+- ⏳ No direct `transaction {}` in resolvers
+- ✅ 100+ unit tests passing (already achieved)
+- ⏳ Resolver unit tests
+- ⏳ >80% code coverage
 
-### Phase 8 Complete (Final)
-- ✅ 10-15 integration tests passing
+### Phase 8 Complete (Final) ⏳ TODO
+- ⏳ 10-15 integration tests passing
 - ✅ All 28 e2e tests still passing
-- ✅ 60+ total unit/integration tests
-- ✅ Test suite runs in <10 seconds
-- ✅ CI/CD ready
+- ✅ 100+ unit tests (achieved)
+- ⏳ Integration test suite
+- ⏳ Test suite runs in <10 seconds (currently ~3s for unit tests)
+- ⏳ CI/CD ready
 
 ---
 
@@ -758,35 +916,50 @@ fun testKoinModule() = module {
 
 ---
 
-## Files to Create
+## Files Created (Phases 1-5)
 
-### Configuration
-- `src/main/kotlin/com/example/config/AppConfig.kt`
-- `src/main/kotlin/com/example/config/JwtConfig.kt`
-- `src/main/kotlin/com/example/config/DatabaseConfig.kt`
-- `src/main/kotlin/com/example/config/ServerConfig.kt`
-- `src/main/kotlin/com/example/config/KoinModules.kt`
+### Configuration ✅
+- ✅ `src/main/kotlin/com/example/config/AppConfig.kt`
+- ✅ `src/main/kotlin/com/example/config/JwtConfig.kt`
+- ✅ `src/main/kotlin/com/example/config/DatabaseConfig.kt`
+- ✅ `src/main/kotlin/com/example/config/ServerConfig.kt`
+- ✅ `src/main/kotlin/com/example/config/KoinModules.kt`
 
-### Repositories
-- `src/main/kotlin/com/example/database/repositories/UserRepository.kt`
-- `src/main/kotlin/com/example/database/repositories/PostRepository.kt`
-- `src/main/kotlin/com/example/database/repositories/CommentRepository.kt`
-- `src/main/kotlin/com/example/database/repositories/LikeRepository.kt`
+### Database ✅
+- ✅ `src/main/kotlin/com/example/database/DatabaseFactory.kt`
 
-### Tests
-- `src/test/kotlin/com/example/TestConfig.kt`
-- `src/test/kotlin/com/example/auth/PasswordServiceTest.kt`
-- `src/test/kotlin/com/example/auth/JwtServiceTest.kt`
-- `src/test/kotlin/com/example/auth/AuthenticationServiceTest.kt`
-- `src/test/kotlin/com/example/database/repositories/UserRepositoryTest.kt`
-- `src/test/kotlin/com/example/database/repositories/PostRepositoryTest.kt`
-- `src/test/kotlin/com/example/database/repositories/CommentRepositoryTest.kt`
-- `src/test/kotlin/com/example/database/repositories/LikeRepositoryTest.kt`
-- `src/test/kotlin/com/example/resolvers/PostResolversTest.kt`
-- `src/test/kotlin/com/example/resolvers/CommentResolversTest.kt`
-- `src/test/kotlin/com/example/resolvers/LikeResolversTest.kt`
-- `src/test/kotlin/com/example/integration/AuthFlowIntegrationTest.kt`
-- `src/test/kotlin/com/example/integration/BlogFeatureIntegrationTest.kt`
+### Repositories ✅
+- ✅ `src/main/kotlin/com/example/database/repositories/UserRepository.kt` (interface)
+- ✅ `src/main/kotlin/com/example/database/repositories/ExposedUserRepository.kt`
+- ✅ `src/main/kotlin/com/example/database/repositories/PostRepository.kt` (interface)
+- ✅ `src/main/kotlin/com/example/database/repositories/ExposedPostRepository.kt`
+- ✅ `src/main/kotlin/com/example/database/repositories/CommentRepository.kt` (interface)
+- ✅ `src/main/kotlin/com/example/database/repositories/ExposedCommentRepository.kt`
+- ✅ `src/main/kotlin/com/example/database/repositories/LikeRepository.kt` (interface)
+- ✅ `src/main/kotlin/com/example/database/repositories/ExposedLikeRepository.kt`
+
+### Services ✅
+- ✅ `src/main/kotlin/com/example/auth/AuthenticationService.kt` (extracted from PasswordService.kt)
+
+### Tests ✅
+- ✅ `src/test/kotlin/com/example/config/TestConfig.kt`
+- ✅ `src/test/kotlin/com/example/config/AppConfigTest.kt`
+- ✅ `src/test/kotlin/com/example/config/KoinModulesTest.kt`
+- ✅ `src/test/kotlin/com/example/auth/PasswordServiceTest.kt`
+- ✅ `src/test/kotlin/com/example/auth/JwtServiceTest.kt`
+- ✅ `src/test/kotlin/com/example/auth/AuthenticationServiceTest.kt`
+- ✅ `src/test/kotlin/com/example/database/repositories/DatabaseTestHelper.kt`
+- ✅ `src/test/kotlin/com/example/database/repositories/UserRepositoryTest.kt`
+- ✅ `src/test/kotlin/com/example/database/repositories/PostRepositoryTest.kt`
+- ✅ `src/test/kotlin/com/example/database/repositories/CommentRepositoryTest.kt`
+- ✅ `src/test/kotlin/com/example/database/repositories/LikeRepositoryTest.kt`
+
+### Tests TODO (Phases 6-8) ⏳
+- ⏳ `src/test/kotlin/com/example/resolvers/PostResolversTest.kt`
+- ⏳ `src/test/kotlin/com/example/resolvers/CommentResolversTest.kt`
+- ⏳ `src/test/kotlin/com/example/resolvers/LikeResolversTest.kt`
+- ⏳ `src/test/kotlin/com/example/integration/AuthFlowIntegrationTest.kt`
+- ⏳ `src/test/kotlin/com/example/integration/BlogFeatureIntegrationTest.kt`
 
 ---
 

@@ -3,6 +3,7 @@ package com.example.config
 import com.example.auth.AuthenticationService
 import com.example.auth.JwtService
 import com.example.auth.PasswordService
+import com.example.database.DatabaseFactory
 import com.example.database.repositories.*
 import org.koin.dsl.module
 import viaduct.service.BasicViaductFactory
@@ -17,6 +18,7 @@ val configModule = module {
     single { get<AppConfig>().jwt }
     single { get<AppConfig>().database }
     single { get<AppConfig>().server }
+    single { DatabaseFactory(get()) }
 }
 
 /**
@@ -41,6 +43,15 @@ val serviceModule = module {
 }
 
 /**
+ * Koin module for servers.
+ * Provides GraphQLServer and AuthServer instances.
+ */
+val serverModule = module {
+    single { com.example.web.GraphQLServer(get(), get()) }
+    single { com.example.web.AuthServer(get(), get(), get(), get()) }
+}
+
+/**
  * All application modules combined.
  * Use this list when starting Koin.
  * Note: Viaduct is not included as it has no injectable dependencies.
@@ -48,5 +59,6 @@ val serviceModule = module {
 val allModules = listOf(
     configModule,
     repositoryModule,
-    serviceModule
+    serviceModule,
+    serverModule
 )
