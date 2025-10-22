@@ -1,5 +1,5 @@
 plugins {
-    kotlin("jvm") version "1.9.24"
+    kotlin("jvm") version "2.2.20"
     alias(libs.plugins.viaduct.application)
     alias(libs.plugins.viaduct.module)
     application
@@ -28,27 +28,27 @@ dependencies {
     implementation("org.jetbrains.exposed:exposed-java-time:0.44.1")
 
     // HTTP server for auth endpoints
-    implementation("io.ktor:ktor-server-core:2.3.6")
-    implementation("io.ktor:ktor-server-netty:2.3.6")
-    implementation("io.ktor:ktor-server-content-negotiation:2.3.6")
-    implementation("io.ktor:ktor-serialization-jackson:2.3.6")
-    implementation("io.ktor:ktor-server-cors:2.3.6")
+    implementation(libs.ktor.server.core)
+    implementation(libs.ktor.server.netty)
+    implementation(libs.ktor.server.content.negotiation)
+    implementation(libs.ktor.serialization.jackson)
+    implementation(libs.ktor.server.cors)
 
     // JWT for authentication
-    implementation("io.ktor:ktor-server-auth:2.3.6")
-    implementation("io.ktor:ktor-server-auth-jwt:2.3.6")
+    implementation(libs.ktor.server.auth)
+    implementation(libs.ktor.server.auth.jwt)
 
     // Koin for Dependency Injection
-    implementation("io.insert-koin:koin-core:3.5.0")
-    implementation("io.insert-koin:koin-ktor:3.5.0")
+    implementation(libs.koin.core)
+    implementation(libs.koin.ktor)
 
     // Testing
     testImplementation("org.junit.jupiter:junit-jupiter:5.9.2")
     testImplementation("org.junit.jupiter:junit-jupiter-engine:5.9.2")
     testImplementation("org.junit.platform:junit-platform-launcher:1.9.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.5.2")
-    testImplementation("io.insert-koin:koin-test:3.5.0")
-    testImplementation("io.insert-koin:koin-test-junit5:3.5.0")
+    testImplementation(libs.koin.test)
+    testImplementation(libs.koin.test.junit5)
     testImplementation("io.mockk:mockk:1.13.8")
     testImplementation("com.h2database:h2:2.2.224")
     testImplementation("org.assertj:assertj-core:3.24.2")
