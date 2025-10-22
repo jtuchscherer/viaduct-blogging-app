@@ -4,6 +4,7 @@ import com.example.database.Like as DatabaseLike
 import com.example.database.Likes
 import com.example.database.Post as DatabasePost
 import com.example.viadapp.resolvers.resolverbases.MutationResolvers
+import com.example.web.GraphQLServer
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.transactions.transaction
 import viaduct.api.Resolver
@@ -15,7 +16,7 @@ import java.util.*
 class LikePostMutationResolver : MutationResolvers.LikePost() {
     override suspend fun resolve(ctx: Context): ViaductLike {
         val postId = UUID.fromString(ctx.arguments.postId)
-        val authenticatedUser = ctx.requestContext as? com.example.database.User ?: throw RuntimeException("Authentication required. Please provide a valid JWT token.")
+        val authenticatedUser = (ctx.requestContext as? Map<String, Any?>)?.get(GraphQLServer.AUTHENTICATED_USER_KEY) as? com.example.database.User ?: throw RuntimeException("Authentication required. Please provide a valid JWT token.")
 
         return transaction {
             val post = DatabasePost.findById(postId)
@@ -53,7 +54,7 @@ class LikePostMutationResolver : MutationResolvers.LikePost() {
 class UnlikePostResolver : MutationResolvers.UnlikePost() {
     override suspend fun resolve(ctx: Context): Boolean {
         val postId = UUID.fromString(ctx.arguments.postId)
-        val authenticatedUser = ctx.requestContext as? com.example.database.User ?: throw RuntimeException("Authentication required. Please provide a valid JWT token.")
+        val authenticatedUser = (ctx.requestContext as? Map<String, Any?>)?.get(GraphQLServer.AUTHENTICATED_USER_KEY) as? com.example.database.User ?: throw RuntimeException("Authentication required. Please provide a valid JWT token.")
 
         return transaction {
             val like = DatabaseLike.find {
