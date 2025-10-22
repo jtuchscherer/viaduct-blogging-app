@@ -14,7 +14,7 @@ import java.util.*
 class CreatePostResolver : MutationResolvers.CreatePost() {
     override suspend fun resolve(ctx: Context): ViaductPost {
         val input = ctx.arguments.input
-        val authenticatedUser = (ctx.requestContext as? Map<String, Any?>)?.get(GraphQLServer.AUTHENTICATED_USER_KEY) as? DatabaseUser
+        val authenticatedUser = (ctx.requestContext as? Map<*, *>)?.get(GraphQLServer.AUTHENTICATED_USER_KEY) as? DatabaseUser
             ?: throw RuntimeException("Authentication required. Please provide a valid JWT token.")
 
         return transaction {
@@ -42,7 +42,7 @@ class UpdatePostResolver : MutationResolvers.UpdatePost() {
     override suspend fun resolve(ctx: Context): ViaductPost {
         val input = ctx.arguments.input
         val postId = UUID.fromString(input.id)
-        val authenticatedUser = (ctx.requestContext as? Map<String, Any?>)?.get(GraphQLServer.AUTHENTICATED_USER_KEY) as? DatabaseUser
+        val authenticatedUser = (ctx.requestContext as? Map<*, *>)?.get(GraphQLServer.AUTHENTICATED_USER_KEY) as? DatabaseUser
             ?: throw RuntimeException("Authentication required. Please provide a valid JWT token.")
 
         return transaction {
@@ -73,7 +73,7 @@ class UpdatePostResolver : MutationResolvers.UpdatePost() {
 class DeletePostResolver : MutationResolvers.DeletePost() {
     override suspend fun resolve(ctx: Context): Boolean {
         val postId = UUID.fromString(ctx.arguments.id)
-        val authenticatedUser = (ctx.requestContext as? Map<String, Any?>)?.get(GraphQLServer.AUTHENTICATED_USER_KEY) as? DatabaseUser
+        val authenticatedUser = (ctx.requestContext as? Map<*, *>)?.get(GraphQLServer.AUTHENTICATED_USER_KEY) as? DatabaseUser
             ?: throw RuntimeException("Authentication required. Please provide a valid JWT token.")
 
         return transaction {

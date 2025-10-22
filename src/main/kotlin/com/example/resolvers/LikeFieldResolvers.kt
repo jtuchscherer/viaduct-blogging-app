@@ -47,7 +47,7 @@ class PostIsLikedByMeResolver : PostResolvers.IsLikedByMe() {
         val postId = UUID.fromString(postIdString)
 
         // Get authenticated user (optional for this field)
-        val user = (ctx.requestContext as? Map<String, Any?>)?.get(GraphQLServer.AUTHENTICATED_USER_KEY) as? com.example.database.User
+        val user = (ctx.requestContext as? Map<*, *>)?.get(GraphQLServer.AUTHENTICATED_USER_KEY) as? com.example.database.User
 
         if (user == null) {
             return false

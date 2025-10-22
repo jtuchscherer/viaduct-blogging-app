@@ -43,7 +43,7 @@ data class UserResponse(
     val username: String,
     val email: String,
     val name: String,
-    @JsonProperty("created_at")
+    @param:JsonProperty("created_at")
     val createdAt: String
 )
 
