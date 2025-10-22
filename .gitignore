@@ -16,3 +16,6 @@ bin/
 
 # Logs
 *.log
+
+# AI
+.claude/
