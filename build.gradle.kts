@@ -14,7 +14,7 @@ viaductModule {
 }
 
 dependencies {
-    implementation("ch.qos.logback:logback-classic:1.3.7")
+    implementation("ch.qos.logback:logback-classic:1.5.20")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.5.2")
 
     implementation("com.fasterxml.jackson.core:jackson-databind:2.9.10")
