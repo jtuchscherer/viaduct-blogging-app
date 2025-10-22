@@ -3,6 +3,8 @@ package com.example.web
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import com.example.auth.AuthenticationService
+import com.example.auth.JwtService
+import com.example.config.JwtConfig
 import com.fasterxml.jackson.annotation.JsonProperty
 import io.ktor.http.*
 import io.ktor.serialization.jackson.*
@@ -17,7 +19,8 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import org.jetbrains.exposed.sql.transactions.transaction
-import java.util.*
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 
 data class RegisterRequest(
     val username: String,
@@ -45,10 +48,13 @@ data class UserResponse(
     val createdAt: String
 )
 
-object AuthServer {
-    private val authService = AuthenticationService()
-    private val jwtSecret = "your-secret-key" // In production, use environment variable
-    private val jwtAlgorithm = Algorithm.HMAC256(jwtSecret)
+object AuthServer : KoinComponent {
+    // Inject dependencies from Koin
+    private val authService: AuthenticationService by inject()
+    private val jwtService: JwtService by inject()
+    private val jwtConfig: JwtConfig by inject()
+
+    private val jwtAlgorithm by lazy { Algorithm.HMAC256(jwtConfig.secret) }
 
     fun start() {
         embeddedServer(Netty, port = 8081) {
@@ -72,7 +78,7 @@ object AuthServer {
                 jwt("auth-jwt") {
                     verifier(
                         JWT.require(jwtAlgorithm)
-                            .withIssuer("blog-app")
+                            .withIssuer(jwtConfig.issuer)
                             .build()
                     )
                     validate { credential ->
@@ -106,7 +112,7 @@ object AuthServer {
                             )
                         }
 
-                        val token = generateToken(user.username, user.id.value.toString())
+                        val token = jwtService.generateToken(user.username, user.id.value.toString())
                         val response = AuthResponse(
                             token = token,
                             user = UserResponse(
@@ -132,7 +138,7 @@ object AuthServer {
                             authService.authenticateUser(request.username, request.password)
                         } ?: throw RuntimeException("Invalid credentials")
 
-                        val token = generateToken(user.username, user.id.value.toString())
+                        val token = jwtService.generateToken(user.username, user.id.value.toString())
                         val response = AuthResponse(
                             token = token,
                             user = UserResponse(
@@ -174,14 +180,5 @@ object AuthServer {
                 }
             }
         }.start(wait = false)
-    }
-
-    private fun generateToken(username: String, userId: String): String {
-        return JWT.create()
-            .withIssuer("blog-app")
-            .withClaim("username", username)
-            .withClaim("userId", userId)
-            .withExpiresAt(Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000)) // 24 hours
-            .sign(jwtAlgorithm)
     }
 }

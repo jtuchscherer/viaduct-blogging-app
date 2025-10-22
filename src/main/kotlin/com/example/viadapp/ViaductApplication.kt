@@ -4,13 +4,20 @@ package com.example.viadapp
 
 import ch.qos.logback.classic.Level
 import ch.qos.logback.classic.Logger
+import com.example.config.allModules
 import com.example.database.DatabaseConfig
 import com.example.web.AuthServer
+import org.koin.core.context.startKoin
 import org.slf4j.LoggerFactory
 
 fun main(argv: Array<String>) {
     val rootLogger = LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME) as Logger
     rootLogger.level = Level.WARN
+
+    // Initialize Koin dependency injection
+    startKoin {
+        modules(allModules)
+    }
 
     // Initialize database
     DatabaseConfig.init()

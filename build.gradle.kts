@@ -38,10 +38,20 @@ dependencies {
     implementation("io.ktor:ktor-server-auth:2.3.6")
     implementation("io.ktor:ktor-server-auth-jwt:2.3.6")
 
+    // Koin for Dependency Injection
+    implementation("io.insert-koin:koin-core:3.5.0")
+    implementation("io.insert-koin:koin-ktor:3.5.0")
+
+    // Testing
     testImplementation("org.junit.jupiter:junit-jupiter:5.9.2")
     testImplementation("org.junit.jupiter:junit-jupiter-engine:5.9.2")
     testImplementation("org.junit.platform:junit-platform-launcher:1.9.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.5.2")
+    testImplementation("io.insert-koin:koin-test:3.5.0")
+    testImplementation("io.insert-koin:koin-test-junit5:3.5.0")
+    testImplementation("io.mockk:mockk:1.13.8")
+    testImplementation("com.h2database:h2:2.2.224")
+    testImplementation("org.assertj:assertj-core:3.24.2")
 }
 
 application {
