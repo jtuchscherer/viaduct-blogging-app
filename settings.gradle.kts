@@ -15,9 +15,6 @@ dependencyResolutionManagement {
         mavenCentral()
     }
     versionCatalogs {
-        create("libs") {
-            // This injects a dynamic value that your TOML can reference.
-            version("viaduct", viaductVersion)
-        }
+        create("libs")
     }
 }
