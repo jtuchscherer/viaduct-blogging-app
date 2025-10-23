@@ -6,7 +6,6 @@ import ch.qos.logback.classic.Level
 import ch.qos.logback.classic.Logger
 import com.example.config.allModules
 import com.example.database.DatabaseFactory
-import com.example.web.AuthServer
 import com.example.web.GraphQLServer
 import org.koin.core.context.startKoin
 import org.koin.core.component.KoinComponent
@@ -19,24 +18,23 @@ import org.slf4j.LoggerFactory
  */
 object Application : KoinComponent {
     private val databaseFactory: DatabaseFactory by inject()
-    private val authServer: AuthServer by inject()
     private val graphQLServer: GraphQLServer by inject()
 
     fun start() {
         // Initialize database
         databaseFactory.initialize()
 
-        // Start the auth server
-        authServer.start()
-        println("Auth server started on http://localhost:8081")
-
-        // Start the GraphQL server
+        // Start the consolidated server (handles both GraphQL and Auth endpoints)
         graphQLServer.start()
-        println("GraphQL server started on http://localhost:8080")
+        println("Server started on http://localhost:8080")
         println("GraphQL endpoint: POST http://localhost:8080/graphql")
+        println("Auth endpoints:")
+        println("  - POST http://localhost:8080/auth/register")
+        println("  - POST http://localhost:8080/auth/login")
+        println("  - GET  http://localhost:8080/auth/me")
 
         // Keep the application running
-        println("\nServers are running. Press Ctrl+C to stop.")
+        println("\nServer is running. Press Ctrl+C to stop.")
         Thread.currentThread().join()
     }
 }

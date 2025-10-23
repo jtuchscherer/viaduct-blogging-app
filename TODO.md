@@ -4,9 +4,9 @@
 
 This document outlines the plan to add a comprehensive unit test suite to the viaduct-blogs application. The current codebase has no unit tests and has several testability issues that need to be addressed. We will introduce **Koin** as a dependency injection framework to make the code testable and maintainable.
 
-**Status**: 🚀 In Progress - Phase 5 Complete, Phase 6 Next
+**Status**: 🚀 In Progress - Phase 5.5 Complete, Phase 6 Next
 
-## Current Progress (Last Updated: 2025-10-21)
+## Current Progress (Last Updated: 2025-10-22)
 
 ### ✅ Completed Phases
 
@@ -15,6 +15,7 @@ This document outlines the plan to add a comprehensive unit test suite to the vi
 - **Phase 3: Service Layer Refactoring** - Services refactored with 35 tests
 - **Phase 4: Koin Dependency Injection** - DI fully integrated with 14 tests
 - **Phase 5: Convert Singletons to Classes** - All objects converted to classes
+- **Phase 5.5: Consolidate Servers** - Auth and GraphQL servers merged into single server on port 8080
 
 ### 📊 Test Statistics
 
@@ -24,7 +25,6 @@ This document outlines the plan to add a comprehensive unit test suite to the vi
 
 ### 🎯 Next Steps
 
-- **Phase 5.5**: Consolidate Auth and GraphQL servers into single server on port 8080
 - **Phase 6**: Refactor Resolvers to use repositories (remove direct database access)
 - **Phase 7**: Complete resolver unit tests
 - **Phase 8**: Add integration tests for workflows
@@ -491,7 +491,7 @@ return transaction {
 
 ---
 
-### Phase 5.5: Consolidate Servers ⏳ TODO (Low-Medium Risk)
+### Phase 5.5: Consolidate Servers ✅ COMPLETE (Low-Medium Risk)
 
 **Goal**: Merge AuthServer routing into GraphQLServer to run on a single port.
 
@@ -499,24 +499,24 @@ return transaction {
 
 #### Tasks:
 
-- ⏳ Move auth routes (`/auth/register`, `/auth/login`, `/auth/me`) from AuthServer into GraphQLServer
-- ⏳ Consolidate to single port (8080) with routes:
+- ✅ Move auth routes (`/auth/register`, `/auth/login`, `/auth/me`) from AuthServer into GraphQLServer
+- ✅ Consolidate to single port (8080) with routes:
   - `POST /graphql` - GraphQL endpoint
   - `POST /auth/register` - User registration
   - `POST /auth/login` - User login
   - `GET /auth/me` - Get current user (JWT protected)
   - `GET /health` - Health check
-- ⏳ Evaluate CORS configuration:
-  - If frontend served from same origin (port 8080), CORS may not be needed
-  - If frontend on different port (5173), keep CORS but simplify to single origin
-  - Current CORS allows `localhost:5173` - maintain this if frontend stays separate
-- ⏳ Update GraphQLServer to accept AuthenticationService and JwtService
-- ⏳ Remove AuthServer class entirely
-- ⏳ Update ViaductApplication to only start GraphQLServer
-- ⏳ Update e2e-test.sh to use port 8080 for auth endpoints (change AUTH_URL variable)
-- ⏳ Update frontend files to use port 8080:
+- ✅ Evaluate CORS configuration:
+  - Frontend stays on different port (5173), kept CORS for single origin
+  - Current CORS allows `localhost:5173` - maintained for frontend
+- ✅ Update GraphQLServer to accept AuthenticationService and JwtService
+- ✅ Remove AuthServer class entirely
+- ✅ Update ViaductApplication to only start GraphQLServer
+- ✅ Update e2e-test.sh to use port 8080 for auth endpoints (change AUTH_URL variable)
+- ✅ Update frontend files to use port 8080:
   - `frontend/src/pages/RegisterPage.tsx` (line 21)
   - `frontend/src/pages/LoginPage.tsx` (line 19)
+- ✅ Update start.sh to only start one server
 
 **Benefits**:
 - Simpler deployment (one port instead of two)
@@ -524,7 +524,7 @@ return transaction {
 - Easier local development
 - Reduced process management complexity
 
-**Success Criteria**: Single server on port 8080, all auth and GraphQL routes working, all 28 e2e tests passing
+**Success Criteria**: ✅ Single server on port 8080, all auth and GraphQL routes working, all 28 e2e tests passing
 
 ---
 

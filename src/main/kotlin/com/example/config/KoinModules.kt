@@ -43,12 +43,11 @@ val serviceModule = module {
 }
 
 /**
- * Koin module for servers.
- * Provides GraphQLServer and AuthServer instances.
+ * Koin module for server.
+ * Provides GraphQLServer instance with all dependencies for both GraphQL and Auth endpoints.
  */
 val serverModule = module {
-    single { com.example.web.GraphQLServer(get(), get()) }
-    single { com.example.web.AuthServer(get(), get(), get(), get()) }
+    single { com.example.web.GraphQLServer(get(), get(), get(), get()) }
 }
 
 /**

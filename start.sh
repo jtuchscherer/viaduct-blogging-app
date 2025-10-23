@@ -61,33 +61,22 @@ if [ ! -d "frontend/node_modules" ]; then
     echo ""
 fi
 
-# Start the backend servers
-echo -e "${BLUE}🌐 Starting GraphQL server (port 8080)...${NC}"
-./gradlew run > graphql-server.log 2>&1 &
-GRAPHQL_PID=$!
-echo -e "${GREEN}✅ GraphQL server starting (PID: $GRAPHQL_PID)${NC}"
+# Start the backend server
+echo -e "${BLUE}🌐 Starting server (GraphQL + Auth on port 8080)...${NC}"
+./gradlew run > server.log 2>&1 &
+SERVER_PID=$!
+echo -e "${GREEN}✅ Server starting (PID: $SERVER_PID)${NC}"
 
-echo -e "${BLUE}🔐 Starting Auth server (port 8081)...${NC}"
-java -cp build/libs/viaduct-blogs-1.0-SNAPSHOT.jar com.example.AuthServerKt > auth-server.log 2>&1 &
-AUTH_PID=$!
-echo -e "${GREEN}✅ Auth server starting (PID: $AUTH_PID)${NC}"
-
-# Wait for servers to be ready
+# Wait for server to be ready
 echo ""
-echo -e "${YELLOW}⏳ Waiting for servers to be ready...${NC}"
+echo -e "${YELLOW}⏳ Waiting for server to be ready...${NC}"
 sleep 5
 
-# Check if servers are responding
-if curl -s http://localhost:8080/graphql > /dev/null 2>&1; then
-    echo -e "${GREEN}✅ GraphQL server is ready at http://localhost:8080/graphql${NC}"
+# Check if server is responding
+if curl -s http://localhost:8080/health > /dev/null 2>&1; then
+    echo -e "${GREEN}✅ Server is ready at http://localhost:8080${NC}"
 else
-    echo -e "${YELLOW}⚠️  GraphQL server may still be starting up...${NC}"
-fi
-
-if curl -s http://localhost:8081/health > /dev/null 2>&1; then
-    echo -e "${GREEN}✅ Auth server is ready at http://localhost:8081${NC}"
-else
-    echo -e "${YELLOW}⚠️  Auth server may still be starting up...${NC}"
+    echo -e "${YELLOW}⚠️  Server may still be starting up...${NC}"
 fi
 
 # Start the frontend dev server
@@ -105,13 +94,13 @@ echo -e "${GREEN}🎉 All services started successfully!${NC}"
 echo -e "${GREEN}========================================${NC}"
 echo ""
 echo -e "${BLUE}Services running:${NC}"
-echo "  📊 GraphQL API:    http://localhost:8080/graphql"
-echo "  🔐 Auth API:       http://localhost:8081"
-echo "  ⚛️  Frontend:       http://localhost:5173"
+echo "  🌐 Backend (GraphQL + Auth): http://localhost:8080"
+echo "     - GraphQL endpoint:       http://localhost:8080/graphql"
+echo "     - Auth endpoints:         http://localhost:8080/auth/*"
+echo "  ⚛️  Frontend:                 http://localhost:5173"
 echo ""
 echo -e "${BLUE}Logs:${NC}"
-echo "  GraphQL: tail -f graphql-server.log"
-echo "  Auth:    tail -f auth-server.log"
+echo "  Server:   tail -f server.log"
 echo "  Frontend: tail -f frontend-dev.log"
 echo ""
 echo -e "${YELLOW}Press Ctrl+C to stop all services${NC}"

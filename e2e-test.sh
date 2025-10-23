@@ -12,7 +12,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Configuration
-AUTH_URL="http://localhost:8081"
+AUTH_URL="http://localhost:8080"
 GRAPHQL_URL="http://localhost:8080/graphql"
 SERVER_LOG="/tmp/viaduct-server.log"
 
@@ -85,10 +85,9 @@ fi
 # Step 3: Start the server
 print_header "Step 3: Start Server"
 
-# Kill any existing servers on the ports
-print_info "Checking for existing servers on ports 8080 and 8081..."
+# Kill any existing servers on the port
+print_info "Checking for existing servers on port 8080..."
 lsof -ti:8080 | xargs kill -9 2>/dev/null || true
-lsof -ti:8081 | xargs kill -9 2>/dev/null || true
 pkill -f "gradle run" 2>/dev/null || true
 sleep 2
 
