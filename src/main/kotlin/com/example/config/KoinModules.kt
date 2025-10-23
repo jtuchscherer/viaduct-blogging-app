@@ -5,6 +5,8 @@ import com.example.auth.JwtService
 import com.example.auth.PasswordService
 import com.example.database.DatabaseFactory
 import com.example.database.repositories.*
+import com.example.viadapp.resolvers.*
+import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 import viaduct.service.BasicViaductFactory
 import viaduct.service.TenantRegistrationInfo
@@ -51,13 +53,51 @@ val serverModule = module {
 }
 
 /**
+ * Koin module for resolvers.
+ * Provides all GraphQL resolver instances with their dependencies.
+ */
+val resolverModule = module {
+    // Post resolvers
+    singleOf(::CreatePostResolver)
+    singleOf(::UpdatePostResolver)
+    singleOf(::DeletePostResolver)
+    singleOf(::PostsResolver)
+    singleOf(::PostResolver)
+    singleOf(::MyPostsResolver)
+
+    // Post field resolvers
+    singleOf(::PostAuthorResolver)
+    singleOf(::PostCommentsFieldResolver)
+    singleOf(::PostLikesResolver)
+    singleOf(::PostLikeCountResolver)
+    singleOf(::PostIsLikedByMeResolver)
+
+    // Comment resolvers
+    singleOf(::CreateCommentResolver)
+    singleOf(::DeleteCommentResolver)
+    singleOf(::PostCommentsResolver)
+
+    // Comment field resolvers
+    singleOf(::CommentAuthorResolver)
+    singleOf(::CommentPostResolver)
+
+    // Like resolvers
+    singleOf(::LikePostMutationResolver)
+    singleOf(::UnlikePostResolver)
+
+    // Like field resolvers
+    singleOf(::LikeUserResolver)
+    singleOf(::LikePostResolver)
+}
+
+/**
  * All application modules combined.
  * Use this list when starting Koin.
- * Note: Viaduct is not included as it has no injectable dependencies.
  */
 val allModules = listOf(
     configModule,
     repositoryModule,
     serviceModule,
-    serverModule
+    serverModule,
+    resolverModule
 )

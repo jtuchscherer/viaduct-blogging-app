@@ -4,7 +4,7 @@
 
 This document outlines the plan to add a comprehensive unit test suite to the viaduct-blogs application. The current codebase has no unit tests and has several testability issues that need to be addressed. We will introduce **Koin** as a dependency injection framework to make the code testable and maintainable.
 
-**Status**: 🚀 In Progress - Phase 5.5 Complete, Phase 6 Next
+**Status**: 🚀 In Progress - Phase 6 Complete, Phase 7 Next
 
 ## Current Progress (Last Updated: 2025-10-22)
 
@@ -16,6 +16,7 @@ This document outlines the plan to add a comprehensive unit test suite to the vi
 - **Phase 4: Koin Dependency Injection** - DI fully integrated with 14 tests
 - **Phase 5: Convert Singletons to Classes** - All objects converted to classes
 - **Phase 5.5: Consolidate Servers** - Auth and GraphQL servers merged into single server on port 8080
+- **Phase 6: Refactor Resolvers** - Resolvers refactored to use Koin DI with repositories
 
 ### 📊 Test Statistics
 
@@ -25,7 +26,6 @@ This document outlines the plan to add a comprehensive unit test suite to the vi
 
 ### 🎯 Next Steps
 
-- **Phase 6**: Refactor Resolvers to use repositories (remove direct database access)
 - **Phase 7**: Complete resolver unit tests
 - **Phase 8**: Add integration tests for workflows
 - **Phase 9**: Create Dockerfile for containerized deployment
@@ -528,28 +528,40 @@ return transaction {
 
 ---
 
-### Phase 6: Refactor Resolvers ⏳ TODO (Medium Risk)
+### Phase 6: Refactor Resolvers ✅ COMPLETE (Medium Risk)
 
-**Goal**: Update resolvers to use repositories instead of direct database access.
+**Goal**: Update resolvers to use repositories instead of direct database access using Koin dependency injection.
 
 #### Tasks:
 
-18. ✅ Refactor Post resolvers
-    - Update `PostMutationResolvers.kt` to use `PostRepository`
-    - Update `PostQueryResolvers.kt` to use `PostRepository`
-    - Update `PostFieldResolvers.kt` to use `UserRepository`
+18. ✅ Create KoinTenantCodeInjector
+    - Implemented custom `TenantCodeInjector` that uses Koin for DI
+    - Configured Viaduct to use Koin for resolver instantiation
 
-19. ✅ Refactor Comment resolvers
-    - Update `CommentResolvers.kt` to use `CommentRepository`
-    - Update `CommentFieldResolvers.kt` to use `UserRepository`
+19. ✅ Refactor Post resolvers
+    - Updated `PostMutationResolvers.kt` to use `PostRepository` via constructor injection
+    - Updated `PostQueryResolvers.kt` to use `PostRepository` via constructor injection
+    - Registered all Post resolvers and field resolvers with Koin
 
-20. ✅ Refactor Like resolvers
-    - Update `LikeResolvers.kt` to use `LikeRepository`
-    - Update `LikeFieldResolvers.kt` to use `LikeRepository`
+20. ✅ Refactor Comment resolvers
+    - Updated `CommentResolvers.kt` to use `CommentRepository` via constructor injection
+    - Registered all Comment resolvers and field resolvers with Koin
 
-**Note**: This requires understanding how to inject dependencies into Viaduct resolvers. May need to pass repositories via request context or use Viaduct's DI integration.
+21. ✅ Refactor Like resolvers
+    - Updated `LikeResolvers.kt` to use `LikeRepository` via constructor injection
+    - Registered all Like resolvers and field resolvers with Koin
 
-**Success Criteria**: Resolvers use repositories, no direct `transaction {}` blocks
+**Implementation**: Used Viaduct's `TenantCodeInjector` SPI with Koin for proper dependency injection. Resolvers now receive repositories via constructor parameters, eliminating the need to pass dependencies through request context.
+
+**Files Created**:
+- `src/main/kotlin/com/example/config/KoinTenantCodeInjector.kt` - Custom injector for Viaduct-Koin integration
+
+**Files Modified**:
+- `src/main/kotlin/com/example/web/GraphQLServer.kt` - Configure Viaduct with Koin injector
+- `src/main/kotlin/com/example/config/KoinModules.kt` - Register all resolvers with Koin
+- All resolver files - Added constructor parameters for repository injection
+
+**Success Criteria**: ✅ Resolvers use repositories with proper DI, all 28 e2e tests passing, all 100 unit tests passing
 
 ---
 

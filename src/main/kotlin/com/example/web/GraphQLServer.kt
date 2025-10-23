@@ -79,10 +79,11 @@ class GraphQLServer(
     private val logger = LoggerFactory.getLogger(GraphQLServer::class.java)
     private val jwtAlgorithm by lazy { Algorithm.HMAC256(jwtConfig.secret) }
 
-    // Viaduct instance - created directly as it has no injectable dependencies
+    // Viaduct instance - uses Koin for resolver dependency injection
     private val viaduct = BasicViaductFactory.create(
         tenantRegistrationInfo = TenantRegistrationInfo(
-            tenantPackagePrefix = "com.example.viadapp"
+            tenantPackagePrefix = "com.example.viadapp",
+            tenantCodeInjector = com.example.config.KoinTenantCodeInjector()
         )
     )
 
