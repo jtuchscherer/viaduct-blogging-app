@@ -157,6 +157,15 @@ class GraphQLServer(
                     }
                 }
 
+                get("/graphiql") {
+                    val resource = this::class.java.classLoader.getResource("graphiql/index.html")
+                    if (resource != null) {
+                        call.respondText(resource.readText(), ContentType.Text.Html)
+                    } else {
+                        call.respond(HttpStatusCode.NotFound, "GraphiQL not found")
+                    }
+                }
+
                 // Health check endpoint
                 get("/health") {
                     call.respond(mapOf("status" to "ok"))

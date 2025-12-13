@@ -121,14 +121,12 @@ npm run dev
 ## Viewing Logs
 
 When using `./start.sh`, logs are written to:
-- `graphql-server.log` - GraphQL server logs
-- `auth-server.log` - Auth server logs
+- `server.log` - Server logs
 - `frontend-dev.log` - Frontend dev server logs
 
 View logs in real-time:
 ```bash
-tail -f graphql-server.log
-tail -f auth-server.log
+tail -f server.log
 tail -f frontend-dev.log
 ```
 
@@ -148,6 +146,7 @@ tail -f frontend-dev.log
 - Kotlin
 - Viaduct 0.5.0 (GraphQL)
 - Ktor (HTTP & REST)
+- Koin
 - Exposed (Database ORM)
 - H2 Database (in-memory)
 - JWT Authentication
