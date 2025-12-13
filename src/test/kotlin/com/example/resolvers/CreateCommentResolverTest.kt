@@ -26,10 +26,10 @@ import java.time.LocalDateTime
 import java.util.*
 
 /**
- * Comprehensive unit tests for Comment resolvers.
+ * Comprehensive unit tests for CreateCommentResolver.
  * Tests the actual resolver logic with mocked dependencies using Viaduct's test infrastructure.
  */
-class CommentResolversTest : DefaultAbstractResolverTestBase() {
+class CreateCommentResolverTest : DefaultAbstractResolverTestBase() {
 
     private lateinit var commentRepository: CommentRepository
     private lateinit var postRepository: PostRepository
@@ -43,7 +43,6 @@ class CommentResolversTest : DefaultAbstractResolverTestBase() {
     override fun getSchema(): ViaductSchema = SchemaFactory(DefaultCoroutineInterop).fromResources()
 
     private fun queryObj() = Query.Builder(context).build()
-    private fun mutationObj() = Mutation.Builder(context).build()
 
     @BeforeEach
     fun setup() {
@@ -77,10 +76,6 @@ class CommentResolversTest : DefaultAbstractResolverTestBase() {
             })
         }
     }
-
-    // ========================================
-    // CreateCommentResolver Tests
-    // ========================================
 
     @Test
     fun `CreateCommentResolver creates comment successfully`() = runBlocking {
@@ -164,144 +159,5 @@ class CommentResolversTest : DefaultAbstractResolverTestBase() {
 
         verify { postRepository.findById(postId) }
         verify(exactly = 0) { commentRepository.create(any(), any(), any(), any()) }
-    }
-
-    // ========================================
-    // DeleteCommentResolver Tests
-    // ========================================
-
-    @Test
-    fun `DeleteCommentResolver deletes comment successfully`() = runBlocking {
-        val resolver = DeleteCommentResolver(commentRepository)
-        val args = Mutation_DeleteComment_Arguments.Builder(context)
-            .id(commentId.toString())
-            .build()
-
-        every { commentRepository.findById(commentId) } returns mockComment
-        every { mockComment.authorId } returns mockUser.id
-        every { commentRepository.delete(commentId) } returns true
-
-        val result = runMutationFieldResolver(
-            resolver = resolver,
-            queryValue = queryObj(),
-            arguments = args,
-            requestContext = RequestContext(user = mockUser)
-        )
-
-        assertTrue(result)
-        verify { commentRepository.findById(commentId) }
-        verify { commentRepository.delete(commentId) }
-    }
-
-    @Test
-    fun `DeleteCommentResolver throws exception when not authenticated`() = runBlocking {
-        val resolver = DeleteCommentResolver(commentRepository)
-        val args = Mutation_DeleteComment_Arguments.Builder(context)
-            .id(commentId.toString())
-            .build()
-
-        assertThrows<RuntimeException> {
-            runMutationFieldResolver(
-                resolver = resolver,
-                queryValue = queryObj(),
-                arguments = args,
-                requestContext = RequestContext()
-            )
-        }
-
-        verify(exactly = 0) { commentRepository.findById(any()) }
-        verify(exactly = 0) { commentRepository.delete(any()) }
-    }
-
-    @Test
-    fun `DeleteCommentResolver throws exception when comment not found`() = runBlocking {
-        val resolver = DeleteCommentResolver(commentRepository)
-        val args = Mutation_DeleteComment_Arguments.Builder(context)
-            .id(commentId.toString())
-            .build()
-
-        every { commentRepository.findById(commentId) } returns null
-
-        assertThrows<RuntimeException> {
-            runMutationFieldResolver(
-                resolver = resolver,
-                queryValue = queryObj(),
-                arguments = args,
-                requestContext = RequestContext(user = mockUser)
-            )
-        }
-
-        verify { commentRepository.findById(commentId) }
-        verify(exactly = 0) { commentRepository.delete(any()) }
-    }
-
-    @Test
-    fun `DeleteCommentResolver throws exception when user is not author`() = runBlocking {
-        val resolver = DeleteCommentResolver(commentRepository)
-        val differentUserId = UUID.randomUUID()
-        val args = Mutation_DeleteComment_Arguments.Builder(context)
-            .id(commentId.toString())
-            .build()
-
-        every { commentRepository.findById(commentId) } returns mockComment
-        every { mockComment.authorId } returns EntityID(differentUserId, mockk())
-
-        assertThrows<RuntimeException> {
-            runMutationFieldResolver(
-                resolver = resolver,
-                queryValue = queryObj(),
-                arguments = args,
-                requestContext = RequestContext(user = mockUser)
-            )
-        }
-
-        verify { commentRepository.findById(commentId) }
-        verify(exactly = 0) { commentRepository.delete(any()) }
-    }
-
-    // ========================================
-    // PostCommentsResolver Tests
-    // ========================================
-
-    @Test
-    fun `PostCommentsResolver returns comments for post`() = runBlocking {
-        val resolver = PostCommentsResolver(commentRepository)
-        val args = Query_PostComments_Arguments.Builder(context)
-            .postId(postId.toString())
-            .build()
-
-        every { commentRepository.findByPostId(any()) } returns listOf(mockComment)
-
-        val result = runFieldResolver(
-            resolver = resolver,
-            objectValue = queryObj(),
-            queryValue = queryObj(),
-            arguments = args
-        )
-
-        assertEquals(1, result.size)
-        assertEquals(commentId.toString(), result[0].getId())
-        assertEquals("Test comment content", result[0].getContent())
-        verify { commentRepository.findByPostId(any()) }
-    }
-
-    @Test
-    fun `PostCommentsResolver returns empty list when no comments exist`() = runBlocking {
-        val resolver = PostCommentsResolver(commentRepository)
-        val args = Query_PostComments_Arguments.Builder(context)
-            .postId(postId.toString())
-            .build()
-
-        every { commentRepository.findByPostId(any()) } returns emptyList()
-
-        val result = runFieldResolver(
-            resolver = resolver,
-            objectValue = queryObj(),
-            queryValue = queryObj(),
-            arguments = args
-        )
-
-        assertEquals(0, result.size)
-        verify { commentRepository.findByPostId(any()) }
     }
 }

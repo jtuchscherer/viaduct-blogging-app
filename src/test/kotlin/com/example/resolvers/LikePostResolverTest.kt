@@ -26,10 +26,10 @@ import java.time.LocalDateTime
 import java.util.*
 
 /**
- * Comprehensive unit tests for Like resolvers.
+ * Comprehensive unit tests for LikePostMutationResolver.
  * Tests the actual resolver logic with mocked dependencies using Viaduct's test infrastructure.
  */
-class LikeResolversTest : DefaultAbstractResolverTestBase() {
+class LikePostResolverTest : DefaultAbstractResolverTestBase() {
 
     private lateinit var likeRepository: LikeRepository
     private lateinit var postRepository: PostRepository
@@ -43,7 +43,6 @@ class LikeResolversTest : DefaultAbstractResolverTestBase() {
     override fun getSchema(): ViaductSchema = SchemaFactory(DefaultCoroutineInterop).fromResources()
 
     private fun queryObj() = Query.Builder(context).build()
-    private fun mutationObj() = Mutation.Builder(context).build()
 
     @BeforeEach
     fun setup() {
@@ -76,10 +75,6 @@ class LikeResolversTest : DefaultAbstractResolverTestBase() {
             })
         }
     }
-
-    // ========================================
-    // LikePostMutationResolver Tests
-    // ========================================
 
     @Test
     fun `LikePostMutationResolver creates new like successfully`() = runBlocking {
@@ -176,95 +171,5 @@ class LikeResolversTest : DefaultAbstractResolverTestBase() {
 
         verify { postRepository.findById(postId) }
         verify(exactly = 0) { likeRepository.create(any(), any(), any()) }
-    }
-
-    // ========================================
-    // UnlikePostResolver Tests
-    // ========================================
-
-    @Test
-    fun `UnlikePostResolver unlikes post successfully`() = runBlocking {
-        val resolver = UnlikePostResolver(likeRepository, postRepository)
-        val args = Mutation_UnlikePost_Arguments.Builder(context)
-            .postId(postId.toString())
-            .build()
-
-        every { postRepository.findById(postId) } returns mockPost
-        every { likeRepository.deleteByPostAndUser(mockPost.id, mockUser.id) } returns true
-
-        val result = runMutationFieldResolver(
-            resolver = resolver,
-            queryValue = queryObj(),
-            arguments = args,
-            requestContext = RequestContext(user = mockUser)
-        )
-
-        assertTrue(result)
-        verify { postRepository.findById(postId) }
-        verify { likeRepository.deleteByPostAndUser(mockPost.id, mockUser.id) }
-    }
-
-    @Test
-    fun `UnlikePostResolver returns false when like does not exist`() = runBlocking {
-        val resolver = UnlikePostResolver(likeRepository, postRepository)
-        val args = Mutation_UnlikePost_Arguments.Builder(context)
-            .postId(postId.toString())
-            .build()
-
-        every { postRepository.findById(postId) } returns mockPost
-        every { likeRepository.deleteByPostAndUser(mockPost.id, mockUser.id) } returns false
-
-        val result = runMutationFieldResolver(
-            resolver = resolver,
-            queryValue = queryObj(),
-            arguments = args,
-            requestContext = RequestContext(user = mockUser)
-        )
-
-        assertFalse(result)
-        verify { postRepository.findById(postId) }
-        verify { likeRepository.deleteByPostAndUser(mockPost.id, mockUser.id) }
-    }
-
-    @Test
-    fun `UnlikePostResolver throws exception when not authenticated`() = runBlocking {
-        val resolver = UnlikePostResolver(likeRepository, postRepository)
-        val args = Mutation_UnlikePost_Arguments.Builder(context)
-            .postId(postId.toString())
-            .build()
-
-        assertThrows<RuntimeException> {
-            runMutationFieldResolver(
-                resolver = resolver,
-                queryValue = queryObj(),
-                arguments = args,
-                requestContext = RequestContext()
-            )
-        }
-
-        verify(exactly = 0) { postRepository.findById(any()) }
-        verify(exactly = 0) { likeRepository.deleteByPostAndUser(any(), any()) }
-    }
-
-    @Test
-    fun `UnlikePostResolver throws exception when post not found`() = runBlocking {
-        val resolver = UnlikePostResolver(likeRepository, postRepository)
-        val args = Mutation_UnlikePost_Arguments.Builder(context)
-            .postId(postId.toString())
-            .build()
-
-        every { postRepository.findById(postId) } returns null
-
-        assertThrows<RuntimeException> {
-            runMutationFieldResolver(
-                resolver = resolver,
-                queryValue = queryObj(),
-                arguments = args,
-                requestContext = RequestContext(user = mockUser)
-            )
-        }
-
-        verify { postRepository.findById(postId) }
-        verify(exactly = 0) { likeRepository.deleteByPostAndUser(any(), any()) }
     }
 }
