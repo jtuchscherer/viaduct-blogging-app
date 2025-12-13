@@ -30,7 +30,8 @@ This document outlines the plan to add a comprehensive unit test suite to the vi
 ### 🎯 Next Steps
 
 - **Phase 8**: Add integration tests for workflows
-- **Phase 9**: Create Dockerfile for containerized deployment
+- **Phase 9**: Add browser-based E2E tests with Playwright
+- **Phase 10**: Create Dockerfile for containerized deployment
 
 ---
 
@@ -869,7 +870,284 @@ class AuthFlowIntegrationTest : KoinTest {
 
 ---
 
-### Phase 9: Docker Deployment ⏳ TODO (Medium Risk)
+### Phase 9: Browser-Based E2E Tests ⏳ TODO (High Value)
+
+**Goal**: Convert existing GraphQL-based e2e tests to true browser-based end-to-end tests using Playwright or Cypress, testing the complete user experience through the actual UI.
+
+**Motivation**: The current e2e tests (`e2e-test.sh`) test the GraphQL API directly with curl commands. While valuable, they don't test:
+- The React frontend rendering and interactions
+- User flows through the actual UI
+- Client-side state management
+- Form validation and error handling in the browser
+- Real user experience scenarios
+
+#### Why Playwright?
+
+**Recommendation**: ✅ **Playwright** is the best fit for this project.
+
+| Feature | Playwright | Cypress |
+|---------|------------|---------|
+| Language support | JS/TS, Python, .NET, Java | JS/TS only |
+| Browser support | Chromium, Firefox, WebKit | Chromium, Firefox, WebKit |
+| Parallel execution | Built-in | Paid feature |
+| Speed | Fast | Medium |
+| API testing | Built-in | Plugin required |
+| Mobile emulation | Excellent | Good |
+| Learning curve | Medium | Easy |
+| CI integration | Excellent | Excellent |
+
+**Playwright advantages:**
+- Native TypeScript support (matches our React frontend)
+- Built-in parallel test execution (free)
+- Auto-wait for elements (less flaky tests)
+- Built-in test generator (`npx playwright codegen`)
+- Network interception for testing error states
+- Screenshots and video recording on failure
+
+#### Tasks:
+
+29. ⏳ Set up Playwright in frontend
+    ```bash
+    cd frontend
+    npm init playwright@latest
+    ```
+    - Install Playwright and dependencies
+    - Configure `playwright.config.ts`
+    - Set up test directory structure (`frontend/e2e/`)
+    - Configure base URL and timeouts
+
+30. ⏳ Create test utilities and fixtures
+    - Create `frontend/e2e/fixtures/auth.ts` for login helper
+    - Create test user setup/teardown utilities
+    - Configure screenshot on failure
+    - Set up test data factories
+
+31. ⏳ Implement authentication flow tests
+    - **Registration flow:**
+      - Navigate to register page
+      - Fill out registration form
+      - Submit and verify redirect to login
+      - Verify success message
+    - **Login flow:**
+      - Navigate to login page
+      - Fill credentials
+      - Submit and verify redirect to home
+      - Verify user is logged in (header shows username)
+    - **Logout flow:**
+      - Click logout button
+      - Verify redirect and logged out state
+    - **Error handling:**
+      - Invalid credentials show error
+      - Duplicate username shows error
+      - Required field validation works
+
+32. ⏳ Implement blog post flow tests
+    - **Create post:**
+      - Login as user
+      - Click "New Post" button
+      - Fill title and content
+      - Submit and verify post appears
+    - **View post:**
+      - Navigate to post list
+      - Click on post title
+      - Verify post detail page shows correct content
+    - **Edit post:**
+      - Navigate to own post
+      - Click edit button
+      - Modify content
+      - Save and verify changes
+    - **Delete post:**
+      - Navigate to own post
+      - Click delete button
+      - Confirm deletion
+      - Verify post removed from list
+    - **Authorization:**
+      - Verify edit/delete buttons only show for post author
+      - Verify non-author cannot access edit page directly
+
+33. ⏳ Implement social features tests
+    - **Like/Unlike:**
+      - Login as user
+      - Navigate to a post
+      - Click like button, verify count increases
+      - Click again, verify unlike works
+    - **Comments:**
+      - Navigate to post
+      - Add comment, verify it appears
+      - Delete own comment
+      - Verify non-author cannot delete others' comments
+
+34. ⏳ Implement cross-browser testing
+    - Configure Playwright to run on Chromium, Firefox, WebKit
+    - Verify all tests pass on all browsers
+    - Set up CI matrix for browser testing
+
+#### Example Test Structure:
+
+```typescript
+// frontend/e2e/auth.spec.ts
+import { test, expect } from '@playwright/test';
+
+test.describe('Authentication', () => {
+  test('user can register and login', async ({ page }) => {
+    // Generate unique username for test isolation
+    const username = `testuser_${Date.now()}`;
+
+    // Navigate to register page
+    await page.goto('/register');
+
+    // Fill registration form
+    await page.fill('input[name="username"]', username);
+    await page.fill('input[name="email"]', `${username}@test.com`);
+    await page.fill('input[name="name"]', 'Test User');
+    await page.fill('input[name="password"]', 'password123');
+
+    // Submit
+    await page.click('button[type="submit"]');
+
+    // Verify redirect to login
+    await expect(page).toHaveURL('/login');
+
+    // Login with new credentials
+    await page.fill('input[name="username"]', username);
+    await page.fill('input[name="password"]', 'password123');
+    await page.click('button[type="submit"]');
+
+    // Verify logged in - should see username in header
+    await expect(page.locator('header')).toContainText(username);
+  });
+
+  test('login with invalid credentials shows error', async ({ page }) => {
+    await page.goto('/login');
+
+    await page.fill('input[name="username"]', 'nonexistent');
+    await page.fill('input[name="password"]', 'wrongpassword');
+    await page.click('button[type="submit"]');
+
+    // Verify error message appears
+    await expect(page.locator('.error-message')).toBeVisible();
+  });
+});
+```
+
+```typescript
+// frontend/e2e/posts.spec.ts
+import { test, expect } from '@playwright/test';
+import { login } from './fixtures/auth';
+
+test.describe('Blog Posts', () => {
+  test.beforeEach(async ({ page }) => {
+    // Login before each test
+    await login(page, 'testuser', 'password123');
+  });
+
+  test('user can create a new post', async ({ page }) => {
+    // Click new post button
+    await page.click('text=New Post');
+
+    // Fill post form
+    const title = `Test Post ${Date.now()}`;
+    await page.fill('input[name="title"]', title);
+    await page.fill('textarea[name="content"]', 'This is test content for the post.');
+
+    // Submit
+    await page.click('button[type="submit"]');
+
+    // Verify post was created - should redirect to post detail
+    await expect(page.locator('h1')).toContainText(title);
+  });
+
+  test('user can like and unlike a post', async ({ page }) => {
+    // Navigate to a post
+    await page.goto('/');
+    await page.click('.post-card h2 a >> nth=0');
+
+    // Get initial like count
+    const likeButton = page.locator('button:has-text("Like")');
+    const initialText = await likeButton.textContent();
+
+    // Click like
+    await likeButton.click();
+
+    // Verify count changed
+    await expect(likeButton).not.toHaveText(initialText!);
+  });
+});
+```
+
+#### Playwright Configuration:
+
+```typescript
+// frontend/playwright.config.ts
+import { defineConfig, devices } from '@playwright/test';
+
+export default defineConfig({
+  testDir: './e2e',
+  fullyParallel: true,
+  forbidOnly: !!process.env.CI,
+  retries: process.env.CI ? 2 : 0,
+  workers: process.env.CI ? 1 : undefined,
+  reporter: 'html',
+
+  use: {
+    baseURL: 'http://localhost:5173',
+    trace: 'on-first-retry',
+    screenshot: 'only-on-failure',
+  },
+
+  projects: [
+    {
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'firefox',
+      use: { ...devices['Desktop Firefox'] },
+    },
+    {
+      name: 'webkit',
+      use: { ...devices['Desktop Safari'] },
+    },
+  ],
+
+  // Start dev server before running tests
+  webServer: {
+    command: 'npm run dev',
+    url: 'http://localhost:5173',
+    reuseExistingServer: !process.env.CI,
+  },
+});
+```
+
+#### Migration Plan:
+
+1. **Keep existing `e2e-test.sh`** - These GraphQL API tests are still valuable for:
+   - Fast API regression testing
+   - CI/CD pipeline (faster than browser tests)
+   - Testing API edge cases without UI
+
+2. **Add Playwright tests incrementally** - Start with critical user flows:
+   - Authentication (register, login, logout)
+   - Post CRUD (create, read, update, delete)
+   - Social features (likes, comments)
+
+3. **Run both test suites** - Different purposes:
+   - `e2e-test.sh`: API contract testing (fast, ~30s)
+   - Playwright: User experience testing (slower, ~2-3 min)
+
+**Success Criteria**:
+- Playwright installed and configured in frontend
+- 15-20 browser-based E2E tests covering all major user flows
+- Tests pass on Chromium, Firefox, and WebKit
+- All tests isolated (no shared state between tests)
+- Screenshots/videos captured on failure
+- Tests run in <3 minutes total
+- Existing `e2e-test.sh` tests still passing (28 tests)
+- CI-ready configuration
+
+---
+
+### Phase 10: Docker Deployment ⏳ TODO (Medium Risk)
 
 **Goal**: Create Docker container for easy deployment and distribution.
 
@@ -881,29 +1159,29 @@ class AuthFlowIntegrationTest : KoinTest {
 
 #### Tasks:
 
-29. ⏳ Create Dockerfile
+35. ⏳ Create Dockerfile
     - Use multi-stage build to optimize image size
     - Stage 1: Build with Gradle (include all build dependencies)
     - Stage 2: Runtime with minimal JRE
     - Copy compiled JAR and resources to runtime stage
 
-30. ⏳ Configure application for Docker
+36. ⏳ Configure application for Docker
     - Make database path configurable via environment variables
     - Support SQLite database in Docker volume
     - Configure server ports via environment variables
     - Add health check endpoint support
 
-31. ⏳ Create .dockerignore file
+37. ⏳ Create .dockerignore file
     - Exclude build artifacts, node_modules, etc.
     - Reduce build context size
 
-32. ⏳ Add docker-compose.yml (optional)
+38. ⏳ Add docker-compose.yml (optional)
     - Define application service
     - Set up volume for database persistence
     - Configure environment variables
     - Optional: Include frontend service
 
-33. ⏳ Update README with Docker instructions
+39. ⏳ Update README with Docker instructions
     - How to build Docker image
     - How to run container
     - Environment variable documentation
@@ -967,15 +1245,18 @@ ENTRYPOINT ["java", "-jar", "app.jar"]
 ### Test Pyramid
 
 ```
-      /\
-     /  \      E2E Tests (28 tests via e2e-test.sh)
-    /____\     ↑ Existing, keep as regression suite
-   /      \
-  /        \   Integration Tests (10-15 tests)
- /__________\  ↑ Test with real DB, test workflows
-/            \
-/   Unit      \ Unit Tests (50+ tests)
-/    Tests     \↑ Test individual components
+        /\
+       /  \     Browser E2E Tests (15-20 Playwright tests)
+      /____\    ↑ Test real user experience through UI
+     /      \
+    /        \   API E2E Tests (28 tests via e2e-test.sh)
+   /__________\  ↑ Test GraphQL API contracts
+  /            \
+ /  Integration \ Integration Tests (10-15 tests)
+/________________\↑ Test with real DB, test workflows
+/                  \
+/    Unit Tests     \ Unit Tests (133+ tests)
+/____________________\↑ Test individual components
 ```
 
 ### Test Types
@@ -984,7 +1265,7 @@ ENTRYPOINT ["java", "-jar", "app.jar"]
    - Services: Test business logic with mocked dependencies
    - Repositories: Test with in-memory H2 database
    - Utilities: Test pure functions (PasswordService)
-   - Goal: 50+ tests, <1 second total runtime
+   - Goal: 133+ tests, <3 seconds total runtime
 
 2. **Integration Tests** (Medium speed)
    - Test multiple components together
@@ -992,11 +1273,17 @@ ENTRYPOINT ["java", "-jar", "app.jar"]
    - Test complete workflows
    - Goal: 10-15 tests, <5 seconds total runtime
 
-3. **E2E Tests** (Slow, Comprehensive)
+3. **API E2E Tests** (Medium-slow)
    - Keep existing 28 tests in `e2e-test.sh`
-   - Test full stack with real database
+   - Test GraphQL API contracts directly with curl
+   - Run on every commit
+   - Goal: Maintain current 28 tests, <30 seconds runtime
+
+4. **Browser E2E Tests** (Slow, Comprehensive)
+   - Test real user experience through Playwright
+   - Cross-browser testing (Chromium, Firefox, WebKit)
    - Run less frequently (pre-commit, CI/CD)
-   - Goal: Maintain current 28 tests
+   - Goal: 15-20 tests, <3 minutes total runtime
 
 ### Test Configuration
 
@@ -1037,12 +1324,22 @@ fun testKoinModule() = module {
 - ✅ Resolver smoke tests (20 tests covering all resolvers)
 - ✅ Good code coverage for core business logic
 
-### Phase 8 Complete (Final) ⏳ TODO
+### Phase 8 Complete ⏳ TODO
 - ⏳ 10-15 integration tests passing
-- ✅ All 28 e2e tests still passing
-- ✅ 100+ unit tests (achieved)
+- ✅ All 28 API e2e tests still passing
+- ✅ 133 unit tests (achieved)
 - ⏳ Integration test suite
 - ⏳ Test suite runs in <10 seconds (currently ~3s for unit tests)
+
+### Phase 9 Complete ⏳ TODO
+- ⏳ 15-20 browser E2E tests passing
+- ⏳ Tests pass on Chromium, Firefox, WebKit
+- ⏳ Playwright configuration complete
+- ✅ All 28 API e2e tests still passing (maintained)
+
+### Phase 10 Complete ⏳ TODO
+- ⏳ Docker image builds successfully
+- ⏳ All tests pass in Dockerized environment
 - ⏳ CI/CD ready
 
 ---
@@ -1080,16 +1377,16 @@ fun testKoinModule() = module {
 
 ## Implementation Order (Recommended)
 
-1. **Start here**: Phase 1 (Setup) - Zero risk
-2. **Then**: Phase 2 (Repositories) - Learn pattern, get quick wins
-3. **Then**: Phase 3 (Services) - Build on repository pattern
-4. **Then**: Phase 4 (Koin modules) - Wire everything together
-5. **Then**: Phase 5 (Singletons) - Big refactor, test thoroughly
-6. **Then**: Phase 6 (Resolvers) - May require research
-7. **Then**: Phase 7 (Unit tests) - Write tests as you go
-8. **Finally**: Phase 8 (Integration tests) - Validate everything works
-
-**Estimated Timeline**: 2-3 days for full implementation
+1. ✅ **Phase 1** (Setup) - Zero risk
+2. ✅ **Phase 2** (Repositories) - Learn pattern, get quick wins
+3. ✅ **Phase 3** (Services) - Build on repository pattern
+4. ✅ **Phase 4** (Koin modules) - Wire everything together
+5. ✅ **Phase 5** (Singletons) - Big refactor, test thoroughly
+6. ✅ **Phase 6** (Resolvers) - May require research
+7. ✅ **Phase 7** (Unit tests) - Write tests as you go
+8. ⏳ **Phase 8** (Integration tests) - Validate component interactions
+9. ⏳ **Phase 9** (Browser E2E tests) - Test real user experience
+10. ⏳ **Phase 10** (Docker) - Containerize for deployment
 
 ---
 
