@@ -146,7 +146,7 @@ tail -f frontend-dev.log
 - Kotlin
 - Viaduct 0.5.0 (GraphQL)
 - Ktor (HTTP & REST)
-- Koin
+- Koin (Dependency Injection)
 - Exposed (Database ORM)
 - H2 Database (in-memory)
 - JWT Authentication
