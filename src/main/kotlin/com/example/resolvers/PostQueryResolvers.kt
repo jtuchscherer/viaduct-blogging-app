@@ -1,8 +1,8 @@
 package com.example.viadapp.resolvers
 
+import com.example.auth.RequestContext
 import com.example.database.repositories.PostRepository
 import com.example.viadapp.resolvers.resolverbases.QueryResolvers
-import com.example.web.GraphQLServer
 import viaduct.api.Resolver
 import viaduct.api.grts.Post as ViaductPost
 import java.util.*
@@ -47,8 +47,10 @@ class MyPostsResolver(
     private val postRepository: PostRepository
 ) : QueryResolvers.MyPosts() {
     override suspend fun resolve(ctx: Context): List<ViaductPost> {
-        val authenticatedUser = (ctx.requestContext as? Map<*, *>)?.get(GraphQLServer.AUTHENTICATED_USER_KEY) as? com.example.database.User
+        val requestContext = ctx.requestContext as? RequestContext
             ?: throw RuntimeException("Authentication required. Please provide a valid JWT token.")
+        val authenticatedUser =
+            requestContext.user ?: throw RuntimeException("Authentication required. Please provide a valid JWT token.")
 
         return postRepository.findByAuthorId(authenticatedUser.id).map { post ->
             ViaductPost.Builder(ctx)

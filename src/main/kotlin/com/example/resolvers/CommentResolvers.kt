@@ -1,10 +1,10 @@
 package com.example.viadapp.resolvers
 
+import com.example.auth.RequestContext
 import com.example.database.repositories.CommentRepository
 import com.example.database.repositories.PostRepository
 import com.example.viadapp.resolvers.resolverbases.MutationResolvers
 import com.example.viadapp.resolvers.resolverbases.QueryResolvers
-import com.example.web.GraphQLServer
 import org.jetbrains.exposed.dao.id.EntityID
 import viaduct.api.Resolver
 import viaduct.api.grts.Comment as ViaductComment
@@ -18,8 +18,10 @@ class CreateCommentResolver(
 ) : MutationResolvers.CreateComment() {
     override suspend fun resolve(ctx: Context): ViaductComment {
         val input = ctx.arguments.input
-        val authenticatedUser = (ctx.requestContext as? Map<*, *>)?.get(GraphQLServer.AUTHENTICATED_USER_KEY) as? com.example.database.User
+        val requestContext = ctx.requestContext as? RequestContext
             ?: throw RuntimeException("Authentication required. Please provide a valid JWT token.")
+        val authenticatedUser =
+            requestContext.user ?: throw RuntimeException("Authentication required. Please provide a valid JWT token.")
 
         val postId = UUID.fromString(input.postId)
         val post = postRepository.findById(postId)
@@ -46,8 +48,10 @@ class DeleteCommentResolver(
 ) : MutationResolvers.DeleteComment() {
     override suspend fun resolve(ctx: Context): Boolean {
         val commentId = UUID.fromString(ctx.arguments.id)
-        val authenticatedUser = (ctx.requestContext as? Map<*, *>)?.get(GraphQLServer.AUTHENTICATED_USER_KEY) as? com.example.database.User
+        val requestContext = ctx.requestContext as? RequestContext
             ?: throw RuntimeException("Authentication required. Please provide a valid JWT token.")
+        val authenticatedUser =
+            requestContext.user ?: throw RuntimeException("Authentication required. Please provide a valid JWT token.")
 
         val comment = commentRepository.findById(commentId)
             ?: throw RuntimeException("Comment not found")

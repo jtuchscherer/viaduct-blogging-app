@@ -72,9 +72,6 @@ class GraphQLServer(
     private val jwtConfig: JwtConfig,
     private val serverConfig: ServerConfig
 ) {
-    companion object {
-        const val AUTHENTICATED_USER_KEY = "authenticatedUser"
-    }
 
     private val logger = LoggerFactory.getLogger(GraphQLServer::class.java)
     private val jwtAlgorithm by lazy { Algorithm.HMAC256(jwtConfig.secret) }
@@ -132,17 +129,15 @@ class GraphQLServer(
                         // Get user from token if present (null if no token or invalid)
                         val user = token?.let { jwtService.getUserFromToken(it) }
 
-                        // Create context map with authenticated user
-                        val contextMap = mapOf<String, Any?>(
-                            AUTHENTICATED_USER_KEY to user
-                        )
+                        // Create request context with authenticated user (if present)
+                        val requestContext = user?.let { com.example.auth.RequestContext(user = it) }
 
                         // Execute GraphQL query using Viaduct 0.5.0 API
-                        // Pass the context map through requestContext
+                        // Pass the request context through requestContext
                         val executionInput = ExecutionInput.create(
                             operationText = graphqlRequest.query,
                             variables = graphqlRequest.variables ?: emptyMap(),
-                            requestContext = contextMap
+                            requestContext = requestContext
                         )
 
                         val result = viaduct.execute(executionInput)

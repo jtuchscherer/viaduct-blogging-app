@@ -1,10 +1,10 @@
 package com.example.viadapp.resolvers
 
+import com.example.auth.RequestContext
 import com.example.database.Like as DatabaseLike
 import com.example.database.Likes
 import com.example.database.Post as DatabasePost
 import com.example.viadapp.resolvers.resolverbases.PostResolvers
-import com.example.web.GraphQLServer
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.transactions.transaction
 import viaduct.api.Resolver
@@ -47,7 +47,7 @@ class PostIsLikedByMeResolver : PostResolvers.IsLikedByMe() {
         val postId = UUID.fromString(postIdString)
 
         // Get authenticated user (optional for this field)
-        val user = (ctx.requestContext as? Map<*, *>)?.get(GraphQLServer.AUTHENTICATED_USER_KEY) as? com.example.database.User
+        val user = (ctx.requestContext as? RequestContext)?.user
 
         if (user == null) {
             return false

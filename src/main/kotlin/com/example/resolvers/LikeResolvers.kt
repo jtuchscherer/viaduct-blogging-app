@@ -1,9 +1,9 @@
 package com.example.viadapp.resolvers
 
+import com.example.auth.RequestContext
 import com.example.database.repositories.LikeRepository
 import com.example.database.repositories.PostRepository
 import com.example.viadapp.resolvers.resolverbases.MutationResolvers
-import com.example.web.GraphQLServer
 import viaduct.api.Resolver
 import viaduct.api.grts.Like as ViaductLike
 import java.time.LocalDateTime
@@ -16,8 +16,10 @@ class LikePostMutationResolver(
 ) : MutationResolvers.LikePost() {
     override suspend fun resolve(ctx: Context): ViaductLike {
         val postId = UUID.fromString(ctx.arguments.postId)
-        val authenticatedUser = (ctx.requestContext as? Map<*, *>)?.get(GraphQLServer.AUTHENTICATED_USER_KEY) as? com.example.database.User
+        val requestContext = ctx.requestContext as? RequestContext
             ?: throw RuntimeException("Authentication required. Please provide a valid JWT token.")
+        val authenticatedUser =
+            requestContext.user ?: throw RuntimeException("Authentication required. Please provide a valid JWT token.")
 
         val post = postRepository.findById(postId)
             ?: throw RuntimeException("Post not found")
@@ -54,8 +56,10 @@ class UnlikePostResolver(
 ) : MutationResolvers.UnlikePost() {
     override suspend fun resolve(ctx: Context): Boolean {
         val postId = UUID.fromString(ctx.arguments.postId)
-        val authenticatedUser = (ctx.requestContext as? Map<*, *>)?.get(GraphQLServer.AUTHENTICATED_USER_KEY) as? com.example.database.User
+        val requestContext = ctx.requestContext as? RequestContext
             ?: throw RuntimeException("Authentication required. Please provide a valid JWT token.")
+        val authenticatedUser =
+            requestContext.user ?: throw RuntimeException("Authentication required. Please provide a valid JWT token.")
 
         val post = postRepository.findById(postId)
             ?: throw RuntimeException("Post not found")
