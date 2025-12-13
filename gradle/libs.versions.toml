@@ -1,5 +1,5 @@
 [versions]
-viaduct = "0.5.0"
+viaduct = "0.14.0"
 kotlin = "2.2.20"
 ktor = "3.3.1"
 koin = "4.1.1"
