@@ -15,9 +15,14 @@ interface CommentRepository {
     fun findById(id: UUID): Comment?
 
     /**
-     * Find all comments for a specific post.
+     * Find all comments for a specific post by EntityID.
      */
     fun findByPostId(postId: EntityID<UUID>): List<Comment>
+
+    /**
+     * Find all comments for a specific post by UUID.
+     */
+    fun findByPostId(postId: UUID): List<Comment>
 
     /**
      * Find all comments by a specific author.
@@ -48,4 +53,16 @@ interface CommentRepository {
      * Count comments for a post.
      */
     fun countByPostId(postId: EntityID<UUID>): Long
+
+    /**
+     * Get the author (User) for a comment by comment ID.
+     * Returns null if comment not found.
+     */
+    fun getAuthorForComment(commentId: UUID): com.example.database.User?
+
+    /**
+     * Get the post for a comment by comment ID.
+     * Returns null if comment not found.
+     */
+    fun getPostForComment(commentId: UUID): com.example.database.Post?
 }

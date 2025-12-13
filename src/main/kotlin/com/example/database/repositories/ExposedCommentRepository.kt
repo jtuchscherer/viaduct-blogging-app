@@ -20,6 +20,10 @@ class ExposedCommentRepository : CommentRepository {
         Comment.find { Comments.postId eq postId }.toList()
     }
 
+    override fun findByPostId(postId: UUID): List<Comment> = transaction {
+        Comment.find { Comments.postId eq postId }.toList()
+    }
+
     override fun findByAuthorId(authorId: EntityID<UUID>): List<Comment> = transaction {
         Comment.find { Comments.authorId eq authorId }.toList()
     }
@@ -56,5 +60,13 @@ class ExposedCommentRepository : CommentRepository {
 
     override fun countByPostId(postId: EntityID<UUID>): Long = transaction {
         Comment.find { Comments.postId eq postId }.count()
+    }
+
+    override fun getAuthorForComment(commentId: UUID): com.example.database.User? = transaction {
+        Comment.findById(commentId)?.author
+    }
+
+    override fun getPostForComment(commentId: UUID): com.example.database.Post? = transaction {
+        Comment.findById(commentId)?.post
     }
 }

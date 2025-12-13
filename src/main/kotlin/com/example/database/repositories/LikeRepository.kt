@@ -15,9 +15,14 @@ interface LikeRepository {
     fun findById(id: UUID): Like?
 
     /**
-     * Find all likes for a specific post.
+     * Find all likes for a specific post by EntityID.
      */
     fun findByPostId(postId: EntityID<UUID>): List<Like>
+
+    /**
+     * Find all likes for a specific post by UUID.
+     */
+    fun findByPostId(postId: UUID): List<Like>
 
     /**
      * Find all likes by a specific user.
@@ -54,7 +59,29 @@ interface LikeRepository {
     fun deleteByPostAndUser(postId: EntityID<UUID>, userId: EntityID<UUID>): Boolean
 
     /**
-     * Count likes for a post.
+     * Count likes for a post by EntityID.
      */
     fun countByPostId(postId: EntityID<UUID>): Long
+
+    /**
+     * Count likes for a post by UUID.
+     */
+    fun countByPostId(postId: UUID): Long
+
+    /**
+     * Check if a user has liked a specific post by UUIDs.
+     */
+    fun existsByPostAndUser(postId: UUID, userId: UUID): Boolean
+
+    /**
+     * Get the user who created a like by like ID.
+     * Returns null if like not found.
+     */
+    fun getUserForLike(likeId: UUID): com.example.database.User?
+
+    /**
+     * Get the post for a like by like ID.
+     * Returns null if like not found.
+     */
+    fun getPostForLike(likeId: UUID): com.example.database.Post?
 }

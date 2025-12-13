@@ -77,4 +77,8 @@ class ExposedPostRepository : PostRepository {
     override fun countByAuthor(authorId: EntityID<UUID>): Long = transaction {
         Post.find { Posts.authorId eq authorId }.count()
     }
+
+    override fun getAuthorForPost(postId: UUID): com.example.database.User? = transaction {
+        Post.findById(postId)?.author
+    }
 }

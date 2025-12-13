@@ -1,47 +1,46 @@
 package com.example.viadapp.resolvers
 
 import com.example.auth.RequestContext
-import com.example.database.Like as DatabaseLike
-import com.example.database.Likes
-import com.example.database.Post as DatabasePost
+import com.example.database.repositories.LikeRepository
 import com.example.viadapp.resolvers.resolverbases.PostResolvers
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.koin.java.KoinJavaComponent.inject
 import viaduct.api.Resolver
 import viaduct.api.grts.Like as ViaductLike
 import java.util.*
 
 @Resolver(objectValueFragment = "fragment _ on Post { id }")
 class PostLikesResolver : PostResolvers.Likes() {
+    private val likeRepository: LikeRepository by inject(LikeRepository::class.java)
+
     override suspend fun resolve(ctx: Context): List<ViaductLike> {
         val postIdString = ctx.objectValue.getId()
         val postId = UUID.fromString(postIdString)
 
-        return transaction {
-            DatabaseLike.find { Likes.postId eq postId }.map { like ->
-                ViaductLike.Builder(ctx)
-                    .id(like.id.value.toString())
-                    .createdAt(like.createdAt.toString())
-                    .build()
-            }
+        return likeRepository.findByPostId(postId).map { like ->
+            ViaductLike.Builder(ctx)
+                .id(like.id.value.toString())
+                .createdAt(like.createdAt.toString())
+                .build()
         }
     }
 }
 
 @Resolver(objectValueFragment = "fragment _ on Post { id }")
 class PostLikeCountResolver : PostResolvers.LikeCount() {
+    private val likeRepository: LikeRepository by inject(LikeRepository::class.java)
+
     override suspend fun resolve(ctx: Context): Int {
         val postIdString = ctx.objectValue.getId()
         val postId = UUID.fromString(postIdString)
 
-        return transaction {
-            DatabaseLike.find { Likes.postId eq postId }.count().toInt()
-        }
+        return likeRepository.countByPostId(postId).toInt()
     }
 }
 
 @Resolver(objectValueFragment = "fragment _ on Post { id }")
 class PostIsLikedByMeResolver : PostResolvers.IsLikedByMe() {
+    private val likeRepository: LikeRepository by inject(LikeRepository::class.java)
+
     override suspend fun resolve(ctx: Context): Boolean {
         val postIdString = ctx.objectValue.getId()
         val postId = UUID.fromString(postIdString)
@@ -53,10 +52,6 @@ class PostIsLikedByMeResolver : PostResolvers.IsLikedByMe() {
             return false
         }
 
-        return transaction {
-            DatabaseLike.find {
-                (Likes.postId eq postId) and (Likes.userId eq user.id)
-            }.count() > 0
-        }
+        return likeRepository.existsByPostAndUser(postId, user.id.value)
     }
 }

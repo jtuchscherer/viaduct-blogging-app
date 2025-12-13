@@ -64,4 +64,10 @@ interface PostRepository {
      * Count posts by author.
      */
     fun countByAuthor(authorId: EntityID<UUID>): Long
+
+    /**
+     * Get the author (User) for a post by post ID.
+     * Returns null if post not found.
+     */
+    fun getAuthorForPost(postId: UUID): com.example.database.User?
 }

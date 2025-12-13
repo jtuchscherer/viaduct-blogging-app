@@ -64,7 +64,7 @@ class PostCommentsResolverTest : DefaultAbstractResolverTestBase() {
             .postId(postId.toString())
             .build()
 
-        every { commentRepository.findByPostId(any()) } returns listOf(mockComment)
+        every { commentRepository.findByPostId(any<EntityID<UUID>>()) } returns listOf(mockComment)
 
         val result = runFieldResolver(
             resolver = resolver,
@@ -76,7 +76,7 @@ class PostCommentsResolverTest : DefaultAbstractResolverTestBase() {
         assertEquals(1, result.size)
         assertEquals(commentId.toString(), result[0].getId())
         assertEquals("Test comment content", result[0].getContent())
-        verify { commentRepository.findByPostId(any()) }
+        verify { commentRepository.findByPostId(any<EntityID<UUID>>()) }
     }
 
     @Test
@@ -86,7 +86,7 @@ class PostCommentsResolverTest : DefaultAbstractResolverTestBase() {
             .postId(postId.toString())
             .build()
 
-        every { commentRepository.findByPostId(any()) } returns emptyList()
+        every { commentRepository.findByPostId(any<EntityID<UUID>>()) } returns emptyList()
 
         val result = runFieldResolver(
             resolver = resolver,
@@ -96,6 +96,6 @@ class PostCommentsResolverTest : DefaultAbstractResolverTestBase() {
         )
 
         assertEquals(0, result.size)
-        verify { commentRepository.findByPostId(any()) }
+        verify { commentRepository.findByPostId(any<EntityID<UUID>>()) }
     }
 }
