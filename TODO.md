@@ -4,9 +4,9 @@
 
 This document outlines the plan to add a comprehensive unit test suite to the viaduct-blogs application. The current codebase has no unit tests and has several testability issues that need to be addressed. We will introduce **Koin** as a dependency injection framework to make the code testable and maintainable.
 
-**Status**: 🚀 In Progress - Phase 7 Complete, Phase 8 Next
+**Status**: 🚀 In Progress - Phase 7 Complete + Transaction Refactoring Complete, Phase 8 Next
 
-## Current Progress (Last Updated: 2025-10-22)
+## Current Progress (Last Updated: 2025-12-12)
 
 ### ✅ Completed Phases
 
@@ -17,18 +17,99 @@ This document outlines the plan to add a comprehensive unit test suite to the vi
 - **Phase 5: Convert Singletons to Classes** - All objects converted to classes
 - **Phase 5.5: Consolidate Servers** - Auth and GraphQL servers merged into single server on port 8080
 - **Phase 6: Refactor Resolvers** - Resolvers refactored to use Koin DI with repositories
-- **Phase 7: Resolver Unit Tests** - Smoke tests added for all resolvers (20 tests)
+- **Phase 7: Resolver Unit Tests** - Comprehensive unit tests for all resolvers (133 tests)
+- **Phase 7.5: Transaction Refactoring** - All transaction handling moved from resolvers to repositories
+- **Phase 7.6: Frontend Bug Fixes** - Fixed header width CSS issues
 
 ### 📊 Test Statistics
 
-- **Total Unit Tests**: 124 (all passing)
+- **Total Unit Tests**: 133 (all passing)
 - **E2E Tests**: 28 (all passing)
-- **Total Tests**: 152
+- **Total Tests**: 161
 
 ### 🎯 Next Steps
 
 - **Phase 8**: Add integration tests for workflows
 - **Phase 9**: Create Dockerfile for containerized deployment
+
+---
+
+## Recent Work (2025-12-12)
+
+### Phase 7 Enhancement: Comprehensive Resolver Unit Tests
+
+**Completed:**
+- Broke out monolithic resolver test files into individual test files per resolver
+- Rewrote smoke tests into comprehensive unit tests with full coverage
+- Each resolver now has dedicated test file with multiple test cases
+
+**Files Created:**
+- `CreatePostResolverTest.kt` - Tests for CreatePostMutationResolver (3 tests)
+- `UpdatePostResolverTest.kt` - Tests for UpdatePostMutationResolver (4 tests)
+- `DeletePostResolverTest.kt` - Tests for DeletePostMutationResolver (4 tests)
+- `PostsResolverTest.kt` - Tests for PostsResolver query (2 tests)
+- `PostResolverTest.kt` - Tests for single post query (2 tests)
+- `MyPostsResolverTest.kt` - Tests for user's posts query (3 tests)
+- `LikePostResolverTest.kt` - Tests for like mutation (4 tests)
+- `UnlikePostResolverTest.kt` - Tests for unlike mutation (4 tests)
+- `CreateCommentResolverTest.kt` - Tests for comment creation (3 tests)
+- `DeleteCommentResolverTest.kt` - Tests for comment deletion (4 tests)
+- `PostCommentsResolverTest.kt` - Tests for post comments query (2 tests)
+
+**Files Deleted:**
+- `PostResolversTest.kt` - Split into individual files
+- `LikeResolversTest.kt` - Split into individual files
+- `CommentResolversTest.kt` - Split into individual files
+
+**Test Coverage:**
+- All tests use MockK for mocking repositories
+- Tests cover authentication, authorization, success paths, and error cases
+- Tests follow Viaduct's `DefaultAbstractResolverTestBase` pattern
+- Total: 133 unit tests (all passing)
+
+### Phase 7.5: Transaction Refactoring
+
+**Goal:** Move all database transaction handling from resolvers to repositories for better testability.
+
+**Completed:**
+- Added repository methods for entity navigation:
+  - `CommentRepository`: `getAuthorForComment()`, `getPostForComment()`, `findByPostId(UUID)`
+  - `PostRepository`: `getAuthorForPost()`
+  - `LikeRepository`: `getUserForLike()`, `getPostForLike()`, `findByPostId(UUID)`, `countByPostId(UUID)`, `existsByPostAndUser(UUID, UUID)`
+
+**Resolvers Refactored:**
+- `CommentFieldResolvers.kt` - CommentAuthorResolver, CommentPostResolver now use repositories
+- `PostFieldResolvers.kt` - PostAuthorResolver, PostCommentsFieldResolver now use repositories
+- `LikeFieldResolvers.kt` - PostLikesResolver, PostLikeCountResolver, PostIsLikedByMeResolver now use repositories
+- `LikeObjectFieldResolvers.kt` - LikeUserResolver, LikePostResolver now use repositories
+
+**Result:**
+- Zero `transaction {}` blocks in resolver code (only in comments)
+- All transaction handling now in repository layer
+- Resolvers fully testable without database
+- All 133 unit tests passing
+- All 28 e2e tests passing
+
+### Phase 7.6: Frontend CSS Fixes
+
+**Issue:** Header not taking full width of browser window, Register button cut off at right edge.
+
+**Root Cause:**
+- `body` had `display: flex` and `place-items: center` causing app to be centered rather than full width
+- `.container` class had `width: 100%` with padding but no `box-sizing: border-box`, causing overflow
+
+**Fixes:**
+1. `frontend/src/index.css`:
+   - Removed `display: flex` and `place-items: center` from body
+   - Added `#root { width: 100%; min-height: 100vh; }`
+
+2. `frontend/src/App.css`:
+   - Added `box-sizing: border-box` to `.container` class
+
+**Result:**
+- Header now spans full window width
+- All navigation elements properly contained with correct padding
+- No content overflow or cutoff
 
 ---
 
@@ -681,28 +762,110 @@ return transaction {
 
 ---
 
-### Phase 8: Integration Tests ⏳ TODO (High Value)
+### Phase 8: Integration Tests ⏳ READY TO START (High Value)
 
-**Goal**: Test complete workflows with real dependencies.
+**Goal**: Test complete workflows with real dependencies to validate end-to-end functionality at the service layer.
+
+**Status**: All prerequisites complete. Unit tests (133) and e2e tests (28) passing. Ready to add integration tests.
+
+#### What are Integration Tests?
+
+Integration tests sit between unit tests and e2e tests:
+- **Unit tests**: Test individual components with mocked dependencies (133 tests ✅)
+- **Integration tests**: Test multiple components working together with real database (H2 in-memory)
+- **E2E tests**: Test full stack through HTTP/GraphQL APIs (28 tests ✅)
 
 #### Tasks:
 
-26. ✅ Write integration tests for authentication flow
-    - Register user → Login → Get user info
-    - Test with real database (H2 in-memory)
-    - Test JWT token generation and validation
+26. ⏳ Write integration tests for authentication flow
+    - Test complete user registration → login → token validation flow
+    - Use real services (AuthenticationService, JwtService) with real repositories
+    - Test with H2 in-memory database
+    - Verify password hashing, JWT generation, and user retrieval
+    - **Example test scenarios:**
+      - Register new user → verify user created in DB → login → verify JWT token valid
+      - Register duplicate username → verify error thrown
+      - Login with wrong password → verify authentication fails
+      - Get user from valid JWT token → verify correct user returned
 
-27. ✅ Write integration tests for blog features
-    - Create post → Update post → Delete post
-    - Create comment → Delete comment
-    - Like post → Unlike post
-    - Test authorization (can only edit own posts)
+27. ⏳ Write integration tests for blog features
+    - Test complete workflows with real services and repositories
+    - Use H2 in-memory database
+    - **Example test scenarios:**
+      - Create post → verify in DB → update post → verify changes → delete post → verify removed
+      - User1 creates post → User2 attempts to update → verify authorization failure
+      - Create post → add comments → like post → verify all relationships in DB
+      - Delete post → verify cascading deletes (comments, likes)
+    - **Suggested test file**: `BlogWorkflowIntegrationTest.kt`
 
 28. ✅ Keep existing e2e tests as regression suite
-    - Ensure all 28 e2e tests still pass
-    - E2E tests cover the full stack
+    - All 28 e2e tests passing ✅
+    - E2E tests cover the full stack through HTTP/GraphQL
+    - Run e2e tests before each commit
 
-**Success Criteria**: Integration tests pass, e2e tests pass, full stack tested
+#### Implementation Guidelines:
+
+**Test Structure:**
+```kotlin
+@ExtendWith(KoinTestExtension::class)
+class AuthFlowIntegrationTest : KoinTest {
+    private lateinit var authService: AuthenticationService
+    private lateinit var jwtService: JwtService
+    private lateinit var userRepository: UserRepository
+
+    @BeforeEach
+    fun setup() {
+        // Setup H2 in-memory database
+        DatabaseTestHelper.setupTestDatabase()
+
+        // Get real services from Koin
+        authService = get()
+        jwtService = get()
+        userRepository = get()
+    }
+
+    @Test
+    fun `complete user registration and login flow`() {
+        // Register user
+        val user = authService.createUser(
+            username = "testuser",
+            email = "test@example.com",
+            name = "Test User",
+            password = "password123"
+        )
+
+        // Verify user in database
+        val dbUser = userRepository.findByUsername("testuser")
+        assertNotNull(dbUser)
+
+        // Login
+        val authenticatedUser = authService.authenticateUser("testuser", "password123")
+        assertNotNull(authenticatedUser)
+
+        // Generate JWT
+        val token = jwtService.generateToken(user.username, user.id.value.toString())
+
+        // Verify JWT
+        val userFromToken = jwtService.getUserFromToken(token)
+        assertEquals(user.id, userFromToken?.id)
+    }
+}
+```
+
+**Benefits of Integration Tests:**
+- Catch issues in component interactions
+- Validate database constraints and relationships
+- Test transaction boundaries
+- Faster than e2e tests (no HTTP/GraphQL overhead)
+- More realistic than unit tests (real database)
+
+**Success Criteria**:
+- 10-15 integration tests implemented
+- All integration tests passing
+- Test complete workflows (auth, blog CRUD, comments, likes)
+- All 133 unit tests still passing
+- All 28 e2e tests still passing
+- Integration tests run in <5 seconds
 
 ---
 
@@ -1026,6 +1189,6 @@ cat TODO.md
 
 ---
 
-**Document Status**: ✅ Ready for Implementation
-**Last Updated**: 2025-10-21
+**Document Status**: ✅ Actively Maintained
+**Last Updated**: 2025-12-12
 **Author**: Claude Code (with human review)
