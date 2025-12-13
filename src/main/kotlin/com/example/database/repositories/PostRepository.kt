@@ -41,6 +41,16 @@ interface PostRepository {
     fun update(post: Post): Post
 
     /**
+     * Update a post by ID with new values.
+     * Returns the updated post or null if not found.
+     */
+    fun updateById(
+        id: UUID,
+        title: String? = null,
+        content: String? = null
+    ): Post?
+
+    /**
      * Delete a post by ID.
      */
     fun delete(id: UUID): Boolean

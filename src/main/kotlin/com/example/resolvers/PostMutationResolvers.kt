@@ -1,10 +1,8 @@
 package com.example.viadapp.resolvers
 
-import com.example.database.User as DatabaseUser
+import com.example.auth.RequestContext
 import com.example.database.repositories.PostRepository
 import com.example.viadapp.resolvers.resolverbases.MutationResolvers
-import com.example.web.GraphQLServer
-import org.jetbrains.exposed.sql.transactions.transaction
 import viaduct.api.Resolver
 import viaduct.api.grts.Post as ViaductPost
 import java.time.LocalDateTime
@@ -16,8 +14,10 @@ class CreatePostResolver(
 ) : MutationResolvers.CreatePost() {
     override suspend fun resolve(ctx: Context): ViaductPost {
         val input = ctx.arguments.input
-        val authenticatedUser = (ctx.requestContext as? Map<*, *>)?.get(GraphQLServer.AUTHENTICATED_USER_KEY) as? DatabaseUser
+        val requestContext = ctx.requestContext as? RequestContext
             ?: throw RuntimeException("Authentication required. Please provide a valid JWT token.")
+        val authenticatedUser =
+            requestContext.user ?: throw RuntimeException("Authentication required. Please provide a valid JWT token.")
 
         val post = postRepository.create(
             title = input.title,
@@ -44,31 +44,34 @@ class UpdatePostResolver(
     override suspend fun resolve(ctx: Context): ViaductPost {
         val input = ctx.arguments.input
         val postId = UUID.fromString(input.id)
-        val authenticatedUser = (ctx.requestContext as? Map<*, *>)?.get(GraphQLServer.AUTHENTICATED_USER_KEY) as? DatabaseUser
+        val requestContext = ctx.requestContext as? RequestContext
             ?: throw RuntimeException("Authentication required. Please provide a valid JWT token.")
+        val authenticatedUser =
+            requestContext.user ?: throw RuntimeException("Authentication required. Please provide a valid JWT token.")
 
-        // Wrap in transaction to handle entity state properly
-        return transaction {
-            val post = postRepository.findById(postId)
-                ?: throw RuntimeException("Post not found")
+        // First check if the post exists and user is authorized
+        val existingPost = postRepository.findById(postId)
+            ?: throw RuntimeException("Post not found")
 
-            // Check if current user is the author
-            if (post.authorId != authenticatedUser.id) {
-                throw RuntimeException("You are not authorized to update this post")
-            }
-
-            input.title?.let { post.title = it }
-            input.content?.let { post.content = it }
-            post.updatedAt = LocalDateTime.now()
-
-            ViaductPost.Builder(ctx)
-                .id(post.id.value.toString())
-                .title(post.title)
-                .content(post.content)
-                .createdAt(post.createdAt.toString())
-                .updatedAt(post.updatedAt.toString())
-                .build()
+        // Check if current user is the author
+        if (existingPost.authorId != authenticatedUser.id) {
+            throw RuntimeException("You are not authorized to update this post")
         }
+
+        // Update the post within a transaction in the repository
+        val updatedPost = postRepository.updateById(
+            id = postId,
+            title = input.title,
+            content = input.content
+        ) ?: throw RuntimeException("Failed to update post")
+
+        return ViaductPost.Builder(ctx)
+            .id(updatedPost.id.value.toString())
+            .title(updatedPost.title)
+            .content(updatedPost.content)
+            .createdAt(updatedPost.createdAt.toString())
+            .updatedAt(updatedPost.updatedAt.toString())
+            .build()
     }
 }
 
@@ -78,8 +81,10 @@ class DeletePostResolver(
 ) : MutationResolvers.DeletePost() {
     override suspend fun resolve(ctx: Context): Boolean {
         val postId = UUID.fromString(ctx.arguments.id)
-        val authenticatedUser = (ctx.requestContext as? Map<*, *>)?.get(GraphQLServer.AUTHENTICATED_USER_KEY) as? DatabaseUser
+        val requestContext = ctx.requestContext as? RequestContext
             ?: throw RuntimeException("Authentication required. Please provide a valid JWT token.")
+        val authenticatedUser =
+            requestContext.user ?: throw RuntimeException("Authentication required. Please provide a valid JWT token.")
 
         val post = postRepository.findById(postId)
             ?: throw RuntimeException("Post not found")

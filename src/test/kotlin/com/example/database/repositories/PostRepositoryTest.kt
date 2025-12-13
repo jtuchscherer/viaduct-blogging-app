@@ -149,6 +149,66 @@ class PostRepositoryTest {
     }
 
     @Test
+    fun `updateById modifies post fields`() {
+        val post = postRepository.create(
+            title = "Original Title",
+            content = "Original Content",
+            authorId = testUser.id
+        )
+
+        val postId = post.id.value
+
+        val updated = postRepository.updateById(
+            id = postId,
+            title = "Updated Title",
+            content = "Updated Content"
+        )
+
+        assertNotNull(updated)
+        assertEquals("Updated Title", updated!!.title)
+        assertEquals("Updated Content", updated.content)
+
+        // Verify the changes persisted
+        val found = postRepository.findById(postId)
+        assertNotNull(found)
+        assertEquals("Updated Title", found!!.title)
+        assertEquals("Updated Content", found.content)
+    }
+
+    @Test
+    fun `updateById with partial update modifies only specified fields`() {
+        val post = postRepository.create(
+            title = "Original Title",
+            content = "Original Content",
+            authorId = testUser.id
+        )
+
+        val postId = post.id.value
+
+        // Update only title
+        val updated = postRepository.updateById(
+            id = postId,
+            title = "New Title",
+            content = null
+        )
+
+        assertNotNull(updated)
+        assertEquals("New Title", updated!!.title)
+        assertEquals("Original Content", updated.content) // Content should remain unchanged
+    }
+
+    @Test
+    fun `updateById returns null when post does not exist`() {
+        val nonExistentId = UUID.randomUUID()
+        val result = postRepository.updateById(
+            id = nonExistentId,
+            title = "New Title"
+        )
+
+        assertNull(result)
+    }
+
+    @Test
     fun `delete post removes from database`() {
         val post = postRepository.create(
             title = "Test Post",

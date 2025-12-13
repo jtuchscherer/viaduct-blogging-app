@@ -47,6 +47,19 @@ class ExposedPostRepository : PostRepository {
         }
     }
 
+    override fun updateById(
+        id: UUID,
+        title: String?,
+        content: String?
+    ): Post? = transaction {
+        val post = Post.findById(id) ?: return@transaction null
+        title?.let { post.title = it }
+        content?.let { post.content = it }
+        post.updatedAt = LocalDateTime.now()
+        post.flush()
+        post
+    }
+
     override fun delete(id: UUID): Boolean = transaction {
         val post = Post.findById(id)
         if (post != null) {
