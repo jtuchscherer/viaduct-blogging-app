@@ -27,6 +27,7 @@ object Application : KoinComponent {
         // Start the consolidated server (handles both GraphQL and Auth endpoints)
         graphQLServer.start()
         println("Server started on http://localhost:8080")
+        println("GraphiQL endpoint: GET http://localhost:8080/graphiql?path=/graphql")
         println("GraphQL endpoint: POST http://localhost:8080/graphql")
         println("Auth endpoints:")
         println("  - POST http://localhost:8080/auth/register")
