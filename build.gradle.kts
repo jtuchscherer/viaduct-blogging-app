@@ -14,6 +14,10 @@ viaductModule {
 }
 
 dependencies {
+    implementation("com.airbnb.viaduct:tenant-api:0.25.0")
+    implementation("com.airbnb.viaduct:service-api:0.25.0")
+    implementation("com.airbnb.viaduct:service-wiring:0.25.0")
+    implementation("javax.inject:javax.inject:1")
     implementation("ch.qos.logback:logback-classic:1.5.20")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
 
@@ -43,6 +47,10 @@ dependencies {
     implementation(libs.koin.ktor)
 
     // Testing
+    testImplementation(testFixtures("com.airbnb.viaduct:tenant-runtime:0.25.0"))
+    testImplementation("com.airbnb.viaduct:engine-wiring:0.25.0")
+    testImplementation("com.airbnb.viaduct:engine-runtime:0.25.0")
+    testImplementation("com.airbnb.viaduct:engine-api:0.25.0")
     testImplementation("org.junit.jupiter:junit-jupiter:5.9.2")
     testImplementation("org.junit.jupiter:junit-jupiter-engine:5.9.2")
     testImplementation("org.junit.platform:junit-platform-launcher:1.9.2")
