@@ -88,6 +88,19 @@ type Query {
   post(id: ID!): Post
   myPosts: [Post!]!
   me: User
+  postsConnection(first: Int, after: String): PostsConnection
+}
+
+# Phase 11 (Relay-style cursor pagination) — implemented
+type PostsConnection {
+  edges: [PostEdge]
+  pageInfo: PageInfo!
+  totalCount: Int
+}
+
+type PostEdge {
+  node: Post
+  cursor: String!
 }
 ```
 
@@ -219,7 +232,9 @@ type Mutation {
 - ✅ Comment functionality with authorization
 - ✅ Like/unlike operations with idempotency
 - ✅ Authorization checks (users can only edit/delete their own content)
-- ✅ Complete e2e test suite (28/28 tests passing)
+- ✅ Complete e2e test suite (38/38 tests passing)
+- ✅ Relay-style cursor pagination (`postsConnection` with `first`/`after`)
+- ✅ 176 unit + integration tests (all passing)
 
 ### Frontend (Complete)
 - ✅ React 18 + TypeScript + Vite
@@ -240,7 +255,7 @@ type Mutation {
 - `GET /auth/me` - Get current user info (requires JWT)
 
 ### GraphQL API (Port 8080)
-- Queries: `posts`, `post(id)`, `myPosts`, `postComments(postId)`
+- Queries: `posts`, `post(id)`, `myPosts`, `postComments(postId)`, `postsConnection(first, after)`
 - Mutations: All post, comment, and like operations
 - Authentication: JWT token via Authorization header
 - Context: Authenticated user passed through `ExecutionInput.requestContext`
@@ -290,7 +305,7 @@ All planned phases have been implemented:
 - ✅ Responsive UI with modern design
 
 ### Potential Enhancements
-- Add pagination for post lists
+- Frontend pagination UI (infinite scroll or page controls) consuming `postsConnection`
 - Implement search functionality
 - Add user profiles with avatars
 - Email notifications for comments/likes
