@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { registerAndLogin, registerUser } from './fixtures/auth';
+import { createPostViaAPI } from './fixtures/posts';
 
 test.describe('Blog Posts', () => {
   test('home page shows posts list', async ({ page }) => {
@@ -18,7 +19,8 @@ test.describe('Blog Posts', () => {
     await expect(page.locator('header a', { hasText: 'New Post' })).toBeVisible();
   });
 
-  test('user can create a post and is redirected to post detail', async ({ page }) => {
+  // Tests the create post UI flow itself — UI creation is intentional here
+  test('user can create a post via the UI and is redirected to post detail', async ({ page }) => {
     await registerAndLogin(page, `create_${Date.now()}`);
 
     await page.click('header a:has-text("New Post")');
@@ -29,13 +31,13 @@ test.describe('Blog Posts', () => {
     await page.fill('textarea#content', 'This is the post content for testing purposes.');
     await page.click('button[type="submit"]');
 
-    // Should redirect to post detail page
     await expect(page).toHaveURL(/\/post\//);
     await expect(page.locator('h1')).toContainText(title);
     await expect(page.locator('.post-content')).toContainText('This is the post content');
   });
 
-  test('new post appears on home page', async ({ page }) => {
+  // Tests that a newly created post shows up on the home page — UI creation is intentional here
+  test('new post appears on home page after creation', async ({ page }) => {
     await registerAndLogin(page, `home_${Date.now()}`);
 
     const title = `Home Page Post ${Date.now()}`;
@@ -51,63 +53,46 @@ test.describe('Blog Posts', () => {
 
   test('post detail shows author, content, like button, and comments section', async ({ page }) => {
     const creds = await registerAndLogin(page, `detail_${Date.now()}`);
+    const post = await createPostViaAPI(page, creds.token, 'Detail Test Post', 'Detail content.');
 
-    await page.goto('/create');
-    await page.fill('input#title', 'Detail Test Post');
-    await page.fill('textarea#content', 'Detail content.');
-    await page.click('button[type="submit"]');
-    await page.waitForURL(/\/post\//);
+    await page.goto(`/post/${post.id}`);
 
     await expect(page.locator('.post-meta')).toContainText(creds.user.name);
-    await expect(page.locator('.post-actions button')).toBeVisible(); // like button
+    await expect(page.locator('.post-actions button')).toBeVisible();
     await expect(page.locator('.comments-section')).toBeVisible();
   });
 
   test('author sees edit and delete buttons on their post', async ({ page }) => {
-    await registerAndLogin(page, `author_${Date.now()}`);
+    const creds = await registerAndLogin(page, `author_${Date.now()}`);
+    const post = await createPostViaAPI(page, creds.token, 'Author Controls Post');
 
-    await page.goto('/create');
-    await page.fill('input#title', 'Author Controls Post');
-    await page.fill('textarea#content', 'Content.');
-    await page.click('button[type="submit"]');
-    await page.waitForURL(/\/post\//);
+    await page.goto(`/post/${post.id}`);
 
     await expect(page.locator('a.btn-edit')).toBeVisible();
     await expect(page.locator('button.btn-delete')).toBeVisible();
   });
 
   test('non-author does not see edit or delete buttons', async ({ page }) => {
-    // User 1 creates a post
     const suffix = Date.now().toString();
     const author = await registerAndLogin(page, `author2_${suffix}`);
-    await page.goto('/create');
-    await page.fill('input#title', 'Non-author Post');
-    await page.fill('textarea#content', 'Content.');
-    await page.click('button[type="submit"]');
-    const postUrl = page.url();
+    const post = await createPostViaAPI(page, author.token, 'Non-author Post');
 
-    // User 2 views it
     const viewer = await registerUser(page, `viewer_${suffix}`);
-    // Set auth state directly via localStorage for speed
     await page.evaluate(({ token, user }) => {
       localStorage.setItem('authToken', token);
       localStorage.setItem('authUser', JSON.stringify(user));
     }, { token: viewer.token, user: viewer.user });
 
-    await page.goto(postUrl);
+    await page.goto(`/post/${post.id}`);
     await expect(page.locator('a.btn-edit')).not.toBeVisible();
     await expect(page.locator('button.btn-delete')).not.toBeVisible();
   });
 
   test('user can edit their own post', async ({ page }) => {
-    await registerAndLogin(page, `edit_${Date.now()}`);
+    const creds = await registerAndLogin(page, `edit_${Date.now()}`);
+    const post = await createPostViaAPI(page, creds.token, 'Original Title', 'Original content.');
 
-    await page.goto('/create');
-    await page.fill('input#title', 'Original Title');
-    await page.fill('textarea#content', 'Original content.');
-    await page.click('button[type="submit"]');
-    await page.waitForURL(/\/post\//);
-
+    await page.goto(`/post/${post.id}`);
     await page.click('a.btn-edit');
     await expect(page).toHaveURL(/\/edit\//);
 
@@ -119,14 +104,10 @@ test.describe('Blog Posts', () => {
   });
 
   test('user can delete their own post and is redirected home', async ({ page }) => {
-    await registerAndLogin(page, `delete_${Date.now()}`);
+    const creds = await registerAndLogin(page, `delete_${Date.now()}`);
+    const post = await createPostViaAPI(page, creds.token, 'Post To Delete');
 
-    await page.goto('/create');
-    await page.fill('input#title', 'Post To Delete');
-    await page.fill('textarea#content', 'Will be deleted.');
-    await page.click('button[type="submit"]');
-    await page.waitForURL(/\/post\//);
-
+    await page.goto(`/post/${post.id}`);
     page.once('dialog', (dialog) => dialog.accept());
     await page.click('button.btn-delete');
     await page.waitForURL('/');
@@ -135,17 +116,10 @@ test.describe('Blog Posts', () => {
   test('My Posts page shows only the current user\'s posts', async ({ page }) => {
     const suffix = Date.now().toString();
     const creds = await registerAndLogin(page, `myposts_${suffix}`);
-
-    const title = `My Personal Post ${suffix}`;
-    await page.goto('/create');
-    await page.fill('input#title', title);
-    await page.fill('textarea#content', 'Only mine.');
-    await page.click('button[type="submit"]');
-    await page.waitForURL(/\/post\//);
+    const post = await createPostViaAPI(page, creds.token, `My Personal Post ${suffix}`);
 
     await page.goto('/my-posts');
-    await expect(page.locator('.posts-list')).toContainText(title);
-    // Should not show other users by name in post-author spans for this post
+    await expect(page.locator('.posts-list')).toContainText(post.title);
     await expect(page.locator('.posts-list')).toContainText(creds.user.name);
   });
 });
