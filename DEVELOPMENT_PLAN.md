@@ -61,6 +61,7 @@ type Post {
   comments: [Comment!]!
   likes: [Like!]!
   likeCount: Int!
+  isLikedByMe: Boolean!
   createdAt: String!
   updatedAt: String!
 }
@@ -88,10 +89,10 @@ type Query {
   post(id: ID!): Post
   myPosts: [Post!]!
   me: User
+  postComments(postId: ID!): [Comment!]!
   postsConnection(first: Int, after: String): PostsConnection
 }
 
-# Phase 11 (Relay-style cursor pagination) — implemented
 type PostsConnection {
   edges: [PostEdge]
   pageInfo: PageInfo!
@@ -155,7 +156,7 @@ type Mutation {
 - Username/password authentication with salted SHA-256 hashing
 - JWT token generation and validation
 - REST endpoints: `/auth/register`, `/auth/login`, `/auth/me`
-- Runs on port 8081 alongside Viaduct GraphQL
+- Runs on port 8080 alongside Viaduct GraphQL (single consolidated server)
 
 ### Password Security
 - SHA-256 hashing with random salt
@@ -227,7 +228,7 @@ type Mutation {
 - ✅ Username/password authentication with salted hashing
 - ✅ REST API for auth endpoints with JWT tokens
 - ✅ GraphQL schema fully defined and implemented
-- ✅ Viaduct 0.5.0 with proper request context authentication
+- ✅ Viaduct 0.25.0 with proper request context authentication
 - ✅ All GraphQL post queries and mutations
 - ✅ Comment functionality with authorization
 - ✅ Like/unlike operations with idempotency
@@ -237,7 +238,7 @@ type Mutation {
 - ✅ 176 unit + integration tests (all passing)
 
 ### Frontend (Complete)
-- ✅ React 18 + TypeScript + Vite
+- ✅ React 19 + TypeScript + Vite
 - ✅ Apollo Client configured with authentication middleware
 - ✅ JWT token management with localStorage persistence
 - ✅ React Router with protected routes
@@ -286,38 +287,29 @@ See `QUICKSTART.md` for detailed instructions and troubleshooting.
 
 ### Running Tests
 ```bash
-# Backend e2e tests
-./e2e-test.sh
-
-# Backend unit tests
-./gradlew test
+./gradlew test        # backend unit + integration tests
+./query-tests.sh      # curl-based GraphQL/auth API tests (requires server running)
+./e2e.sh              # start servers + run Playwright browser tests
 ```
 
-## Project Complete! 🎉
+## Core App Complete ✅
 
-All planned phases have been implemented:
-- ✅ Backend with GraphQL and REST authentication
-- ✅ Database schema and migrations
-- ✅ Full-featured React frontend
-- ✅ Complete user authentication flow
-- ✅ All CRUD operations for posts, comments, and likes
-- ✅ Authorization and security
-- ✅ Responsive UI with modern design
+The core blogging application is fully implemented and tested. See `TODO.md` for in-progress enhancement phases.
 
-### Potential Enhancements
-- Frontend pagination UI (infinite scroll or page controls) consuming `postsConnection`
-- Implement search functionality
-- Add user profiles with avatars
-- Email notifications for comments/likes
+### Pending Enhancements
+- **Phase 10**: Docker deployment (multi-stage Dockerfile, env-var configuration)
+- **Phase 12**: Frontend pagination UI ("Load More" button consuming `postsConnection`)
+- **Phase 13**: Migrate resolver tests off deprecated `DefaultAbstractResolverTestBase`
+- Search functionality
+- User profiles with avatars
 - Rich text editor for post content
-- Image upload support
 - Post categories/tags
-- Social sharing features
 
 ### Architecture Notes
-- Clean separation: REST for auth, GraphQL for content
-- JWT tokens for stateless authentication
-- Viaduct 0.5.0 request context for auth propagation
-- Schema-first development with Viaduct
-- SQLite for simplicity in demo environment
-- Showcases Viaduct platform capabilities
+- Single Ktor server on port 8080: REST auth routes + Viaduct GraphQL colocated
+- JWT tokens for stateless authentication; stored in `localStorage` as `authToken`/`authUser`
+- Viaduct 0.25.0 request context for auth propagation into resolvers
+- Schema-first development: `schema.graphqls` is the source of truth
+- SQLite via Exposed ORM; repository pattern abstracts all DB access
+- Koin DI wires everything; `KoinTenantCodeInjector` bridges Viaduct ↔ Koin
+- Package: `org.tuchscherer`
