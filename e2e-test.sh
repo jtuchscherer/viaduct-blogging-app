@@ -527,6 +527,8 @@ fi
 # Step 10: Test Pagination (postsConnection)
 print_header "Step 10: Test Cursor Pagination (postsConnection)"
 
+# At this point 2 posts remain: POST1 (Alice's "Updated Title") and POST3 (Bob's "Bob Post")
+
 # Basic postsConnection query
 print_info "Querying postsConnection (no args)..."
 CONN_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
@@ -548,6 +550,14 @@ else
     print_error "postsConnection missing pageInfo"
 fi
 
+# Verify totalCount = 2 (POST1 and POST3 remain after POST2 was deleted)
+TOTAL_COUNT=$(echo $CONN_RESPONSE | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data']['postsConnection']['totalCount'])" 2>/dev/null || echo "")
+if [ "$TOTAL_COUNT" = "2" ]; then
+    print_success "postsConnection totalCount=2 (correct)"
+else
+    print_error "postsConnection totalCount expected 2, got: $TOTAL_COUNT"
+fi
+
 # Paginated query: first=1
 print_info "Querying postsConnection(first: 1)..."
 CONN_PAGED_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
@@ -556,32 +566,69 @@ CONN_PAGED_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
         \"query\": \"{ postsConnection(first: 1) { totalCount pageInfo { hasNextPage endCursor } edges { cursor node { id title } } } }\"
     }")
 
-if echo $CONN_PAGED_RESPONSE | grep -q "endCursor"; then
-    print_success "postsConnection(first: 1) returns endCursor"
+PAGE1_TITLE=$(echo $CONN_PAGED_RESPONSE | python3 -c "import sys,json; d=json.load(sys.stdin); edges=d['data']['postsConnection']['edges']; print(edges[0]['node']['title'] if edges else '')" 2>/dev/null || echo "")
+HAS_NEXT=$(echo $CONN_PAGED_RESPONSE | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data']['postsConnection']['pageInfo']['hasNextPage'])" 2>/dev/null || echo "")
+END_CURSOR=$(echo $CONN_PAGED_RESPONSE | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data']['postsConnection']['pageInfo']['endCursor'] or '')" 2>/dev/null || echo "")
+
+if [ -n "$PAGE1_TITLE" ]; then
+    print_success "postsConnection(first: 1) returned first post: \"$PAGE1_TITLE\""
 else
-    print_error "postsConnection(first: 1) missing endCursor"
+    print_error "postsConnection(first: 1) returned no post title"
     echo "Response: $CONN_PAGED_RESPONSE"
 fi
 
-# Extract cursor and use it for next page
-END_CURSOR=$(echo $CONN_PAGED_RESPONSE | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data']['postsConnection']['pageInfo']['endCursor'] or '')" 2>/dev/null || echo "")
+if [ "$HAS_NEXT" = "True" ]; then
+    print_success "postsConnection(first: 1) hasNextPage=true (more posts exist)"
+else
+    print_error "postsConnection(first: 1) expected hasNextPage=true, got: $HAS_NEXT"
+fi
 
 if [ -n "$END_CURSOR" ]; then
-    print_info "Querying postsConnection(first: 1, after: cursor)..."
+    print_success "postsConnection(first: 1) returned endCursor"
+else
+    print_error "postsConnection(first: 1) missing endCursor"
+fi
+
+# Fetch second page using cursor and verify different content
+if [ -n "$END_CURSOR" ]; then
+    print_info "Querying postsConnection(first: 1, after: cursor) for second page..."
     CONN_AFTER_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
         -H "Content-Type: application/json" \
         -d "{
             \"query\": \"{ postsConnection(first: 1, after: \\\"$END_CURSOR\\\") { totalCount pageInfo { hasNextPage } edges { node { id title } } } }\"
         }")
 
-    if echo $CONN_AFTER_RESPONSE | grep -q "edges"; then
-        print_success "postsConnection cursor-based forward pagination works"
+    PAGE2_TITLE=$(echo $CONN_AFTER_RESPONSE | python3 -c "import sys,json; d=json.load(sys.stdin); edges=d['data']['postsConnection']['edges']; print(edges[0]['node']['title'] if edges else '')" 2>/dev/null || echo "")
+    HAS_NEXT_PAGE2=$(echo $CONN_AFTER_RESPONSE | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data']['postsConnection']['pageInfo']['hasNextPage'])" 2>/dev/null || echo "")
+
+    if [ -n "$PAGE2_TITLE" ]; then
+        print_success "Second page returned post: \"$PAGE2_TITLE\""
     else
-        print_error "postsConnection cursor-based pagination failed"
+        print_error "Second page returned no post"
         echo "Response: $CONN_AFTER_RESPONSE"
     fi
+
+    if [ -n "$PAGE1_TITLE" ] && [ -n "$PAGE2_TITLE" ] && [ "$PAGE1_TITLE" != "$PAGE2_TITLE" ]; then
+        print_success "Pages contain different posts (\"$PAGE1_TITLE\" vs \"$PAGE2_TITLE\")"
+    else
+        print_error "Pages contain same or missing content (page1=\"$PAGE1_TITLE\", page2=\"$PAGE2_TITLE\")"
+    fi
+
+    if [ "$HAS_NEXT_PAGE2" = "False" ]; then
+        print_success "Second page hasNextPage=false (no more posts)"
+    else
+        print_error "Second page expected hasNextPage=false, got: $HAS_NEXT_PAGE2"
+    fi
+
+    # Verify totalCount is consistent across both pages
+    TOTAL_COUNT_PAGE2=$(echo $CONN_AFTER_RESPONSE | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data']['postsConnection']['totalCount'])" 2>/dev/null || echo "")
+    if [ "$TOTAL_COUNT_PAGE2" = "2" ]; then
+        print_success "totalCount=2 consistent on second page"
+    else
+        print_error "totalCount expected 2 on second page, got: $TOTAL_COUNT_PAGE2"
+    fi
 else
-    print_info "Skipping cursor pagination test (no cursor returned)"
+    print_error "Skipping second page test — no cursor returned from first page"
 fi
 
 # Test Summary
