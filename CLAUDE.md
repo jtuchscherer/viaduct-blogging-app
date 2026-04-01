@@ -110,6 +110,10 @@ frontend/e2e/
 ### Known Viaduct test infrastructure limitation
 `ConnectionFieldExecutionContext` (used by `PostsConnectionResolver`) is not compatible with `DefaultAbstractResolverTestBase`. Test pagination via the repository layer (`findPage`) and `query-tests.sh` instead.
 
+## Maintaining TODO.md
+
+Whenever you modify `TODO.md`, update the `**Last Updated**` date at the top of the file to today's date.
+
 ## Key decisions
 
 - **Single server on port 8080**: Auth routes and GraphQL share one Ktor server. No CORS complexity.
