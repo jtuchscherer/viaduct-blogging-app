@@ -1,0 +1,90 @@
+package org.tuchscherer.viadapp.resolvers
+
+import org.tuchscherer.auth.RequestContext
+import org.tuchscherer.database.repositories.PostRepository
+import org.tuchscherer.viadapp.resolvers.resolverbases.QueryResolvers
+import viaduct.api.Resolver
+import viaduct.api.grts.Post as ViaductPost
+import viaduct.api.grts.PostsConnection
+import java.util.*
+
+@Resolver
+class PostsResolver(
+    private val postRepository: PostRepository
+) : QueryResolvers.Posts() {
+    override suspend fun resolve(ctx: Context): List<ViaductPost> {
+        return postRepository.findAll().map { post ->
+            ViaductPost.Builder(ctx)
+                .id(post.id.value.toString())
+                .title(post.title)
+                .content(post.content)
+                .createdAt(post.createdAt.toString())
+                .updatedAt(post.updatedAt.toString())
+                .build()
+        }
+    }
+}
+
+@Resolver
+class PostResolver(
+    private val postRepository: PostRepository
+) : QueryResolvers.Post() {
+    override suspend fun resolve(ctx: Context): ViaductPost? {
+        val postId = UUID.fromString(ctx.arguments.id)
+        return postRepository.findById(postId)?.let { post ->
+            ViaductPost.Builder(ctx)
+                .id(post.id.value.toString())
+                .title(post.title)
+                .content(post.content)
+                .createdAt(post.createdAt.toString())
+                .updatedAt(post.updatedAt.toString())
+                .build()
+        }
+    }
+}
+
+@Resolver
+@Suppress("UnstableApiUsage")
+class PostsConnectionResolver(
+    private val postRepository: PostRepository
+) : QueryResolvers.PostsConnection() {
+    override suspend fun resolve(ctx: Context): PostsConnection? {
+        val totalCount = postRepository.count().toInt()
+        val allPosts = postRepository.findAll()
+        return PostsConnection.Builder(ctx)
+            .totalCount(totalCount)
+            .fromList(allPosts) { post ->
+                ViaductPost.Builder(ctx)
+                    .id(post.id.value.toString())
+                    .title(post.title)
+                    .content(post.content)
+                    .createdAt(post.createdAt.toString())
+                    .updatedAt(post.updatedAt.toString())
+                    .build()
+            }
+            .build()
+    }
+}
+
+@Resolver
+class MyPostsResolver(
+    private val postRepository: PostRepository
+) : QueryResolvers.MyPosts() {
+    override suspend fun resolve(ctx: Context): List<ViaductPost> {
+        val requestContext = ctx.requestContext as? RequestContext
+            ?: throw RuntimeException("Authentication required. Please provide a valid JWT token.")
+        val authenticatedUser =
+            requestContext.user ?: throw RuntimeException("Authentication required. Please provide a valid JWT token.")
+
+        return postRepository.findByAuthorId(authenticatedUser.id).map { post ->
+            ViaductPost.Builder(ctx)
+                .id(post.id.value.toString())
+                .title(post.title)
+                .content(post.content)
+                .createdAt(post.createdAt.toString())
+                .updatedAt(post.updatedAt.toString())
+                .build()
+        }
+    }
+}
+

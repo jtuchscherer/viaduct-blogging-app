@@ -7,7 +7,7 @@ plugins {
 }
 
 viaductApplication {
-    modulePackagePrefix.set("com.example.viadapp")
+    modulePackagePrefix.set("org.tuchscherer.viadapp")
 }
 
 viaductModule {
@@ -64,7 +64,7 @@ dependencies {
 }
 
 application {
-    mainClass.set("com.example.viadapp.ViaductApplicationKt")
+    mainClass.set("org.tuchscherer.viadapp.ViaductApplicationKt")
 }
 
 // Force Netty to a patched version to address CVEs (CRLF injection, HTTP request smuggling)
