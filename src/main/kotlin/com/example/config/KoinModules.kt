@@ -64,6 +64,7 @@ val resolverModule = module {
     singleOf(::PostsResolver)
     singleOf(::PostResolver)
     singleOf(::MyPostsResolver)
+    singleOf(::PostsConnectionResolver)
 
     // Post field resolvers
     singleOf(::PostAuthorResolver)

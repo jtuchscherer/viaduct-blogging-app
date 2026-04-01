@@ -56,6 +56,11 @@ interface PostRepository {
     fun delete(id: UUID): Boolean
 
     /**
+     * Find a page of posts ordered by createdAt descending.
+     */
+    fun findPage(limit: Int, offset: Int): List<Post>
+
+    /**
      * Count total posts.
      */
     fun count(): Long

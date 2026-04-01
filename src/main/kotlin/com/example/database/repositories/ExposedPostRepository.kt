@@ -70,6 +70,14 @@ class ExposedPostRepository : PostRepository {
         }
     }
 
+    override fun findPage(limit: Int, offset: Int): List<Post> = transaction {
+        Post.all()
+            .orderBy(Posts.createdAt to org.jetbrains.exposed.sql.SortOrder.DESC)
+            .limit(limit)
+            .offset(offset.toLong())
+            .toList()
+    }
+
     override fun count(): Long = transaction {
         Post.all().count()
     }

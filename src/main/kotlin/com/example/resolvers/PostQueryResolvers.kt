@@ -5,6 +5,7 @@ import com.example.database.repositories.PostRepository
 import com.example.viadapp.resolvers.resolverbases.QueryResolvers
 import viaduct.api.Resolver
 import viaduct.api.grts.Post as ViaductPost
+import viaduct.api.grts.PostsConnection
 import java.util.*
 
 @Resolver
@@ -39,6 +40,29 @@ class PostResolver(
                 .updatedAt(post.updatedAt.toString())
                 .build()
         }
+    }
+}
+
+@Resolver
+@Suppress("UnstableApiUsage")
+class PostsConnectionResolver(
+    private val postRepository: PostRepository
+) : QueryResolvers.PostsConnection() {
+    override suspend fun resolve(ctx: Context): PostsConnection? {
+        val totalCount = postRepository.count().toInt()
+        val allPosts = postRepository.findAll()
+        return PostsConnection.Builder(ctx)
+            .totalCount(totalCount)
+            .fromList(allPosts) { post ->
+                ViaductPost.Builder(ctx)
+                    .id(post.id.value.toString())
+                    .title(post.title)
+                    .content(post.content)
+                    .createdAt(post.createdAt.toString())
+                    .updatedAt(post.updatedAt.toString())
+                    .build()
+            }
+            .build()
     }
 }
 

@@ -250,6 +250,45 @@ class PostRepositoryTest {
     }
 
     @Test
+    fun `findPage returns limited slice ordered by createdAt desc`() {
+        postRepository.create(title = "Oldest", content = "c", authorId = testUser.id)
+        Thread.sleep(10)
+        postRepository.create(title = "Middle", content = "c", authorId = testUser.id)
+        Thread.sleep(10)
+        postRepository.create(title = "Newest", content = "c", authorId = testUser.id)
+
+        val page = postRepository.findPage(limit = 2, offset = 0)
+
+        assertEquals(2, page.size)
+        assertEquals("Newest", page[0].title)
+        assertEquals("Middle", page[1].title)
+    }
+
+    @Test
+    fun `findPage with offset skips earlier results`() {
+        postRepository.create(title = "Oldest", content = "c", authorId = testUser.id)
+        Thread.sleep(10)
+        postRepository.create(title = "Middle", content = "c", authorId = testUser.id)
+        Thread.sleep(10)
+        postRepository.create(title = "Newest", content = "c", authorId = testUser.id)
+
+        val page = postRepository.findPage(limit = 2, offset = 1)
+
+        assertEquals(2, page.size)
+        assertEquals("Middle", page[0].title)
+        assertEquals("Oldest", page[1].title)
+    }
+
+    @Test
+    fun `findPage returns empty list when offset exceeds total`() {
+        postRepository.create(title = "Only Post", content = "c", authorId = testUser.id)
+
+        val page = postRepository.findPage(limit = 10, offset = 5)
+
+        assertTrue(page.isEmpty())
+    }
+
+    @Test
     fun `countByAuthor returns posts count for specific author`() {
         postRepository.create(
             title = "Post 1",

@@ -56,6 +56,18 @@ input CreateCommentInput {
   content: String!
 }
 
+# Relay-style cursor pagination types
+type PostsConnection @connection {
+  edges: [PostEdge]
+  pageInfo: PageInfo!
+  totalCount: Int
+}
+
+type PostEdge @edge {
+  node: Post
+  cursor: String!
+}
+
 # Extend the Query type for read operations
 extend type Query {
   # Get all posts (public)
@@ -72,6 +84,9 @@ extend type Query {
 
   # Get comments for a specific post
   postComments(postId: ID!): [Comment!]! @resolver
+
+  # Relay-style cursor pagination for posts (public)
+  postsConnection(first: Int, after: String): PostsConnection @resolver
 }
 
 # Extend mutations for write operations

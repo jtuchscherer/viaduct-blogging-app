@@ -5,8 +5,10 @@ import com.example.auth.JwtService
 import com.example.auth.PasswordService
 import com.example.database.repositories.*
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
+import org.koin.core.context.GlobalContext
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 import org.koin.test.KoinTest
@@ -18,9 +20,14 @@ import org.koin.test.inject
  */
 class KoinModulesTest : KoinTest {
 
+    @BeforeEach
+    fun stopAnyRunningKoin() {
+        GlobalContext.getOrNull()?.let { stopKoin() }
+    }
+
     @AfterEach
     fun cleanup() {
-        stopKoin()
+        GlobalContext.getOrNull()?.let { stopKoin() }
     }
 
     @Test

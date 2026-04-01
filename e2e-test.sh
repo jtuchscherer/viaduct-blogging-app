@@ -524,6 +524,66 @@ else
     print_error "Post deletion verification failed"
 fi
 
+# Step 10: Test Pagination (postsConnection)
+print_header "Step 10: Test Cursor Pagination (postsConnection)"
+
+# Basic postsConnection query
+print_info "Querying postsConnection (no args)..."
+CONN_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -d "{
+        \"query\": \"{ postsConnection { totalCount pageInfo { hasNextPage hasPreviousPage endCursor } edges { cursor node { id title } } } }\"
+    }")
+
+if echo $CONN_RESPONSE | grep -q "totalCount" && echo $CONN_RESPONSE | grep -q "edges"; then
+    print_success "postsConnection query returned connection structure"
+else
+    print_error "postsConnection query failed"
+    echo "Response: $CONN_RESPONSE"
+fi
+
+if echo $CONN_RESPONSE | grep -q "pageInfo"; then
+    print_success "postsConnection includes pageInfo"
+else
+    print_error "postsConnection missing pageInfo"
+fi
+
+# Paginated query: first=1
+print_info "Querying postsConnection(first: 1)..."
+CONN_PAGED_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -d "{
+        \"query\": \"{ postsConnection(first: 1) { totalCount pageInfo { hasNextPage endCursor } edges { cursor node { id title } } } }\"
+    }")
+
+if echo $CONN_PAGED_RESPONSE | grep -q "endCursor"; then
+    print_success "postsConnection(first: 1) returns endCursor"
+else
+    print_error "postsConnection(first: 1) missing endCursor"
+    echo "Response: $CONN_PAGED_RESPONSE"
+fi
+
+# Extract cursor and use it for next page
+END_CURSOR=$(echo $CONN_PAGED_RESPONSE | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data']['postsConnection']['pageInfo']['endCursor'] or '')" 2>/dev/null || echo "")
+
+if [ -n "$END_CURSOR" ]; then
+    print_info "Querying postsConnection(first: 1, after: cursor)..."
+    CONN_AFTER_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
+        -H "Content-Type: application/json" \
+        -d "{
+            \"query\": \"{ postsConnection(first: 1, after: \\\"$END_CURSOR\\\") { totalCount pageInfo { hasNextPage } edges { node { id title } } } }\"
+        }")
+
+    if echo $CONN_AFTER_RESPONSE | grep -q "edges"; then
+        print_success "postsConnection cursor-based forward pagination works"
+    else
+        print_error "postsConnection cursor-based pagination failed"
+        echo "Response: $CONN_AFTER_RESPONSE"
+    fi
+else
+    print_info "Skipping cursor pagination test (no cursor returned)"
+fi
+
 # Test Summary
 print_header "Test Summary"
 echo -e "${GREEN}Tests Passed: $TESTS_PASSED${NC}"
