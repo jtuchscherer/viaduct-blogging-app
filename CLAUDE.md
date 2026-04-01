@@ -45,7 +45,7 @@ cd frontend && npm run test:e2e:ui     # Playwright interactive UI mode
 
 ### Backend structure
 ```
-src/main/kotlin/com/example/
+src/main/kotlin/org/tuchscherer/
 ├── auth/           AuthenticationService, JwtService, PasswordService, RequestContext
 ├── config/         AppConfig, KoinModules, KoinTenantCodeInjector, DatabaseFactory
 ├── database/
@@ -66,7 +66,7 @@ Viaduct instantiates resolvers via `KoinTenantCodeInjector`, which delegates to 
 
 ### Adding a GraphQL field or resolver
 1. Add the field/type to `schema.graphqls`
-2. Run `./gradlew build` — Viaduct generates base classes under `src/main/kotlin/com/example/viadapp/resolvers/resolverbases/`
+2. Run `./gradlew build` — Viaduct generates base classes under `src/main/kotlin/org/tuchscherer/viadapp/resolvers/resolverbases/`
 3. Create a resolver class extending the generated base
 4. Register it in `KoinModules.kt`
 
@@ -86,7 +86,7 @@ Viaduct instantiates resolvers via `KoinTenantCodeInjector`, which delegates to 
 
 ### Test structure
 ```
-src/test/kotlin/com/example/
+src/test/kotlin/org/tuchscherer/
 ├── auth/           Unit tests for services (MockK mocks)
 ├── config/         KoinModulesTest
 ├── database/repositories/  H2 in-memory integration tests
