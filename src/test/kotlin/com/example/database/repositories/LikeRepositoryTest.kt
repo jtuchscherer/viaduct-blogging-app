@@ -3,6 +3,7 @@ package com.example.database.repositories
 import com.example.database.Post
 import com.example.database.User
 import org.junit.jupiter.api.*
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.*
 import java.util.*
 
@@ -59,7 +60,7 @@ class LikeRepositoryTest {
             userId = testUser.id
         )
 
-        assertNotNull(like)
+        Assertions.assertNotNull(like)
         assertEquals(testPost.id, like.postId)
         assertEquals(testUser.id, like.userId)
     }
@@ -73,7 +74,7 @@ class LikeRepositoryTest {
 
         val found = likeRepository.findById(created.id.value)
 
-        assertNotNull(found)
+        Assertions.assertNotNull(found)
         assertEquals(created.id.value, found!!.id.value)
     }
 
@@ -82,7 +83,7 @@ class LikeRepositoryTest {
         val nonExistentId = UUID.randomUUID()
         val found = likeRepository.findById(nonExistentId)
 
-        assertNull(found)
+        Assertions.assertNull(found)
     }
 
     @Test
@@ -140,7 +141,7 @@ class LikeRepositoryTest {
 
         val found = likeRepository.findByPostAndUser(testPost.id, testUser.id)
 
-        assertNotNull(found)
+        Assertions.assertNotNull(found)
         assertEquals(testPost.id, found!!.postId)
         assertEquals(testUser.id, found.userId)
     }
@@ -149,7 +150,7 @@ class LikeRepositoryTest {
     fun `findByPostAndUser returns null when like does not exist`() {
         val found = likeRepository.findByPostAndUser(testPost.id, testUser.id)
 
-        assertNull(found)
+        Assertions.assertNull(found)
     }
 
     @Test
@@ -181,7 +182,7 @@ class LikeRepositoryTest {
         val deleted = likeRepository.delete(like.id.value)
 
         assertTrue(deleted)
-        assertNull(likeRepository.findById(like.id.value))
+        Assertions.assertNull(likeRepository.findById(like.id.value))
     }
 
     @Test

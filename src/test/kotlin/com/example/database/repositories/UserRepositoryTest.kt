@@ -1,6 +1,7 @@
 package com.example.database.repositories
 
 import org.junit.jupiter.api.*
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.*
 import java.time.LocalDateTime
 import java.util.*
@@ -39,11 +40,11 @@ class UserRepositoryTest {
             salt = "salt123"
         )
 
-        assertNotNull(user)
+        Assertions.assertNotNull(user)
         assertEquals("testuser", user.username)
         assertEquals("test@example.com", user.email)
         assertEquals("Test User", user.name)
-        assertNotNull(user.id.value)
+        Assertions.assertNotNull(user.id.value)
     }
 
     @Test
@@ -58,7 +59,7 @@ class UserRepositoryTest {
 
         val found = userRepository.findById(created.id.value)
 
-        assertNotNull(found)
+        Assertions.assertNotNull(found)
         assertEquals(created.id.value, found!!.id.value)
         assertEquals("testuser", found.username)
     }
@@ -68,7 +69,7 @@ class UserRepositoryTest {
         val nonExistentId = UUID.randomUUID()
         val found = userRepository.findById(nonExistentId)
 
-        assertNull(found)
+        Assertions.assertNull(found)
     }
 
     @Test
@@ -83,7 +84,7 @@ class UserRepositoryTest {
 
         val found = userRepository.findByUsername("testuser")
 
-        assertNotNull(found)
+        Assertions.assertNotNull(found)
         assertEquals("testuser", found!!.username)
     }
 
@@ -91,7 +92,7 @@ class UserRepositoryTest {
     fun `findByUsername returns null when user does not exist`() {
         val found = userRepository.findByUsername("nonexistent")
 
-        assertNull(found)
+        Assertions.assertNull(found)
     }
 
     @Test
@@ -106,7 +107,7 @@ class UserRepositoryTest {
 
         val found = userRepository.findByEmail("test@example.com")
 
-        assertNotNull(found)
+        Assertions.assertNotNull(found)
         assertEquals("test@example.com", found!!.email)
     }
 
@@ -153,7 +154,7 @@ class UserRepositoryTest {
 
         val found = userRepository.findById(userId)
 
-        assertNotNull(found)
+        Assertions.assertNotNull(found)
         assertEquals("Updated Name", found!!.name)
         assertEquals("updated@example.com", found.email)
     }
@@ -171,7 +172,7 @@ class UserRepositoryTest {
         val deleted = userRepository.delete(user.id.value)
 
         assertTrue(deleted)
-        assertNull(userRepository.findById(user.id.value))
+        Assertions.assertNull(userRepository.findById(user.id.value))
     }
 
     @Test

@@ -3,6 +3,7 @@ package com.example.database.repositories
 import com.example.database.User
 import org.jetbrains.exposed.dao.id.EntityID
 import org.junit.jupiter.api.*
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.*
 import java.util.*
 
@@ -52,7 +53,7 @@ class PostRepositoryTest {
             authorId = testUser.id
         )
 
-        assertNotNull(post)
+        Assertions.assertNotNull(post)
         assertEquals("Test Post", post.title)
         assertEquals("This is test content", post.content)
         assertEquals(testUser.id, post.authorId)
@@ -68,7 +69,7 @@ class PostRepositoryTest {
 
         val found = postRepository.findById(created.id.value)
 
-        assertNotNull(found)
+        Assertions.assertNotNull(found)
         assertEquals(created.id.value, found!!.id.value)
         assertEquals("Test Post", found.title)
     }
@@ -78,7 +79,7 @@ class PostRepositoryTest {
         val nonExistentId = UUID.randomUUID()
         val found = postRepository.findById(nonExistentId)
 
-        assertNull(found)
+        Assertions.assertNull(found)
     }
 
     @Test
@@ -143,7 +144,7 @@ class PostRepositoryTest {
 
         val found = postRepository.findById(postId)
 
-        assertNotNull(found)
+        Assertions.assertNotNull(found)
         assertEquals("Updated Title", found!!.title)
         assertEquals("Updated Content", found.content)
     }
@@ -164,13 +165,13 @@ class PostRepositoryTest {
             content = "Updated Content"
         )
 
-        assertNotNull(updated)
+        Assertions.assertNotNull(updated)
         assertEquals("Updated Title", updated!!.title)
         assertEquals("Updated Content", updated.content)
 
         // Verify the changes persisted
         val found = postRepository.findById(postId)
-        assertNotNull(found)
+        Assertions.assertNotNull(found)
         assertEquals("Updated Title", found!!.title)
         assertEquals("Updated Content", found.content)
     }
@@ -192,7 +193,7 @@ class PostRepositoryTest {
             content = null
         )
 
-        assertNotNull(updated)
+        Assertions.assertNotNull(updated)
         assertEquals("New Title", updated!!.title)
         assertEquals("Original Content", updated.content) // Content should remain unchanged
     }
@@ -205,7 +206,7 @@ class PostRepositoryTest {
             title = "New Title"
         )
 
-        assertNull(result)
+        Assertions.assertNull(result)
     }
 
     @Test
@@ -219,7 +220,7 @@ class PostRepositoryTest {
         val deleted = postRepository.delete(post.id.value)
 
         assertTrue(deleted)
-        assertNull(postRepository.findById(post.id.value))
+        Assertions.assertNull(postRepository.findById(post.id.value))
     }
 
     @Test

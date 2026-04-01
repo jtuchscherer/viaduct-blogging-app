@@ -3,6 +3,7 @@ package com.example.database.repositories
 import com.example.database.Post
 import com.example.database.User
 import org.junit.jupiter.api.*
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.*
 import java.util.*
 
@@ -60,7 +61,7 @@ class CommentRepositoryTest {
             authorId = testUser.id
         )
 
-        assertNotNull(comment)
+        Assertions.assertNotNull(comment)
         assertEquals("This is a test comment", comment.content)
         assertEquals(testPost.id, comment.postId)
         assertEquals(testUser.id, comment.authorId)
@@ -76,7 +77,7 @@ class CommentRepositoryTest {
 
         val found = commentRepository.findById(created.id.value)
 
-        assertNotNull(found)
+        Assertions.assertNotNull(found)
         assertEquals(created.id.value, found!!.id.value)
         assertEquals("Test comment", found.content)
     }
@@ -86,7 +87,7 @@ class CommentRepositoryTest {
         val nonExistentId = UUID.randomUUID()
         val found = commentRepository.findById(nonExistentId)
 
-        assertNull(found)
+        Assertions.assertNull(found)
     }
 
     @Test
@@ -143,7 +144,7 @@ class CommentRepositoryTest {
 
         val found = commentRepository.findById(commentId)
 
-        assertNotNull(found)
+        Assertions.assertNotNull(found)
         assertEquals("Updated content", found!!.content)
     }
 
@@ -158,7 +159,7 @@ class CommentRepositoryTest {
         val deleted = commentRepository.delete(comment.id.value)
 
         assertTrue(deleted)
-        assertNull(commentRepository.findById(comment.id.value))
+        Assertions.assertNull(commentRepository.findById(comment.id.value))
     }
 
     @Test

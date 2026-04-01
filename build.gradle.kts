@@ -25,11 +25,11 @@ dependencies {
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.19.0")
 
     // Database dependencies
-    implementation("org.xerial:sqlite-jdbc:3.44.1.0")
-    implementation("org.jetbrains.exposed:exposed-core:0.44.1")
-    implementation("org.jetbrains.exposed:exposed-dao:0.44.1")
-    implementation("org.jetbrains.exposed:exposed-jdbc:0.44.1")
-    implementation("org.jetbrains.exposed:exposed-java-time:0.44.1")
+    implementation("org.xerial:sqlite-jdbc:3.49.1.0")
+    implementation("org.jetbrains.exposed:exposed-core:0.61.0")
+    implementation("org.jetbrains.exposed:exposed-dao:0.61.0")
+    implementation("org.jetbrains.exposed:exposed-jdbc:0.61.0")
+    implementation("org.jetbrains.exposed:exposed-java-time:0.61.0")
 
     // HTTP server for auth endpoints
     implementation(libs.ktor.server.core)
@@ -51,15 +51,15 @@ dependencies {
     testImplementation("com.airbnb.viaduct:engine-wiring:0.25.0")
     testImplementation("com.airbnb.viaduct:engine-runtime:0.25.0")
     testImplementation("com.airbnb.viaduct:engine-api:0.25.0")
-    testImplementation("org.junit.jupiter:junit-jupiter:5.9.2")
-    testImplementation("org.junit.jupiter:junit-jupiter-engine:5.9.2")
-    testImplementation("org.junit.platform:junit-platform-launcher:1.9.2")
+    testImplementation("org.junit.jupiter:junit-jupiter:5.12.2")
+    testImplementation("org.junit.jupiter:junit-jupiter-engine:5.12.2")
+    testImplementation("org.junit.platform:junit-platform-launcher:1.12.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
     testImplementation(libs.koin.test)
     testImplementation(libs.koin.test.junit5)
-    testImplementation("io.mockk:mockk:1.13.8")
-    testImplementation("com.h2database:h2:2.2.224")
-    testImplementation("org.assertj:assertj-core:3.24.2")
+    testImplementation("io.mockk:mockk:1.14.3")
+    testImplementation("com.h2database:h2:2.3.232")
+    testImplementation("org.assertj:assertj-core:3.27.3")
 }
 
 application {
