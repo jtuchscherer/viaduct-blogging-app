@@ -59,9 +59,10 @@ export default function EditPostPage() {
     },
   });
 
-  // Populate form when data loads
+  // Populate form when data loads (initializing form state from async data is intentional here)
   useEffect(() => {
     if (data?.post) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTitle(data.post.title);
       setContent(data.post.content);
     }
