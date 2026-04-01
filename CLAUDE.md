@@ -110,9 +110,9 @@ frontend/e2e/
 ### Known Viaduct test infrastructure limitation
 `ConnectionFieldExecutionContext` (used by `PostsConnectionResolver`) is not compatible with `DefaultAbstractResolverTestBase`. Test pagination via the repository layer (`findPage`) and `query-tests.sh` instead.
 
-## Maintaining TODO.md
+## Maintaining TODO.md and DEVELOPMENT_PLAN.md
 
-Whenever you modify `TODO.md`, update the `**Last Updated**` date at the top of the file to today's date.
+Whenever you modify `TODO.md` or `DEVELOPMENT_PLAN.md`, update the `**Last Updated**` date at the top of the respective file to today's date.
 
 ## Key decisions
 

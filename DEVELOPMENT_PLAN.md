@@ -1,5 +1,7 @@
 # Simple Blogging App Development Plan
 
+**Last Updated**: 2026-04-01
+
 A web-based blogging application using React frontend and Viaduct/Kotlin GraphQL backend.
 
 ## Features
