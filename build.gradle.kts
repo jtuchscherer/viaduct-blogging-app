@@ -21,8 +21,8 @@ dependencies {
     implementation("ch.qos.logback:logback-classic:1.5.25")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
 
-    implementation("com.fasterxml.jackson.core:jackson-databind:2.19.0")
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.19.0")
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.21.2")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.21.2")
 
     // Database dependencies
     implementation("org.xerial:sqlite-jdbc:3.49.1.0")
@@ -72,6 +72,7 @@ configurations.all {
         "io.netty:netty-codec-http:4.2.12.Final",
         "io.netty:netty-codec-http2:4.2.12.Final",
         "io.netty:netty-codec-base:4.2.12.Final",
+        "io.netty:netty-codec:4.2.12.Final",
         "io.netty:netty-handler:4.2.12.Final",
         "io.netty:netty-common:4.2.12.Final",
         "io.netty:netty-buffer:4.2.12.Final",
