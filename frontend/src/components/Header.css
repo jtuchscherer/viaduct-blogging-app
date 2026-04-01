@@ -31,6 +31,7 @@
   color: white;
   text-decoration: none;
   transition: opacity 0.2s;
+  white-space: nowrap;
 }
 
 .nav a:hover {
