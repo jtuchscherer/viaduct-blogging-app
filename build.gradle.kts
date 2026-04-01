@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.viaduct.application)
     alias(libs.plugins.viaduct.module)
     application
+    jacoco
 }
 
 viaductApplication {
@@ -83,4 +84,26 @@ configurations.all {
 
 tasks.test {
     useJUnitPlatform()
+    finalizedBy(tasks.jacocoTestReport)
+}
+
+tasks.jacocoTestReport {
+    dependsOn(tasks.test)
+    reports {
+        xml.required = true
+        html.required = true
+    }
+    // Exclude generated resolver bases, app entry point, and Viaduct/Koin wiring
+    classDirectories.setFrom(
+        files(classDirectories.files.map {
+            fileTree(it) {
+                exclude(
+                    "**/viadapp/ViaductApplication*",
+                    "**/viadapp/resolvers/resolverbases/**",
+                    "**/config/KoinTenantCodeInjector*",
+                    "**/config/ViaductConfig*",
+                )
+            }
+        })
+    )
 }
