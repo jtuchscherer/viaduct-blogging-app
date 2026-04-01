@@ -18,7 +18,7 @@ dependencies {
     implementation("com.airbnb.viaduct:service-api:0.25.0")
     implementation("com.airbnb.viaduct:service-wiring:0.25.0")
     implementation("javax.inject:javax.inject:1")
-    implementation("ch.qos.logback:logback-classic:1.5.20")
+    implementation("ch.qos.logback:logback-classic:1.5.25")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
 
     implementation("com.fasterxml.jackson.core:jackson-databind:2.19.0")
@@ -59,11 +59,25 @@ dependencies {
     testImplementation(libs.koin.test.junit5)
     testImplementation("io.mockk:mockk:1.14.3")
     testImplementation("com.h2database:h2:2.3.232")
-    testImplementation("org.assertj:assertj-core:3.27.3")
+    testImplementation("org.assertj:assertj-core:3.27.7")
 }
 
 application {
     mainClass.set("com.example.viadapp.ViaductApplicationKt")
+}
+
+// Force Netty to a patched version to address CVEs (CRLF injection, HTTP request smuggling)
+configurations.all {
+    resolutionStrategy.force(
+        "io.netty:netty-codec-http:4.2.12.Final",
+        "io.netty:netty-codec-http2:4.2.12.Final",
+        "io.netty:netty-codec-base:4.2.12.Final",
+        "io.netty:netty-handler:4.2.12.Final",
+        "io.netty:netty-common:4.2.12.Final",
+        "io.netty:netty-buffer:4.2.12.Final",
+        "io.netty:netty-transport:4.2.12.Final",
+        "io.netty:netty-resolver:4.2.12.Final"
+    )
 }
 
 tasks.test {
