@@ -30,10 +30,11 @@ This document outlines the plan to add a comprehensive unit test suite to the vi
 ### 🎯 Next Steps
 
 - ~~**Phase 8**: Add integration tests for workflows~~ ✅ Complete
-- **Phase 9**: Add browser-based E2E tests with Playwright
+- ~~**Phase 9**: Add browser-based E2E tests with Playwright~~ ✅ Complete
 - **Phase 10**: Create Dockerfile for containerized deployment
 - ~~**Phase 11**: Backend pagination for posts (Relay-style cursor pagination via Viaduct `@connection`)~~ ✅ Complete
 - **Phase 12**: Frontend pagination UI — consume `postsConnection` in HomePage with infinite scroll or page controls; add Playwright tests for pagination UX
+- **Phase 13**: Migrate resolver tests from deprecated `DefaultAbstractResolverTestBase` to the new type-safe Viaduct testing API (`FieldResolverTester`, `MutationResolverTester`, `NodeResolverTester`)
 
 ---
 
@@ -1377,6 +1378,37 @@ class PostsConnectionResolver(
 - Users see a "Load More" button when more posts exist
 - Pagination works correctly across page refreshes
 - Playwright tests cover the paginated flow
+
+---
+
+### Phase 13: Migrate Resolver Tests to New Viaduct Testing API ⏳ TODO (Low Risk, Low Value)
+
+**Goal**: Eliminate the deprecation warnings emitted during `./gradlew build` by migrating all resolver unit tests from the deprecated `DefaultAbstractResolverTestBase` to the new type-safe testing API introduced in Viaduct 0.25.0.
+
+**Warning seen during build:**
+```
+'class DefaultAbstractResolverTestBase : ResolverTestBase' is deprecated.
+Use the new type-safe testing API in viaduct.api.testing package.
+See FieldResolverTester, MutationResolverTester, or NodeResolverTester for the new API.
+```
+
+**Affected test files** (all files in `src/test/kotlin/org/tuchscherer/resolvers/`):
+- `CreatePostResolverTest.kt`, `UpdatePostResolverTest.kt`, `DeletePostResolverTest.kt`
+- `PostsResolverTest.kt`, `PostResolverTest.kt`, `MyPostsResolverTest.kt`
+- `PostFieldResolversTest.kt`, `PostCommentsResolverTest.kt`
+- `LikePostResolverTest.kt`, `UnlikePostResolverTest.kt`
+- `LikeFieldResolversTest.kt`, `LikeObjectFieldResolversTest.kt`
+- `CreateCommentResolverTest.kt`, `DeleteCommentResolverTest.kt`
+- `CommentFieldResolversTest.kt`
+
+**Tasks:**
+- [ ] Read the `viaduct.api.testing` package docs / source to understand `FieldResolverTester`, `MutationResolverTester`, `NodeResolverTester` APIs
+- [ ] Migrate mutation resolver tests to `MutationResolverTester`
+- [ ] Migrate query resolver tests to `NodeResolverTester`
+- [ ] Migrate field resolver tests to `FieldResolverTester`
+- [ ] Verify `./gradlew build` produces zero deprecation warnings for resolver tests
+
+**Success Criteria**: `./gradlew build` output contains no `DefaultAbstractResolverTestBase is deprecated` warnings, all 176 tests still passing.
 
 ---
 
