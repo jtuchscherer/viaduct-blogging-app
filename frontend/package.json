@@ -13,7 +13,17 @@
   },
   "dependencies": {
     "@apollo/client": "^4.0.7",
+    "@lexical/code": "^0.42.0",
+    "@lexical/history": "^0.42.0",
+    "@lexical/html": "^0.42.0",
+    "@lexical/link": "^0.42.0",
+    "@lexical/list": "^0.42.0",
+    "@lexical/react": "^0.42.0",
+    "@lexical/rich-text": "^0.42.0",
+    "@lexical/utils": "^0.42.0",
+    "dompurify": "^3.3.3",
     "graphql": "^16.11.0",
+    "lexical": "^0.42.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-router-dom": "^7.13.2"
@@ -21,6 +31,7 @@
   "devDependencies": {
     "@eslint/js": "^9.39.4",
     "@playwright/test": "^1.59.1",
+    "@types/dompurify": "^3.0.5",
     "@types/node": "^25.5.0",
     "@types/react": "^19.1.16",
     "@types/react-dom": "^19.1.9",

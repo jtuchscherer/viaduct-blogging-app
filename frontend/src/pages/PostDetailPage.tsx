@@ -3,6 +3,7 @@ import { useQuery, useMutation } from '@apollo/client/react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useState, type FormEvent } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import DOMPurify from 'dompurify';
 
 const GET_POST = gql`
   query GetPost($id: ID!) {
@@ -67,6 +68,27 @@ const DELETE_POST = gql`
     deletePost(id: $id)
   }
 `;
+
+/** Safely render post content — handles both legacy plain-text and rich-text HTML. */
+function renderContent(content: string): string {
+  if (!content) return '';
+  const trimmed = content.trim();
+  if (trimmed.startsWith('<')) {
+    // Rich-text HTML from Lexical editor — sanitize before rendering
+    return DOMPurify.sanitize(trimmed);
+  }
+  // Legacy plain-text — convert newlines to paragraphs
+  return trimmed
+    .split('\n')
+    .map((line) => {
+      const escaped = line
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+      return `<p>${escaped}</p>`;
+    })
+    .join('');
+}
 
 interface Author {
   id: string;
@@ -178,11 +200,10 @@ export default function PostDetailPage() {
           </div>
         </div>
 
-        <div className="post-content">
-          {post.content.split('\n').map((paragraph, idx) => (
-            <p key={idx}>{paragraph}</p>
-          ))}
-        </div>
+        <div
+          className="post-content"
+          dangerouslySetInnerHTML={{ __html: renderContent(post.content) }}
+        />
 
         <div className="post-actions">
           <button onClick={handleLikeToggle} className={post.isLikedByMe ? 'liked' : ''}>

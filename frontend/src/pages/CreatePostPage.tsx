@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { gql } from '@apollo/client';
 import { useMutation } from '@apollo/client/react';
+import RichTextEditor from '../components/RichTextEditor';
 
 const CREATE_POST = gql`
   mutation CreatePost($input: CreatePostInput!) {
@@ -19,6 +20,10 @@ interface CreatePostData {
     title: string;
     content: string;
   };
+}
+
+function isContentEmpty(html: string): boolean {
+  return !html || html.replace(/<[^>]*>/g, '').trim() === '';
 }
 
 export default function CreatePostPage() {
@@ -40,7 +45,7 @@ export default function CreatePostPage() {
     e.preventDefault();
     setError('');
 
-    if (!title.trim() || !content.trim()) {
+    if (!title.trim() || isContentEmpty(content)) {
       setError('Title and content are required');
       return;
     }
@@ -49,8 +54,8 @@ export default function CreatePostPage() {
       variables: {
         input: {
           title: title.trim(),
-          content: content.trim()
-        }
+          content,
+        },
       },
     });
   };
@@ -77,27 +82,12 @@ export default function CreatePostPage() {
           </div>
 
           <div className="form-group">
-            <label htmlFor="content">Content</label>
-            <textarea
-              id="content"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="Write your post content..."
-              rows={15}
-              required
+            <label>Content</label>
+            <RichTextEditor
+              initialContent=""
+              onChange={setContent}
               disabled={loading}
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                border: '1px solid #333',
-                borderRadius: '6px',
-                backgroundColor: '#2a2a2a',
-                color: 'inherit',
-                fontFamily: 'inherit',
-                fontSize: '1rem',
-                resize: 'vertical',
-                boxSizing: 'border-box',
-              }}
+              placeholder="Write your post content…"
             />
           </div>
 

@@ -28,7 +28,8 @@ test.describe('Blog Posts', () => {
 
     const title = `My Test Post ${Date.now()}`;
     await page.fill('input#title', title);
-    await page.fill('textarea#content', 'This is the post content for testing purposes.');
+    await page.click('[data-testid="rich-text-editor"]');
+    await page.keyboard.type('This is the post content for testing purposes.');
     await page.click('button[type="submit"]');
 
     await expect(page).toHaveURL(/\/post\//);
@@ -43,12 +44,51 @@ test.describe('Blog Posts', () => {
     const title = `Home Page Post ${Date.now()}`;
     await page.goto('/create');
     await page.fill('input#title', title);
-    await page.fill('textarea#content', 'Content for home page test.');
+    await page.click('[data-testid="rich-text-editor"]');
+    await page.keyboard.type('Content for home page test.');
     await page.click('button[type="submit"]');
     await page.waitForURL(/\/post\//);
 
     await page.goto('/');
     await expect(page.locator('.posts-list')).toContainText(title);
+  });
+
+  test('rich text editor toolbar contains all expected buttons', async ({ page }) => {
+    await registerAndLogin(page, `toolbar_${Date.now()}`);
+    await page.goto('/create');
+
+    const expectedButtons = [
+      'Bold', 'Italic', 'Underline',
+      'Heading 1', 'Heading 2', 'Heading 3',
+      'Bullet list', 'Numbered list',
+      'Code block',
+    ];
+
+    for (const label of expectedButtons) {
+      await expect(page.getByRole('button', { name: label })).toBeVisible();
+    }
+  });
+
+  // Tests the rich text editor UI — toolbar interaction and HTML rendering are intentional here
+  test('rich text formatting is saved and rendered correctly in post detail', async ({ page }) => {
+    await registerAndLogin(page, `rich_${Date.now()}`);
+    const title = `Rich Text Post ${Date.now()}`;
+
+    await page.goto('/create');
+    await page.fill('input#title', title);
+
+    // Type text, select all, apply bold via toolbar
+    await page.click('[data-testid="rich-text-editor"]');
+    await page.keyboard.type('Hello bold world');
+    await page.keyboard.press('ControlOrMeta+a');
+    await page.click('[aria-label="Bold"]');
+
+    await page.click('button[type="submit"]');
+    await page.waitForURL(/\/post\//);
+
+    // Bold text must be rendered as <strong> — verifies the HTML round-trip through the editor,
+    // GraphQL mutation, and DOMPurify rendering in PostDetailPage
+    await expect(page.locator('.post-content strong')).toContainText('Hello bold world');
   });
 
   test('post detail shows author, content, like button, and comments section', async ({ page }) => {

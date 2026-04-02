@@ -1,7 +1,8 @@
-import { useState, useEffect, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { gql } from '@apollo/client';
 import { useQuery, useMutation } from '@apollo/client/react';
+import RichTextEditor from '../components/RichTextEditor';
 
 const GET_POST = gql`
   query GetPostForEdit($id: ID!) {
@@ -30,87 +31,45 @@ interface Post {
   id: string;
   title: string;
   content: string;
-  author: {
-    id: string;
-  };
+  author: { id: string };
 }
 
 interface PostData {
   post: Post;
 }
 
-export default function EditPostPage() {
-  const { id } = useParams<{ id: string }>();
+function isContentEmpty(html: string): boolean {
+  return !html || html.replace(/<[^>]*>/g, '').trim() === '';
+}
+
+// ── Inner form — receives post data after it has loaded ───────────────────────
+
+function EditPostForm({ post }: { post: Post }) {
   const navigate = useNavigate();
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
+  const [title, setTitle] = useState(post.title);
+  const [content, setContent] = useState(post.content);
   const [error, setError] = useState('');
 
-  const { loading: loadingPost, error: queryError, data } = useQuery<PostData>(GET_POST, {
-    variables: { id },
-  });
-
   const [updatePost, { loading: updating }] = useMutation(UPDATE_POST, {
-    onCompleted: () => {
-      navigate(`/post/${id}`);
-    },
-    onError: (err) => {
-      setError(err.message);
-    },
+    onCompleted: () => navigate(`/post/${post.id}`),
+    onError: (err) => setError(err.message),
   });
-
-  // Populate form when data loads (initializing form state from async data is intentional here)
-  useEffect(() => {
-    if (data?.post) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setTitle(data.post.title);
-      setContent(data.post.content);
-    }
-  }, [data]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
 
-    if (!title.trim() || !content.trim()) {
+    if (!title.trim() || isContentEmpty(content)) {
       setError('Title and content are required');
       return;
     }
 
     await updatePost({
       variables: {
-        input: {
-          id,
-          title: title.trim(),
-          content: content.trim()
-        }
+        input: { id: post.id, title: title.trim(), content },
       },
     });
   };
-
-  if (loadingPost) {
-    return (
-      <div className="container">
-        <p>Loading post...</p>
-      </div>
-    );
-  }
-
-  if (queryError) {
-    return (
-      <div className="container">
-        <div className="error-message">Error: {queryError.message}</div>
-      </div>
-    );
-  }
-
-  if (!data?.post) {
-    return (
-      <div className="container">
-        <p>Post not found</p>
-      </div>
-    );
-  }
 
   return (
     <div className="container">
@@ -134,27 +93,17 @@ export default function EditPostPage() {
           </div>
 
           <div className="form-group">
-            <label htmlFor="content">Content</label>
-            <textarea
-              id="content"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="Write your post content..."
-              rows={15}
-              required
+            <label>Content</label>
+            {/*
+              key=post.id ensures the editor remounts if we ever navigate
+              between different edit pages without unmounting this component.
+            */}
+            <RichTextEditor
+              key={post.id}
+              initialContent={post.content}
+              onChange={setContent}
               disabled={updating}
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                border: '1px solid #333',
-                borderRadius: '6px',
-                backgroundColor: '#2a2a2a',
-                color: 'inherit',
-                fontFamily: 'inherit',
-                fontSize: '1rem',
-                resize: 'vertical',
-                boxSizing: 'border-box',
-              }}
+              placeholder="Write your post content…"
             />
           </div>
 
@@ -164,7 +113,7 @@ export default function EditPostPage() {
             </button>
             <button
               type="button"
-              onClick={() => navigate(`/post/${id}`)}
+              onClick={() => navigate(`/post/${post.id}`)}
               disabled={updating}
               style={{
                 padding: '0.85rem 1.5rem',
@@ -180,4 +129,40 @@ export default function EditPostPage() {
       </div>
     </div>
   );
+}
+
+// ── Page — handles loading / error states ─────────────────────────────────────
+
+export default function EditPostPage() {
+  const { id } = useParams<{ id: string }>();
+
+  const { loading, error, data } = useQuery<PostData>(GET_POST, {
+    variables: { id },
+  });
+
+  if (loading) {
+    return (
+      <div className="container">
+        <p>Loading post...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container">
+        <div className="error-message">Error: {error.message}</div>
+      </div>
+    );
+  }
+
+  if (!data?.post) {
+    return (
+      <div className="container">
+        <p>Post not found</p>
+      </div>
+    );
+  }
+
+  return <EditPostForm post={data.post} />;
 }

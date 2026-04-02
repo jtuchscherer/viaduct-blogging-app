@@ -2,7 +2,7 @@
 
 **Status**: 🚀 In Progress — Phases 1–9 + 11 + 13 + 14 Complete, Phase 10 Next
 
-**Last Updated**: 2026-04-02
+**Last Updated**: 2026-04-02 (Phase 18 complete)
 
 ## Test Statistics
 
@@ -31,6 +31,7 @@
 | 11 — Cursor Pagination | `postsConnection(first, after)` via Viaduct `@connection`/`@edge`; `findPage` in repository; `ConnectionBuilder.fromList` in resolver |
 | 13 — Migrate Resolver Tests | Migrated to new `FieldResolverTester`/`MutationResolverTester` API where possible; `@Suppress("DEPRECATION")` for resolvers returning List/Boolean/Int (new API only supports single GRT returns); zero deprecation warnings in build |
 | 14 — Batch Author Resolver | `PostAuthorResolver` overrides `batchResolve`; `getAuthorsByPostIds` fetches all authors in one `inList` query; eliminates N+1 on posts list |
+| 18 — Rich Text Editor | Lexical editor on Create/Edit Post pages; toolbar with B/I/U, H2/H3, bullet/numbered lists, code blocks; HTML stored in `content` field; DOMPurify rendering in PostDetailPage; backward-compatible with legacy plain-text posts |
 | E2E fixes | Fixed `e2e.sh` spurious `cd ..` bug; fixed Playwright strict-mode selector failures (`main h1`, `.first()`); all 81 browser tests now passing |
 | CI fixes | Disabled `gradle-actions` proprietary caching component (`cache-disabled: true`) to suppress licensing warning |
 
@@ -264,6 +265,37 @@ The third test is the key regression guard: it documents that the current implem
 - CloudWatch dashboard: error rate, p99 latency, active DB connections, heap usage
 
 **Success Criteria**: A 500 error in prod produces a JSON log line with `requestId`, operation name, stack trace, and status; the same `requestId` appears in the HTTP response header so it can be reported by the caller; CloudWatch shows `http.server.requests` metrics broken down by endpoint and status code; `/health` returns 503 if the DB is unreachable.
+
+---
+
+## Phase 18: Rich Text Editor for Create/Edit Post Pages ✅ DONE
+
+**Goal**: Replace the plain `<textarea>` on the Edit Post page with a rich text editor so authors can write formatted blog posts (headings, bold/italic, links, code blocks, lists, etc.).
+
+**Editor options**:
+- **[Lexical](https://github.com/facebook/lexical)** _(preferred)_ — Meta's modern React-first editor framework. Highly extensible, great TypeScript support, actively maintained. More setup required (compose from `@lexical/react` plugins) but gives full control. Output format is Lexical's own JSON serialization; serialize to/from HTML for storage.
+- **[Tiptap](https://tiptap.dev)** _(alternative)_ — Built on ProseMirror, higher-level API, ships with polished built-in extensions. Faster to get a working editor; good TypeScript types. Outputs HTML directly, which simplifies storage but needs XSS sanitization on render.
+
+**Decision criteria**: Lexical if we want maximum control and a modern architecture; Tiptap if we want a polished editor with less boilerplate.
+
+#### Tasks:
+- [ ] Choose editor library and install it (`npm install lexical @lexical/react` or `npm install @tiptap/react @tiptap/starter-kit`)
+- [ ] Update `EditPostPage.tsx`: replace `<textarea>` for `content` with the rich text editor component
+- [ ] Store content as the editor's native format (Lexical JSON or HTML); update the `content` GraphQL field to `String` (already is)
+- [ ] Update `PostDetailPage.tsx` and any other content-rendering pages to render rich text safely (use `dangerouslySetInnerHTML` with a sanitizer like `dompurify`, or use Lexical's read-only renderer)
+- [ ] Update `CreatePostPage.tsx` to use the same editor component for consistency
+- [ ] Add basic toolbar: bold, italic, headings (H1/H2), unordered list, ordered list, link, inline code, code block
+- [ ] Add Playwright test: create a post with bold text, verify it renders correctly in post detail view
+
+**Key files**:
+- `frontend/src/pages/EditPostPage.tsx` — main target
+- `frontend/src/pages/CreatePostPage.tsx` — should use the same editor for consistency
+- `frontend/src/pages/PostDetailPage.tsx` — must render rich content safely
+- `frontend/src/components/RichTextEditor.tsx` — new shared editor component
+
+**XSS note**: If storing/rendering HTML, always sanitize with `dompurify` before inserting into the DOM. If using Lexical JSON + Lexical's read-only renderer, no sanitization is needed.
+
+**Success Criteria**: Authors can write formatted posts with at minimum bold, italic, headings, and lists; content is persisted and rendered correctly; no XSS vulnerabilities introduced; Playwright tests pass.
 
 ---
 
