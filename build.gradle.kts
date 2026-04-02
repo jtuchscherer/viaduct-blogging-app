@@ -79,7 +79,11 @@ configurations.all {
         "io.netty:netty-common:4.2.12.Final",
         "io.netty:netty-buffer:4.2.12.Final",
         "io.netty:netty-transport:4.2.12.Final",
-        "io.netty:netty-resolver:4.2.12.Final"
+        "io.netty:netty-resolver:4.2.12.Final",
+        "io.netty:netty-transport-classes-epoll:4.2.12.Final",
+        "io.netty:netty-transport-classes-kqueue:4.2.12.Final",
+        "io.netty:netty-transport-native-epoll:4.2.12.Final",
+        "io.netty:netty-transport-native-kqueue:4.2.12.Final"
     )
 }
 
