@@ -39,6 +39,7 @@
 - **Phase 10**: Create Dockerfile for containerized deployment
 - **Phase 12**: Frontend pagination UI — "Load More" button consuming `postsConnection` in `HomePage.tsx`
 - **Phase 15**: DB-level cursor pagination for `postsConnection`
+- **Phase 16**: Production database support — PostgreSQL/RDS, connection pooling, migrations
 
 ---
 
@@ -115,6 +116,66 @@ ENTRYPOINT ["java", "-jar", "app.jar"]
 - `src/main/kotlin/org/tuchscherer/database/repositories/ExposedPostRepository.kt` — implementation
 
 **Success Criteria**: `postsConnection(first: N, after: cursor)` issues exactly one `SELECT … LIMIT N OFFSET M` query to the database; `findAll()` is no longer called from the connection resolver; all pagination `query-tests.sh` and Playwright tests pass.
+
+---
+
+## Phase 16: Production Database Support (PostgreSQL/RDS) ⏳ TODO
+
+**Goal**: Make the app deployable against AWS RDS PostgreSQL in production while keeping SQLite for local dev and H2 for unit tests.
+
+**Current state**: `AppConfig` already has `TEST`/`DEV`/`PROD` environments and `prodConfig()` reads `DATABASE_URL`/`DATABASE_DRIVER` from env vars. The config scaffolding exists — but several gaps remain before it actually works against RDS.
+
+**Gaps to close:**
+
+#### 1. Add PostgreSQL JDBC driver dependency
+- Add `implementation("org.postgresql:postgresql:42.7.x")` to `build.gradle.kts`
+- Keep SQLite and H2 drivers for dev/test
+
+#### 2. Add HikariCP connection pooling for prod
+- `DatabaseFactory.initialize()` currently calls `Database.connect(url, driver)` which creates bare connections — no pooling, no timeout handling
+- For RDS, use `Database.connect(HikariDataSource(hikariConfig))` in prod
+- Configure pool size, connection timeout, keepalive for RDS latency characteristics
+- Dev/test can continue with simple `Database.connect`
+
+#### 3. Replace `SchemaUtils.create` with proper migrations (Flyway)
+- `SchemaUtils.create(Users, Posts, Comments, Likes)` is dev-only — it's a no-op if tables exist but cannot evolve the schema safely
+- Add Flyway dependency; write initial migration `V1__create_tables.sql` matching current schema
+- `DatabaseFactory.initialize()` runs `Flyway.configure().dataSource(...).load().migrate()` before any queries
+- Test config can keep `SchemaUtils.create` for speed, or run Flyway against H2 (`MODE=PostgreSQL`)
+
+#### 4. Fix H2 test mode to match prod dialect
+- Test config currently uses `MODE=MySQL`; if prod is PostgreSQL, change to `MODE=PostgreSQL` so tests catch dialect-specific bugs
+
+#### 5. Add RDS SSL configuration
+- RDS requires SSL by default; JDBC URL needs `?sslmode=require` (or configure via HikariCP `addDataSourceProperty`)
+- Make SSL mode configurable (`DATABASE_SSL_MODE` env var, default `require` in prod, `disable` in dev)
+
+#### 6. Add database credentials env vars to `prodConfig()`
+- RDS uses separate username + password (not embedded in URL)
+- Add `DATABASE_USERNAME` and `DATABASE_PASSWORD` env vars; pass to HikariCP config
+- Dev SQLite doesn't need them; keep optional with null defaults
+
+#### 7. Update Docker / deployment config (ties into Phase 10)
+- Add `DATABASE_URL`, `DATABASE_USERNAME`, `DATABASE_PASSWORD`, `DATABASE_SSL_MODE` to Dockerfile ENV documentation
+- Document RDS security group requirements (port 5432 open to ECS/EC2 task)
+
+**Key files**:
+- `src/main/kotlin/org/tuchscherer/config/AppConfig.kt` — `prodConfig()`, `testConfig()`
+- `src/main/kotlin/org/tuchscherer/database/DatabaseFactory.kt` — connection + schema init
+- `build.gradle.kts` — driver + HikariCP + Flyway dependencies
+- `src/main/resources/db/migration/` — Flyway SQL migration files (new)
+
+**Environment variables summary**:
+| Variable | Dev | Test | Prod |
+|---|---|---|---|
+| `APP_ENV` | `DEV` (default) | `TEST` | `PROD` |
+| `DATABASE_URL` | optional (defaults to `blog.db`) | n/a (hardcoded H2) | required (`jdbc:postgresql://rds-host:5432/blog`) |
+| `DATABASE_USERNAME` | n/a | n/a | required |
+| `DATABASE_PASSWORD` | n/a | n/a | required |
+| `DATABASE_SSL_MODE` | `disable` | n/a | `require` |
+| `JWT_SECRET` | optional | optional | required |
+
+**Success Criteria**: `APP_ENV=PROD` with valid `DATABASE_*` vars connects to a real PostgreSQL/RDS instance, Flyway runs migrations on first boot, app serves traffic; dev still works with `blog.db` SQLite; all H2 tests pass with `MODE=PostgreSQL`.
 
 ---
 
