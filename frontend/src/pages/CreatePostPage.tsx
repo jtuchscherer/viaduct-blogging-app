@@ -23,7 +23,8 @@ interface CreatePostData {
 }
 
 function isContentEmpty(html: string): boolean {
-  return !html || html.replace(/<[^>]*>/g, '').trim() === '';
+  if (!html) return true;
+  return new DOMParser().parseFromString(html, 'text/html').body.textContent?.trim() === '';
 }
 
 export default function CreatePostPage() {

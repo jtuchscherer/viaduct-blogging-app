@@ -39,7 +39,8 @@ interface PostData {
 }
 
 function isContentEmpty(html: string): boolean {
-  return !html || html.replace(/<[^>]*>/g, '').trim() === '';
+  if (!html) return true;
+  return new DOMParser().parseFromString(html, 'text/html').body.textContent?.trim() === '';
 }
 
 // ── Inner form — receives post data after it has loaded ───────────────────────
