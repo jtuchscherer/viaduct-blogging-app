@@ -83,7 +83,6 @@ wait_for_url "http://localhost:8080/health" "Backend (port 8080)"
 echo -e "${BLUE}Starting frontend dev server...${NC}"
 cd frontend && npm run dev > "$FRONTEND_LOG" 2>&1 &
 FRONTEND_PID=$!
-cd ..
 wait_for_url "http://localhost:5173" "Frontend (port 5173)"
 
 echo ""

@@ -5,7 +5,7 @@ import { createPostViaAPI } from './fixtures/posts';
 test.describe('Blog Posts', () => {
   test('home page shows posts list', async ({ page }) => {
     await page.goto('/');
-    await expect(page.locator('h1')).toContainText('Blog Posts');
+    await expect(page.locator('main h1')).toContainText('Blog Posts');
   });
 
   test('unauthenticated user sees login/register in header, not New Post', async ({ page }) => {
@@ -32,7 +32,7 @@ test.describe('Blog Posts', () => {
     await page.click('button[type="submit"]');
 
     await expect(page).toHaveURL(/\/post\//);
-    await expect(page.locator('h1')).toContainText(title);
+    await expect(page.locator('main h1')).toContainText(title);
     await expect(page.locator('.post-content')).toContainText('This is the post content');
   });
 
@@ -58,7 +58,7 @@ test.describe('Blog Posts', () => {
     await page.goto(`/post/${post.id}`);
 
     await expect(page.locator('.post-meta')).toContainText(creds.user.name);
-    await expect(page.locator('.post-actions button')).toBeVisible();
+    await expect(page.locator('.post-actions button').first()).toBeVisible();
     await expect(page.locator('.comments-section')).toBeVisible();
   });
 
@@ -100,7 +100,7 @@ test.describe('Blog Posts', () => {
     await page.click('button[type="submit"]');
     await page.waitForURL(/\/post\//);
 
-    await expect(page.locator('h1')).toContainText('Updated Title');
+    await expect(page.locator('main h1')).toContainText('Updated Title');
   });
 
   test('user can delete their own post and is redirected home', async ({ page }) => {

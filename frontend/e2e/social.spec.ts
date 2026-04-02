@@ -19,7 +19,7 @@ test.describe('Likes and Comments', () => {
     const post = await createPostViaAPI(page, creds.token, 'Like Test Post');
 
     await page.goto(`/post/${post.id}`);
-    const likeButton = page.locator('.post-actions button');
+    const likeButton = page.locator('.post-actions button').first();
     await expect(likeButton).toContainText('0');
 
     await likeButton.click();
@@ -31,7 +31,7 @@ test.describe('Likes and Comments', () => {
     const post = await createPostViaAPI(page, creds.token, 'Unlike Test Post');
 
     await page.goto(`/post/${post.id}`);
-    const likeButton = page.locator('.post-actions button');
+    const likeButton = page.locator('.post-actions button').first();
     await likeButton.click();
     await expect(likeButton).toContainText('1');
 
@@ -44,10 +44,10 @@ test.describe('Likes and Comments', () => {
     const user1 = await registerAndLogin(page, `ml_author_${suffix}`);
     const post = await createPostViaAPI(page, user1.token, 'Multi-like Post');
 
-    // User 1 likes
+    // User 1 likes (is the author, so .post-actions has like + delete buttons)
     await page.goto(`/post/${post.id}`);
-    await page.locator('.post-actions button').click();
-    await expect(page.locator('.post-actions button')).toContainText('1');
+    await page.locator('.post-actions button').first().click();
+    await expect(page.locator('.post-actions button').first()).toContainText('1');
 
     // User 2 likes
     const user2 = await registerUser(page, `ml_viewer_${suffix}`);
@@ -57,8 +57,8 @@ test.describe('Likes and Comments', () => {
     }, { token: user2.token, user: user2.user });
 
     await page.goto(`/post/${post.id}`);
-    await page.locator('.post-actions button').click();
-    await expect(page.locator('.post-actions button')).toContainText('2');
+    await page.locator('.post-actions button').first().click();
+    await expect(page.locator('.post-actions button').first()).toContainText('2');
   });
 
   test('user can add a comment and it appears in the list', async ({ page }) => {
