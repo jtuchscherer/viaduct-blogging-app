@@ -1,6 +1,6 @@
 # TODO: Viaduct Blogging App — Implementation Plan
 
-**Status**: 🚀 In Progress — Phases 1–9 + 11 Complete, Phase 10 Next
+**Status**: 🚀 In Progress — Phases 1–9 + 11 + 13 + 14 Complete, Phase 10 Next
 
 **Last Updated**: 2026-04-01
 
@@ -8,7 +8,7 @@
 
 | Suite | Count | Status |
 |---|---|---|
-| Unit + Integration tests (`./gradlew test`) | 176 (4 skipped) | ✅ All passing |
+| Unit + Integration tests (`./gradlew test`) | 182 (4 skipped) | ✅ All passing |
 | API E2E tests (`./query-tests.sh`) | 38 | ✅ All passing |
 | Browser E2E tests (Playwright, 27 tests × 3 browsers) | 81 runs | ✅ Configured |
 
@@ -29,13 +29,13 @@
 | 8 — Integration Tests | `AuthFlowIntegrationTest` + `BlogWorkflowIntegrationTest` with real H2 database (26 tests) |
 | 9 — Playwright Browser E2E | 27 tests across `auth.spec.ts`, `posts.spec.ts`, `social.spec.ts`; API fixtures for setup |
 | 11 — Cursor Pagination | `postsConnection(first, after)` via Viaduct `@connection`/`@edge`; `findPage` in repository; `ConnectionBuilder.fromList` in resolver |
+| 13 — Migrate Resolver Tests | Migrated to new `FieldResolverTester`/`MutationResolverTester` API where possible; `@Suppress("DEPRECATION")` for resolvers returning List/Boolean/Int (new API only supports single GRT returns); zero deprecation warnings in build |
+| 14 — Batch Author Resolver | `PostAuthorResolver` overrides `batchResolve`; `getAuthorsByPostIds` fetches all authors in one `inList` query; eliminates N+1 on posts list |
 
 ## Next Steps
 
 - **Phase 10**: Create Dockerfile for containerized deployment
 - **Phase 12**: Frontend pagination UI — "Load More" button consuming `postsConnection` in `HomePage.tsx`
-- **Phase 13**: Migrate resolver tests from deprecated `DefaultAbstractResolverTestBase` to new Viaduct testing API
-- **Phase 14**: Migrate `PostAuthorResolver` to a Viaduct batch resolver to eliminate N+1 queries on the posts list
 
 ---
 
@@ -90,47 +90,6 @@ ENTRYPOINT ["java", "-jar", "app.jar"]
 
 ---
 
-## Phase 13: Migrate Resolver Tests to New Viaduct Testing API ⏳ TODO
-
-**Goal**: Eliminate deprecation warnings in `./gradlew build` output.
-
-**Warning:**
-```
-'class DefaultAbstractResolverTestBase' is deprecated.
-Use FieldResolverTester, MutationResolverTester, or NodeResolverTester in viaduct.api.testing.
-```
-
-**Affected files** (`src/test/kotlin/org/tuchscherer/resolvers/`):
-`CreatePostResolverTest`, `UpdatePostResolverTest`, `DeletePostResolverTest`, `PostsResolverTest`, `PostResolverTest`, `MyPostsResolverTest`, `PostFieldResolversTest`, `PostCommentsResolverTest`, `LikePostResolverTest`, `UnlikePostResolverTest`, `LikeFieldResolversTest`, `LikeObjectFieldResolversTest`, `CreateCommentResolverTest`, `DeleteCommentResolverTest`, `CommentFieldResolversTest`
-
-#### Tasks:
-- [ ] Read `viaduct.api.testing` package to understand new `FieldResolverTester`, `MutationResolverTester`, `NodeResolverTester` APIs
-- [ ] Migrate mutation resolver tests to `MutationResolverTester`
-- [ ] Migrate query resolver tests to `NodeResolverTester`
-- [ ] Migrate field resolver tests to `FieldResolverTester`
-- [ ] Verify `./gradlew build` has zero deprecation warnings for resolver tests
-
-**Success Criteria**: No `DefaultAbstractResolverTestBase is deprecated` warnings; all 176 tests still passing.
-
----
-
-## Phase 14: Batch Resolver for PostAuthorResolver ⏳ TODO
-
-**Goal**: Eliminate the N+1 query problem when loading the posts list. Currently each post in the list fires a separate `getAuthorForPost` query; with a batch resolver Viaduct collects all post IDs and issues a single `SELECT` for all authors at once.
-
-**Background**: Any field resolver that extends a standard `resolve(ctx: Context)` runs once per parent object. When `posts` returns 20 results and the client requests `author` on each, that's 20 individual author lookups. A batch resolver changes the signature to `resolve(keys: List<K>): Map<K, V>` — Viaduct groups all keys and calls it once.
-
-#### Tasks:
-- [ ] Read the Viaduct batch resolver docs and identify the correct base class / annotation for a batched field resolver
-- [ ] Add `getAuthorsForPosts(postIds: List<UUID>): Map<UUID, User>` to `PostRepository` interface and `ExposedPostRepository` (single `SELECT … WHERE id IN (…)` via Exposed)
-- [ ] Rewrite `PostAuthorResolver` to extend the batch resolver base and implement `resolve(keys)` returning `Map<postId, ViaductUser>`
-- [ ] Update `PostAuthorResolverTest` to test the batched behaviour (multiple keys in one call)
-- [ ] Verify `./gradlew test` still passes
-
-**Success Criteria**: Loading N posts triggers exactly 1 author query instead of N; all existing tests pass.
-
----
-
 ## Testing Strategy
 
 ```
@@ -144,7 +103,7 @@ Use FieldResolverTester, MutationResolverTester, or NodeResolverTester in viaduc
  /  Integration \ 26 integration tests (H2 in-memory)
 /________________\↑ Real services + real DB, no HTTP overhead
 /                  \
-/    Unit Tests     \ 150 unit tests (MockK)
+/    Unit Tests     \ 156 unit tests (MockK)
 /____________________\↑ Isolated, fast, no DB
 ```
 
