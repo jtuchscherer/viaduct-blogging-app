@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { gql } from '@apollo/client';
 import { useQuery, useMutation } from '@apollo/client/react';
 import RichTextEditor from '../components/RichTextEditor';
+import { isContentEmpty } from '../utils/content';
 
 const GET_POST = gql`
   query GetPostForEdit($id: ID!) {
@@ -36,11 +37,6 @@ interface Post {
 
 interface PostData {
   post: Post;
-}
-
-function isContentEmpty(html: string): boolean {
-  if (!html) return true;
-  return new DOMParser().parseFromString(html, 'text/html').body.textContent?.trim() === '';
 }
 
 // ── Inner form — receives post data after it has loaded ───────────────────────

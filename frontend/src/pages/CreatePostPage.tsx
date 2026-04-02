@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { gql } from '@apollo/client';
 import { useMutation } from '@apollo/client/react';
 import RichTextEditor from '../components/RichTextEditor';
+import { isContentEmpty } from '../utils/content';
 
 const CREATE_POST = gql`
   mutation CreatePost($input: CreatePostInput!) {
@@ -22,10 +23,6 @@ interface CreatePostData {
   };
 }
 
-function isContentEmpty(html: string): boolean {
-  if (!html) return true;
-  return new DOMParser().parseFromString(html, 'text/html').body.textContent?.trim() === '';
-}
 
 export default function CreatePostPage() {
   const [title, setTitle] = useState('');
