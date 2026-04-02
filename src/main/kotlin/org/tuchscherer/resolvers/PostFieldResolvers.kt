@@ -14,15 +14,6 @@ import java.util.*
 class PostAuthorResolver : PostResolvers.Author() {
     private val postRepository: PostRepository by inject(PostRepository::class.java)
 
-    override suspend fun resolve(ctx: Context): ViaductUser {
-        val postId = UUID.fromString(ctx.objectValue.getId())
-
-        val author = postRepository.getAuthorForPost(postId)
-            ?: throw RuntimeException("Post not found")
-
-        return author.toViaductUser(ctx)
-    }
-
     override suspend fun batchResolve(contexts: List<Context>): List<FieldValue<ViaductUser>> {
         val postIds = contexts.map { UUID.fromString(it.objectValue.getId()) }
         val authorsById = postRepository.getAuthorsByPostIds(postIds)

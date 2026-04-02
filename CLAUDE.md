@@ -29,7 +29,7 @@ npm run lint             # ESLint
 
 ### Tests
 ```bash
-./gradlew test           # backend unit + integration tests (176 tests)
+./gradlew test           # backend unit + integration tests (182 tests)
 ./query-tests.sh         # curl-based GraphQL API tests (requires server running)
 ./e2e.sh                 # start servers + run Playwright browser tests
 cd frontend && npm run test:e2e        # Playwright tests only (servers must already be running)
@@ -109,6 +109,14 @@ frontend/e2e/
 
 ### Known Viaduct test infrastructure limitation
 `ConnectionFieldExecutionContext` (used by `PostsConnectionResolver`) is not compatible with `DefaultAbstractResolverTestBase`. Test pagination via the repository layer (`findPage`) and `query-tests.sh` instead.
+
+## Definition of Done
+
+Before declaring any task complete, always run the full test suite and confirm it passes:
+```bash
+./gradlew test   # must show BUILD SUCCESSFUL with 0 failures
+```
+Do not mark work as done until this passes locally.
 
 ## Maintaining TODO.md and DEVELOPMENT_PLAN.md
 
