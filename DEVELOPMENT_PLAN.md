@@ -1,6 +1,6 @@
 # Simple Blogging App Development Plan
 
-**Last Updated**: 2026-04-01
+**Last Updated**: 2026-04-02
 
 A web-based blogging application using React frontend and Viaduct/Kotlin GraphQL backend.
 
@@ -235,9 +235,10 @@ type Mutation {
 - ✅ Comment functionality with authorization
 - ✅ Like/unlike operations with idempotency
 - ✅ Authorization checks (users can only edit/delete their own content)
-- ✅ Complete e2e test suite (38/38 tests passing)
+- ✅ Complete e2e test suite (38/38 API tests + 81/81 Playwright browser tests passing)
 - ✅ Relay-style cursor pagination (`postsConnection` with `first`/`after`)
-- ✅ 176 unit + integration tests (all passing)
+- ✅ Batch author resolver (`batchResolve`) eliminates N+1 queries on post lists
+- ✅ 182 unit + integration tests (all passing)
 
 ### Frontend (Complete)
 - ✅ React 19 + TypeScript + Vite
@@ -301,7 +302,6 @@ The core blogging application is fully implemented and tested. See `TODO.md` for
 ### Pending Enhancements
 - **Phase 10**: Docker deployment (multi-stage Dockerfile, env-var configuration)
 - **Phase 12**: Frontend pagination UI ("Load More" button consuming `postsConnection`)
-- **Phase 13**: Migrate resolver tests off deprecated `DefaultAbstractResolverTestBase`
 - Search functionality
 - User profiles with avatars
 - Rich text editor for post content

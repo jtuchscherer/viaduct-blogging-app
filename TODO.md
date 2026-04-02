@@ -2,7 +2,7 @@
 
 **Status**: 🚀 In Progress — Phases 1–9 + 11 + 13 + 14 Complete, Phase 10 Next
 
-**Last Updated**: 2026-04-01
+**Last Updated**: 2026-04-02
 
 ## Test Statistics
 
@@ -10,7 +10,7 @@
 |---|---|---|
 | Unit + Integration tests (`./gradlew test`) | 182 (4 skipped) | ✅ All passing |
 | API E2E tests (`./query-tests.sh`) | 38 | ✅ All passing |
-| Browser E2E tests (Playwright, 27 tests × 3 browsers) | 81 runs | ✅ Configured |
+| Browser E2E tests (Playwright, 27 tests × 3 browsers) | 81 runs | ✅ All passing |
 
 ## Completed Phases
 
@@ -31,6 +31,8 @@
 | 11 — Cursor Pagination | `postsConnection(first, after)` via Viaduct `@connection`/`@edge`; `findPage` in repository; `ConnectionBuilder.fromList` in resolver |
 | 13 — Migrate Resolver Tests | Migrated to new `FieldResolverTester`/`MutationResolverTester` API where possible; `@Suppress("DEPRECATION")` for resolvers returning List/Boolean/Int (new API only supports single GRT returns); zero deprecation warnings in build |
 | 14 — Batch Author Resolver | `PostAuthorResolver` overrides `batchResolve`; `getAuthorsByPostIds` fetches all authors in one `inList` query; eliminates N+1 on posts list |
+| E2E fixes | Fixed `e2e.sh` spurious `cd ..` bug; fixed Playwright strict-mode selector failures (`main h1`, `.first()`); all 81 browser tests now passing |
+| CI fixes | Disabled `gradle-actions` proprietary caching component (`cache-disabled: true`) to suppress licensing warning |
 
 ## Next Steps
 
