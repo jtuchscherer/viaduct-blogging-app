@@ -1,3 +1,27 @@
+// Force patched versions in the Gradle plugin classpath.
+// The Viaduct plugin pulls in Netty 4.1.x and older Logback as build-time
+// dependencies; these show up in GitHub's dependency graph (attributed to
+// settings.gradle.kts) and trigger Dependabot alerts even though they are
+// only used during the build, not at runtime.
+buildscript {
+    configurations.all {
+        resolutionStrategy.force(
+            "io.netty:netty-codec-http:4.1.132.Final",
+            "io.netty:netty-codec-http2:4.1.132.Final",
+            "io.netty:netty-codec:4.1.132.Final",
+            "io.netty:netty-handler:4.1.132.Final",
+            "io.netty:netty-common:4.1.132.Final",
+            "io.netty:netty-buffer:4.1.132.Final",
+            "io.netty:netty-transport:4.1.132.Final",
+            "io.netty:netty-resolver:4.1.132.Final",
+            "io.netty:netty-transport-native-epoll:4.1.132.Final",
+            "io.netty:netty-transport-native-kqueue:4.1.132.Final",
+            "ch.qos.logback:logback-classic:1.5.25",
+            "ch.qos.logback:logback-core:1.5.25"
+        )
+    }
+}
+
 plugins {
     kotlin("jvm") version "2.2.20"
     alias(libs.plugins.viaduct.application)
