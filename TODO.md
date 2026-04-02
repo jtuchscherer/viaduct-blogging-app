@@ -38,6 +38,7 @@
 
 - **Phase 10**: Create Dockerfile for containerized deployment
 - **Phase 12**: Frontend pagination UI — "Load More" button consuming `postsConnection` in `HomePage.tsx`
+- **Phase 15a**: Unit tests for `PostsConnectionResolver` (prerequisite for Phase 15)
 - **Phase 15**: DB-level cursor pagination for `postsConnection`
 - **Phase 16**: Production database support — PostgreSQL/RDS, connection pooling, migrations
 - **Phase 17**: Production telemetry — structured logging, request tracing, metrics
@@ -92,6 +93,33 @@ ENTRYPOINT ["java", "-jar", "app.jar"]
 - [ ] Add Playwright tests: first page loads N posts, "Load More" appears, click appends posts, button hides when exhausted
 
 **Success Criteria**: HomePage no longer fetches all posts at once; "Load More" works end-to-end; Playwright tests pass.
+
+---
+
+## Phase 15a: Unit Tests for `PostsConnectionResolver` ⏳ TODO (prerequisite for Phase 15)
+
+**Goal**: Establish a unit-test contract for `PostsConnectionResolver` before refactoring it in Phase 15, so the refactor has a regression baseline.
+
+**Current state**: `PostsResolverTest.kt` only tests `PostsResolver` (the `posts` list query). `PostsConnectionResolver` has no unit tests at all. The existing `query-tests.sh` covers the happy path end-to-end but doesn't isolate the resolver's repository interaction.
+
+**Constraint**: `ConnectionFieldExecutionContext` (used by `PostsConnectionResolver`) is incompatible with `DefaultAbstractResolverTestBase.runFieldResolver`, so the resolver can't be tested via the usual base class. The same limitation applies as with `PostAuthorResolver.batchResolve`: calling `PostsConnection.Builder(ctx)` with a mock context throws a `ClassCastException` because the mock doesn't implement Viaduct's internal `InternalContext`.
+
+**Approach**: Call `resolver.resolve(ctx)` directly with a `mockk<QueryResolvers.PostsConnection.Context>(relaxed = true)`, use `runCatching` to tolerate the builder failure, and verify the repository calls. This tests the contract — which methods are called with which arguments — without needing a real framework context.
+
+#### Tests to add in `PostsResolverTest.kt`:
+
+- `PostsConnectionResolver calls findAll and count` — mock `findAll()` returning N posts and `count()` returning N; verify both are called
+- `PostsConnectionResolver calls findAll with empty repository` — mock both returning empty/0; verify both are called
+- `PostsConnectionResolver does not call findPage` — verify `findPage` is never called (documents current behavior; this assertion inverts in Phase 15)
+
+The third test is the key regression guard: it documents that the current implementation uses `findAll` (not `findPage`), so when Phase 15 replaces it, the test will need to be updated — making the change intentional and visible.
+
+**Key files**:
+- `src/test/kotlin/org/tuchscherer/resolvers/PostsResolverTest.kt` — add tests here
+- `src/main/kotlin/org/tuchscherer/viadapp/resolvers/PostQueryResolvers.kt` — `PostsConnectionResolver` under test
+- `src/main/kotlin/org/tuchscherer/viadapp/resolvers/resolverbases/QueryResolvers.kt` — generated `PostsConnection.Context` type to mock
+
+**Success Criteria**: Three new passing tests; `./gradlew test` still green; the tests clearly document the `findAll` + `count` contract so Phase 15 knows exactly what to change.
 
 ---
 
