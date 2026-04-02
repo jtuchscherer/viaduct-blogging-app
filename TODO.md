@@ -38,6 +38,7 @@
 
 - **Phase 10**: Create Dockerfile for containerized deployment
 - **Phase 12**: Frontend pagination UI — "Load More" button consuming `postsConnection` in `HomePage.tsx`
+- **Phase 15**: DB-level cursor pagination for `postsConnection`
 
 ---
 
@@ -89,6 +90,31 @@ ENTRYPOINT ["java", "-jar", "app.jar"]
 - [ ] Add Playwright tests: first page loads N posts, "Load More" appears, click appends posts, button hides when exhausted
 
 **Success Criteria**: HomePage no longer fetches all posts at once; "Load More" works end-to-end; Playwright tests pass.
+
+---
+
+## Phase 15: DB-Level Cursor Pagination for `postsConnection` ⏳ TODO
+
+**Goal**: Replace the current in-memory slicing in `PostsConnectionResolver` with a true database-level query so only the requested page of rows is fetched.
+
+**Current problem**: `PostsConnectionResolver.resolve` calls `postRepository.findAll()`, loading every post into memory, then passes the full list to `ConnectionBuilder.fromList` which discards everything outside the requested window. This is a full table scan on every paginated request.
+
+**Approach**: Viaduct's `ConnectionBuilder.fromList` generates opaque base64 cursors encoding the item's position (0-based index) in the list. Decoding a cursor gives an integer offset. We can use that offset directly with `findPage(limit, offset)` to push the slicing into the database.
+
+#### Tasks:
+- [ ] Decode the `after` cursor in `PostsConnectionResolver`: base64-decode → parse integer offset
+- [ ] Call `postRepository.findPage(limit = first ?: DEFAULT_PAGE_SIZE, offset = decodedOffset + 1)` instead of `findAll()`
+- [ ] Build the `PostsConnection` response manually (edges + cursors + `pageInfo`) using `postRepository.count()` for `totalCount` and `hasNextPage`
+- [ ] Keep `ConnectionBuilder.fromList` as a fallback for the no-cursor first-page case, or replace entirely with manual construction for consistency
+- [ ] Add/update repository integration tests for `findPage` edge cases
+- [ ] Verify existing `query-tests.sh` pagination tests still pass end-to-end
+
+**Key files**:
+- `src/main/kotlin/org/tuchscherer/resolvers/PostQueryResolvers.kt` — `PostsConnectionResolver`
+- `src/main/kotlin/org/tuchscherer/database/repositories/PostRepository.kt` — `findPage`, `count` already exist
+- `src/main/kotlin/org/tuchscherer/database/repositories/ExposedPostRepository.kt` — implementation
+
+**Success Criteria**: `postsConnection(first: N, after: cursor)` issues exactly one `SELECT … LIMIT N OFFSET M` query to the database; `findAll()` is no longer called from the connection resolver; all pagination `query-tests.sh` and Playwright tests pass.
 
 ---
 
