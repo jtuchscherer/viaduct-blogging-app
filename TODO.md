@@ -40,6 +40,7 @@
 - **Phase 12**: Frontend pagination UI — "Load More" button consuming `postsConnection` in `HomePage.tsx`
 - **Phase 15**: DB-level cursor pagination for `postsConnection`
 - **Phase 16**: Production database support — PostgreSQL/RDS, connection pooling, migrations
+- **Phase 17**: Production telemetry — structured logging, request tracing, metrics
 
 ---
 
@@ -176,6 +177,64 @@ ENTRYPOINT ["java", "-jar", "app.jar"]
 | `JWT_SECRET` | optional | optional | required |
 
 **Success Criteria**: `APP_ENV=PROD` with valid `DATABASE_*` vars connects to a real PostgreSQL/RDS instance, Flyway runs migrations on first boot, app serves traffic; dev still works with `blog.db` SQLite; all H2 tests pass with `MODE=PostgreSQL`.
+
+---
+
+## Phase 17: Production Telemetry ⏳ TODO
+
+**Goal**: Make production bugs triageable. When something goes wrong on AWS, you need to find the request, understand what it did, and see the error — without SSH-ing into a box.
+
+**Current state**: Logback is on the classpath but there is no `logback.xml`; the root logger is programmatically set to WARN in `ViaductApplication.kt`; `ViaductApplication` uses bare `println` calls; only `GraphQLServer` uses SLF4J. No metrics exist.
+
+---
+
+#### 1. Structured JSON logging (CloudWatch-compatible)
+- Add `logstash-logback-encoder` dependency and a `logback.xml` that outputs JSON in prod (`APP_ENV=PROD`) and human-readable text in dev
+- Replace all `println` calls in `ViaductApplication.kt` with proper `logger.info()`
+- Every log line should include: `timestamp`, `level`, `logger`, `message`, `environment`, `requestId` (see §2), and any exception with full stack trace
+- CloudWatch Logs Insights can then query: `filter level = "ERROR" | sort @timestamp desc`
+
+#### 2. Request correlation IDs
+- Install Ktor's `CallId` plugin: generate a UUID per request, attach to the call, propagate into log MDC
+- Every log line emitted during a request automatically carries `requestId`
+- Return `X-Request-Id` response header so the frontend/API caller can include it in bug reports
+
+#### 3. HTTP request/response logging
+- Install Ktor's `CallLogging` plugin: log method, path, status code, and duration for every request
+- Exclude health check (`/health`) from logs to reduce noise
+- Log at INFO for 2xx/3xx, WARN for 4xx, ERROR for 5xx
+
+#### 4. GraphQL operation logging
+- In `GraphQLServer`, log the GraphQL operation name and duration on every execution
+- Log resolver errors with operation context (operation name, requestId)
+- Do NOT log query variables (may contain passwords or PII)
+
+#### 5. Metrics with Micrometer + CloudWatch
+- Add `micrometer-core` and `micrometer-registry-cloudwatch2` dependencies
+- Install Ktor's `MicrometerMetrics` plugin for automatic HTTP metrics: `http.server.requests` with `uri`, `method`, `status` tags
+- Add custom GraphQL metrics: `graphql.operation.duration` tagged by `operationName` and `success`
+- Add JVM metrics (GC, heap, thread count) via Micrometer's built-in binders
+- Once Phase 16 is done: add HikariCP pool metrics (active connections, pending threads) — Micrometer has a built-in `HikariCPMetrics` binder
+- Push to CloudWatch every 60s; namespace `ViaductBlog/Production`
+
+#### 6. Enhance `/health` endpoint
+- Current `/health` just returns `"OK"`. Extend to:
+  - Check DB connectivity (run `SELECT 1`)
+  - Return JSON: `{ "status": "UP"|"DOWN", "db": "UP"|"DOWN", "version": "git-sha" }`
+  - Return HTTP 503 if any dependency is DOWN (so ALB health checks fail fast)
+
+**Key files**:
+- `src/main/kotlin/org/tuchscherer/viadapp/ViaductApplication.kt` — replace `println`, configure logging
+- `src/main/kotlin/org/tuchscherer/web/GraphQLServer.kt` — operation logging, metrics
+- `src/main/resources/logback.xml` — new file, env-aware JSON vs text appender
+- `build.gradle.kts` — `logstash-logback-encoder`, `ktor-server-call-logging`, `ktor-server-call-id`, `ktor-server-metrics-micrometer`, `micrometer-registry-cloudwatch2`
+
+**AWS setup** (outside codebase):
+- CloudWatch Log Group: `/viaduct-blog/prod` with 30-day retention
+- IAM role for the EC2/ECS task: `cloudwatch:PutMetricData`, `logs:CreateLogStream`, `logs:PutLogEvents`
+- CloudWatch dashboard: error rate, p99 latency, active DB connections, heap usage
+
+**Success Criteria**: A 500 error in prod produces a JSON log line with `requestId`, operation name, stack trace, and status; the same `requestId` appears in the HTTP response header so it can be reported by the caller; CloudWatch shows `http.server.requests` metrics broken down by endpoint and status code; `/health` returns 503 if the DB is unreachable.
 
 ---
 
