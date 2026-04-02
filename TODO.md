@@ -211,10 +211,11 @@ ENTRYPOINT ["java", "-jar", "app.jar"]
 
 #### 5. Metrics with Micrometer + CloudWatch
 - Add `micrometer-core` and `micrometer-registry-cloudwatch2` dependencies
-- Install Ktor's `MicrometerMetrics` plugin for automatic HTTP metrics: `http.server.requests` with `uri`, `method`, `status` tags
-- Add custom GraphQL metrics: `graphql.operation.duration` tagged by `operationName` and `success`
+- Build a `CloudWatchMeterRegistry` and register it as a Koin singleton
+- **Viaduct emits GraphQL metrics automatically** once a `MeterRegistry` is provided when building the Viaduct instance: `viaduct.execution` (end-to-end), `viaduct.operation` (per operation), and `viaduct.field` (per resolver) — all with p50/p75/p90/p95 percentiles and success/failure tags. No custom instrumentation needed.
+- Install Ktor's `MicrometerMetrics` plugin for HTTP-layer metrics: `http.server.requests` tagged by `uri`, `method`, `status`
 - Add JVM metrics (GC, heap, thread count) via Micrometer's built-in binders
-- Once Phase 16 is done: add HikariCP pool metrics (active connections, pending threads) — Micrometer has a built-in `HikariCPMetrics` binder
+- Once Phase 16 is done: add HikariCP pool metrics via Micrometer's `HikariCPMetrics` binder
 - Push to CloudWatch every 60s; namespace `ViaductBlog/Production`
 
 #### 6. Enhance `/health` endpoint
