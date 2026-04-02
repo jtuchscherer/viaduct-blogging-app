@@ -4,29 +4,27 @@ import org.tuchscherer.auth.RequestContext
 import org.tuchscherer.database.Post
 import org.tuchscherer.database.User
 import org.tuchscherer.database.repositories.PostRepository
-import org.tuchscherer.viadapp.resolvers.*
+import org.tuchscherer.viadapp.resolvers.CreatePostResolver
 import io.mockk.*
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.dao.id.EntityID
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.koin.core.context.GlobalContext
 import org.koin.dsl.module
-import viaduct.api.grts.*
-import viaduct.engine.SchemaFactory
-import viaduct.engine.api.ViaductSchema
-import viaduct.engine.runtime.execution.DefaultCoroutineInterop
-import viaduct.tenant.testing.DefaultAbstractResolverTestBase
+import viaduct.api.grts.CreatePostInput
+import viaduct.api.grts.Mutation
+import viaduct.api.grts.Mutation_CreatePost_Arguments
+import viaduct.api.grts.Post as ViaductPost
+import viaduct.api.grts.Query
+import viaduct.api.testing.MutationResolverTester
 import java.time.LocalDateTime
-import java.util.*
+import java.util.UUID
 
-/**
- * Comprehensive unit tests for Post resolvers.
- * Tests the actual resolver logic with mocked dependencies using Viaduct's test infrastructure.
- */
-class CreatePostResolverTest : DefaultAbstractResolverTestBase() {
+class CreatePostResolverTest {
 
     private lateinit var postRepository: PostRepository
     private lateinit var mockUser: User
@@ -34,22 +32,17 @@ class CreatePostResolverTest : DefaultAbstractResolverTestBase() {
     private val userId = UUID.randomUUID()
     private val postId = UUID.randomUUID()
 
-    override fun getSchema(): ViaductSchema = SchemaFactory(DefaultCoroutineInterop).fromResources()
-
-    private fun queryObj() = Query.Builder(context).build()
-    private fun mutationObj() = Mutation.Builder(context).build()
+    private val tester = MutationResolverTester.create<Query, Mutation, Mutation_CreatePost_Arguments, ViaductPost>(ViaductTestConfig.testerConfig)
 
     @BeforeEach
     fun setup() {
-        postRepository = mockk<PostRepository>(relaxed = true)
+        postRepository = mockk(relaxed = true)
 
-        // Setup mock user
-        mockUser = mockk<User>(relaxed = true)
+        mockUser = mockk(relaxed = true)
         every { mockUser.id } returns EntityID(userId, mockk())
         every { mockUser.username } returns "testuser"
 
-        // Setup mock post
-        mockPost = mockk<Post>(relaxed = true)
+        mockPost = mockk(relaxed = true)
         every { mockPost.id } returns EntityID(postId, mockk())
         every { mockPost.title } returns "Test Post"
         every { mockPost.content } returns "Test content"
@@ -57,29 +50,17 @@ class CreatePostResolverTest : DefaultAbstractResolverTestBase() {
         every { mockPost.createdAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
         every { mockPost.updatedAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
 
-        // Setup Koin for dependency injection in resolvers
         GlobalContext.getOrNull()?.let { GlobalContext.stopKoin() }
         org.koin.core.context.startKoin {
-            modules(module {
-                single { postRepository }
-            })
+            modules(module { single { postRepository } })
         }
     }
-
-    // ========================================
-    // CreatePostResolver Tests
-    // ========================================
 
     @Test
     fun `CreatePostResolver creates post successfully`() = runBlocking {
         val resolver = CreatePostResolver(postRepository)
-        val input = CreatePostInput.Builder(context)
-            .title("New Post")
-            .content("New content")
-            .build()
-        val args = Mutation_CreatePost_Arguments.Builder(context)
-            .input(input)
-            .build()
+        val input = CreatePostInput.Builder(tester.context).title("New Post").content("New content").build()
+        val args = Mutation_CreatePost_Arguments.Builder(tester.context).input(input).build()
 
         every {
             postRepository.create(
@@ -91,14 +72,10 @@ class CreatePostResolverTest : DefaultAbstractResolverTestBase() {
             )
         } returns mockPost
 
-        val ctx = RequestContext(user = mockUser)
-
-        val result = runMutationFieldResolver(
-            resolver = resolver,
-            queryValue = queryObj(),
-            arguments = args,
-            requestContext = ctx
-        )
+        val result = tester.test(resolver) {
+            arguments = args
+            requestContext = RequestContext(user = mockUser)
+        }
 
         assertNotNull(result)
         assertEquals(postId.toString(), result.getId())
@@ -107,23 +84,18 @@ class CreatePostResolverTest : DefaultAbstractResolverTestBase() {
     }
 
     @Test
-    fun `CreatePostResolver throws exception when not authenticated`() = runBlocking {
+    fun `CreatePostResolver throws exception when not authenticated`() {
         val resolver = CreatePostResolver(postRepository)
-        val input = CreatePostInput.Builder(context)
-            .title("New Post")
-            .content("New content")
-            .build()
-        val args = Mutation_CreatePost_Arguments.Builder(context)
-            .input(input)
-            .build()
+        val input = CreatePostInput.Builder(tester.context).title("New Post").content("New content").build()
+        val args = Mutation_CreatePost_Arguments.Builder(tester.context).input(input).build()
 
-        assertThrows<RuntimeException> {
-            runMutationFieldResolver(
-                resolver = resolver,
-                queryValue = queryObj(),
-                arguments = args,
-                requestContext = RequestContext()
-            )
+        assertThrows<Exception> {
+            runBlocking {
+                tester.test(resolver) {
+                    arguments = args
+                    requestContext = RequestContext()
+                }
+            }
         }
 
         verify(exactly = 0) { postRepository.create(any(), any(), any(), any(), any()) }

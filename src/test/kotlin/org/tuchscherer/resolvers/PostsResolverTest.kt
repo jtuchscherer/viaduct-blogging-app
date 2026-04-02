@@ -1,7 +1,8 @@
+@file:Suppress("DEPRECATION")
+
 package org.tuchscherer.resolvers
 
 import org.tuchscherer.database.Post
-import org.tuchscherer.database.User
 import org.tuchscherer.database.repositories.PostRepository
 import org.tuchscherer.viadapp.resolvers.*
 import io.mockk.*
@@ -21,10 +22,6 @@ import viaduct.tenant.testing.DefaultAbstractResolverTestBase
 import java.time.LocalDateTime
 import java.util.*
 
-/**
- * Comprehensive unit tests for PostsResolver.
- * Tests the actual resolver logic with mocked dependencies using Viaduct's test infrastructure.
- */
 class PostsResolverTest : DefaultAbstractResolverTestBase() {
 
     private lateinit var postRepository: PostRepository
@@ -40,7 +37,6 @@ class PostsResolverTest : DefaultAbstractResolverTestBase() {
     fun setup() {
         postRepository = mockk<PostRepository>(relaxed = true)
 
-        // Setup mock post
         mockPost = mockk<Post>(relaxed = true)
         every { mockPost.id } returns EntityID(postId, mockk())
         every { mockPost.title } returns "Test Post"
@@ -49,7 +45,6 @@ class PostsResolverTest : DefaultAbstractResolverTestBase() {
         every { mockPost.createdAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
         every { mockPost.updatedAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
 
-        // Setup Koin for dependency injection in resolvers
         GlobalContext.getOrNull()?.let { GlobalContext.stopKoin() }
         org.koin.core.context.startKoin {
             modules(module {

@@ -7,29 +7,26 @@ import org.tuchscherer.database.Posts
 import org.tuchscherer.database.User
 import org.tuchscherer.database.repositories.LikeRepository
 import org.tuchscherer.database.repositories.PostRepository
-import org.tuchscherer.viadapp.resolvers.*
+import org.tuchscherer.viadapp.resolvers.LikePostMutationResolver
 import io.mockk.*
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.dao.id.EntityID
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.koin.core.context.GlobalContext
 import org.koin.dsl.module
-import viaduct.api.grts.*
-import viaduct.engine.SchemaFactory
-import viaduct.engine.api.ViaductSchema
-import viaduct.engine.runtime.execution.DefaultCoroutineInterop
-import viaduct.tenant.testing.DefaultAbstractResolverTestBase
+import viaduct.api.grts.Like as ViaductLike
+import viaduct.api.grts.Mutation
+import viaduct.api.grts.Mutation_LikePost_Arguments
+import viaduct.api.grts.Query
+import viaduct.api.testing.MutationResolverTester
 import java.time.LocalDateTime
-import java.util.*
+import java.util.UUID
 
-/**
- * Comprehensive unit tests for LikePostMutationResolver.
- * Tests the actual resolver logic with mocked dependencies using Viaduct's test infrastructure.
- */
-class LikePostResolverTest : DefaultAbstractResolverTestBase() {
+class LikePostResolverTest {
 
     private lateinit var likeRepository: LikeRepository
     private lateinit var postRepository: PostRepository
@@ -40,33 +37,27 @@ class LikePostResolverTest : DefaultAbstractResolverTestBase() {
     private val postId = UUID.randomUUID()
     private val likeId = UUID.randomUUID()
 
-    override fun getSchema(): ViaductSchema = SchemaFactory(DefaultCoroutineInterop).fromResources()
-
-    private fun queryObj() = Query.Builder(context).build()
+    private val tester = MutationResolverTester.create<Query, Mutation, Mutation_LikePost_Arguments, ViaductLike>(ViaductTestConfig.testerConfig)
 
     @BeforeEach
     fun setup() {
-        likeRepository = mockk<LikeRepository>(relaxed = true)
-        postRepository = mockk<PostRepository>(relaxed = true)
+        likeRepository = mockk(relaxed = true)
+        postRepository = mockk(relaxed = true)
 
-        // Setup mock user
-        mockUser = mockk<User>(relaxed = true)
+        mockUser = mockk(relaxed = true)
         every { mockUser.id } returns EntityID(userId, mockk())
         every { mockUser.username } returns "testuser"
 
-        // Setup mock post
-        mockPost = mockk<Post>(relaxed = true)
+        mockPost = mockk(relaxed = true)
         every { mockPost.id } returns EntityID(postId, Posts)
         every { mockPost.title } returns "Test Post"
 
-        // Setup mock like
-        mockLike = mockk<Like>(relaxed = true)
+        mockLike = mockk(relaxed = true)
         every { mockLike.id } returns EntityID(likeId, mockk())
         every { mockLike.userId } returns EntityID(userId, mockk())
         every { mockLike.postId } returns EntityID(postId, Posts)
         every { mockLike.createdAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
 
-        // Setup Koin for dependency injection in resolvers
         GlobalContext.getOrNull()?.let { GlobalContext.stopKoin() }
         org.koin.core.context.startKoin {
             modules(module {
@@ -79,26 +70,18 @@ class LikePostResolverTest : DefaultAbstractResolverTestBase() {
     @Test
     fun `LikePostMutationResolver creates new like successfully`() = runBlocking {
         val resolver = LikePostMutationResolver(likeRepository, postRepository)
-        val args = Mutation_LikePost_Arguments.Builder(context)
-            .postId(postId.toString())
-            .build()
+        val args = Mutation_LikePost_Arguments.Builder(tester.context).postId(postId.toString()).build()
 
         every { postRepository.findById(postId) } returns mockPost
         every { likeRepository.findByPostAndUser(mockPost.id, mockUser.id) } returns null
         every {
-            likeRepository.create(
-                postId = mockPost.id,
-                userId = mockUser.id,
-                createdAt = any()
-            )
+            likeRepository.create(postId = mockPost.id, userId = mockUser.id, createdAt = any())
         } returns mockLike
 
-        val result = runMutationFieldResolver(
-            resolver = resolver,
-            queryValue = queryObj(),
-            arguments = args,
+        val result = tester.test(resolver) {
+            arguments = args
             requestContext = RequestContext(user = mockUser)
-        )
+        }
 
         assertNotNull(result)
         assertEquals(likeId.toString(), result.getId())
@@ -110,19 +93,15 @@ class LikePostResolverTest : DefaultAbstractResolverTestBase() {
     @Test
     fun `LikePostMutationResolver returns existing like when already liked`() = runBlocking {
         val resolver = LikePostMutationResolver(likeRepository, postRepository)
-        val args = Mutation_LikePost_Arguments.Builder(context)
-            .postId(postId.toString())
-            .build()
+        val args = Mutation_LikePost_Arguments.Builder(tester.context).postId(postId.toString()).build()
 
         every { postRepository.findById(postId) } returns mockPost
         every { likeRepository.findByPostAndUser(mockPost.id, mockUser.id) } returns mockLike
 
-        val result = runMutationFieldResolver(
-            resolver = resolver,
-            queryValue = queryObj(),
-            arguments = args,
+        val result = tester.test(resolver) {
+            arguments = args
             requestContext = RequestContext(user = mockUser)
-        )
+        }
 
         assertNotNull(result)
         assertEquals(likeId.toString(), result.getId())
@@ -132,19 +111,17 @@ class LikePostResolverTest : DefaultAbstractResolverTestBase() {
     }
 
     @Test
-    fun `LikePostMutationResolver throws exception when not authenticated`() = runBlocking {
+    fun `LikePostMutationResolver throws exception when not authenticated`() {
         val resolver = LikePostMutationResolver(likeRepository, postRepository)
-        val args = Mutation_LikePost_Arguments.Builder(context)
-            .postId(postId.toString())
-            .build()
+        val args = Mutation_LikePost_Arguments.Builder(tester.context).postId(postId.toString()).build()
 
-        assertThrows<RuntimeException> {
-            runMutationFieldResolver(
-                resolver = resolver,
-                queryValue = queryObj(),
-                arguments = args,
-                requestContext = RequestContext()
-            )
+        assertThrows<Exception> {
+            runBlocking {
+                tester.test(resolver) {
+                    arguments = args
+                    requestContext = RequestContext()
+                }
+            }
         }
 
         verify(exactly = 0) { postRepository.findById(any()) }
@@ -152,21 +129,19 @@ class LikePostResolverTest : DefaultAbstractResolverTestBase() {
     }
 
     @Test
-    fun `LikePostMutationResolver throws exception when post not found`() = runBlocking {
+    fun `LikePostMutationResolver throws exception when post not found`() {
         val resolver = LikePostMutationResolver(likeRepository, postRepository)
-        val args = Mutation_LikePost_Arguments.Builder(context)
-            .postId(postId.toString())
-            .build()
+        val args = Mutation_LikePost_Arguments.Builder(tester.context).postId(postId.toString()).build()
 
         every { postRepository.findById(postId) } returns null
 
-        assertThrows<RuntimeException> {
-            runMutationFieldResolver(
-                resolver = resolver,
-                queryValue = queryObj(),
-                arguments = args,
-                requestContext = RequestContext(user = mockUser)
-            )
+        assertThrows<Exception> {
+            runBlocking {
+                tester.test(resolver) {
+                    arguments = args
+                    requestContext = RequestContext(user = mockUser)
+                }
+            }
         }
 
         verify { postRepository.findById(postId) }

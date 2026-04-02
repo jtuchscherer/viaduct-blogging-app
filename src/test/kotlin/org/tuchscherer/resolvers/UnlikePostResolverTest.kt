@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package org.tuchscherer.resolvers
 
 import org.tuchscherer.auth.RequestContext
@@ -23,10 +25,6 @@ import viaduct.engine.runtime.execution.DefaultCoroutineInterop
 import viaduct.tenant.testing.DefaultAbstractResolverTestBase
 import java.util.*
 
-/**
- * Comprehensive unit tests for UnlikePostResolver.
- * Tests the actual resolver logic with mocked dependencies using Viaduct's test infrastructure.
- */
 class UnlikePostResolverTest : DefaultAbstractResolverTestBase() {
 
     private lateinit var likeRepository: LikeRepository
@@ -45,17 +43,14 @@ class UnlikePostResolverTest : DefaultAbstractResolverTestBase() {
         likeRepository = mockk<LikeRepository>(relaxed = true)
         postRepository = mockk<PostRepository>(relaxed = true)
 
-        // Setup mock user
         mockUser = mockk<User>(relaxed = true)
         every { mockUser.id } returns EntityID(userId, mockk())
         every { mockUser.username } returns "testuser"
 
-        // Setup mock post
         mockPost = mockk<Post>(relaxed = true)
         every { mockPost.id } returns EntityID(postId, Posts)
         every { mockPost.title } returns "Test Post"
 
-        // Setup Koin for dependency injection in resolvers
         GlobalContext.getOrNull()?.let { GlobalContext.stopKoin() }
         org.koin.core.context.startKoin {
             modules(module {

@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package org.tuchscherer.resolvers
 
 import org.tuchscherer.database.Comment
@@ -20,10 +22,6 @@ import viaduct.tenant.testing.DefaultAbstractResolverTestBase
 import java.time.LocalDateTime
 import java.util.*
 
-/**
- * Comprehensive unit tests for PostCommentsResolver.
- * Tests the actual resolver logic with mocked dependencies using Viaduct's test infrastructure.
- */
 class PostCommentsResolverTest : DefaultAbstractResolverTestBase() {
 
     private lateinit var commentRepository: CommentRepository
@@ -40,7 +38,6 @@ class PostCommentsResolverTest : DefaultAbstractResolverTestBase() {
     fun setup() {
         commentRepository = mockk<CommentRepository>(relaxed = true)
 
-        // Setup mock comment
         mockComment = mockk<Comment>(relaxed = true)
         every { mockComment.id } returns EntityID(commentId, mockk())
         every { mockComment.content } returns "Test comment content"
@@ -48,7 +45,6 @@ class PostCommentsResolverTest : DefaultAbstractResolverTestBase() {
         every { mockComment.postId } returns EntityID(postId, Posts)
         every { mockComment.createdAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
 
-        // Setup Koin for dependency injection in resolvers
         GlobalContext.getOrNull()?.let { GlobalContext.stopKoin() }
         org.koin.core.context.startKoin {
             modules(module {

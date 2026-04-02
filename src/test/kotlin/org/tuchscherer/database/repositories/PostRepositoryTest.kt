@@ -305,4 +305,25 @@ class PostRepositoryTest {
 
         assertEquals(2, count)
     }
+
+    @Test
+    fun `getAuthorsByPostIds returns map of post ID to author`() {
+        val post1 = postRepository.create(title = "Post 1", content = "c", authorId = testUser.id)
+        val post2 = postRepository.create(title = "Post 2", content = "c", authorId = testUser.id)
+        val unrelatedPost = postRepository.create(title = "Post 3", content = "c", authorId = testUser.id)
+
+        val result = postRepository.getAuthorsByPostIds(listOf(post1.id.value, post2.id.value))
+
+        assertEquals(2, result.size)
+        assertEquals(testUser.id.value, result[post1.id.value]?.id?.value)
+        assertEquals(testUser.id.value, result[post2.id.value]?.id?.value)
+        assertFalse(result.containsKey(unrelatedPost.id.value))
+    }
+
+    @Test
+    fun `getAuthorsByPostIds returns empty map for empty input`() {
+        val result = postRepository.getAuthorsByPostIds(emptyList())
+
+        assertTrue(result.isEmpty())
+    }
 }

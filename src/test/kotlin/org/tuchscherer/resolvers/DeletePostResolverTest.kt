@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package org.tuchscherer.resolvers
 
 import org.tuchscherer.auth.RequestContext
@@ -22,10 +24,6 @@ import viaduct.tenant.testing.DefaultAbstractResolverTestBase
 import java.time.LocalDateTime
 import java.util.*
 
-/**
- * Comprehensive unit tests for DeletePostResolver.
- * Tests the actual resolver logic with mocked dependencies using Viaduct's test infrastructure.
- */
 class DeletePostResolverTest : DefaultAbstractResolverTestBase() {
 
     private lateinit var postRepository: PostRepository
@@ -42,21 +40,16 @@ class DeletePostResolverTest : DefaultAbstractResolverTestBase() {
     fun setup() {
         postRepository = mockk<PostRepository>(relaxed = true)
 
-        // Setup mock user
         mockUser = mockk<User>(relaxed = true)
         every { mockUser.id } returns EntityID(userId, mockk())
         every { mockUser.username } returns "testuser"
 
-        // Setup mock post
         mockPost = mockk<Post>(relaxed = true)
         every { mockPost.id } returns EntityID(postId, mockk())
-        every { mockPost.title } returns "Test Post"
-        every { mockPost.content } returns "Test content"
         every { mockPost.authorId } returns EntityID(userId, mockk())
         every { mockPost.createdAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
         every { mockPost.updatedAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
 
-        // Setup Koin for dependency injection in resolvers
         GlobalContext.getOrNull()?.let { GlobalContext.stopKoin() }
         org.koin.core.context.startKoin {
             modules(module {

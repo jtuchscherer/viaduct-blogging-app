@@ -4,6 +4,7 @@ import org.tuchscherer.database.repositories.CommentRepository
 import org.tuchscherer.database.repositories.PostRepository
 import org.tuchscherer.viadapp.resolvers.resolverbases.PostResolvers
 import org.koin.java.KoinJavaComponent.inject
+import viaduct.api.FieldValue
 import viaduct.api.Resolver
 import viaduct.api.grts.Comment as ViaductComment
 import viaduct.api.grts.User as ViaductUser
@@ -19,14 +20,32 @@ class PostAuthorResolver : PostResolvers.Author() {
         val author = postRepository.getAuthorForPost(postId)
             ?: throw RuntimeException("Post not found")
 
-        return ViaductUser.Builder(ctx)
-            .id(author.id.value.toString())
-            .username(author.username)
-            .email(author.email)
-            .name(author.name)
-            .createdAt(author.createdAt.toString())
-            .build()
+        return author.toViaductUser(ctx)
     }
+
+    override suspend fun batchResolve(contexts: List<Context>): List<FieldValue<ViaductUser>> {
+        val postIds = contexts.map { UUID.fromString(it.objectValue.getId()) }
+        val authorsById = postRepository.getAuthorsByPostIds(postIds)
+
+        return contexts.map { ctx ->
+            val postId = UUID.fromString(ctx.objectValue.getId())
+            val author = authorsById[postId]
+            if (author != null) {
+                FieldValue.ofValue(author.toViaductUser(ctx))
+            } else {
+                FieldValue.ofError(RuntimeException("Post not found: $postId"))
+            }
+        }
+    }
+
+    private fun org.tuchscherer.database.User.toViaductUser(ctx: Context) =
+        ViaductUser.Builder(ctx)
+            .id(id.value.toString())
+            .username(username)
+            .email(email)
+            .name(name)
+            .createdAt(createdAt.toString())
+            .build()
 }
 
 @Resolver(objectValueFragment = "fragment _ on Post { id }")

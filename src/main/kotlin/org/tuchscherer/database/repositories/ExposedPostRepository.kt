@@ -3,6 +3,7 @@ package org.tuchscherer.database.repositories
 import org.tuchscherer.database.Post
 import org.tuchscherer.database.Posts
 import org.jetbrains.exposed.dao.id.EntityID
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.time.LocalDateTime
 import java.util.*
@@ -88,5 +89,10 @@ class ExposedPostRepository : PostRepository {
 
     override fun getAuthorForPost(postId: UUID): org.tuchscherer.database.User? = transaction {
         Post.findById(postId)?.author
+    }
+
+    override fun getAuthorsByPostIds(postIds: List<UUID>): Map<UUID, org.tuchscherer.database.User> = transaction {
+        Post.find { Posts.id inList postIds }
+            .associate { post -> post.id.value to post.author }
     }
 }

@@ -5,25 +5,27 @@ import org.tuchscherer.database.User
 import org.tuchscherer.database.repositories.LikeRepository
 import org.tuchscherer.viadapp.resolvers.LikePostResolver
 import org.tuchscherer.viadapp.resolvers.LikeUserResolver
-import io.mockk.*
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.dao.id.EntityID
-import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.koin.core.context.GlobalContext
 import org.koin.dsl.module
-import viaduct.api.grts.*
+import viaduct.api.grts.Like as ViaductLike
+import viaduct.api.grts.Post as ViaductPost
+import viaduct.api.grts.Query
+import viaduct.api.grts.User as ViaductUser
+import viaduct.api.testing.FieldResolverTester
 import viaduct.api.types.Arguments.NoArguments
-import viaduct.engine.SchemaFactory
-import viaduct.engine.api.ViaductSchema
-import viaduct.engine.runtime.execution.DefaultCoroutineInterop
-import viaduct.tenant.testing.DefaultAbstractResolverTestBase
 import java.time.LocalDateTime
-import java.util.*
+import java.util.UUID
 
-class LikeObjectFieldResolversTest : DefaultAbstractResolverTestBase() {
+class LikeObjectFieldResolversTest {
 
     private lateinit var likeRepository: LikeRepository
     private lateinit var mockUser: User
@@ -32,27 +34,26 @@ class LikeObjectFieldResolversTest : DefaultAbstractResolverTestBase() {
     private val postId = UUID.randomUUID()
     private val likeId = UUID.randomUUID()
 
-    override fun getSchema(): ViaductSchema = SchemaFactory(DefaultCoroutineInterop).fromResources()
+    private val userTester = FieldResolverTester.create<ViaductLike, Query, NoArguments, ViaductUser>(ViaductTestConfig.testerConfig)
+    private val postTester = FieldResolverTester.create<ViaductLike, Query, NoArguments, ViaductPost>(ViaductTestConfig.testerConfig)
 
-    private fun queryObj() = Query.Builder(context).build()
-
-    private fun likeObj(id: UUID = likeId) = Like.Builder(context)
+    private fun likeObj(id: UUID = likeId) = ViaductLike.Builder(userTester.context)
         .id(id.toString())
         .createdAt("2025-01-01T10:00:00")
         .build()
 
     @BeforeEach
     fun setup() {
-        likeRepository = mockk<LikeRepository>(relaxed = true)
+        likeRepository = mockk(relaxed = true)
 
-        mockUser = mockk<User>(relaxed = true)
+        mockUser = mockk(relaxed = true)
         every { mockUser.id } returns EntityID(userId, mockk())
         every { mockUser.username } returns "testuser"
         every { mockUser.email } returns "test@example.com"
         every { mockUser.name } returns "Test User"
         every { mockUser.createdAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
 
-        mockPost = mockk<Post>(relaxed = true)
+        mockPost = mockk(relaxed = true)
         every { mockPost.id } returns EntityID(postId, mockk())
         every { mockPost.title } returns "Test Post"
         every { mockPost.content } returns "Test content"
@@ -61,9 +62,7 @@ class LikeObjectFieldResolversTest : DefaultAbstractResolverTestBase() {
 
         GlobalContext.getOrNull()?.let { GlobalContext.stopKoin() }
         org.koin.core.context.startKoin {
-            modules(module {
-                single<LikeRepository> { likeRepository }
-            })
+            modules(module { single<LikeRepository> { likeRepository } })
         }
     }
 
@@ -74,12 +73,10 @@ class LikeObjectFieldResolversTest : DefaultAbstractResolverTestBase() {
         val resolver = LikeUserResolver()
         every { likeRepository.getUserForLike(likeId) } returns mockUser
 
-        val result = runFieldResolver(
-            resolver = resolver,
-            objectValue = likeObj(),
-            queryValue = queryObj(),
+        val result = userTester.test(resolver) {
+            objectValue = likeObj()
             arguments = NoArguments
-        )
+        }
 
         assertEquals(userId.toString(), result.getId())
         assertEquals("testuser", result.getUsername())
@@ -88,17 +85,17 @@ class LikeObjectFieldResolversTest : DefaultAbstractResolverTestBase() {
     }
 
     @Test
-    fun `LikeUserResolver throws when like not found`() = runBlocking {
+    fun `LikeUserResolver throws when like not found`() {
         val resolver = LikeUserResolver()
         every { likeRepository.getUserForLike(likeId) } returns null
 
-        assertThrows<RuntimeException> {
-            runFieldResolver(
-                resolver = resolver,
-                objectValue = likeObj(),
-                queryValue = queryObj(),
-                arguments = NoArguments
-            )
+        assertThrows<Exception> {
+            runBlocking {
+                userTester.test(resolver) {
+                    objectValue = likeObj()
+                    arguments = NoArguments
+                }
+            }
         }
         verify { likeRepository.getUserForLike(likeId) }
     }
@@ -110,12 +107,10 @@ class LikeObjectFieldResolversTest : DefaultAbstractResolverTestBase() {
         val resolver = LikePostResolver()
         every { likeRepository.getPostForLike(likeId) } returns mockPost
 
-        val result = runFieldResolver(
-            resolver = resolver,
-            objectValue = likeObj(),
-            queryValue = queryObj(),
+        val result = postTester.test(resolver) {
+            objectValue = likeObj()
             arguments = NoArguments
-        )
+        }
 
         assertEquals(postId.toString(), result.getId())
         assertEquals("Test Post", result.getTitle())
@@ -124,17 +119,17 @@ class LikeObjectFieldResolversTest : DefaultAbstractResolverTestBase() {
     }
 
     @Test
-    fun `LikePostResolver throws when like not found`() = runBlocking {
+    fun `LikePostResolver throws when like not found`() {
         val resolver = LikePostResolver()
         every { likeRepository.getPostForLike(likeId) } returns null
 
-        assertThrows<RuntimeException> {
-            runFieldResolver(
-                resolver = resolver,
-                objectValue = likeObj(),
-                queryValue = queryObj(),
-                arguments = NoArguments
-            )
+        assertThrows<Exception> {
+            runBlocking {
+                postTester.test(resolver) {
+                    objectValue = likeObj()
+                    arguments = NoArguments
+                }
+            }
         }
         verify { likeRepository.getPostForLike(likeId) }
     }

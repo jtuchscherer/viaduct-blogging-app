@@ -4,29 +4,29 @@ import org.tuchscherer.auth.RequestContext
 import org.tuchscherer.database.Post
 import org.tuchscherer.database.User
 import org.tuchscherer.database.repositories.PostRepository
-import org.tuchscherer.viadapp.resolvers.*
-import io.mockk.*
+import org.tuchscherer.viadapp.resolvers.UpdatePostResolver
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.dao.id.EntityID
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.koin.core.context.GlobalContext
 import org.koin.dsl.module
-import viaduct.api.grts.*
-import viaduct.engine.SchemaFactory
-import viaduct.engine.api.ViaductSchema
-import viaduct.engine.runtime.execution.DefaultCoroutineInterop
-import viaduct.tenant.testing.DefaultAbstractResolverTestBase
+import viaduct.api.grts.Mutation
+import viaduct.api.grts.Mutation_UpdatePost_Arguments
+import viaduct.api.grts.Post as ViaductPost
+import viaduct.api.grts.Query
+import viaduct.api.grts.UpdatePostInput
+import viaduct.api.testing.MutationResolverTester
 import java.time.LocalDateTime
-import java.util.*
+import java.util.UUID
 
-/**
- * Comprehensive unit tests for UpdatePostResolver.
- * Tests the actual resolver logic with mocked dependencies using Viaduct's test infrastructure.
- */
-class UpdatePostResolverTest : DefaultAbstractResolverTestBase() {
+class UpdatePostResolverTest {
 
     private lateinit var postRepository: PostRepository
     private lateinit var mockUser: User
@@ -34,21 +34,17 @@ class UpdatePostResolverTest : DefaultAbstractResolverTestBase() {
     private val userId = UUID.randomUUID()
     private val postId = UUID.randomUUID()
 
-    override fun getSchema(): ViaductSchema = SchemaFactory(DefaultCoroutineInterop).fromResources()
-
-    private fun queryObj() = Query.Builder(context).build()
+    private val tester = MutationResolverTester.create<Query, Mutation, Mutation_UpdatePost_Arguments, ViaductPost>(ViaductTestConfig.testerConfig)
 
     @BeforeEach
     fun setup() {
-        postRepository = mockk<PostRepository>(relaxed = true)
+        postRepository = mockk(relaxed = true)
 
-        // Setup mock user
-        mockUser = mockk<User>(relaxed = true)
+        mockUser = mockk(relaxed = true)
         every { mockUser.id } returns EntityID(userId, mockk())
         every { mockUser.username } returns "testuser"
 
-        // Setup mock post
-        mockPost = mockk<Post>(relaxed = true)
+        mockPost = mockk(relaxed = true)
         every { mockPost.id } returns EntityID(postId, mockk())
         every { mockPost.title } returns "Test Post"
         every { mockPost.content } returns "Test content"
@@ -56,32 +52,25 @@ class UpdatePostResolverTest : DefaultAbstractResolverTestBase() {
         every { mockPost.createdAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
         every { mockPost.updatedAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
 
-        // Setup Koin for dependency injection in resolvers
         GlobalContext.getOrNull()?.let { GlobalContext.stopKoin() }
         org.koin.core.context.startKoin {
-            modules(module {
-                single { postRepository }
-            })
+            modules(module { single { postRepository } })
         }
     }
 
     @Test
     fun `UpdatePostResolver updates post successfully`() = runBlocking {
         val resolver = UpdatePostResolver(postRepository)
-        val input = UpdatePostInput.Builder(context)
+        val input = UpdatePostInput.Builder(tester.context)
             .id(postId.toString())
             .title("Updated Title")
             .content("Updated content")
             .build()
-        val args = Mutation_UpdatePost_Arguments.Builder(context)
-            .input(input)
-            .build()
+        val args = Mutation_UpdatePost_Arguments.Builder(tester.context).input(input).build()
 
-        // Mock for authorization check
         every { postRepository.findById(postId) } returns mockPost
         every { mockPost.authorId } returns mockUser.id
 
-        // Mock for the actual update - return an updated mock post
         val updatedPost = mockk<Post>(relaxed = true)
         every { updatedPost.id } returns EntityID(postId, mockk())
         every { updatedPost.title } returns "Updated Title"
@@ -90,12 +79,10 @@ class UpdatePostResolverTest : DefaultAbstractResolverTestBase() {
         every { updatedPost.updatedAt } returns LocalDateTime.of(2025, 1, 1, 12, 0)
         every { postRepository.updateById(postId, "Updated Title", "Updated content") } returns updatedPost
 
-        val result = runMutationFieldResolver(
-            resolver = resolver,
-            queryValue = queryObj(),
-            arguments = args,
+        val result = tester.test(resolver) {
+            arguments = args
             requestContext = RequestContext(user = mockUser)
-        )
+        }
 
         assertNotNull(result)
         assertEquals("Updated Title", result.getTitle())
@@ -105,52 +92,42 @@ class UpdatePostResolverTest : DefaultAbstractResolverTestBase() {
     }
 
     @Test
-    fun `UpdatePostResolver throws exception when post not found`() = runBlocking {
+    fun `UpdatePostResolver throws exception when post not found`() {
         val resolver = UpdatePostResolver(postRepository)
-        val input = UpdatePostInput.Builder(context)
-            .id(postId.toString())
-            .title("Updated Title")
-            .build()
-        val args = Mutation_UpdatePost_Arguments.Builder(context)
-            .input(input)
-            .build()
+        val input = UpdatePostInput.Builder(tester.context).id(postId.toString()).title("Updated Title").build()
+        val args = Mutation_UpdatePost_Arguments.Builder(tester.context).input(input).build()
 
         every { postRepository.findById(postId) } returns null
 
-        assertThrows<RuntimeException> {
-            runMutationFieldResolver(
-                resolver = resolver,
-                queryValue = queryObj(),
-                arguments = args,
-                requestContext = RequestContext(user = mockUser)
-            )
+        assertThrows<Exception> {
+            runBlocking {
+                tester.test(resolver) {
+                    arguments = args
+                    requestContext = RequestContext(user = mockUser)
+                }
+            }
         }
 
         verify { postRepository.findById(postId) }
     }
 
     @Test
-    fun `UpdatePostResolver throws exception when user is not author`() = runBlocking {
+    fun `UpdatePostResolver throws exception when user is not author`() {
         val resolver = UpdatePostResolver(postRepository)
         val differentUserId = UUID.randomUUID()
-        val input = UpdatePostInput.Builder(context)
-            .id(postId.toString())
-            .title("Updated Title")
-            .build()
-        val args = Mutation_UpdatePost_Arguments.Builder(context)
-            .input(input)
-            .build()
+        val input = UpdatePostInput.Builder(tester.context).id(postId.toString()).title("Updated Title").build()
+        val args = Mutation_UpdatePost_Arguments.Builder(tester.context).input(input).build()
 
         every { postRepository.findById(postId) } returns mockPost
         every { mockPost.authorId } returns EntityID(differentUserId, mockk())
 
-        assertThrows<RuntimeException> {
-            runMutationFieldResolver(
-                resolver = resolver,
-                queryValue = queryObj(),
-                arguments = args,
-                requestContext = RequestContext(user = mockUser)
-            )
+        assertThrows<Exception> {
+            runBlocking {
+                tester.test(resolver) {
+                    arguments = args
+                    requestContext = RequestContext(user = mockUser)
+                }
+            }
         }
 
         verify { postRepository.findById(postId) }

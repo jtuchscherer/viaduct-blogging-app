@@ -75,4 +75,10 @@ interface PostRepository {
      * Returns null if post not found.
      */
     fun getAuthorForPost(postId: UUID): org.tuchscherer.database.User?
+
+    /**
+     * Get authors for multiple posts in a single query.
+     * Returns a map from post ID to User; missing entries mean the post was not found.
+     */
+    fun getAuthorsByPostIds(postIds: List<UUID>): Map<UUID, org.tuchscherer.database.User>
 }

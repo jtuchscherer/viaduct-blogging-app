@@ -49,6 +49,7 @@ dependencies {
 
     // Testing
     testImplementation(testFixtures("com.airbnb.viaduct:tenant-runtime:0.25.0"))
+    testImplementation(testFixtures("com.airbnb.viaduct:tenant-api:0.25.0"))
     testImplementation("com.airbnb.viaduct:engine-wiring:0.25.0")
     testImplementation("com.airbnb.viaduct:engine-runtime:0.25.0")
     testImplementation("com.airbnb.viaduct:engine-api:0.25.0")
