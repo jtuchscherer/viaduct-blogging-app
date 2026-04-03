@@ -1,16 +1,16 @@
 # TODO: Viaduct Blogging App — Implementation Plan
 
-**Status**: 🚀 In Progress — Phases 1–9 + 11 + 13 + 14 Complete, Phase 10 Next
+**Status**: 🚀 In Progress — Phases 1–9 + 11–15 + 18 Complete, Phase 10 Next
 
-**Last Updated**: 2026-04-02 (Phase 18 complete)
+**Last Updated**: 2026-04-03 (Phases 12, 15a, 15 complete)
 
 ## Test Statistics
 
 | Suite | Count | Status |
 |---|---|---|
-| Unit + Integration tests (`./gradlew test`) | 182 (4 skipped) | ✅ All passing |
+| Unit + Integration tests (`./gradlew test`) | 186 | ✅ All passing |
 | API E2E tests (`./query-tests.sh`) | 38 | ✅ All passing |
-| Browser E2E tests (Playwright, 27 tests × 3 browsers) | 81 runs | ✅ All passing |
+| Browser E2E tests (Playwright, 33 tests × 3 browsers) | 99 runs | ✅ All passing |
 
 ## Completed Phases
 
@@ -32,15 +32,15 @@
 | 13 — Migrate Resolver Tests | Migrated to new `FieldResolverTester`/`MutationResolverTester` API where possible; `@Suppress("DEPRECATION")` for resolvers returning List/Boolean/Int (new API only supports single GRT returns); zero deprecation warnings in build |
 | 14 — Batch Author Resolver | `PostAuthorResolver` overrides `batchResolve`; `getAuthorsByPostIds` fetches all authors in one `inList` query; eliminates N+1 on posts list |
 | 18 — Rich Text Editor | Lexical editor on Create/Edit Post pages; toolbar with B/I/U, H2/H3, bullet/numbered lists, code blocks; HTML stored in `content` field; DOMPurify rendering in PostDetailPage; backward-compatible with legacy plain-text posts |
+| 15a — PostsConnectionResolver Tests | 4 unit tests documenting `findPage`+`count` contract; verifies `findAll` is never called |
+| 15 — DB-Level Cursor Pagination | `PostsConnectionResolver` uses `findPage(limit, offset)` via `toOffsetLimit()`; builds edges/PageInfo manually with `base64("__viaduct:idx:N")` cursors; eliminates full table scan |
+| 12 — Frontend Pagination UI | `HomePage` queries `postsConnection(first: 10)`; "Load More" via Apollo `fetchMore`; "Showing X of Y posts" counter; 4 Playwright tests × 3 browsers |
 | E2E fixes | Fixed `e2e.sh` spurious `cd ..` bug; fixed Playwright strict-mode selector failures (`main h1`, `.first()`); all 81 browser tests now passing |
 | CI fixes | Disabled `gradle-actions` proprietary caching component (`cache-disabled: true`) to suppress licensing warning |
 
 ## Next Steps
 
 - **Phase 10**: Create Dockerfile for containerized deployment
-- **Phase 12**: Frontend pagination UI — "Load More" button consuming `postsConnection` in `HomePage.tsx`
-- **Phase 15a**: Unit tests for `PostsConnectionResolver` (prerequisite for Phase 15)
-- **Phase 15**: DB-level cursor pagination for `postsConnection`
 - **Phase 16**: Production database support — PostgreSQL/RDS, connection pooling, migrations
 - **Phase 17**: Production telemetry — structured logging, request tracing, metrics
 
