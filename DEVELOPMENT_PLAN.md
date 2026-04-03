@@ -1,6 +1,6 @@
 # Simple Blogging App Development Plan
 
-**Last Updated**: 2026-04-02
+**Last Updated**: 2026-04-03
 
 A web-based blogging application using React frontend and Viaduct/Kotlin GraphQL backend.
 
@@ -302,10 +302,14 @@ The core blogging application is fully implemented and tested. See `TODO.md` for
 ### Pending Enhancements
 - **Phase 10**: Docker deployment (multi-stage Dockerfile, env-var configuration)
 - **Phase 12**: Frontend pagination UI ("Load More" button consuming `postsConnection`)
+- **Phase 15a/15**: DB-level cursor pagination for `postsConnection`
+- **Phase 16**: Production database support (PostgreSQL/RDS, connection pooling, Flyway migrations)
+- **Phase 17**: Production telemetry (structured logging, request tracing, metrics)
 - Search functionality
 - User profiles with avatars
-- Rich text editor for post content
 - Post categories/tags
+
+See `CODE_QUALITY_PLAN.md` for tech debt and code quality items identified in code review.
 
 ### Architecture Notes
 - Single Ktor server on port 8080: REST auth routes + Viaduct GraphQL colocated

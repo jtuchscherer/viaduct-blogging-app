@@ -81,6 +81,37 @@ Viaduct instantiates resolvers via `KoinTenantCodeInjector`, which delegates to 
 - Interfaces live in `database/repositories/XxxRepository.kt`
 - Implementations are `ExposedXxxRepository` using Exposed DAO
 - All `transaction {}` blocks belong in the repository layer only
+- **No raw Exposed queries outside repositories** — this applies everywhere: resolvers, route handlers, services. Even Ktor auth routes in `GraphQLServer.kt` must go through repositories or services, never `User.find { ... }` directly.
+
+## Coding Standards
+
+### Exception handling
+- Use domain-specific exceptions, never generic `RuntimeException`, in resolvers and route handlers
+- `AuthenticationException` — user is not authenticated (maps to 401)
+- `NotFoundException` — requested resource does not exist (maps to 404)
+- `AuthorizationException` — user lacks permission for the operation (maps to 403)
+- Exception types live in `auth/` package; create new types there as needed
+
+### Auth context in resolvers
+- Use a shared `requireAuth()` helper to extract the authenticated user from `ctx.requestContext`
+- Do not copy-paste the `ctx.requestContext as? RequestContext` / `requestContext.user` null-check pattern into each resolver
+- The helper should throw `AuthenticationException` on failure
+
+### Input validation
+- All mutations must validate inputs server-side: non-blank strings, maximum lengths, valid formats
+- Do not rely on the frontend for validation — the GraphQL API is a public contract
+- Reject invalid input early with a descriptive error message
+
+### Error handling & null safety
+- Never use `!!` on nullable database lookups — use `firstOrNull()` with a proper error/response
+- Route handlers must return appropriate HTTP status codes (404, 401, 403), not generic 500s
+- Catch specific exceptions, not blanket `Exception` where possible
+
+### Frontend conventions
+- **Shared types**: Define TypeScript interfaces used across pages in `frontend/src/types.ts`, not inline in each page
+- **Shared utilities**: Reusable functions like `getExcerpt()` belong in `frontend/src/utils/`, not duplicated per page
+- **Environment variables**: Use Vite env vars (`import.meta.env.VITE_API_URL`) for backend URLs; never hardcode `localhost:8080`
+- **GraphQL fragments**: Use fragments for shared field sets (e.g., post fields) to avoid duplication across queries
 
 ## Testing
 
@@ -107,6 +138,12 @@ frontend/e2e/
 - Playwright fixtures use the real API for setup (register user, create post) — never the UI — so tests only exercise the thing they're actually testing
 - Each Playwright test uses a unique `Date.now()` suffix on usernames/titles to avoid data collisions
 
+### Test quality principles
+- **Test behavior, not implementation**: Assert on return values and observable outcomes. Do not `verify { repo.method() }` — that tests mock wiring, not correctness. If the resolver is refactored to call a different method that produces the same result, the test should still pass.
+- **Avoid `mockk(relaxed = true)`**: Relaxed mocks silently return defaults, so tests can pass even when the code returns garbage. Explicitly stub only the methods your test needs.
+- **No `@Disabled` tests without a plan**: Every disabled test must have a comment linking to a chore or issue. Prefer fixing or deleting over disabling.
+- **Cover edge cases**: Empty/blank inputs, not-found lookups, authorization failures, and boundary conditions (e.g., pagination with 0 results) should all have tests.
+
 ### Known Viaduct test infrastructure limitation
 `ConnectionFieldExecutionContext` (used by `PostsConnectionResolver`) is not compatible with `DefaultAbstractResolverTestBase`. Test pagination via the repository layer (`findPage`) and `query-tests.sh` instead.
 
@@ -118,9 +155,13 @@ Before declaring any task complete, always run the full test suite and confirm i
 ```
 Do not mark work as done until this passes locally.
 
-## Maintaining TODO.md and DEVELOPMENT_PLAN.md
+## Maintaining TODO.md, DEVELOPMENT_PLAN.md, and CODE_QUALITY_PLAN.md
 
-Whenever you modify `TODO.md` or `DEVELOPMENT_PLAN.md`, update the `**Last Updated**` date at the top of the respective file to today's date.
+Whenever you modify `TODO.md`, `DEVELOPMENT_PLAN.md`, or `CODE_QUALITY_PLAN.md`, update the `**Last Updated**` date at the top of the respective file to today's date.
+
+- `TODO.md` — feature phases and implementation roadmap
+- `DEVELOPMENT_PLAN.md` — architecture, schema, and high-level design
+- `CODE_QUALITY_PLAN.md` — tech debt, code quality findings, and cleanup tasks
 
 ## Key decisions
 
