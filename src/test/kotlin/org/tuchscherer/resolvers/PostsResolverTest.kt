@@ -5,6 +5,7 @@ package org.tuchscherer.resolvers
 import org.tuchscherer.database.Post
 import org.tuchscherer.database.repositories.PostRepository
 import org.tuchscherer.viadapp.resolvers.*
+import org.tuchscherer.viadapp.resolvers.resolverbases.QueryResolvers
 import io.mockk.*
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.dao.id.EntityID
@@ -87,5 +88,57 @@ class PostsResolverTest : DefaultAbstractResolverTestBase() {
 
         assertEquals(0, result.size)
         verify { postRepository.findAll() }
+    }
+
+    // ── PostsConnectionResolver unit tests (Phase 15a) ────────────────────────
+    // ConnectionFieldExecutionContext is not compatible with DefaultAbstractResolverTestBase,
+    // so we call resolve() directly with a relaxed mock context and use runCatching to tolerate
+    // the builder failure. The relaxed mock's toOffsetLimit() returns OffsetLimit(0,0) which is
+    // fine — these tests verify the repository contract (which methods are called), not the
+    // argument parsing which is Viaduct's responsibility.
+
+    @Test
+    fun `PostsConnectionResolver calls findPage and count`() = runBlocking {
+        val resolver = PostsConnectionResolver(postRepository)
+        every { postRepository.findPage(any(), any()) } returns listOf(mockPost)
+        every { postRepository.count() } returns 1L
+
+        val ctx = mockk<QueryResolvers.PostsConnection.Context>(relaxed = true)
+        runCatching { resolver.resolve(ctx) }
+
+        verify { postRepository.findPage(any(), any()) }
+        verify { postRepository.count() }
+    }
+
+    @Test
+    fun `PostsConnectionResolver calls findPage with empty repository`() = runBlocking {
+        val resolver = PostsConnectionResolver(postRepository)
+        every { postRepository.findPage(any(), any()) } returns emptyList()
+        every { postRepository.count() } returns 0L
+
+        val ctx = mockk<QueryResolvers.PostsConnection.Context>(relaxed = true)
+        runCatching { resolver.resolve(ctx) }
+
+        verify { postRepository.findPage(any(), any()) }
+        verify { postRepository.count() }
+    }
+
+    @Test
+    fun `PostsConnectionResolver does not call findAll`() = runBlocking {
+        val resolver = PostsConnectionResolver(postRepository)
+        every { postRepository.findPage(any(), any()) } returns listOf(mockPost)
+        every { postRepository.count() } returns 1L
+
+        val ctx = mockk<QueryResolvers.PostsConnection.Context>(relaxed = true)
+        runCatching { resolver.resolve(ctx) }
+
+        verify(exactly = 0) { postRepository.findAll() }
+    }
+
+    @Test
+    fun `PostsConnectionResolver encodeCursor produces correct Viaduct cursor format`() {
+        // Viaduct cursor format: base64("__viaduct:idx:N")
+        val cursor = PostsConnectionResolver.encodeCursor(1)
+        assertEquals("X192aWFkdWN0OmlkeDox", cursor)
     }
 }
