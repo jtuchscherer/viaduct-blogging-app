@@ -8,9 +8,9 @@ Findings from a Clean Code / SOLID / security review of the codebase. These are 
 
 ## Bugs (High Priority)
 
-- [ ] **Duplicate username check + layer violation in `/auth/register`** (`GraphQLServer.kt:175-195`): The register route queries `User.find { Users.username eq ... }` directly via Exposed DAO, bypassing the repository layer. `AuthenticationService.createUser()` already does the same check via `UserRepository.existsByUsername()`. Remove the raw Exposed query and let the service handle it — fixes both the duplication and the DIP violation.
-- [ ] **Crash on deleted user in `/auth/me`** (`GraphQLServer.kt:244-249`): `principal!!` is a forced non-null assertion, and `.first()` throws `NoSuchElementException` if the user was deleted after the JWT was issued. Use `firstOrNull()` and return 404 with a useful message.
-- [ ] **MyPostsPage shows raw HTML tags in excerpts** (`MyPostsPage.tsx:80-82`): Uses `post.content.substring(0, 200)` on raw HTML content. If content is rich text like `<p><strong>Hello</strong></p>`, the tags are displayed. Should use the same `getExcerpt()` helper from `HomePage.tsx` or a shared utility.
+- [x] **Duplicate username check + layer violation in `/auth/register`** (`GraphQLServer.kt:175-195`): Removed raw Exposed DAO query; endpoint now delegates entirely to `authService.createUser()`.
+- [x] **Crash on deleted user in `/auth/me`** (`GraphQLServer.kt:244-249`): Replaced `principal!!` + `.first()` with safe access + `firstOrNull()`, returning 401/404 instead of crashing.
+- [x] **MyPostsPage shows raw HTML tags in excerpts** (`MyPostsPage.tsx:80-82`): Replaced `post.content.substring()` with `getExcerpt()` from `utils/content.ts`; moved helper out of `HomePage.tsx` into the shared util.
 
 ---
 
