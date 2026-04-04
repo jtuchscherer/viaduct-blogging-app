@@ -1,5 +1,6 @@
 package org.tuchscherer.viadapp.resolvers
 
+import org.tuchscherer.auth.NotFoundException
 import org.tuchscherer.database.repositories.CommentRepository
 import org.tuchscherer.viadapp.resolvers.resolverbases.CommentResolvers
 import org.koin.java.KoinJavaComponent.inject
@@ -16,7 +17,7 @@ class CommentAuthorResolver : CommentResolvers.Author() {
         val commentId = UUID.fromString(ctx.objectValue.getId())
 
         val author = commentRepository.getAuthorForComment(commentId)
-            ?: throw RuntimeException("Comment not found")
+            ?: throw NotFoundException("Comment not found")
 
         return ViaductUser.Builder(ctx)
             .id(author.id.value.toString())
@@ -36,7 +37,7 @@ class CommentPostResolver : CommentResolvers.Post() {
         val commentId = UUID.fromString(ctx.objectValue.getId())
 
         val post = commentRepository.getPostForComment(commentId)
-            ?: throw RuntimeException("Comment not found")
+            ?: throw NotFoundException("Comment not found")
 
         return ViaductPost.Builder(ctx)
             .id(post.id.value.toString())

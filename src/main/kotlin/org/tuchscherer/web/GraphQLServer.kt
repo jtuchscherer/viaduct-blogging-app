@@ -6,7 +6,6 @@ import org.tuchscherer.auth.AuthenticationService
 import org.tuchscherer.auth.JwtService
 import org.tuchscherer.config.JwtConfig
 import org.tuchscherer.config.ServerConfig
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.ktor.http.*
 import io.ktor.serialization.jackson.*
@@ -20,51 +19,20 @@ import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import org.jetbrains.exposed.sql.transactions.transaction
 import org.slf4j.LoggerFactory
 import viaduct.service.api.ExecutionInput
 import viaduct.service.BasicViaductFactory
 import viaduct.service.TenantRegistrationInfo
 
-
 data class GraphQLRequest(
     val query: String,
     val variables: Map<String, Any?>? = null,
     val operationName: String? = null,
-    val extensions: Map<String, Any?>? = null  // Apollo Client includes this field
-)
-
-// Auth-related data classes
-data class RegisterRequest(
-    val username: String,
-    val email: String,
-    val name: String,
-    val password: String
-)
-
-data class LoginRequest(
-    val username: String,
-    val password: String
-)
-
-data class AuthResponse(
-    val token: String,
-    val user: UserResponse
-)
-
-data class UserResponse(
-    val id: String,
-    val username: String,
-    val email: String,
-    val name: String,
-    @param:JsonProperty("created_at")
-    val createdAt: String
+    val extensions: Map<String, Any?>? = null
 )
 
 /**
- * Consolidated server using Ktor and Viaduct.
- * Handles both GraphQL queries and REST authentication endpoints on a single port.
- * Now a class instead of object for better testability and dependency injection.
+ * Ktor server hosting the GraphQL endpoint and delegating auth routes to AuthRoutes.
  */
 class GraphQLServer(
     private val jwtService: JwtService,
@@ -76,7 +44,6 @@ class GraphQLServer(
     private val logger = LoggerFactory.getLogger(GraphQLServer::class.java)
     private val jwtAlgorithm by lazy { Algorithm.HMAC256(jwtConfig.secret) }
 
-    // Viaduct instance - uses Koin for resolver dependency injection
     private val viaduct = BasicViaductFactory.create(
         tenantRegistrationInfo = TenantRegistrationInfo(
             tenantPackagePrefix = "org.tuchscherer.viadapp",
@@ -122,18 +89,11 @@ class GraphQLServer(
                     try {
                         val graphqlRequest = call.receive<GraphQLRequest>()
 
-                        // Extract JWT token from Authorization header
                         val authHeader = call.request.headers["Authorization"]
                         val token = authHeader?.removePrefix("Bearer ")?.trim()
-
-                        // Get user from token if present (null if no token or invalid)
                         val user = token?.let { jwtService.getUserFromToken(it) }
-
-                        // Create request context with authenticated user (if present)
                         val requestContext = user?.let { org.tuchscherer.auth.RequestContext(user = it) }
 
-                        // Execute GraphQL query using Viaduct 0.5.0 API
-                        // Pass the request context through requestContext
                         val executionInput = ExecutionInput.create(
                             operationText = graphqlRequest.query,
                             variables = graphqlRequest.variables ?: emptyMap(),
@@ -142,11 +102,8 @@ class GraphQLServer(
 
                         val result = viaduct.execute(executionInput)
 
-
-                        // Return result
                         val mapper = jacksonObjectMapper()
-                        val response = mapper.writeValueAsString(result.toSpecification())
-                        call.respondText(response, ContentType.Application.Json)
+                        call.respondText(mapper.writeValueAsString(result.toSpecification()), ContentType.Application.Json)
 
                     } catch (e: Exception) {
                         logger.error("GraphQL execution error", e)
@@ -166,88 +123,11 @@ class GraphQLServer(
                     }
                 }
 
-                // Health check endpoint
                 get("/health") {
                     call.respond(mapOf("status" to "ok"))
                 }
 
-                // Auth endpoints
-                post("/auth/register") {
-                    try {
-                        val request = call.receive<RegisterRequest>()
-
-                        val user = authService.createUser(
-                            request.username,
-                            request.email,
-                            request.name,
-                            request.password
-                        )
-
-                        val token = jwtService.generateToken(user.username, user.id.value.toString())
-                        val response = AuthResponse(
-                            token = token,
-                            user = UserResponse(
-                                id = user.id.value.toString(),
-                                username = user.username,
-                                email = user.email,
-                                name = user.name,
-                                createdAt = user.createdAt.toString()
-                            )
-                        )
-
-                        call.respond(HttpStatusCode.Created, response)
-                    } catch (e: Exception) {
-                        call.respond(HttpStatusCode.BadRequest, mapOf("error" to e.message))
-                    }
-                }
-
-                post("/auth/login") {
-                    try {
-                        val request = call.receive<LoginRequest>()
-
-                        val user = transaction {
-                            authService.authenticateUser(request.username, request.password)
-                        } ?: throw RuntimeException("Invalid credentials")
-
-                        val token = jwtService.generateToken(user.username, user.id.value.toString())
-                        val response = AuthResponse(
-                            token = token,
-                            user = UserResponse(
-                                id = user.id.value.toString(),
-                                username = user.username,
-                                email = user.email,
-                                name = user.name,
-                                createdAt = user.createdAt.toString()
-                            )
-                        )
-
-                        call.respond(HttpStatusCode.OK, response)
-                    } catch (e: Exception) {
-                        call.respond(HttpStatusCode.Unauthorized, mapOf("error" to e.message))
-                    }
-                }
-
-                authenticate("auth-jwt") {
-                    get("/auth/me") {
-                        val principal = call.principal<JWTPrincipal>()
-                            ?: return@get call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "Invalid token"))
-                        val username = principal.payload.getClaim("username").asString()
-
-                        val user = transaction {
-                            org.tuchscherer.database.User.find {
-                                org.tuchscherer.database.Users.username eq username
-                            }.firstOrNull()
-                        } ?: return@get call.respond(HttpStatusCode.NotFound, mapOf("error" to "User not found"))
-
-                        call.respond(HttpStatusCode.OK, UserResponse(
-                            id = user.id.value.toString(),
-                            username = user.username,
-                            email = user.email,
-                            name = user.name,
-                            createdAt = user.createdAt.toString()
-                        ))
-                    }
-                }
+                authRoutes(jwtService, authService)
             }
         }.start(wait = false)
     }

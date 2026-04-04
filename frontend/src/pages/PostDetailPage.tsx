@@ -4,6 +4,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useState, type FormEvent } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import DOMPurify from 'dompurify';
+import type { Author, Comment } from '../types';
 
 const GET_POST = gql`
   query GetPost($id: ID!) {
@@ -88,19 +89,6 @@ function renderContent(content: string): string {
       return `<p>${escaped}</p>`;
     })
     .join('');
-}
-
-interface Author {
-  id: string;
-  name: string;
-  username: string;
-}
-
-interface Comment {
-  id: string;
-  content: string;
-  author: Author;
-  createdAt: string;
 }
 
 interface Post {

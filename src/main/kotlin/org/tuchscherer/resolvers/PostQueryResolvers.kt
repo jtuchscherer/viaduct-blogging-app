@@ -1,6 +1,6 @@
 package org.tuchscherer.viadapp.resolvers
 
-import org.tuchscherer.auth.RequestContext
+import org.tuchscherer.auth.requireAuth
 import org.tuchscherer.database.repositories.PostRepository
 import org.tuchscherer.viadapp.resolvers.resolverbases.QueryResolvers
 import viaduct.api.Resolver
@@ -104,12 +104,9 @@ class MyPostsResolver(
     private val postRepository: PostRepository
 ) : QueryResolvers.MyPosts() {
     override suspend fun resolve(ctx: Context): List<ViaductPost> {
-        val requestContext = ctx.requestContext as? RequestContext
-            ?: throw RuntimeException("Authentication required. Please provide a valid JWT token.")
-        val authenticatedUser =
-            requestContext.user ?: throw RuntimeException("Authentication required. Please provide a valid JWT token.")
+        val user = requireAuth(ctx.requestContext)
 
-        return postRepository.findByAuthorId(authenticatedUser.id).map { post ->
+        return postRepository.findByAuthorId(user.id).map { post ->
             ViaductPost.Builder(ctx)
                 .id(post.id.value.toString())
                 .title(post.title)

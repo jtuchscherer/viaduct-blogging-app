@@ -1,6 +1,8 @@
 package org.tuchscherer.viadapp.resolvers
 
-import org.tuchscherer.auth.RequestContext
+import org.tuchscherer.auth.AuthorizationException
+import org.tuchscherer.auth.NotFoundException
+import org.tuchscherer.auth.requireAuth
 import org.tuchscherer.database.repositories.CommentRepository
 import org.tuchscherer.database.repositories.PostRepository
 import org.tuchscherer.viadapp.resolvers.resolverbases.MutationResolvers
@@ -18,19 +20,16 @@ class CreateCommentResolver(
 ) : MutationResolvers.CreateComment() {
     override suspend fun resolve(ctx: Context): ViaductComment {
         val input = ctx.arguments.input
-        val requestContext = ctx.requestContext as? RequestContext
-            ?: throw RuntimeException("Authentication required. Please provide a valid JWT token.")
-        val authenticatedUser =
-            requestContext.user ?: throw RuntimeException("Authentication required. Please provide a valid JWT token.")
+        val user = requireAuth(ctx.requestContext)
 
         val postId = UUID.fromString(input.postId)
         val post = postRepository.findById(postId)
-            ?: throw RuntimeException("Post not found")
+            ?: throw NotFoundException("Post not found")
 
         val comment = commentRepository.create(
             content = input.content,
             postId = post.id,
-            authorId = authenticatedUser.id,
+            authorId = user.id,
             createdAt = LocalDateTime.now()
         )
 
@@ -48,17 +47,13 @@ class DeleteCommentResolver(
 ) : MutationResolvers.DeleteComment() {
     override suspend fun resolve(ctx: Context): Boolean {
         val commentId = UUID.fromString(ctx.arguments.id)
-        val requestContext = ctx.requestContext as? RequestContext
-            ?: throw RuntimeException("Authentication required. Please provide a valid JWT token.")
-        val authenticatedUser =
-            requestContext.user ?: throw RuntimeException("Authentication required. Please provide a valid JWT token.")
+        val user = requireAuth(ctx.requestContext)
 
         val comment = commentRepository.findById(commentId)
-            ?: throw RuntimeException("Comment not found")
+            ?: throw NotFoundException("Comment not found")
 
-        // Check if current user is the author
-        if (comment.authorId != authenticatedUser.id) {
-            throw RuntimeException("You are not authorized to delete this comment")
+        if (comment.authorId != user.id) {
+            throw AuthorizationException("You are not authorized to delete this comment")
         }
 
         return commentRepository.delete(commentId)

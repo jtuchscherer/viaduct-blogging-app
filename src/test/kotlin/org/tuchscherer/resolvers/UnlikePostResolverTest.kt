@@ -2,6 +2,8 @@
 
 package org.tuchscherer.resolvers
 
+import org.tuchscherer.auth.AuthenticationException
+import org.tuchscherer.auth.NotFoundException
 import org.tuchscherer.auth.RequestContext
 import org.tuchscherer.database.Post
 import org.tuchscherer.database.Posts
@@ -111,7 +113,7 @@ class UnlikePostResolverTest : DefaultAbstractResolverTestBase() {
             .postId(postId.toString())
             .build()
 
-        assertThrows<RuntimeException> {
+        assertThrows<AuthenticationException> {
             runMutationFieldResolver(
                 resolver = resolver,
                 queryValue = queryObj(),
@@ -133,7 +135,7 @@ class UnlikePostResolverTest : DefaultAbstractResolverTestBase() {
 
         every { postRepository.findById(postId) } returns null
 
-        assertThrows<RuntimeException> {
+        assertThrows<NotFoundException> {
             runMutationFieldResolver(
                 resolver = resolver,
                 queryValue = queryObj(),

@@ -1,6 +1,7 @@
 package org.tuchscherer.viadapp.resolvers
 
-import org.tuchscherer.auth.RequestContext
+import org.tuchscherer.auth.NotFoundException
+import org.tuchscherer.auth.requireAuth
 import org.tuchscherer.database.repositories.LikeRepository
 import org.tuchscherer.database.repositories.PostRepository
 import org.tuchscherer.viadapp.resolvers.resolverbases.MutationResolvers
@@ -16,28 +17,22 @@ class LikePostMutationResolver(
 ) : MutationResolvers.LikePost() {
     override suspend fun resolve(ctx: Context): ViaductLike {
         val postId = UUID.fromString(ctx.arguments.postId)
-        val requestContext = ctx.requestContext as? RequestContext
-            ?: throw RuntimeException("Authentication required. Please provide a valid JWT token.")
-        val authenticatedUser =
-            requestContext.user ?: throw RuntimeException("Authentication required. Please provide a valid JWT token.")
+        val user = requireAuth(ctx.requestContext)
 
         val post = postRepository.findById(postId)
-            ?: throw RuntimeException("Post not found")
+            ?: throw NotFoundException("Post not found")
 
-        // Check if user already liked the post
-        val existingLike = likeRepository.findByPostAndUser(post.id, authenticatedUser.id)
+        val existingLike = likeRepository.findByPostAndUser(post.id, user.id)
 
         if (existingLike != null) {
-            // Already liked, just return the existing like
             return ViaductLike.Builder(ctx)
                 .id(existingLike.id.value.toString())
                 .createdAt(existingLike.createdAt.toString())
                 .build()
         } else {
-            // Create new like
             val like = likeRepository.create(
                 postId = post.id,
-                userId = authenticatedUser.id,
+                userId = user.id,
                 createdAt = LocalDateTime.now()
             )
 
@@ -56,14 +51,11 @@ class UnlikePostResolver(
 ) : MutationResolvers.UnlikePost() {
     override suspend fun resolve(ctx: Context): Boolean {
         val postId = UUID.fromString(ctx.arguments.postId)
-        val requestContext = ctx.requestContext as? RequestContext
-            ?: throw RuntimeException("Authentication required. Please provide a valid JWT token.")
-        val authenticatedUser =
-            requestContext.user ?: throw RuntimeException("Authentication required. Please provide a valid JWT token.")
+        val user = requireAuth(ctx.requestContext)
 
         val post = postRepository.findById(postId)
-            ?: throw RuntimeException("Post not found")
+            ?: throw NotFoundException("Post not found")
 
-        return likeRepository.deleteByPostAndUser(post.id, authenticatedUser.id)
+        return likeRepository.deleteByPostAndUser(post.id, user.id)
     }
 }

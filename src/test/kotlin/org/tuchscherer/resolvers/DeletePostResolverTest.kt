@@ -2,6 +2,7 @@
 
 package org.tuchscherer.resolvers
 
+import org.tuchscherer.auth.AuthorizationException
 import org.tuchscherer.auth.RequestContext
 import org.tuchscherer.database.Post
 import org.tuchscherer.database.User
@@ -92,7 +93,7 @@ class DeletePostResolverTest : DefaultAbstractResolverTestBase() {
         every { postRepository.findById(postId) } returns mockPost
         every { mockPost.authorId } returns EntityID(differentUserId, mockk())
 
-        assertThrows<RuntimeException> {
+        assertThrows<AuthorizationException> {
             runMutationFieldResolver(
                 resolver = resolver,
                 queryValue = queryObj(),

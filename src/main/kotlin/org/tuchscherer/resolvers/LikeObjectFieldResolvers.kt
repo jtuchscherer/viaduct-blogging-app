@@ -1,5 +1,6 @@
 package org.tuchscherer.viadapp.resolvers
 
+import org.tuchscherer.auth.NotFoundException
 import org.tuchscherer.database.repositories.LikeRepository
 import org.tuchscherer.viadapp.resolvers.resolverbases.LikeResolvers
 import org.koin.java.KoinJavaComponent.inject
@@ -16,7 +17,7 @@ class LikeUserResolver : LikeResolvers.User() {
         val likeId = UUID.fromString(ctx.objectValue.getId())
 
         val user = likeRepository.getUserForLike(likeId)
-            ?: throw RuntimeException("Like not found")
+            ?: throw NotFoundException("Like not found")
 
         return ViaductUser.Builder(ctx)
             .id(user.id.value.toString())
@@ -36,7 +37,7 @@ class LikePostResolver : LikeResolvers.Post() {
         val likeId = UUID.fromString(ctx.objectValue.getId())
 
         val post = likeRepository.getPostForLike(likeId)
-            ?: throw RuntimeException("Like not found")
+            ?: throw NotFoundException("Like not found")
 
         return ViaductPost.Builder(ctx)
             .id(post.id.value.toString())

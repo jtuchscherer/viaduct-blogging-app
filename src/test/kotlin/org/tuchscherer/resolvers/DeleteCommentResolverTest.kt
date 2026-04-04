@@ -2,6 +2,9 @@
 
 package org.tuchscherer.resolvers
 
+import org.tuchscherer.auth.AuthenticationException
+import org.tuchscherer.auth.AuthorizationException
+import org.tuchscherer.auth.NotFoundException
 import org.tuchscherer.auth.RequestContext
 import org.tuchscherer.database.Comment
 import org.tuchscherer.database.Posts
@@ -91,7 +94,7 @@ class DeleteCommentResolverTest : DefaultAbstractResolverTestBase() {
             .id(commentId.toString())
             .build()
 
-        assertThrows<RuntimeException> {
+        assertThrows<AuthenticationException> {
             runMutationFieldResolver(
                 resolver = resolver,
                 queryValue = queryObj(),
@@ -113,7 +116,7 @@ class DeleteCommentResolverTest : DefaultAbstractResolverTestBase() {
 
         every { commentRepository.findById(commentId) } returns null
 
-        assertThrows<RuntimeException> {
+        assertThrows<NotFoundException> {
             runMutationFieldResolver(
                 resolver = resolver,
                 queryValue = queryObj(),
@@ -137,7 +140,7 @@ class DeleteCommentResolverTest : DefaultAbstractResolverTestBase() {
         every { commentRepository.findById(commentId) } returns mockComment
         every { mockComment.authorId } returns EntityID(differentUserId, mockk())
 
-        assertThrows<RuntimeException> {
+        assertThrows<AuthorizationException> {
             runMutationFieldResolver(
                 resolver = resolver,
                 queryValue = queryObj(),

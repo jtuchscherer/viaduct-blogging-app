@@ -3,6 +3,7 @@ import { gql } from '@apollo/client';
 import { useQuery } from '@apollo/client/react';
 import { Link } from 'react-router-dom';
 import { isContentEmpty, getExcerpt } from '../utils/content';
+import type { Post } from '../types';
 
 const PAGE_SIZE = 10;
 
@@ -31,21 +32,6 @@ const GET_POSTS_CONNECTION = gql`
     }
   }
 `;
-
-interface Author {
-  id: string;
-  name: string;
-  username: string;
-}
-
-interface Post {
-  id: string;
-  title: string;
-  content: string;
-  author: Author;
-  createdAt: string;
-  likeCount: number;
-}
 
 interface PostsConnectionData {
   postsConnection: {

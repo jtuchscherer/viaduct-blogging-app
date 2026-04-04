@@ -2,6 +2,7 @@
 
 package org.tuchscherer.resolvers
 
+import org.tuchscherer.auth.AuthenticationException
 import org.tuchscherer.auth.RequestContext
 import org.tuchscherer.database.Post
 import org.tuchscherer.database.User
@@ -84,7 +85,7 @@ class MyPostsResolverTest : DefaultAbstractResolverTestBase() {
     fun `MyPostsResolver throws exception when not authenticated`() = runBlocking {
         val resolver = MyPostsResolver(postRepository)
 
-        assertThrows<RuntimeException> {
+        assertThrows<AuthenticationException> {
             runFieldResolver(
                 resolver = resolver,
                 objectValue = queryObj(),

@@ -1,6 +1,6 @@
 # Chores: Code Quality Review Findings
 
-**Last Updated**: 2026-04-03
+**Last Updated**: 2026-04-04
 
 Findings from a Clean Code / SOLID / security review of the codebase. These are tech-debt items and quality improvements — not feature work.
 
@@ -16,10 +16,10 @@ Findings from a Clean Code / SOLID / security review of the codebase. These are 
 
 ## SOLID & Clean Code (Medium Priority)
 
-- [ ] **SRP: Extract auth routes from `GraphQLServer.kt`** — The class handles Ktor server setup, CORS, JWT validation, GraphQL execution, 3 auth endpoints, and health check (~260 lines, 5+ responsibilities). Extract auth routes into a dedicated `AuthRoutes.kt` Ktor routing module.
-- [ ] **DRY: Extract auth extraction helper for resolvers** — Every mutation resolver repeats 4 lines of `ctx.requestContext as? RequestContext` / `requestContext.user` casting and null-checking. Create a `fun Context.requireAuth(): User` extension function and use it in `CreatePostResolver`, `UpdatePostResolver`, `DeletePostResolver`, `CreateCommentResolver`, `DeleteCommentResolver`, `LikePostResolver`, `UnlikePostResolver`.
-- [ ] **Use domain exceptions instead of generic `RuntimeException`** — Resolvers throw `RuntimeException` for auth, not-found, and authorization errors. `AuthenticationException` exists in `AuthContext.kt` but isn't used by resolvers. Create/reuse specific exception types (`AuthenticationException`, `NotFoundException`, `AuthorizationException`) so callers can distinguish errors.
-- [ ] **Extract shared `Post` TypeScript interface** — `Post` is redefined with slightly different shapes in `HomePage.tsx`, `MyPostsPage.tsx`, `PostDetailPage.tsx`, `EditPostPage.tsx`. Extract into a shared `types.ts` and use GraphQL fragments for the query fields.
+- [x] **SRP: Extract auth routes from `GraphQLServer.kt`** — Moved all 3 auth endpoints + data classes (`RegisterRequest`, `LoginRequest`, `AuthResponse`, `UserResponse`) into `AuthRoutes.kt` as a `Route.authRoutes()` extension. `GraphQLServer.kt` now calls `authRoutes(jwtService, authService)`.
+- [x] **DRY: Extract auth extraction helper for resolvers** — Created `fun requireAuth(requestContext: Any?): User` in `auth/ResolverAuth.kt`. Replaced the 4-line cast-and-null-check pattern in all 7 mutation resolvers (`CreatePost`, `UpdatePost`, `DeletePost`, `CreateComment`, `DeleteComment`, `LikePost`, `UnlikePost`) and `MyPostsResolver`.
+- [x] **Use domain exceptions instead of generic `RuntimeException`** — Added `NotFoundException` and `AuthorizationException` to `AuthContext.kt` alongside existing `AuthenticationException`. All resolvers and field resolvers now throw the appropriate domain exception; resolver tests updated to assert the specific type.
+- [x] **Extract shared `Post` TypeScript interface** — Created `frontend/src/types.ts` with `Author`, `Comment`, and `Post` interfaces. `HomePage.tsx` imports `Post` from shared types; `PostDetailPage.tsx` imports `Author` and `Comment` from shared types.
 
 ---
 
