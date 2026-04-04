@@ -98,4 +98,23 @@ test.describe('Authentication', () => {
     await page.goto('/register');
     await expect(page).toHaveURL('/');
   });
+
+  // ── Regression: /auth/me safety ───────────────────────────────────────────
+
+  // Regression for: principal!! force-unwrap + .first() crash in /auth/me.
+  // Fixed to use safe access + firstOrNull() returning 401/404 instead of 500.
+  test('/auth/me returns 401 without a token', async ({ page }) => {
+    const response = await page.request.get('http://localhost:8080/auth/me');
+    expect(response.status()).toBe(401);
+  });
+
+  test('/auth/me returns 200 with a valid token', async ({ page }) => {
+    const creds = await registerUser(page, `authme_${Date.now()}`);
+    const response = await page.request.get('http://localhost:8080/auth/me', {
+      headers: { Authorization: `Bearer ${creds.token}` },
+    });
+    expect(response.status()).toBe(200);
+    const body = await response.json();
+    expect(body.username).toBe(creds.username);
+  });
 });
