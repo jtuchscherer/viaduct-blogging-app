@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { gql } from '@apollo/client';
 import { useQuery } from '@apollo/client/react';
 import { Link } from 'react-router-dom';
-import { isContentEmpty } from '../utils/content';
+import { isContentEmpty, getExcerpt } from '../utils/content';
 
 const PAGE_SIZE = 10;
 
@@ -58,11 +58,6 @@ interface PostsConnectionData {
   };
 }
 
-function getExcerpt(html: string): string {
-  if (!html) return '';
-  const text = new DOMParser().parseFromString(html, 'text/html').body.textContent ?? '';
-  return text.length > 200 ? `${text.substring(0, 200)}...` : text;
-}
 
 export default function HomePage() {
   const [loadingMore, setLoadingMore] = useState(false);

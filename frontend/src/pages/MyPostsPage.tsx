@@ -2,6 +2,7 @@ import { gql } from '@apollo/client';
 import { useQuery } from '@apollo/client/react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { getExcerpt } from '../utils/content';
 
 const GET_MY_POSTS = gql`
   query GetMyPosts {
@@ -76,11 +77,7 @@ export default function MyPostsPage() {
                 <span className="post-author">by {user?.name}</span>
                 <span className="post-date">{new Date(post.createdAt).toLocaleDateString()}</span>
               </div>
-              <p className="post-excerpt">
-                {post.content.length > 200
-                  ? `${post.content.substring(0, 200)}...`
-                  : post.content}
-              </p>
+              <p className="post-excerpt">{getExcerpt(post.content)}</p>
               <div className="post-footer">
                 <span className="like-count">❤️ {post.likeCount}</span>
                 <div className="post-actions-inline">

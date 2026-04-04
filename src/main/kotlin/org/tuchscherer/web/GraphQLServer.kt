@@ -176,23 +176,12 @@ class GraphQLServer(
                     try {
                         val request = call.receive<RegisterRequest>()
 
-                        val user = transaction {
-                            // Check if username already exists
-                            val existingUser = org.tuchscherer.database.User.find {
-                                org.tuchscherer.database.Users.username eq request.username
-                            }.firstOrNull()
-
-                            if (existingUser != null) {
-                                throw RuntimeException("Username already exists")
-                            }
-
-                            authService.createUser(
-                                request.username,
-                                request.email,
-                                request.name,
-                                request.password
-                            )
-                        }
+                        val user = authService.createUser(
+                            request.username,
+                            request.email,
+                            request.name,
+                            request.password
+                        )
 
                         val token = jwtService.generateToken(user.username, user.id.value.toString())
                         val response = AuthResponse(
@@ -241,23 +230,22 @@ class GraphQLServer(
                 authenticate("auth-jwt") {
                     get("/auth/me") {
                         val principal = call.principal<JWTPrincipal>()
-                        val username = principal!!.payload.getClaim("username").asString()
+                            ?: return@get call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "Invalid token"))
+                        val username = principal.payload.getClaim("username").asString()
 
                         val user = transaction {
                             org.tuchscherer.database.User.find {
                                 org.tuchscherer.database.Users.username eq username
-                            }.first()
-                        }
+                            }.firstOrNull()
+                        } ?: return@get call.respond(HttpStatusCode.NotFound, mapOf("error" to "User not found"))
 
-                        val userResponse = UserResponse(
+                        call.respond(HttpStatusCode.OK, UserResponse(
                             id = user.id.value.toString(),
                             username = user.username,
                             email = user.email,
                             name = user.name,
                             createdAt = user.createdAt.toString()
-                        )
-
-                        call.respond(HttpStatusCode.OK, userResponse)
+                        ))
                     }
                 }
             }
