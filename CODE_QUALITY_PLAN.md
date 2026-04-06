@@ -1,6 +1,6 @@
 # Chores: Code Quality Review Findings
 
-**Last Updated**: 2026-04-04
+**Last Updated**: 2026-04-05
 
 Findings from a Clean Code / SOLID / security review of the codebase. These are tech-debt items and quality improvements — not feature work.
 
@@ -25,16 +25,17 @@ Findings from a Clean Code / SOLID / security review of the codebase. These are 
 
 ## Test Quality (Medium Priority)
 
-- [ ] **Resolver tests test mock wiring, not behavior** — Most resolver unit tests mock repositories with `mockk(relaxed = true)`, then `verify { repo.method() }` was called. They don't assert the resolver returns correct results. Refactor to assert on return values and actual behavior instead of verifying which mock methods were called.
-- [ ] **`relaxed = true` masks silent failures** — Relaxed mocks return defaults silently, so tests can pass even when the resolver returns garbage data. Remove `relaxed = true` where possible and explicitly stub only what's needed.
-- [ ] **`KoinModulesTest` tests DI framework internals** — `assertSame(instance1, instance2)` verifies Koin singleton scope, not application behavior. Consider removing or replacing with a smoke test that starts the app and verifies a request works.
-- [ ] **Fix or remove `@Disabled` tests** — Disabled tests in repository layer with comments like "Update pattern needs refactoring" are test debt. Either fix the underlying issue or delete the tests.
-- [ ] **Add missing edge case tests**: empty/blank title and content on mutations, cascading deletes (post → comments/likes), invalid cursor format in pagination, duplicate like by same user.
+- [x] **Resolver tests test mock wiring, not behavior** — Refactored all resolver tests to assert on return values and observable outcomes instead of `verify { repo.method() }`.
+- [x] **`relaxed = true` masks silent failures** — Removed `relaxed = true` from repository mocks; entity mocks (e.g. `mockk<Post>(relaxed = true)`) retained where stubs for every property would add noise without benefit.
+- [x] **`KoinModulesTest` tests DI framework internals** — Removed `assertSame` singleton-scope assertions that tested Koin internals rather than application behaviour.
+- [x] **Fix or remove `@Disabled` tests** — All disabled tests removed.
+- [x] **Add missing edge case tests**: blank title/content on `CreatePost`, `UpdatePost`, `CreateComment`; authorization failures; not-found paths. (Cascading delete and duplicate-like coverage deferred to repository integration tests.)
 
 ---
 
 ## Security (Medium Priority)
 
-- [ ] **No input validation on mutations** — `CreatePostResolver` and `UpdatePostResolver` accept any title/content without length checks. A user could submit a multi-MB post body. Add server-side validation for maximum lengths.
+- [x] **No input validation on mutations (blank check)** — `CreatePost`, `UpdatePost`, and `CreateComment` now reject blank title/content with a descriptive error. Maximum-length enforcement is still outstanding (see open item below).
+- [ ] **No maximum-length validation on mutations** — Title and content have no upper-bound check. A user could submit a multi-MB post body. Add server-side length limits.
 - [ ] **No rate limiting on auth endpoints** — `/auth/login` and `/auth/register` have no brute-force protection. Add rate limiting middleware or per-IP throttling.
 - [ ] **Hardcoded CORS origin and frontend API URLs** — CORS is hardcoded to `localhost:5173` in `GraphQLServer.kt:94`. `LoginPage.tsx` and `RegisterPage.tsx` hardcode `http://localhost:8080`. Make these configurable via environment variables / Vite env vars.
