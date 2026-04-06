@@ -34,7 +34,7 @@ class PostResolverTest : DefaultAbstractResolverTestBase() {
 
     @BeforeEach
     fun setup() {
-        postRepository = mockk<PostRepository>(relaxed = true)
+        postRepository = mockk<PostRepository>()
 
         mockPost = mockk<Post>(relaxed = true)
         every { mockPost.id } returns EntityID(postId, mockk())
@@ -71,7 +71,6 @@ class PostResolverTest : DefaultAbstractResolverTestBase() {
         assertNotNull(result)
         assertEquals(postId.toString(), result?.getId())
         assertEquals("Test Post", result?.getTitle())
-        verify { postRepository.findById(postId) }
     }
 
     @Test
@@ -91,6 +90,5 @@ class PostResolverTest : DefaultAbstractResolverTestBase() {
         )
 
         assertNull(result)
-        verify { postRepository.findById(postId) }
     }
 }

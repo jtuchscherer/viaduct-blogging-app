@@ -127,28 +127,6 @@ class CommentRepositoryTest {
     }
 
     @Test
-    @Disabled("Update pattern needs refactoring - entities need to be modified within transaction context")
-    fun `update comment modifies content`() {
-        val comment = commentRepository.create(
-            content = "Original content",
-            postId = testPost.id,
-            authorId = testUser.id
-        )
-
-        val commentId = comment.id.value
-
-        // Retrieve and update within transaction context
-        val retrieved = commentRepository.findById(commentId)!!
-        retrieved.content = "Updated content"
-        commentRepository.update(retrieved)
-
-        val found = commentRepository.findById(commentId)
-
-        Assertions.assertNotNull(found)
-        assertEquals("Updated content", found!!.content)
-    }
-
-    @Test
     fun `delete comment removes from database`() {
         val comment = commentRepository.create(
             content = "Test comment",

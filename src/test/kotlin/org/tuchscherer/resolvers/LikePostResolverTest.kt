@@ -1,5 +1,7 @@
 package org.tuchscherer.resolvers
 
+import org.tuchscherer.auth.AuthenticationException
+import org.tuchscherer.auth.NotFoundException
 import org.tuchscherer.auth.RequestContext
 import org.tuchscherer.database.Like
 import org.tuchscherer.database.Post
@@ -12,6 +14,7 @@ import io.mockk.*
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.dao.id.EntityID
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -41,8 +44,8 @@ class LikePostResolverTest {
 
     @BeforeEach
     fun setup() {
-        likeRepository = mockk(relaxed = true)
-        postRepository = mockk(relaxed = true)
+        likeRepository = mockk()
+        postRepository = mockk()
 
         mockUser = mockk(relaxed = true)
         every { mockUser.id } returns EntityID(userId, mockk())
@@ -85,9 +88,6 @@ class LikePostResolverTest {
 
         assertNotNull(result)
         assertEquals(likeId.toString(), result.getId())
-        verify { postRepository.findById(postId) }
-        verify { likeRepository.findByPostAndUser(mockPost.id, mockUser.id) }
-        verify { likeRepository.create(any(), any(), any()) }
     }
 
     @Test
@@ -105,8 +105,6 @@ class LikePostResolverTest {
 
         assertNotNull(result)
         assertEquals(likeId.toString(), result.getId())
-        verify { postRepository.findById(postId) }
-        verify { likeRepository.findByPostAndUser(mockPost.id, mockUser.id) }
         verify(exactly = 0) { likeRepository.create(any(), any(), any()) }
     }
 
@@ -115,7 +113,8 @@ class LikePostResolverTest {
         val resolver = LikePostMutationResolver(likeRepository, postRepository)
         val args = Mutation_LikePost_Arguments.Builder(tester.context).postId(postId.toString()).build()
 
-        assertThrows<Exception> {
+        // MutationResolverTester wraps exceptions in InvocationTargetException
+        val e1 = assertThrows<Exception> {
             runBlocking {
                 tester.test(resolver) {
                     arguments = args
@@ -123,7 +122,7 @@ class LikePostResolverTest {
                 }
             }
         }
-
+        assertInstanceOf(AuthenticationException::class.java, e1.cause)
         verify(exactly = 0) { postRepository.findById(any()) }
         verify(exactly = 0) { likeRepository.create(any(), any(), any()) }
     }
@@ -135,7 +134,7 @@ class LikePostResolverTest {
 
         every { postRepository.findById(postId) } returns null
 
-        assertThrows<Exception> {
+        val e = assertThrows<Exception> {
             runBlocking {
                 tester.test(resolver) {
                     arguments = args
@@ -143,8 +142,7 @@ class LikePostResolverTest {
                 }
             }
         }
-
-        verify { postRepository.findById(postId) }
+        assertInstanceOf(NotFoundException::class.java, e.cause)
         verify(exactly = 0) { likeRepository.create(any(), any(), any()) }
     }
 }

@@ -42,8 +42,8 @@ class UnlikePostResolverTest : DefaultAbstractResolverTestBase() {
 
     @BeforeEach
     fun setup() {
-        likeRepository = mockk<LikeRepository>(relaxed = true)
-        postRepository = mockk<PostRepository>(relaxed = true)
+        likeRepository = mockk<LikeRepository>()
+        postRepository = mockk<PostRepository>()
 
         mockUser = mockk<User>(relaxed = true)
         every { mockUser.id } returns EntityID(userId, mockk())
@@ -80,8 +80,6 @@ class UnlikePostResolverTest : DefaultAbstractResolverTestBase() {
         )
 
         assertTrue(result)
-        verify { postRepository.findById(postId) }
-        verify { likeRepository.deleteByPostAndUser(mockPost.id, mockUser.id) }
     }
 
     @Test
@@ -102,8 +100,6 @@ class UnlikePostResolverTest : DefaultAbstractResolverTestBase() {
         )
 
         assertFalse(result)
-        verify { postRepository.findById(postId) }
-        verify { likeRepository.deleteByPostAndUser(mockPost.id, mockUser.id) }
     }
 
     @Test
@@ -144,7 +140,6 @@ class UnlikePostResolverTest : DefaultAbstractResolverTestBase() {
             )
         }
 
-        verify { postRepository.findById(postId) }
         verify(exactly = 0) { likeRepository.deleteByPostAndUser(any(), any()) }
     }
 }

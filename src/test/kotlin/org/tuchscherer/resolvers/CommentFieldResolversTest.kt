@@ -1,5 +1,6 @@
 package org.tuchscherer.resolvers
 
+import org.tuchscherer.auth.NotFoundException
 import org.tuchscherer.database.Post
 import org.tuchscherer.database.User
 import org.tuchscherer.database.repositories.CommentRepository
@@ -7,10 +8,10 @@ import org.tuchscherer.viadapp.resolvers.CommentAuthorResolver
 import org.tuchscherer.viadapp.resolvers.CommentPostResolver
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.verify
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.dao.id.EntityID
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -45,7 +46,7 @@ class CommentFieldResolversTest {
 
     @BeforeEach
     fun setup() {
-        commentRepository = mockk(relaxed = true)
+        commentRepository = mockk()
 
         mockUser = mockk(relaxed = true)
         every { mockUser.id } returns EntityID(userId, mockk())
@@ -82,7 +83,6 @@ class CommentFieldResolversTest {
         assertEquals(userId.toString(), result.getId())
         assertEquals("testuser", result.getUsername())
         assertEquals("test@example.com", result.getEmail())
-        verify { commentRepository.getAuthorForComment(commentId) }
     }
 
     @Test
@@ -90,7 +90,8 @@ class CommentFieldResolversTest {
         val resolver = CommentAuthorResolver()
         every { commentRepository.getAuthorForComment(commentId) } returns null
 
-        assertThrows<Exception> {
+        // FieldResolverTester wraps exceptions in InvocationTargetException
+        val e1 = assertThrows<Exception> {
             runBlocking {
                 authorTester.test(resolver) {
                     objectValue = commentObj()
@@ -98,7 +99,7 @@ class CommentFieldResolversTest {
                 }
             }
         }
-        verify { commentRepository.getAuthorForComment(commentId) }
+        assertInstanceOf(NotFoundException::class.java, e1.cause)
     }
 
     // ── CommentPostResolver ─────────────────────────────────────────────
@@ -116,7 +117,6 @@ class CommentFieldResolversTest {
         assertEquals(postId.toString(), result.getId())
         assertEquals("Test Post", result.getTitle())
         assertEquals("Test content", result.getContent())
-        verify { commentRepository.getPostForComment(commentId) }
     }
 
     @Test
@@ -124,7 +124,7 @@ class CommentFieldResolversTest {
         val resolver = CommentPostResolver()
         every { commentRepository.getPostForComment(commentId) } returns null
 
-        assertThrows<Exception> {
+        val e = assertThrows<Exception> {
             runBlocking {
                 postTester.test(resolver) {
                     objectValue = commentObj()
@@ -132,6 +132,6 @@ class CommentFieldResolversTest {
                 }
             }
         }
-        verify { commentRepository.getPostForComment(commentId) }
+        assertInstanceOf(NotFoundException::class.java, e.cause)
     }
 }

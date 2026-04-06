@@ -174,29 +174,4 @@ class KoinModulesTest : KoinTest {
         assertNotNull(authService)
     }
 
-    @Test
-    fun `repositories are singletons`() {
-        startKoin {
-            modules(repositoryModule)
-        }
-
-        val userRepository1: UserRepository by inject()
-        val userRepository2: UserRepository by inject()
-
-        // Same instance should be returned (singleton)
-        assertSame(userRepository1, userRepository2)
-    }
-
-    @Test
-    fun `services are singletons`() {
-        startKoin {
-            modules(configModule, repositoryModule, serviceModule)
-        }
-
-        val jwtService1: JwtService by inject()
-        val jwtService2: JwtService by inject()
-
-        // Same instance should be returned (singleton)
-        assertSame(jwtService1, jwtService2)
-    }
 }

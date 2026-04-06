@@ -5,6 +5,7 @@ import org.jetbrains.exposed.dao.id.EntityID
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.*
+import java.time.LocalDateTime
 import java.util.*
 
 /**
@@ -126,30 +127,6 @@ class PostRepositoryTest {
     }
 
     @Test
-    @Disabled("Update pattern needs refactoring - entities need to be modified within transaction context")
-    fun `update post modifies fields`() {
-        val post = postRepository.create(
-            title = "Original Title",
-            content = "Original Content",
-            authorId = testUser.id
-        )
-
-        val postId = post.id.value
-
-        // Retrieve and update within transaction context
-        val retrieved = postRepository.findById(postId)!!
-        retrieved.title = "Updated Title"
-        retrieved.content = "Updated Content"
-        postRepository.update(retrieved)
-
-        val found = postRepository.findById(postId)
-
-        Assertions.assertNotNull(found)
-        assertEquals("Updated Title", found!!.title)
-        assertEquals("Updated Content", found.content)
-    }
-
-    @Test
     fun `updateById modifies post fields`() {
         val post = postRepository.create(
             title = "Original Title",
@@ -229,6 +206,28 @@ class PostRepositoryTest {
         val deleted = postRepository.delete(nonExistentId)
 
         assertFalse(deleted)
+    }
+
+    @Test
+    fun `delete post cascades to comments and likes`() {
+        val commentRepository = ExposedCommentRepository()
+        val likeRepository = ExposedLikeRepository()
+
+        val post = postRepository.create(title = "Post", content = "Content", authorId = testUser.id)
+        commentRepository.create(
+            content = "A comment",
+            postId = post.id,
+            authorId = testUser.id,
+            createdAt = LocalDateTime.now()
+        )
+        likeRepository.create(postId = post.id, userId = testUser.id, createdAt = LocalDateTime.now())
+
+        val deleted = postRepository.delete(post.id.value)
+
+        assertTrue(deleted)
+        Assertions.assertNull(postRepository.findById(post.id.value))
+        assertEquals(0, commentRepository.countByPostId(post.id))
+        assertEquals(0, likeRepository.countByPostId(post.id))
     }
 
     @Test

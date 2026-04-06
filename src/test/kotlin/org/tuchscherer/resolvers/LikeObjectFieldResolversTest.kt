@@ -1,5 +1,6 @@
 package org.tuchscherer.resolvers
 
+import org.tuchscherer.auth.NotFoundException
 import org.tuchscherer.database.Post
 import org.tuchscherer.database.User
 import org.tuchscherer.database.repositories.LikeRepository
@@ -7,10 +8,10 @@ import org.tuchscherer.viadapp.resolvers.LikePostResolver
 import org.tuchscherer.viadapp.resolvers.LikeUserResolver
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.verify
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.dao.id.EntityID
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -44,7 +45,7 @@ class LikeObjectFieldResolversTest {
 
     @BeforeEach
     fun setup() {
-        likeRepository = mockk(relaxed = true)
+        likeRepository = mockk()
 
         mockUser = mockk(relaxed = true)
         every { mockUser.id } returns EntityID(userId, mockk())
@@ -81,7 +82,6 @@ class LikeObjectFieldResolversTest {
         assertEquals(userId.toString(), result.getId())
         assertEquals("testuser", result.getUsername())
         assertEquals("test@example.com", result.getEmail())
-        verify { likeRepository.getUserForLike(likeId) }
     }
 
     @Test
@@ -89,7 +89,8 @@ class LikeObjectFieldResolversTest {
         val resolver = LikeUserResolver()
         every { likeRepository.getUserForLike(likeId) } returns null
 
-        assertThrows<Exception> {
+        // FieldResolverTester wraps exceptions in InvocationTargetException
+        val e1 = assertThrows<Exception> {
             runBlocking {
                 userTester.test(resolver) {
                     objectValue = likeObj()
@@ -97,7 +98,7 @@ class LikeObjectFieldResolversTest {
                 }
             }
         }
-        verify { likeRepository.getUserForLike(likeId) }
+        assertInstanceOf(NotFoundException::class.java, e1.cause)
     }
 
     // ── LikePostResolver ────────────────────────────────────────────────
@@ -115,7 +116,6 @@ class LikeObjectFieldResolversTest {
         assertEquals(postId.toString(), result.getId())
         assertEquals("Test Post", result.getTitle())
         assertEquals("Test content", result.getContent())
-        verify { likeRepository.getPostForLike(likeId) }
     }
 
     @Test
@@ -123,7 +123,7 @@ class LikeObjectFieldResolversTest {
         val resolver = LikePostResolver()
         every { likeRepository.getPostForLike(likeId) } returns null
 
-        assertThrows<Exception> {
+        val e = assertThrows<Exception> {
             runBlocking {
                 postTester.test(resolver) {
                     objectValue = likeObj()
@@ -131,6 +131,6 @@ class LikeObjectFieldResolversTest {
                 }
             }
         }
-        verify { likeRepository.getPostForLike(likeId) }
+        assertInstanceOf(NotFoundException::class.java, e.cause)
     }
 }

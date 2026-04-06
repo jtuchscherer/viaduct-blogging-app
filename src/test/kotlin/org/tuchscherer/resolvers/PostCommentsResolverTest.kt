@@ -36,7 +36,7 @@ class PostCommentsResolverTest : DefaultAbstractResolverTestBase() {
 
     @BeforeEach
     fun setup() {
-        commentRepository = mockk<CommentRepository>(relaxed = true)
+        commentRepository = mockk<CommentRepository>()
 
         mockComment = mockk<Comment>(relaxed = true)
         every { mockComment.id } returns EntityID(commentId, mockk())
@@ -72,7 +72,6 @@ class PostCommentsResolverTest : DefaultAbstractResolverTestBase() {
         assertEquals(1, result.size)
         assertEquals(commentId.toString(), result[0].getId())
         assertEquals("Test comment content", result[0].getContent())
-        verify { commentRepository.findByPostId(any<EntityID<UUID>>()) }
     }
 
     @Test
@@ -92,6 +91,5 @@ class PostCommentsResolverTest : DefaultAbstractResolverTestBase() {
         )
 
         assertEquals(0, result.size)
-        verify { commentRepository.findByPostId(any<EntityID<UUID>>()) }
     }
 }

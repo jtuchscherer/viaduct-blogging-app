@@ -22,6 +22,8 @@ class CreateCommentResolver(
         val input = ctx.arguments.input
         val user = requireAuth(ctx.requestContext)
 
+        require(input.content.isNotBlank()) { "Content cannot be blank" }
+
         val postId = UUID.fromString(input.postId)
         val post = postRepository.findById(postId)
             ?: throw NotFoundException("Post not found")

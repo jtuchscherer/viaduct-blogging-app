@@ -18,6 +18,9 @@ class CreatePostResolver(
         val input = ctx.arguments.input
         val user = requireAuth(ctx.requestContext)
 
+        require(input.title.isNotBlank()) { "Title cannot be blank" }
+        require(input.content.isNotBlank()) { "Content cannot be blank" }
+
         val post = postRepository.create(
             title = input.title,
             content = input.content,
@@ -44,6 +47,8 @@ class UpdatePostResolver(
         val input = ctx.arguments.input
         val postId = UUID.fromString(input.id)
         val user = requireAuth(ctx.requestContext)
+
+        input.title?.let { require(it.isNotBlank()) { "Title cannot be blank" } }
 
         val existingPost = postRepository.findById(postId)
             ?: throw NotFoundException("Post not found")

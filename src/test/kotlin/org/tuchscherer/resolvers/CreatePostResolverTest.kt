@@ -1,5 +1,6 @@
 package org.tuchscherer.resolvers
 
+import org.tuchscherer.auth.AuthenticationException
 import org.tuchscherer.auth.RequestContext
 import org.tuchscherer.database.Post
 import org.tuchscherer.database.User
@@ -9,6 +10,7 @@ import io.mockk.*
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.dao.id.EntityID
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -36,7 +38,7 @@ class CreatePostResolverTest {
 
     @BeforeEach
     fun setup() {
-        postRepository = mockk(relaxed = true)
+        postRepository = mockk()
 
         mockUser = mockk(relaxed = true)
         every { mockUser.id } returns EntityID(userId, mockk())
@@ -57,7 +59,7 @@ class CreatePostResolverTest {
     }
 
     @Test
-    fun `CreatePostResolver creates post successfully`() = runBlocking {
+    fun `CreatePostResolver creates post and returns id, title, content`() = runBlocking {
         val resolver = CreatePostResolver(postRepository)
         val input = CreatePostInput.Builder(tester.context).title("New Post").content("New content").build()
         val args = Mutation_CreatePost_Arguments.Builder(tester.context).input(input).build()
@@ -80,16 +82,17 @@ class CreatePostResolverTest {
         assertNotNull(result)
         assertEquals(postId.toString(), result.getId())
         assertEquals("Test Post", result.getTitle())
-        verify { postRepository.create(any(), any(), any(), any(), any()) }
+        assertEquals("Test content", result.getContent())
     }
 
     @Test
-    fun `CreatePostResolver throws exception when not authenticated`() {
+    fun `CreatePostResolver throws AuthenticationException when not authenticated`() {
         val resolver = CreatePostResolver(postRepository)
         val input = CreatePostInput.Builder(tester.context).title("New Post").content("New content").build()
         val args = Mutation_CreatePost_Arguments.Builder(tester.context).input(input).build()
 
-        assertThrows<Exception> {
+        // MutationResolverTester wraps exceptions in InvocationTargetException
+        val e = assertThrows<Exception> {
             runBlocking {
                 tester.test(resolver) {
                     arguments = args
@@ -97,7 +100,40 @@ class CreatePostResolverTest {
                 }
             }
         }
+        assertInstanceOf(AuthenticationException::class.java, e.cause)
+    }
 
-        verify(exactly = 0) { postRepository.create(any(), any(), any(), any(), any()) }
+    @Test
+    fun `CreatePostResolver throws IllegalArgumentException for blank title`() {
+        val resolver = CreatePostResolver(postRepository)
+        val input = CreatePostInput.Builder(tester.context).title("   ").content("Some content").build()
+        val args = Mutation_CreatePost_Arguments.Builder(tester.context).input(input).build()
+
+        val e = assertThrows<Exception> {
+            runBlocking {
+                tester.test(resolver) {
+                    arguments = args
+                    requestContext = RequestContext(user = mockUser)
+                }
+            }
+        }
+        assertInstanceOf(IllegalArgumentException::class.java, e.cause)
+    }
+
+    @Test
+    fun `CreatePostResolver throws IllegalArgumentException for blank content`() {
+        val resolver = CreatePostResolver(postRepository)
+        val input = CreatePostInput.Builder(tester.context).title("Valid title").content("   ").build()
+        val args = Mutation_CreatePost_Arguments.Builder(tester.context).input(input).build()
+
+        val e = assertThrows<Exception> {
+            runBlocking {
+                tester.test(resolver) {
+                    arguments = args
+                    requestContext = RequestContext(user = mockUser)
+                }
+            }
+        }
+        assertInstanceOf(IllegalArgumentException::class.java, e.cause)
     }
 }

@@ -36,7 +36,7 @@ class PostsResolverTest : DefaultAbstractResolverTestBase() {
 
     @BeforeEach
     fun setup() {
-        postRepository = mockk<PostRepository>(relaxed = true)
+        postRepository = mockk<PostRepository>()
 
         mockPost = mockk<Post>(relaxed = true)
         every { mockPost.id } returns EntityID(postId, mockk())
@@ -70,7 +70,6 @@ class PostsResolverTest : DefaultAbstractResolverTestBase() {
         assertEquals(1, result.size)
         assertEquals(postId.toString(), result[0].getId())
         assertEquals("Test Post", result[0].getTitle())
-        verify { postRepository.findAll() }
     }
 
     @Test
@@ -87,7 +86,6 @@ class PostsResolverTest : DefaultAbstractResolverTestBase() {
         )
 
         assertEquals(0, result.size)
-        verify { postRepository.findAll() }
     }
 
     // ── PostsConnectionResolver unit tests (Phase 15a) ────────────────────────

@@ -2,7 +2,9 @@
 
 package org.tuchscherer.resolvers
 
+import org.tuchscherer.auth.AuthenticationException
 import org.tuchscherer.auth.AuthorizationException
+import org.tuchscherer.auth.NotFoundException
 import org.tuchscherer.auth.RequestContext
 import org.tuchscherer.database.Post
 import org.tuchscherer.database.User
@@ -39,7 +41,7 @@ class DeletePostResolverTest : DefaultAbstractResolverTestBase() {
 
     @BeforeEach
     fun setup() {
-        postRepository = mockk<PostRepository>(relaxed = true)
+        postRepository = mockk<PostRepository>()
 
         mockUser = mockk<User>(relaxed = true)
         every { mockUser.id } returns EntityID(userId, mockk())
@@ -78,8 +80,47 @@ class DeletePostResolverTest : DefaultAbstractResolverTestBase() {
         )
 
         assertTrue(result)
-        verify { postRepository.findById(postId) }
-        verify { postRepository.delete(postId) }
+    }
+
+    @Test
+    fun `DeletePostResolver throws exception when not authenticated`() = runBlocking {
+        val resolver = DeletePostResolver(postRepository)
+        val args = Mutation_DeletePost_Arguments.Builder(context)
+            .id(postId.toString())
+            .build()
+
+        assertThrows<AuthenticationException> {
+            runMutationFieldResolver(
+                resolver = resolver,
+                queryValue = queryObj(),
+                arguments = args,
+                requestContext = RequestContext()
+            )
+        }
+
+        verify(exactly = 0) { postRepository.findById(any()) }
+        verify(exactly = 0) { postRepository.delete(any()) }
+    }
+
+    @Test
+    fun `DeletePostResolver throws exception when post not found`() = runBlocking {
+        val resolver = DeletePostResolver(postRepository)
+        val args = Mutation_DeletePost_Arguments.Builder(context)
+            .id(postId.toString())
+            .build()
+
+        every { postRepository.findById(postId) } returns null
+
+        assertThrows<NotFoundException> {
+            runMutationFieldResolver(
+                resolver = resolver,
+                queryValue = queryObj(),
+                arguments = args,
+                requestContext = RequestContext(user = mockUser)
+            )
+        }
+
+        verify(exactly = 0) { postRepository.delete(any()) }
     }
 
     @Test
@@ -102,7 +143,6 @@ class DeletePostResolverTest : DefaultAbstractResolverTestBase() {
             )
         }
 
-        verify { postRepository.findById(postId) }
         verify(exactly = 0) { postRepository.delete(any()) }
     }
 }

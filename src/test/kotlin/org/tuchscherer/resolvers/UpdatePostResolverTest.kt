@@ -1,5 +1,7 @@
 package org.tuchscherer.resolvers
 
+import org.tuchscherer.auth.AuthorizationException
+import org.tuchscherer.auth.NotFoundException
 import org.tuchscherer.auth.RequestContext
 import org.tuchscherer.database.Post
 import org.tuchscherer.database.User
@@ -7,10 +9,10 @@ import org.tuchscherer.database.repositories.PostRepository
 import org.tuchscherer.viadapp.resolvers.UpdatePostResolver
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.verify
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.dao.id.EntityID
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -38,7 +40,7 @@ class UpdatePostResolverTest {
 
     @BeforeEach
     fun setup() {
-        postRepository = mockk(relaxed = true)
+        postRepository = mockk()
 
         mockUser = mockk(relaxed = true)
         every { mockUser.id } returns EntityID(userId, mockk())
@@ -59,7 +61,7 @@ class UpdatePostResolverTest {
     }
 
     @Test
-    fun `UpdatePostResolver updates post successfully`() = runBlocking {
+    fun `UpdatePostResolver updates post and returns updated title and content`() = runBlocking {
         val resolver = UpdatePostResolver(postRepository)
         val input = UpdatePostInput.Builder(tester.context)
             .id(postId.toString())
@@ -87,19 +89,18 @@ class UpdatePostResolverTest {
         assertNotNull(result)
         assertEquals("Updated Title", result.getTitle())
         assertEquals("Updated content", result.getContent())
-        verify { postRepository.findById(postId) }
-        verify { postRepository.updateById(postId, "Updated Title", "Updated content") }
     }
 
     @Test
-    fun `UpdatePostResolver throws exception when post not found`() {
+    fun `UpdatePostResolver throws NotFoundException when post does not exist`() {
         val resolver = UpdatePostResolver(postRepository)
         val input = UpdatePostInput.Builder(tester.context).id(postId.toString()).title("Updated Title").build()
         val args = Mutation_UpdatePost_Arguments.Builder(tester.context).input(input).build()
 
         every { postRepository.findById(postId) } returns null
 
-        assertThrows<Exception> {
+        // MutationResolverTester wraps exceptions in InvocationTargetException
+        val e1 = assertThrows<Exception> {
             runBlocking {
                 tester.test(resolver) {
                     arguments = args
@@ -107,21 +108,19 @@ class UpdatePostResolverTest {
                 }
             }
         }
-
-        verify { postRepository.findById(postId) }
+        assertInstanceOf(NotFoundException::class.java, e1.cause)
     }
 
     @Test
-    fun `UpdatePostResolver throws exception when user is not author`() {
+    fun `UpdatePostResolver throws AuthorizationException when user is not author`() {
         val resolver = UpdatePostResolver(postRepository)
-        val differentUserId = UUID.randomUUID()
         val input = UpdatePostInput.Builder(tester.context).id(postId.toString()).title("Updated Title").build()
         val args = Mutation_UpdatePost_Arguments.Builder(tester.context).input(input).build()
 
         every { postRepository.findById(postId) } returns mockPost
-        every { mockPost.authorId } returns EntityID(differentUserId, mockk())
+        every { mockPost.authorId } returns EntityID(UUID.randomUUID(), mockk())
 
-        assertThrows<Exception> {
+        val e = assertThrows<Exception> {
             runBlocking {
                 tester.test(resolver) {
                     arguments = args
@@ -129,7 +128,23 @@ class UpdatePostResolverTest {
                 }
             }
         }
+        assertInstanceOf(AuthorizationException::class.java, e.cause)
+    }
 
-        verify { postRepository.findById(postId) }
+    @Test
+    fun `UpdatePostResolver throws IllegalArgumentException for blank title`() {
+        val resolver = UpdatePostResolver(postRepository)
+        val input = UpdatePostInput.Builder(tester.context).id(postId.toString()).title("   ").build()
+        val args = Mutation_UpdatePost_Arguments.Builder(tester.context).input(input).build()
+
+        val e = assertThrows<Exception> {
+            runBlocking {
+                tester.test(resolver) {
+                    arguments = args
+                    requestContext = RequestContext(user = mockUser)
+                }
+            }
+        }
+        assertInstanceOf(IllegalArgumentException::class.java, e.cause)
     }
 }

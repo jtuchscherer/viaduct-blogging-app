@@ -1,5 +1,9 @@
 package org.tuchscherer.database.repositories
 
+import org.tuchscherer.database.Comment
+import org.tuchscherer.database.Comments
+import org.tuchscherer.database.Like
+import org.tuchscherer.database.Likes
 import org.tuchscherer.database.Post
 import org.tuchscherer.database.Posts
 import org.jetbrains.exposed.dao.id.EntityID
@@ -61,13 +65,12 @@ class ExposedPostRepository : PostRepository {
     }
 
     override fun delete(id: UUID): Boolean = transaction {
-        val post = Post.findById(id)
-        if (post != null) {
-            post.delete()
-            true
-        } else {
-            false
-        }
+        val post = Post.findById(id) ?: return@transaction false
+        // Delete dependents first to satisfy FK constraints
+        Like.find { Likes.postId eq post.id }.forEach { it.delete() }
+        Comment.find { Comments.postId eq post.id }.forEach { it.delete() }
+        post.delete()
+        true
     }
 
     override fun findPage(limit: Int, offset: Int): List<Post> = transaction {

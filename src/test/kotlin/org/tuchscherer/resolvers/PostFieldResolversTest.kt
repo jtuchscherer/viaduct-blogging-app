@@ -51,8 +51,8 @@ class PostFieldResolversTest : DefaultAbstractResolverTestBase() {
 
     @BeforeEach
     fun setup() {
-        postRepository = mockk<PostRepository>(relaxed = true)
-        commentRepository = mockk<CommentRepository>(relaxed = true)
+        postRepository = mockk<PostRepository>()
+        commentRepository = mockk<CommentRepository>()
 
         mockUser = mockk<User>(relaxed = true)
         every { mockUser.id } returns EntityID(userId, mockk())
@@ -105,7 +105,6 @@ class PostFieldResolversTest : DefaultAbstractResolverTestBase() {
 
         assertEquals(1, results.size)
         assertTrue(results[0].isError)
-        verify { postRepository.getAuthorsByPostIds(listOf(postId)) }
     }
 
     // ── PostCommentsFieldResolver ───────────────────────────────────────
@@ -125,7 +124,6 @@ class PostFieldResolversTest : DefaultAbstractResolverTestBase() {
         assertEquals(1, result.size)
         assertEquals(commentId.toString(), result[0].getId())
         assertEquals("Test comment", result[0].getContent())
-        verify { commentRepository.findByPostId(postId) }
     }
 
     @Test
@@ -141,6 +139,5 @@ class PostFieldResolversTest : DefaultAbstractResolverTestBase() {
         )
 
         assertEquals(0, result.size)
-        verify { commentRepository.findByPostId(postId) }
     }
 }

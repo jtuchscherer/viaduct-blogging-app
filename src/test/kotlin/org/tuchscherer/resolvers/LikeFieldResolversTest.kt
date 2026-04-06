@@ -49,7 +49,7 @@ class LikeFieldResolversTest : DefaultAbstractResolverTestBase() {
 
     @BeforeEach
     fun setup() {
-        likeRepository = mockk<LikeRepository>(relaxed = true)
+        likeRepository = mockk<LikeRepository>()
 
         mockUser = mockk<User>(relaxed = true)
         every { mockUser.id } returns EntityID(userId, mockk())
@@ -85,7 +85,6 @@ class LikeFieldResolversTest : DefaultAbstractResolverTestBase() {
 
         assertEquals(1, result.size)
         assertEquals(likeId.toString(), result[0].getId())
-        verify { likeRepository.findByPostId(postId) }
     }
 
     @Test
@@ -101,7 +100,6 @@ class LikeFieldResolversTest : DefaultAbstractResolverTestBase() {
         )
 
         assertEquals(0, result.size)
-        verify { likeRepository.findByPostId(postId) }
     }
 
     // ── PostLikeCountResolver ───────────────────────────────────────────
@@ -119,7 +117,6 @@ class LikeFieldResolversTest : DefaultAbstractResolverTestBase() {
         )
 
         assertEquals(5, result)
-        verify { likeRepository.countByPostId(postId) }
     }
 
     @Test
@@ -135,7 +132,6 @@ class LikeFieldResolversTest : DefaultAbstractResolverTestBase() {
         )
 
         assertEquals(0, result)
-        verify { likeRepository.countByPostId(postId) }
     }
 
     // ── PostIsLikedByMeResolver ─────────────────────────────────────────
@@ -154,7 +150,6 @@ class LikeFieldResolversTest : DefaultAbstractResolverTestBase() {
         )
 
         assertTrue(result)
-        verify { likeRepository.existsByPostAndUser(postId, userId) }
     }
 
     @Test
@@ -171,7 +166,6 @@ class LikeFieldResolversTest : DefaultAbstractResolverTestBase() {
         )
 
         assertFalse(result)
-        verify { likeRepository.existsByPostAndUser(postId, userId) }
     }
 
     @Test

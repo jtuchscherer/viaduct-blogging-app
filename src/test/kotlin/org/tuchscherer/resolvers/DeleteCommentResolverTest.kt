@@ -43,7 +43,7 @@ class DeleteCommentResolverTest : DefaultAbstractResolverTestBase() {
 
     @BeforeEach
     fun setup() {
-        commentRepository = mockk<CommentRepository>(relaxed = true)
+        commentRepository = mockk<CommentRepository>()
 
         mockUser = mockk<User>(relaxed = true)
         every { mockUser.id } returns EntityID(userId, mockk())
@@ -83,8 +83,6 @@ class DeleteCommentResolverTest : DefaultAbstractResolverTestBase() {
         )
 
         assertTrue(result)
-        verify { commentRepository.findById(commentId) }
-        verify { commentRepository.delete(commentId) }
     }
 
     @Test
@@ -125,7 +123,6 @@ class DeleteCommentResolverTest : DefaultAbstractResolverTestBase() {
             )
         }
 
-        verify { commentRepository.findById(commentId) }
         verify(exactly = 0) { commentRepository.delete(any()) }
     }
 
@@ -149,7 +146,6 @@ class DeleteCommentResolverTest : DefaultAbstractResolverTestBase() {
             )
         }
 
-        verify { commentRepository.findById(commentId) }
         verify(exactly = 0) { commentRepository.delete(any()) }
     }
 }

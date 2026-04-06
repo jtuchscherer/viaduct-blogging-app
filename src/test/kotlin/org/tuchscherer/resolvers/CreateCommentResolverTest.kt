@@ -1,5 +1,7 @@
 package org.tuchscherer.resolvers
 
+import org.tuchscherer.auth.AuthenticationException
+import org.tuchscherer.auth.NotFoundException
 import org.tuchscherer.auth.RequestContext
 import org.tuchscherer.database.Comment
 import org.tuchscherer.database.Post
@@ -12,6 +14,7 @@ import io.mockk.*
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.dao.id.EntityID
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -42,8 +45,8 @@ class CreateCommentResolverTest {
 
     @BeforeEach
     fun setup() {
-        commentRepository = mockk(relaxed = true)
-        postRepository = mockk(relaxed = true)
+        commentRepository = mockk()
+        postRepository = mockk()
 
         mockUser = mockk(relaxed = true)
         every { mockUser.id } returns EntityID(userId, mockk())
@@ -93,8 +96,6 @@ class CreateCommentResolverTest {
         assertNotNull(result)
         assertEquals(commentId.toString(), result.getId())
         assertEquals("Test comment content", result.getContent())
-        verify { postRepository.findById(postId) }
-        verify { commentRepository.create(any(), any(), any(), any()) }
     }
 
     @Test
@@ -103,7 +104,8 @@ class CreateCommentResolverTest {
         val input = CreateCommentInput.Builder(tester.context).postId(postId.toString()).content("New comment").build()
         val args = Mutation_CreateComment_Arguments.Builder(tester.context).input(input).build()
 
-        assertThrows<Exception> {
+        // MutationResolverTester wraps exceptions in InvocationTargetException
+        val e1 = assertThrows<Exception> {
             runBlocking {
                 tester.test(resolver) {
                     arguments = args
@@ -111,7 +113,7 @@ class CreateCommentResolverTest {
                 }
             }
         }
-
+        assertInstanceOf(AuthenticationException::class.java, e1.cause)
         verify(exactly = 0) { commentRepository.create(any(), any(), any(), any()) }
     }
 
@@ -123,7 +125,7 @@ class CreateCommentResolverTest {
 
         every { postRepository.findById(postId) } returns null
 
-        assertThrows<Exception> {
+        val e = assertThrows<Exception> {
             runBlocking {
                 tester.test(resolver) {
                     arguments = args
@@ -131,8 +133,26 @@ class CreateCommentResolverTest {
                 }
             }
         }
-
-        verify { postRepository.findById(postId) }
+        assertInstanceOf(NotFoundException::class.java, e.cause)
         verify(exactly = 0) { commentRepository.create(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `CreateCommentResolver throws IllegalArgumentException for blank content`() {
+        val resolver = CreateCommentResolver(commentRepository, postRepository)
+        val input = CreateCommentInput.Builder(tester.context).postId(postId.toString()).content("   ").build()
+        val args = Mutation_CreateComment_Arguments.Builder(tester.context).input(input).build()
+
+        every { postRepository.findById(postId) } returns mockPost
+
+        val e = assertThrows<Exception> {
+            runBlocking {
+                tester.test(resolver) {
+                    arguments = args
+                    requestContext = RequestContext(user = mockUser)
+                }
+            }
+        }
+        assertInstanceOf(IllegalArgumentException::class.java, e.cause)
     }
 }
