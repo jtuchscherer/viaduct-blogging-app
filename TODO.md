@@ -2,7 +2,7 @@
 
 **Status**: 🚀 In Progress — Phases 1–9 + 11–15 + 18 Complete, Phase 10 Next
 
-**Last Updated**: 2026-04-03 (Phases 12, 15a, 15 complete)
+**Last Updated**: 2026-04-06 (Phases 12, 15a, 15 complete)
 
 ## Test Statistics
 
@@ -83,21 +83,21 @@ ENTRYPOINT ["java", "-jar", "app.jar"]
 
 ---
 
-## Phase 12: Frontend Pagination UI ⏳ TODO
+## Phase 12: Frontend Pagination UI ✅ DONE
 
 **Goal**: Consume `postsConnection` in `HomePage.tsx` to replace the current "load all posts" approach.
 
 #### Tasks:
-- [ ] Update `HomePage.tsx` to query `postsConnection(first: 10, after: cursor)` instead of `posts`
-- [ ] Show "Load More" button when `pageInfo.hasNextPage = true`; append results using Apollo `fetchMore`
-- [ ] Show "Showing X of Y posts" using `totalCount`
-- [ ] Add Playwright tests: first page loads N posts, "Load More" appears, click appends posts, button hides when exhausted
+- [x] Update `HomePage.tsx` to query `postsConnection(first: 10, after: cursor)` instead of `posts`
+- [x] Show "Load More" button when `pageInfo.hasNextPage = true`; append results using Apollo `fetchMore`
+- [x] Show "Showing X of Y posts" using `totalCount`
+- [x] Add Playwright tests: first page loads N posts, "Load More" appears, click appends posts, button hides when exhausted
 
 **Success Criteria**: HomePage no longer fetches all posts at once; "Load More" works end-to-end; Playwright tests pass.
 
 ---
 
-## Phase 15a: Unit Tests for `PostsConnectionResolver` ⏳ TODO (prerequisite for Phase 15)
+## Phase 15a: Unit Tests for `PostsConnectionResolver` ✅ DONE (prerequisite for Phase 15)
 
 **Goal**: Establish a unit-test contract for `PostsConnectionResolver` before refactoring it in Phase 15, so the refactor has a regression baseline.
 
@@ -124,7 +124,7 @@ The third test is the key regression guard: it documents that the current implem
 
 ---
 
-## Phase 15: DB-Level Cursor Pagination for `postsConnection` ⏳ TODO
+## Phase 15: DB-Level Cursor Pagination for `postsConnection` ✅ DONE
 
 **Goal**: Replace the current in-memory slicing in `PostsConnectionResolver` with a true database-level query so only the requested page of rows is fetched.
 
@@ -133,12 +133,12 @@ The third test is the key regression guard: it documents that the current implem
 **Approach**: Viaduct's `ConnectionBuilder.fromList` generates opaque base64 cursors encoding the item's position (0-based index) in the list. Decoding a cursor gives an integer offset. We can use that offset directly with `findPage(limit, offset)` to push the slicing into the database.
 
 #### Tasks:
-- [ ] Decode the `after` cursor in `PostsConnectionResolver`: base64-decode → parse integer offset
-- [ ] Call `postRepository.findPage(limit = first ?: DEFAULT_PAGE_SIZE, offset = decodedOffset + 1)` instead of `findAll()`
-- [ ] Build the `PostsConnection` response manually (edges + cursors + `pageInfo`) using `postRepository.count()` for `totalCount` and `hasNextPage`
-- [ ] Keep `ConnectionBuilder.fromList` as a fallback for the no-cursor first-page case, or replace entirely with manual construction for consistency
-- [ ] Add/update repository integration tests for `findPage` edge cases
-- [ ] Verify existing `query-tests.sh` pagination tests still pass end-to-end
+- [x] Decode the `after` cursor in `PostsConnectionResolver`: base64-decode → parse integer offset
+- [x] Call `postRepository.findPage(limit = first ?: DEFAULT_PAGE_SIZE, offset = decodedOffset + 1)` instead of `findAll()`
+- [x] Build the `PostsConnection` response manually (edges + cursors + `pageInfo`) using `postRepository.count()` for `totalCount` and `hasNextPage`
+- [x] Keep `ConnectionBuilder.fromList` as a fallback for the no-cursor first-page case, or replace entirely with manual construction for consistency
+- [x] Add/update repository integration tests for `findPage` edge cases
+- [x] Verify existing `query-tests.sh` pagination tests still pass end-to-end
 
 **Key files**:
 - `src/main/kotlin/org/tuchscherer/resolvers/PostQueryResolvers.kt` — `PostsConnectionResolver`
