@@ -4,6 +4,7 @@ type User {
   username: String!
   email: String!
   name: String!
+  isAdmin: Boolean! @resolver
   posts: [Post!]! @resolver
   createdAt: String!
 }
@@ -69,6 +70,40 @@ type PostEdge @edge {
   cursor: String!
 }
 
+# Admin types
+type AdminStats {
+  userCount: Int!
+  postCount: Int!
+  commentCount: Int!
+  likeCount: Int!
+}
+
+type UserContentCounts {
+  postCount: Int!
+  commentCount: Int!
+  likeCount: Int!
+}
+
+type AdminDeleteUserResult {
+  success: Boolean!
+  postsDeleted: Int!
+  commentsDeleted: Int!
+  likesDeleted: Int!
+}
+
+input AdminUpdateUserInput {
+  id: ID!
+  name: String
+  email: String
+  isAdmin: Boolean
+}
+
+input AdminUpdatePostInput {
+  id: ID!
+  title: String
+  content: String
+}
+
 # Extend the Query type for read operations
 extend type Query {
   # Get all posts (public)
@@ -88,6 +123,15 @@ extend type Query {
 
   # Relay-style cursor pagination for posts (public)
   postsConnection(first: Int, after: String): PostsConnection @resolver
+
+  # Admin queries (require admin role)
+  adminStats: AdminStats! @resolver
+  adminUsers: [User!]! @resolver
+  adminUser(id: ID!): User @resolver
+  adminUserContentCounts(userId: ID!): UserContentCounts! @resolver
+  adminPosts: [Post!]! @resolver
+  adminPost(id: ID!): Post @resolver
+  adminComments: [Comment!]! @resolver
 }
 
 # Extend mutations for write operations
@@ -104,4 +148,11 @@ extend type Mutation {
   # Like operations
   likePost(postId: ID!): Like! @resolver
   unlikePost(postId: ID!): Boolean! @resolver
+
+  # Admin mutations (require admin role)
+  adminUpdateUser(input: AdminUpdateUserInput!): User! @resolver
+  adminDeleteUser(id: ID!): AdminDeleteUserResult! @resolver
+  adminUpdatePost(input: AdminUpdatePostInput!): Post! @resolver
+  adminDeletePost(id: ID!): Boolean! @resolver
+  adminDeleteComment(id: ID!): Boolean! @resolver
 }

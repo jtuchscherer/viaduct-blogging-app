@@ -33,6 +33,8 @@ data class UserResponse(
     val username: String,
     val email: String,
     val name: String,
+    @param:JsonProperty("is_admin")
+    val isAdmin: Boolean,
     @param:JsonProperty("created_at")
     val createdAt: String
 )
@@ -57,6 +59,7 @@ fun Route.authRoutes(jwtService: JwtService, authService: AuthenticationService)
                     username = user.username,
                     email = user.email,
                     name = user.name,
+                    isAdmin = user.isAdmin,
                     createdAt = user.createdAt.toString()
                 )
             ))
@@ -81,6 +84,7 @@ fun Route.authRoutes(jwtService: JwtService, authService: AuthenticationService)
                     username = user.username,
                     email = user.email,
                     name = user.name,
+                    isAdmin = user.isAdmin,
                     createdAt = user.createdAt.toString()
                 )
             ))
@@ -106,6 +110,7 @@ fun Route.authRoutes(jwtService: JwtService, authService: AuthenticationService)
                 username = user.username,
                 email = user.email,
                 name = user.name,
+                isAdmin = user.isAdmin,
                 createdAt = user.createdAt.toString()
             ))
         }

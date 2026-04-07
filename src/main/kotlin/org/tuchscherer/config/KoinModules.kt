@@ -90,6 +90,26 @@ val resolverModule = module {
     // Like field resolvers
     singleOf(::LikeUserResolver)
     singleOf(::LikePostResolver)
+
+    // User resolvers
+    singleOf(::MeResolver)
+    singleOf(::UserIsAdminResolver)
+
+    // Admin query resolvers
+    singleOf(::AdminStatsResolver)
+    singleOf(::AdminUsersResolver)
+    singleOf(::AdminUserResolver)
+    singleOf(::AdminUserContentCountsResolver)
+    singleOf(::AdminPostsResolver)
+    singleOf(::AdminPostResolver)
+    singleOf(::AdminCommentsResolver)
+
+    // Admin mutation resolvers
+    singleOf(::AdminUpdateUserResolver)
+    singleOf(::AdminDeleteUserResolver)
+    singleOf(::AdminUpdatePostResolver)
+    singleOf(::AdminDeletePostResolver)
+    singleOf(::AdminDeleteCommentResolver)
 }
 
 /**

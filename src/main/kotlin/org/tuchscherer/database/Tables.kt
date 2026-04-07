@@ -10,6 +10,7 @@ object Users : UUIDTable("users") {
     val name = varchar("name", 255)
     val passwordHash = varchar("password_hash", 255)
     val salt = varchar("salt", 255)
+    val isAdmin = bool("is_admin").default(false)
     val createdAt = datetime("created_at").default(LocalDateTime.now())
 }
 

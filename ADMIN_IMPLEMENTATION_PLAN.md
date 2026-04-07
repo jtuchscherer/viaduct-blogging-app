@@ -1,6 +1,6 @@
 # Admin Section Implementation Plan
 
-**Status**: Ready for Implementation
+**Status**: Core Implementation Complete - Tests Pending
 **Last Updated**: 2026-04-06
 
 ## Overview
@@ -13,6 +13,25 @@ Add an admin section where admin users can manage (CRUD) all users, posts, and c
 2. **Bootstrap first admin**: SQL command (`sqlite3 blog.db "UPDATE users SET is_admin = 1 WHERE username = '...';"`)
 3. **User deletion**: Cascades to all user's posts, comments, and likes; frontend shows confirmation dialog with counts
 4. **Dashboard**: Stats cards showing total users, posts, comments, likes (future: activity graphs)
+
+## Completed Items (2026-04-06)
+
+- [x] Phase 1: Database & Model Changes - `isAdmin` column added to Users table and User model
+- [x] Phase 2: GraphQL Schema - All admin types, queries, and mutations defined
+- [x] Phase 3: Backend Authorization - `requireAdmin()` helper and resolvers implemented
+- [x] Phase 4: Repository Extensions - All repository methods for admin operations
+- [x] Phase 5: Frontend Admin Section - Layout, dashboard, users, posts, comments pages
+- [x] Auth endpoints updated to include `isAdmin` in response
+- [x] Frontend AuthContext updated with `isAdmin` flag
+- [x] Admin link in header for admin users
+- [x] `me` query resolver implemented
+
+## Remaining Work
+
+- [ ] Phase 6: Testing - Backend unit tests for admin resolvers
+- [ ] Phase 6: Testing - Repository integration tests
+- [ ] Phase 6: Testing - Playwright E2E tests for admin section
+- [ ] Phase 6: Testing - query-tests.sh additions for admin API
 
 ---
 

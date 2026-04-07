@@ -81,4 +81,14 @@ interface PostRepository {
      * Returns a map from post ID to User; missing entries mean the post was not found.
      */
     fun getAuthorsByPostIds(postIds: List<UUID>): Map<UUID, org.tuchscherer.database.User>
+
+    /**
+     * Count posts by author using UUID.
+     */
+    fun countByAuthorId(authorId: UUID): Long
+
+    /**
+     * Delete all posts by an author. Returns count of deleted posts.
+     */
+    fun deleteByAuthorId(authorId: UUID): Int
 }

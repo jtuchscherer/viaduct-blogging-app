@@ -12,3 +12,15 @@ fun requireAuth(requestContext: Any?): User {
     return rc.user
         ?: throw AuthenticationException("Authentication required. Please provide a valid JWT token.")
 }
+
+/**
+ * Extracts and validates an admin user from a resolver context's requestContext.
+ * Throws [AuthenticationException] if not authenticated, [AuthorizationException] if not admin.
+ */
+fun requireAdmin(requestContext: Any?): User {
+    val user = requireAuth(requestContext)
+    if (!user.isAdmin) {
+        throw AuthorizationException("Admin access required")
+    }
+    return user
+}

@@ -56,4 +56,9 @@ interface UserRepository {
      * Get all users (for admin purposes).
      */
     fun findAll(): List<User>
+
+    /**
+     * Count total users.
+     */
+    fun count(): Long
 }

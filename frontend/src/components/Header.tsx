@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext'
 import './Header.css'
 
 export default function Header() {
-  const { user, isAuthenticated, logout } = useAuth()
+  const { user, isAuthenticated, isAdmin, logout } = useAuth()
 
   return (
     <header className="header">
@@ -21,6 +21,11 @@ export default function Header() {
               <Link to="/create" className="btn-primary">
                 New Post
               </Link>
+              {isAdmin && (
+                <Link to="/admin" className="admin-link">
+                  Admin
+                </Link>
+              )}
               <div className="user-menu">
                 <span className="user-name">{user?.name}</span>
                 <button onClick={logout} className="btn-secondary">

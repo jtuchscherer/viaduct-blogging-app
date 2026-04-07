@@ -1,0 +1,153 @@
+package org.tuchscherer.viadapp.resolvers
+
+import org.tuchscherer.auth.NotFoundException
+import org.tuchscherer.auth.requireAdmin
+import org.tuchscherer.database.repositories.CommentRepository
+import org.tuchscherer.database.repositories.LikeRepository
+import org.tuchscherer.database.repositories.PostRepository
+import org.tuchscherer.database.repositories.UserRepository
+import org.tuchscherer.viadapp.resolvers.resolverbases.MutationResolvers
+import org.jetbrains.exposed.sql.transactions.transaction
+import viaduct.api.Resolver
+import viaduct.api.grts.AdminDeleteUserResult
+import viaduct.api.grts.Post as ViaductPost
+import viaduct.api.grts.User as ViaductUser
+import java.util.*
+
+/**
+ * Resolver for adminUpdateUser mutation - update any user's details.
+ */
+@Resolver
+class AdminUpdateUserResolver(
+    private val userRepository: UserRepository
+) : MutationResolvers.AdminUpdateUser() {
+    override suspend fun resolve(ctx: Context): ViaductUser {
+        requireAdmin(ctx.requestContext)
+
+        val input = ctx.arguments.input
+        val userId = UUID.fromString(input.id)
+
+        val user = userRepository.findById(userId)
+            ?: throw NotFoundException("User not found")
+
+        // Update fields if provided
+        transaction {
+            input.name?.let { user.name = it }
+            input.email?.let { user.email = it }
+            input.isAdmin?.let { user.isAdmin = it }
+            user.flush()
+        }
+
+        return ViaductUser.Builder(ctx)
+            .id(user.id.value.toString())
+            .username(user.username)
+            .email(user.email)
+            .name(user.name)
+            .createdAt(user.createdAt.toString())
+            .build()
+    }
+}
+
+/**
+ * Resolver for adminDeleteUser mutation - delete a user and all their content.
+ */
+@Resolver
+class AdminDeleteUserResolver(
+    private val userRepository: UserRepository,
+    private val postRepository: PostRepository,
+    private val commentRepository: CommentRepository,
+    private val likeRepository: LikeRepository
+) : MutationResolvers.AdminDeleteUser() {
+    override suspend fun resolve(ctx: Context): AdminDeleteUserResult {
+        requireAdmin(ctx.requestContext)
+
+        val userId = UUID.fromString(ctx.arguments.id)
+
+        val user = userRepository.findById(userId)
+            ?: throw NotFoundException("User not found")
+
+        // Delete in order: likes, comments, posts, then user
+        val likesDeleted = likeRepository.deleteByUserId(userId)
+        val commentsDeleted = commentRepository.deleteByUserId(userId)
+        val postsDeleted = postRepository.deleteByAuthorId(userId)
+        val userDeleted = userRepository.delete(userId)
+
+        return AdminDeleteUserResult.Builder(ctx)
+            .success(userDeleted)
+            .postsDeleted(postsDeleted)
+            .commentsDeleted(commentsDeleted)
+            .likesDeleted(likesDeleted)
+            .build()
+    }
+}
+
+/**
+ * Resolver for adminUpdatePost mutation - update any post.
+ */
+@Resolver
+class AdminUpdatePostResolver(
+    private val postRepository: PostRepository
+) : MutationResolvers.AdminUpdatePost() {
+    override suspend fun resolve(ctx: Context): ViaductPost {
+        requireAdmin(ctx.requestContext)
+
+        val input = ctx.arguments.input
+        val postId = UUID.fromString(input.id)
+
+        input.title?.let { require(it.isNotBlank()) { "Title cannot be blank" } }
+
+        val updatedPost = postRepository.updateById(
+            id = postId,
+            title = input.title,
+            content = input.content
+        ) ?: throw NotFoundException("Post not found")
+
+        return ViaductPost.Builder(ctx)
+            .id(updatedPost.id.value.toString())
+            .title(updatedPost.title)
+            .content(updatedPost.content)
+            .createdAt(updatedPost.createdAt.toString())
+            .updatedAt(updatedPost.updatedAt.toString())
+            .build()
+    }
+}
+
+/**
+ * Resolver for adminDeletePost mutation - delete any post.
+ */
+@Resolver
+class AdminDeletePostResolver(
+    private val postRepository: PostRepository
+) : MutationResolvers.AdminDeletePost() {
+    override suspend fun resolve(ctx: Context): Boolean {
+        requireAdmin(ctx.requestContext)
+
+        val postId = UUID.fromString(ctx.arguments.id)
+
+        if (postRepository.findById(postId) == null) {
+            throw NotFoundException("Post not found")
+        }
+
+        return postRepository.delete(postId)
+    }
+}
+
+/**
+ * Resolver for adminDeleteComment mutation - delete any comment.
+ */
+@Resolver
+class AdminDeleteCommentResolver(
+    private val commentRepository: CommentRepository
+) : MutationResolvers.AdminDeleteComment() {
+    override suspend fun resolve(ctx: Context): Boolean {
+        requireAdmin(ctx.requestContext)
+
+        val commentId = UUID.fromString(ctx.arguments.id)
+
+        if (commentRepository.findById(commentId) == null) {
+            throw NotFoundException("Comment not found")
+        }
+
+        return commentRepository.delete(commentId)
+    }
+}

@@ -84,4 +84,19 @@ interface LikeRepository {
      * Returns null if like not found.
      */
     fun getPostForLike(likeId: UUID): org.tuchscherer.database.Post?
+
+    /**
+     * Count total likes.
+     */
+    fun count(): Long
+
+    /**
+     * Count likes by a specific user.
+     */
+    fun countByUserId(userId: UUID): Long
+
+    /**
+     * Delete all likes by a user. Returns count of deleted likes.
+     */
+    fun deleteByUserId(userId: UUID): Int
 }

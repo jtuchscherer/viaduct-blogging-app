@@ -66,4 +66,8 @@ class ExposedUserRepository : UserRepository {
     override fun findAll(): List<User> = transaction {
         User.all().toList()
     }
+
+    override fun count(): Long = transaction {
+        User.all().count()
+    }
 }

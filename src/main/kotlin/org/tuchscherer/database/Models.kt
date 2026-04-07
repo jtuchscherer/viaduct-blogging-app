@@ -13,6 +13,7 @@ class User(id: EntityID<UUID>) : UUIDEntity(id) {
     var name by Users.name
     var passwordHash by Users.passwordHash
     var salt by Users.salt
+    var isAdmin by Users.isAdmin
     var createdAt by Users.createdAt
 
     val posts by Post referrersOn Posts.authorId

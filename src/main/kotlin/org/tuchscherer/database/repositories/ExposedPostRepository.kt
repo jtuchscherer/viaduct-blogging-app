@@ -98,4 +98,20 @@ class ExposedPostRepository : PostRepository {
         Post.find { Posts.id inList postIds.map { EntityID(it, Posts) } }
             .associate { post -> post.id.value to post.author }
     }
+
+    override fun countByAuthorId(authorId: UUID): Long = transaction {
+        Post.find { Posts.authorId eq authorId }.count()
+    }
+
+    override fun deleteByAuthorId(authorId: UUID): Int = transaction {
+        val posts = Post.find { Posts.authorId eq authorId }.toList()
+        val count = posts.size
+        posts.forEach { post ->
+            // Delete dependents first to satisfy FK constraints
+            Like.find { Likes.postId eq post.id }.forEach { it.delete() }
+            Comment.find { Comments.postId eq post.id }.forEach { it.delete() }
+            post.delete()
+        }
+        count
+    }
 }

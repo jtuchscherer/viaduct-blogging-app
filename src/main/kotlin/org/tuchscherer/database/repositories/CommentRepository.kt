@@ -70,4 +70,24 @@ interface CommentRepository {
      * Returns null if comment not found.
      */
     fun getPostForComment(commentId: UUID): org.tuchscherer.database.Post?
+
+    /**
+     * Get all comments.
+     */
+    fun findAll(): List<Comment>
+
+    /**
+     * Count total comments.
+     */
+    fun count(): Long
+
+    /**
+     * Count comments by a specific user.
+     */
+    fun countByUserId(userId: UUID): Long
+
+    /**
+     * Delete all comments by a user. Returns count of deleted comments.
+     */
+    fun deleteByUserId(userId: UUID): Int
 }

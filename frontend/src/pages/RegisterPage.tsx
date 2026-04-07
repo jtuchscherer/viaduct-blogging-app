@@ -39,6 +39,7 @@ export default function RegisterPage() {
         username: data.user.username,
         email: data.user.email,
         name: data.user.name,
+        isAdmin: data.user.is_admin,
       });
 
       // Redirect to home page

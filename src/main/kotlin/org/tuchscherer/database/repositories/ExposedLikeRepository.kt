@@ -88,4 +88,19 @@ class ExposedLikeRepository : LikeRepository {
     override fun getPostForLike(likeId: UUID): org.tuchscherer.database.Post? = transaction {
         Like.findById(likeId)?.post
     }
+
+    override fun count(): Long = transaction {
+        Like.all().count()
+    }
+
+    override fun countByUserId(userId: UUID): Long = transaction {
+        Like.find { Likes.userId eq userId }.count()
+    }
+
+    override fun deleteByUserId(userId: UUID): Int = transaction {
+        val likes = Like.find { Likes.userId eq userId }.toList()
+        val count = likes.size
+        likes.forEach { it.delete() }
+        count
+    }
 }

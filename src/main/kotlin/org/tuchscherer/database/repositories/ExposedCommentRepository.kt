@@ -73,4 +73,23 @@ class ExposedCommentRepository : CommentRepository {
     override fun getPostForComment(commentId: UUID): org.tuchscherer.database.Post? = transaction {
         Comment.findById(commentId)?.post
     }
+
+    override fun findAll(): List<Comment> = transaction {
+        Comment.all().toList()
+    }
+
+    override fun count(): Long = transaction {
+        Comment.all().count()
+    }
+
+    override fun countByUserId(userId: UUID): Long = transaction {
+        Comment.find { Comments.authorId eq userId }.count()
+    }
+
+    override fun deleteByUserId(userId: UUID): Int = transaction {
+        val comments = Comment.find { Comments.authorId eq userId }.toList()
+        val count = comments.size
+        comments.forEach { it.delete() }
+        count
+    }
 }
