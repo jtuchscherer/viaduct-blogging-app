@@ -20,6 +20,7 @@ import org.junit.jupiter.api.assertThrows
 import org.koin.core.context.GlobalContext
 import org.koin.dsl.module
 import viaduct.api.grts.*
+import viaduct.api.grts.Post as ViaductPost
 import viaduct.engine.SchemaFactory
 import viaduct.engine.api.ViaductSchema
 import viaduct.engine.runtime.execution.DefaultCoroutineInterop
@@ -65,7 +66,7 @@ class DeletePostResolverTest : DefaultAbstractResolverTestBase() {
     fun `DeletePostResolver deletes post successfully`() = runBlocking {
         val resolver = DeletePostResolver(postRepository)
         val args = Mutation_DeletePost_Arguments.Builder(context)
-            .id(postId.toString())
+            .id(context.globalIDFor(ViaductPost.Reflection, postId.toString()))
             .build()
 
         every { postRepository.findById(postId) } returns mockPost
@@ -86,7 +87,7 @@ class DeletePostResolverTest : DefaultAbstractResolverTestBase() {
     fun `DeletePostResolver throws exception when not authenticated`() = runBlocking {
         val resolver = DeletePostResolver(postRepository)
         val args = Mutation_DeletePost_Arguments.Builder(context)
-            .id(postId.toString())
+            .id(context.globalIDFor(ViaductPost.Reflection, postId.toString()))
             .build()
 
         assertThrows<AuthenticationException> {
@@ -106,7 +107,7 @@ class DeletePostResolverTest : DefaultAbstractResolverTestBase() {
     fun `DeletePostResolver throws exception when post not found`() = runBlocking {
         val resolver = DeletePostResolver(postRepository)
         val args = Mutation_DeletePost_Arguments.Builder(context)
-            .id(postId.toString())
+            .id(context.globalIDFor(ViaductPost.Reflection, postId.toString()))
             .build()
 
         every { postRepository.findById(postId) } returns null
@@ -128,7 +129,7 @@ class DeletePostResolverTest : DefaultAbstractResolverTestBase() {
         val resolver = DeletePostResolver(postRepository)
         val differentUserId = UUID.randomUUID()
         val args = Mutation_DeletePost_Arguments.Builder(context)
-            .id(postId.toString())
+            .id(context.globalIDFor(ViaductPost.Reflection, postId.toString()))
             .build()
 
         every { postRepository.findById(postId) } returns mockPost

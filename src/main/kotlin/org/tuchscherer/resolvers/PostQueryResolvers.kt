@@ -18,7 +18,7 @@ class PostsResolver(
     override suspend fun resolve(ctx: Context): List<ViaductPost> {
         return postRepository.findAll().map { post ->
             ViaductPost.of(ctx) {
-                id(post.id.value.toString())
+                id(ctx.globalIDFor(ViaductPost.Reflection, post.id.value.toString()))
                 title(post.title)
                 content(post.content)
                 createdAt(post.createdAt.toString())
@@ -33,10 +33,10 @@ class PostResolver(
     private val postRepository: PostRepository
 ) : QueryResolvers.Post() {
     override suspend fun resolve(ctx: Context): ViaductPost? {
-        val postId = UUID.fromString(ctx.arguments.id)
+        val postId = UUID.fromString(ctx.arguments.id.internalID)
         return postRepository.findById(postId)?.let { post ->
             ViaductPost.of(ctx) {
-                id(post.id.value.toString())
+                id(ctx.globalIDFor(ViaductPost.Reflection, post.id.value.toString()))
                 title(post.title)
                 content(post.content)
                 createdAt(post.createdAt.toString())
@@ -68,7 +68,7 @@ class PostsConnectionResolver(
         val edges = posts.mapIndexed { i, post ->
             val cursor = encodeCursor(offsetLimit.offset + i)
             val node = ViaductPost.of(ctx) {
-                id(post.id.value.toString())
+                id(ctx.globalIDFor(ViaductPost.Reflection, post.id.value.toString()))
                 title(post.title)
                 content(post.content)
                 createdAt(post.createdAt.toString())
@@ -108,7 +108,7 @@ class MyPostsResolver(
 
         return postRepository.findByAuthorId(user.id).map { post ->
             ViaductPost.of(ctx) {
-                id(post.id.value.toString())
+                id(ctx.globalIDFor(ViaductPost.Reflection, post.id.value.toString()))
                 title(post.title)
                 content(post.content)
                 createdAt(post.createdAt.toString())
@@ -117,4 +117,3 @@ class MyPostsResolver(
         }
     }
 }
-

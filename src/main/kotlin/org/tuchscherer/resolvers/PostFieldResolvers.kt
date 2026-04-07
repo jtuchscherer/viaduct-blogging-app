@@ -15,11 +15,11 @@ class PostAuthorResolver : PostResolvers.Author() {
     private val postRepository: PostRepository by inject(PostRepository::class.java)
 
     override suspend fun batchResolve(contexts: List<Context>): List<FieldValue<ViaductUser>> {
-        val postIds = contexts.map { UUID.fromString(it.objectValue.getId()) }
+        val postIds = contexts.map { UUID.fromString(it.objectValue.getId().internalID) }
         val authorsById = postRepository.getAuthorsByPostIds(postIds)
 
         return contexts.map { ctx ->
-            val postId = UUID.fromString(ctx.objectValue.getId())
+            val postId = UUID.fromString(ctx.objectValue.getId().internalID)
             val author = authorsById[postId]
             if (author != null) {
                 FieldValue.ofValue(author.toViaductUser(ctx))
@@ -31,7 +31,7 @@ class PostAuthorResolver : PostResolvers.Author() {
 
     private fun org.tuchscherer.database.User.toViaductUser(ctx: Context) =
         ViaductUser.of(ctx) {
-            id(id.value.toString())
+            id(ctx.globalIDFor(ViaductUser.Reflection, id.value.toString()))
             username(username)
             email(email)
             name(name)
@@ -44,12 +44,11 @@ class PostCommentsFieldResolver : PostResolvers.Comments() {
     private val commentRepository: CommentRepository by inject(CommentRepository::class.java)
 
     override suspend fun resolve(ctx: Context): List<ViaductComment> {
-        val postIdString = ctx.objectValue.getId()
-        val postId = UUID.fromString(postIdString)
+        val postId = UUID.fromString(ctx.objectValue.getId().internalID)
 
         return commentRepository.findByPostId(postId).map { comment ->
             ViaductComment.of(ctx) {
-                id(comment.id.value.toString())
+                id(ctx.globalIDFor(ViaductComment.Reflection, comment.id.value.toString()))
                 content(comment.content)
                 createdAt(comment.createdAt.toString())
             }

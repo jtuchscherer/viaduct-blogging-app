@@ -24,7 +24,7 @@ class CreateCommentResolver(
 
         require(input.content.isNotBlank()) { "Content cannot be blank" }
 
-        val postId = UUID.fromString(input.postId)
+        val postId = UUID.fromString(input.postId.internalID)
         val post = postRepository.findById(postId)
             ?: throw NotFoundException("Post not found")
 
@@ -36,7 +36,7 @@ class CreateCommentResolver(
         )
 
         return ViaductComment.of(ctx) {
-            id(comment.id.value.toString())
+            id(ctx.globalIDFor(ViaductComment.Reflection, comment.id.value.toString()))
             content(comment.content)
             createdAt(comment.createdAt.toString())
         }
@@ -48,7 +48,7 @@ class DeleteCommentResolver(
     private val commentRepository: CommentRepository
 ) : MutationResolvers.DeleteComment() {
     override suspend fun resolve(ctx: Context): Boolean {
-        val commentId = UUID.fromString(ctx.arguments.id)
+        val commentId = UUID.fromString(ctx.arguments.id.internalID)
         val user = requireAuth(ctx.requestContext)
 
         val comment = commentRepository.findById(commentId)
@@ -67,11 +67,11 @@ class PostCommentsResolver(
     private val commentRepository: CommentRepository
 ) : QueryResolvers.PostComments() {
     override suspend fun resolve(ctx: Context): List<ViaductComment> {
-        val postId = UUID.fromString(ctx.arguments.postId)
+        val postId = UUID.fromString(ctx.arguments.postId.internalID)
 
         return commentRepository.findByPostId(EntityID(postId, org.tuchscherer.database.Posts)).map { comment ->
             ViaductComment.of(ctx) {
-                id(comment.id.value.toString())
+                id(ctx.globalIDFor(ViaductComment.Reflection, comment.id.value.toString()))
                 content(comment.content)
                 createdAt(comment.createdAt.toString())
             }

@@ -21,6 +21,7 @@ import org.junit.jupiter.api.assertThrows
 import org.koin.core.context.GlobalContext
 import org.koin.dsl.module
 import viaduct.api.grts.*
+import viaduct.api.grts.Comment as ViaductComment
 import viaduct.engine.SchemaFactory
 import viaduct.engine.api.ViaductSchema
 import viaduct.engine.runtime.execution.DefaultCoroutineInterop
@@ -68,7 +69,7 @@ class DeleteCommentResolverTest : DefaultAbstractResolverTestBase() {
     fun `DeleteCommentResolver deletes comment successfully`() = runBlocking {
         val resolver = DeleteCommentResolver(commentRepository)
         val args = Mutation_DeleteComment_Arguments.Builder(context)
-            .id(commentId.toString())
+            .id(context.globalIDFor(ViaductComment.Reflection, commentId.toString()))
             .build()
 
         every { commentRepository.findById(commentId) } returns mockComment
@@ -89,7 +90,7 @@ class DeleteCommentResolverTest : DefaultAbstractResolverTestBase() {
     fun `DeleteCommentResolver throws exception when not authenticated`() = runBlocking {
         val resolver = DeleteCommentResolver(commentRepository)
         val args = Mutation_DeleteComment_Arguments.Builder(context)
-            .id(commentId.toString())
+            .id(context.globalIDFor(ViaductComment.Reflection, commentId.toString()))
             .build()
 
         assertThrows<AuthenticationException> {
@@ -109,7 +110,7 @@ class DeleteCommentResolverTest : DefaultAbstractResolverTestBase() {
     fun `DeleteCommentResolver throws exception when comment not found`() = runBlocking {
         val resolver = DeleteCommentResolver(commentRepository)
         val args = Mutation_DeleteComment_Arguments.Builder(context)
-            .id(commentId.toString())
+            .id(context.globalIDFor(ViaductComment.Reflection, commentId.toString()))
             .build()
 
         every { commentRepository.findById(commentId) } returns null
@@ -131,7 +132,7 @@ class DeleteCommentResolverTest : DefaultAbstractResolverTestBase() {
         val resolver = DeleteCommentResolver(commentRepository)
         val differentUserId = UUID.randomUUID()
         val args = Mutation_DeleteComment_Arguments.Builder(context)
-            .id(commentId.toString())
+            .id(context.globalIDFor(ViaductComment.Reflection, commentId.toString()))
             .build()
 
         every { commentRepository.findById(commentId) } returns mockComment

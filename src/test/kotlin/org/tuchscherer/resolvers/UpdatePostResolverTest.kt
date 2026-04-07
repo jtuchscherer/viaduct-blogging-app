@@ -64,7 +64,7 @@ class UpdatePostResolverTest {
     fun `UpdatePostResolver updates post and returns updated title and content`() = runBlocking {
         val resolver = UpdatePostResolver(postRepository)
         val input = UpdatePostInput.Builder(tester.context)
-            .id(postId.toString())
+            .id(tester.context.globalIDFor(ViaductPost.Reflection, postId.toString()))
             .title("Updated Title")
             .content("Updated content")
             .build()
@@ -94,7 +94,7 @@ class UpdatePostResolverTest {
     @Test
     fun `UpdatePostResolver throws NotFoundException when post does not exist`() {
         val resolver = UpdatePostResolver(postRepository)
-        val input = UpdatePostInput.Builder(tester.context).id(postId.toString()).title("Updated Title").build()
+        val input = UpdatePostInput.Builder(tester.context).id(tester.context.globalIDFor(ViaductPost.Reflection, postId.toString())).title("Updated Title").build()
         val args = Mutation_UpdatePost_Arguments.Builder(tester.context).input(input).build()
 
         every { postRepository.findById(postId) } returns null
@@ -114,7 +114,7 @@ class UpdatePostResolverTest {
     @Test
     fun `UpdatePostResolver throws AuthorizationException when user is not author`() {
         val resolver = UpdatePostResolver(postRepository)
-        val input = UpdatePostInput.Builder(tester.context).id(postId.toString()).title("Updated Title").build()
+        val input = UpdatePostInput.Builder(tester.context).id(tester.context.globalIDFor(ViaductPost.Reflection, postId.toString())).title("Updated Title").build()
         val args = Mutation_UpdatePost_Arguments.Builder(tester.context).input(input).build()
 
         every { postRepository.findById(postId) } returns mockPost
@@ -134,7 +134,7 @@ class UpdatePostResolverTest {
     @Test
     fun `UpdatePostResolver throws IllegalArgumentException for blank title`() {
         val resolver = UpdatePostResolver(postRepository)
-        val input = UpdatePostInput.Builder(tester.context).id(postId.toString()).title("   ").build()
+        val input = UpdatePostInput.Builder(tester.context).id(tester.context.globalIDFor(ViaductPost.Reflection, postId.toString())).title("   ").build()
         val args = Mutation_UpdatePost_Arguments.Builder(tester.context).input(input).build()
 
         val e = assertThrows<Exception> {

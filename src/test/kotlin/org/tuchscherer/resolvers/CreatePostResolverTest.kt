@@ -80,7 +80,7 @@ class CreatePostResolverTest {
         }
 
         assertNotNull(result)
-        assertEquals(postId.toString(), result.getId())
+        assertEquals(postId.toString(), result.getId().internalID)
         assertEquals("Test Post", result.getTitle())
         assertEquals("Test content", result.getContent())
     }

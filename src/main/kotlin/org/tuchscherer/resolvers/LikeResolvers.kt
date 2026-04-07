@@ -16,7 +16,7 @@ class LikePostMutationResolver(
     private val postRepository: PostRepository
 ) : MutationResolvers.LikePost() {
     override suspend fun resolve(ctx: Context): ViaductLike {
-        val postId = UUID.fromString(ctx.arguments.postId)
+        val postId = UUID.fromString(ctx.arguments.postId.internalID)
         val user = requireAuth(ctx.requestContext)
 
         val post = postRepository.findById(postId)
@@ -26,7 +26,7 @@ class LikePostMutationResolver(
 
         if (existingLike != null) {
             return ViaductLike.of(ctx) {
-                id(existingLike.id.value.toString())
+                id(ctx.globalIDFor(ViaductLike.Reflection, existingLike.id.value.toString()))
                 createdAt(existingLike.createdAt.toString())
             }
         } else {
@@ -37,7 +37,7 @@ class LikePostMutationResolver(
             )
 
             return ViaductLike.of(ctx) {
-                id(like.id.value.toString())
+                id(ctx.globalIDFor(ViaductLike.Reflection, like.id.value.toString()))
                 createdAt(like.createdAt.toString())
             }
         }
@@ -50,7 +50,7 @@ class UnlikePostResolver(
     private val postRepository: PostRepository
 ) : MutationResolvers.UnlikePost() {
     override suspend fun resolve(ctx: Context): Boolean {
-        val postId = UUID.fromString(ctx.arguments.postId)
+        val postId = UUID.fromString(ctx.arguments.postId.internalID)
         val user = requireAuth(ctx.requestContext)
 
         val post = postRepository.findById(postId)

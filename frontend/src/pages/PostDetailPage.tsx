@@ -186,7 +186,8 @@ export default function PostDetailPage() {
   if (!data?.post) return <div className="container"><p>Post not found</p></div>;
 
   const post = data.post;
-  const isAuthor = user?.id === post.author.id;
+  // Compare by username since auth returns raw UUIDs but GraphQL returns GlobalIDs
+  const isAuthor = user?.username === post.author.username;
 
   return (
     <div className="container">

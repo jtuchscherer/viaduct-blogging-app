@@ -39,7 +39,7 @@ class LikeObjectFieldResolversTest {
     private val postTester = FieldResolverTester.create<ViaductLike, Query, NoArguments, ViaductPost>(ViaductTestConfig.testerConfig)
 
     private fun likeObj(id: UUID = likeId) = ViaductLike.Builder(userTester.context)
-        .id(id.toString())
+        .id(userTester.context.globalIDFor(ViaductLike.Reflection, id.toString()))
         .createdAt("2025-01-01T10:00:00")
         .build()
 
@@ -79,7 +79,7 @@ class LikeObjectFieldResolversTest {
             arguments = NoArguments
         }
 
-        assertEquals(userId.toString(), result.getId())
+        assertEquals(userId.toString(), result.getId().internalID)
         assertEquals("testuser", result.getUsername())
         assertEquals("test@example.com", result.getEmail())
     }
@@ -113,7 +113,7 @@ class LikeObjectFieldResolversTest {
             arguments = NoArguments
         }
 
-        assertEquals(postId.toString(), result.getId())
+        assertEquals(postId.toString(), result.getId().internalID)
         assertEquals("Test Post", result.getTitle())
         assertEquals("Test content", result.getContent())
     }

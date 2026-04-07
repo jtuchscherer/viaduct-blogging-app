@@ -25,7 +25,7 @@ class AdminUpdateUserResolver(
         requireAdmin(ctx.requestContext)
 
         val input = ctx.arguments.input
-        val userId = UUID.fromString(input.id)
+        val userId = UUID.fromString(input.id.internalID)
 
         val user = userRepository.findById(userId)
             ?: throw NotFoundException("User not found")
@@ -39,7 +39,7 @@ class AdminUpdateUserResolver(
         }
 
         return ViaductUser.of(ctx) {
-            id(user.id.value.toString())
+            id(ctx.globalIDFor(ViaductUser.Reflection, user.id.value.toString()))
             username(user.username)
             email(user.email)
             name(user.name)
@@ -61,7 +61,7 @@ class AdminDeleteUserResolver(
     override suspend fun resolve(ctx: Context): AdminDeleteUserResult {
         requireAdmin(ctx.requestContext)
 
-        val userId = UUID.fromString(ctx.arguments.id)
+        val userId = UUID.fromString(ctx.arguments.id.internalID)
 
         val user = userRepository.findById(userId)
             ?: throw NotFoundException("User not found")
@@ -92,7 +92,7 @@ class AdminUpdatePostResolver(
         requireAdmin(ctx.requestContext)
 
         val input = ctx.arguments.input
-        val postId = UUID.fromString(input.id)
+        val postId = UUID.fromString(input.id.internalID)
 
         input.title?.let { require(it.isNotBlank()) { "Title cannot be blank" } }
 
@@ -103,7 +103,7 @@ class AdminUpdatePostResolver(
         ) ?: throw NotFoundException("Post not found")
 
         return ViaductPost.of(ctx) {
-            id(updatedPost.id.value.toString())
+            id(ctx.globalIDFor(ViaductPost.Reflection, updatedPost.id.value.toString()))
             title(updatedPost.title)
             content(updatedPost.content)
             createdAt(updatedPost.createdAt.toString())
@@ -122,7 +122,7 @@ class AdminDeletePostResolver(
     override suspend fun resolve(ctx: Context): Boolean {
         requireAdmin(ctx.requestContext)
 
-        val postId = UUID.fromString(ctx.arguments.id)
+        val postId = UUID.fromString(ctx.arguments.id.internalID)
 
         if (postRepository.findById(postId) == null) {
             throw NotFoundException("Post not found")
@@ -142,7 +142,7 @@ class AdminDeleteCommentResolver(
     override suspend fun resolve(ctx: Context): Boolean {
         requireAdmin(ctx.requestContext)
 
-        val commentId = UUID.fromString(ctx.arguments.id)
+        val commentId = UUID.fromString(ctx.arguments.id.internalID)
 
         if (commentRepository.findById(commentId) == null) {
             throw NotFoundException("Comment not found")

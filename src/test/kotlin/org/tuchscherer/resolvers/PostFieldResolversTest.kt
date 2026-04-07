@@ -19,6 +19,8 @@ import org.junit.jupiter.api.Test
 import org.koin.core.context.GlobalContext
 import org.koin.dsl.module
 import viaduct.api.grts.*
+import viaduct.api.grts.Comment as ViaductComment
+import viaduct.api.grts.Post as ViaductPost
 import viaduct.api.types.Arguments.NoArguments
 import viaduct.engine.SchemaFactory
 import viaduct.engine.api.ViaductSchema
@@ -41,8 +43,8 @@ class PostFieldResolversTest : DefaultAbstractResolverTestBase() {
 
     private fun queryObj() = Query.Builder(context).build()
 
-    private fun postObj(id: UUID = postId) = Post.Builder(context)
-        .id(id.toString())
+    private fun postObj(id: UUID = postId) = ViaductPost.Builder(context)
+        .id(context.globalIDFor(ViaductPost.Reflection, id.toString()))
         .title("Test Post")
         .content("Test content")
         .createdAt("2025-01-01T10:00:00")
@@ -85,7 +87,7 @@ class PostFieldResolversTest : DefaultAbstractResolverTestBase() {
         every { postRepository.getAuthorsByPostIds(listOf(postId)) } returns mapOf(postId to mockUser)
 
         val ctx = mockk<PostResolvers.Author.Context>(relaxed = true)
-        coEvery { ctx.objectValue.getId() } returns postId.toString()
+        coEvery { ctx.objectValue.getId() } returns context.globalIDFor(ViaductPost.Reflection, postId.toString())
 
         // ViaductUser.Builder(ctx) requires a real framework InternalContext — full result is
         // verified via integration tests. Here we confirm the batch repository method is called.
@@ -99,7 +101,7 @@ class PostFieldResolversTest : DefaultAbstractResolverTestBase() {
         every { postRepository.getAuthorsByPostIds(listOf(postId)) } returns emptyMap()
 
         val ctx = mockk<PostResolvers.Author.Context>(relaxed = true)
-        coEvery { ctx.objectValue.getId() } returns postId.toString()
+        coEvery { ctx.objectValue.getId() } returns context.globalIDFor(ViaductPost.Reflection, postId.toString())
 
         val results = resolver.batchResolve(listOf(ctx))
 
@@ -122,7 +124,7 @@ class PostFieldResolversTest : DefaultAbstractResolverTestBase() {
         )
 
         assertEquals(1, result.size)
-        assertEquals(commentId.toString(), result[0].getId())
+        assertEquals(commentId.toString(), result[0].getId().internalID)
         assertEquals("Test comment", result[0].getContent())
     }
 

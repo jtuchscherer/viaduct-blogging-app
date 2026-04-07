@@ -24,6 +24,7 @@ import org.koin.dsl.module
 import viaduct.api.grts.Like as ViaductLike
 import viaduct.api.grts.Mutation
 import viaduct.api.grts.Mutation_LikePost_Arguments
+import viaduct.api.grts.Post as ViaductPost
 import viaduct.api.grts.Query
 import viaduct.api.testing.MutationResolverTester
 import java.time.LocalDateTime
@@ -73,7 +74,7 @@ class LikePostResolverTest {
     @Test
     fun `LikePostMutationResolver creates new like successfully`() = runBlocking {
         val resolver = LikePostMutationResolver(likeRepository, postRepository)
-        val args = Mutation_LikePost_Arguments.Builder(tester.context).postId(postId.toString()).build()
+        val args = Mutation_LikePost_Arguments.Builder(tester.context).postId(tester.context.globalIDFor(ViaductPost.Reflection, postId.toString())).build()
 
         every { postRepository.findById(postId) } returns mockPost
         every { likeRepository.findByPostAndUser(mockPost.id, mockUser.id) } returns null
@@ -87,13 +88,13 @@ class LikePostResolverTest {
         }
 
         assertNotNull(result)
-        assertEquals(likeId.toString(), result.getId())
+        assertEquals(likeId.toString(), result.getId().internalID)
     }
 
     @Test
     fun `LikePostMutationResolver returns existing like when already liked`() = runBlocking {
         val resolver = LikePostMutationResolver(likeRepository, postRepository)
-        val args = Mutation_LikePost_Arguments.Builder(tester.context).postId(postId.toString()).build()
+        val args = Mutation_LikePost_Arguments.Builder(tester.context).postId(tester.context.globalIDFor(ViaductPost.Reflection, postId.toString())).build()
 
         every { postRepository.findById(postId) } returns mockPost
         every { likeRepository.findByPostAndUser(mockPost.id, mockUser.id) } returns mockLike
@@ -104,14 +105,14 @@ class LikePostResolverTest {
         }
 
         assertNotNull(result)
-        assertEquals(likeId.toString(), result.getId())
+        assertEquals(likeId.toString(), result.getId().internalID)
         verify(exactly = 0) { likeRepository.create(any(), any(), any()) }
     }
 
     @Test
     fun `LikePostMutationResolver throws exception when not authenticated`() {
         val resolver = LikePostMutationResolver(likeRepository, postRepository)
-        val args = Mutation_LikePost_Arguments.Builder(tester.context).postId(postId.toString()).build()
+        val args = Mutation_LikePost_Arguments.Builder(tester.context).postId(tester.context.globalIDFor(ViaductPost.Reflection, postId.toString())).build()
 
         // MutationResolverTester wraps exceptions in InvocationTargetException
         val e1 = assertThrows<Exception> {
@@ -130,7 +131,7 @@ class LikePostResolverTest {
     @Test
     fun `LikePostMutationResolver throws exception when post not found`() {
         val resolver = LikePostMutationResolver(likeRepository, postRepository)
-        val args = Mutation_LikePost_Arguments.Builder(tester.context).postId(postId.toString()).build()
+        val args = Mutation_LikePost_Arguments.Builder(tester.context).postId(tester.context.globalIDFor(ViaductPost.Reflection, postId.toString())).build()
 
         every { postRepository.findById(postId) } returns null
 

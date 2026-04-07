@@ -15,7 +15,7 @@ class MeResolver : QueryResolvers.Me() {
         val user = requireAuth(ctx.requestContext)
 
         return ViaductUser.of(ctx) {
-            id(user.id.value.toString())
+            id(ctx.globalIDFor(ViaductUser.Reflection, user.id.value.toString()))
             username(user.username)
             email(user.email)
             name(user.name)
@@ -36,7 +36,7 @@ class UserIsAdminResolver : UserResolvers.IsAdmin() {
         // we can store the isAdmin in a context attribute
 
         // For now, look up from ID - this can be optimized with batch loading later
-        val userId = java.util.UUID.fromString(ctx.objectValue.getId())
+        val userId = java.util.UUID.fromString(ctx.objectValue.getId().internalID)
         val userRepository: org.tuchscherer.database.repositories.UserRepository by
             org.koin.java.KoinJavaComponent.inject(org.tuchscherer.database.repositories.UserRepository::class.java)
 

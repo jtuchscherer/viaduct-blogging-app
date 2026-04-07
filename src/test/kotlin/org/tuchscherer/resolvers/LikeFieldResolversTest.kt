@@ -18,6 +18,8 @@ import org.junit.jupiter.api.Test
 import org.koin.core.context.GlobalContext
 import org.koin.dsl.module
 import viaduct.api.grts.*
+import viaduct.api.grts.Like as ViaductLike
+import viaduct.api.grts.Post as ViaductPost
 import viaduct.api.types.Arguments.NoArguments
 import viaduct.engine.SchemaFactory
 import viaduct.engine.api.ViaductSchema
@@ -39,8 +41,8 @@ class LikeFieldResolversTest : DefaultAbstractResolverTestBase() {
 
     private fun queryObj() = Query.Builder(context).build()
 
-    private fun postObj(id: UUID = postId) = Post.Builder(context)
-        .id(id.toString())
+    private fun postObj(id: UUID = postId) = ViaductPost.Builder(context)
+        .id(context.globalIDFor(ViaductPost.Reflection, id.toString()))
         .title("Test Post")
         .content("Test content")
         .createdAt("2025-01-01T10:00:00")
@@ -84,7 +86,7 @@ class LikeFieldResolversTest : DefaultAbstractResolverTestBase() {
         )
 
         assertEquals(1, result.size)
-        assertEquals(likeId.toString(), result[0].getId())
+        assertEquals(likeId.toString(), result[0].getId().internalID)
     }
 
     @Test

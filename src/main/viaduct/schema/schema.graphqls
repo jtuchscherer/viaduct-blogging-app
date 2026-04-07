@@ -1,5 +1,5 @@
 # User type representing authenticated users
-type User {
+type User implements Node {
   id: ID!
   username: String!
   email: String!
@@ -10,7 +10,7 @@ type User {
 }
 
 # Post type for blog posts
-type Post {
+type Post implements Node {
   id: ID!
   title: String!
   content: String!
@@ -25,7 +25,7 @@ type Post {
 }
 
 # Comment type for post comments
-type Comment {
+type Comment implements Node {
   id: ID!
   content: String!
   author: User! @resolver
@@ -34,7 +34,7 @@ type Comment {
 }
 
 # Like type for post likes
-type Like {
+type Like implements Node {
   id: ID!
   user: User! @resolver
   post: Post! @resolver
@@ -48,13 +48,13 @@ input CreatePostInput {
 }
 
 input UpdatePostInput {
-  id: ID!
+  id: ID! @idOf(type: "Post")
   title: String
   content: String
 }
 
 input CreateCommentInput {
-  postId: ID!
+  postId: ID! @idOf(type: "Post")
   content: String!
 }
 
@@ -92,14 +92,14 @@ type AdminDeleteUserResult {
 }
 
 input AdminUpdateUserInput {
-  id: ID!
+  id: ID! @idOf(type: "User")
   name: String
   email: String
   isAdmin: Boolean
 }
 
 input AdminUpdatePostInput {
-  id: ID!
+  id: ID! @idOf(type: "Post")
   title: String
   content: String
 }
@@ -110,7 +110,7 @@ extend type Query {
   posts: [Post!]! @resolver
 
   # Get a single post by ID (public)
-  post(id: ID!): Post @resolver
+  post(id: ID! @idOf(type: "Post")): Post @resolver
 
   # Get current user's posts (requires auth)
   myPosts: [Post!]! @resolver
@@ -119,7 +119,7 @@ extend type Query {
   me: User @resolver
 
   # Get comments for a specific post
-  postComments(postId: ID!): [Comment!]! @resolver
+  postComments(postId: ID! @idOf(type: "Post")): [Comment!]! @resolver
 
   # Relay-style cursor pagination for posts (public)
   postsConnection(first: Int, after: String): PostsConnection @resolver
@@ -127,10 +127,10 @@ extend type Query {
   # Admin queries (require admin role)
   adminStats: AdminStats! @resolver
   adminUsers: [User!]! @resolver
-  adminUser(id: ID!): User @resolver
-  adminUserContentCounts(userId: ID!): UserContentCounts! @resolver
+  adminUser(id: ID! @idOf(type: "User")): User @resolver
+  adminUserContentCounts(userId: ID! @idOf(type: "User")): UserContentCounts! @resolver
   adminPosts: [Post!]! @resolver
-  adminPost(id: ID!): Post @resolver
+  adminPost(id: ID! @idOf(type: "Post")): Post @resolver
   adminComments: [Comment!]! @resolver
 }
 
@@ -139,20 +139,20 @@ extend type Mutation {
   # Post operations
   createPost(input: CreatePostInput!): Post! @resolver
   updatePost(input: UpdatePostInput!): Post! @resolver
-  deletePost(id: ID!): Boolean! @resolver
+  deletePost(id: ID! @idOf(type: "Post")): Boolean! @resolver
 
   # Comment operations
   createComment(input: CreateCommentInput!): Comment! @resolver
-  deleteComment(id: ID!): Boolean! @resolver
+  deleteComment(id: ID! @idOf(type: "Comment")): Boolean! @resolver
 
   # Like operations
-  likePost(postId: ID!): Like! @resolver
-  unlikePost(postId: ID!): Boolean! @resolver
+  likePost(postId: ID! @idOf(type: "Post")): Like! @resolver
+  unlikePost(postId: ID! @idOf(type: "Post")): Boolean! @resolver
 
   # Admin mutations (require admin role)
   adminUpdateUser(input: AdminUpdateUserInput!): User! @resolver
-  adminDeleteUser(id: ID!): AdminDeleteUserResult! @resolver
+  adminDeleteUser(id: ID! @idOf(type: "User")): AdminDeleteUserResult! @resolver
   adminUpdatePost(input: AdminUpdatePostInput!): Post! @resolver
-  adminDeletePost(id: ID!): Boolean! @resolver
-  adminDeleteComment(id: ID!): Boolean! @resolver
+  adminDeletePost(id: ID! @idOf(type: "Post")): Boolean! @resolver
+  adminDeleteComment(id: ID! @idOf(type: "Comment")): Boolean! @resolver
 }

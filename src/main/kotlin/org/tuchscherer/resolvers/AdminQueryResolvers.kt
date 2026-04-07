@@ -48,7 +48,7 @@ class AdminUsersResolver(
 
         return userRepository.findAll().map { user ->
             ViaductUser.of(ctx) {
-                id(user.id.value.toString())
+                id(ctx.globalIDFor(ViaductUser.Reflection, user.id.value.toString()))
                 username(user.username)
                 email(user.email)
                 name(user.name)
@@ -68,10 +68,10 @@ class AdminUserResolver(
     override suspend fun resolve(ctx: Context): ViaductUser? {
         requireAdmin(ctx.requestContext)
 
-        val userId = UUID.fromString(ctx.arguments.id)
+        val userId = UUID.fromString(ctx.arguments.id.internalID)
         return userRepository.findById(userId)?.let { user ->
             ViaductUser.of(ctx) {
-                id(user.id.value.toString())
+                id(ctx.globalIDFor(ViaductUser.Reflection, user.id.value.toString()))
                 username(user.username)
                 email(user.email)
                 name(user.name)
@@ -93,7 +93,7 @@ class AdminUserContentCountsResolver(
     override suspend fun resolve(ctx: Context): UserContentCounts {
         requireAdmin(ctx.requestContext)
 
-        val userId = UUID.fromString(ctx.arguments.userId)
+        val userId = UUID.fromString(ctx.arguments.userId.internalID)
 
         return UserContentCounts.of(ctx) {
             postCount(postRepository.countByAuthorId(userId).toInt())
@@ -115,7 +115,7 @@ class AdminPostsResolver(
 
         return postRepository.findAll().map { post ->
             ViaductPost.of(ctx) {
-                id(post.id.value.toString())
+                id(ctx.globalIDFor(ViaductPost.Reflection, post.id.value.toString()))
                 title(post.title)
                 content(post.content)
                 createdAt(post.createdAt.toString())
@@ -135,10 +135,10 @@ class AdminPostResolver(
     override suspend fun resolve(ctx: Context): ViaductPost? {
         requireAdmin(ctx.requestContext)
 
-        val postId = UUID.fromString(ctx.arguments.id)
+        val postId = UUID.fromString(ctx.arguments.id.internalID)
         return postRepository.findById(postId)?.let { post ->
             ViaductPost.of(ctx) {
-                id(post.id.value.toString())
+                id(ctx.globalIDFor(ViaductPost.Reflection, post.id.value.toString()))
                 title(post.title)
                 content(post.content)
                 createdAt(post.createdAt.toString())
@@ -160,7 +160,7 @@ class AdminCommentsResolver(
 
         return commentRepository.findAll().map { comment ->
             ViaductComment.of(ctx) {
-                id(comment.id.value.toString())
+                id(ctx.globalIDFor(ViaductComment.Reflection, comment.id.value.toString()))
                 content(comment.content)
                 createdAt(comment.createdAt.toString())
             }

@@ -77,7 +77,7 @@ class MyPostsResolverTest : DefaultAbstractResolverTestBase() {
         )
 
         assertEquals(1, result.size)
-        assertEquals(postId.toString(), result[0].getId())
+        assertEquals(postId.toString(), result[0].getId().internalID)
     }
 
     @Test

@@ -30,7 +30,7 @@ class CreatePostResolver(
         )
 
         return ViaductPost.of(ctx) {
-            id(post.id.value.toString())
+            id(ctx.globalIDFor(ViaductPost.Reflection, post.id.value.toString()))
             title(post.title)
             content(post.content)
             createdAt(post.createdAt.toString())
@@ -45,7 +45,7 @@ class UpdatePostResolver(
 ) : MutationResolvers.UpdatePost() {
     override suspend fun resolve(ctx: Context): ViaductPost {
         val input = ctx.arguments.input
-        val postId = UUID.fromString(input.id)
+        val postId = UUID.fromString(input.id.internalID)
         val user = requireAuth(ctx.requestContext)
 
         input.title?.let { require(it.isNotBlank()) { "Title cannot be blank" } }
@@ -64,7 +64,7 @@ class UpdatePostResolver(
         ) ?: throw NotFoundException("Failed to update post")
 
         return ViaductPost.of(ctx) {
-            id(updatedPost.id.value.toString())
+            id(ctx.globalIDFor(ViaductPost.Reflection, updatedPost.id.value.toString()))
             title(updatedPost.title)
             content(updatedPost.content)
             createdAt(updatedPost.createdAt.toString())
@@ -78,7 +78,7 @@ class DeletePostResolver(
     private val postRepository: PostRepository
 ) : MutationResolvers.DeletePost() {
     override suspend fun resolve(ctx: Context): Boolean {
-        val postId = UUID.fromString(ctx.arguments.id)
+        val postId = UUID.fromString(ctx.arguments.id.internalID)
         val user = requireAuth(ctx.requestContext)
 
         val post = postRepository.findById(postId)

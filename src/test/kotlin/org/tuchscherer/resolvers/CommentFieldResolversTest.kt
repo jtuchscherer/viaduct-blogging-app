@@ -39,7 +39,7 @@ class CommentFieldResolversTest {
     private val postTester = FieldResolverTester.create<ViaductComment, Query, NoArguments, ViaductPost>(ViaductTestConfig.testerConfig)
 
     private fun commentObj(id: UUID = commentId) = ViaductComment.Builder(authorTester.context)
-        .id(id.toString())
+        .id(authorTester.context.globalIDFor(ViaductComment.Reflection, id.toString()))
         .content("Test comment")
         .createdAt("2025-01-01T10:00:00")
         .build()
@@ -80,7 +80,7 @@ class CommentFieldResolversTest {
             arguments = NoArguments
         }
 
-        assertEquals(userId.toString(), result.getId())
+        assertEquals(userId.toString(), result.getId().internalID)
         assertEquals("testuser", result.getUsername())
         assertEquals("test@example.com", result.getEmail())
     }
@@ -114,7 +114,7 @@ class CommentFieldResolversTest {
             arguments = NoArguments
         }
 
-        assertEquals(postId.toString(), result.getId())
+        assertEquals(postId.toString(), result.getId().internalID)
         assertEquals("Test Post", result.getTitle())
         assertEquals("Test content", result.getContent())
     }

@@ -14,6 +14,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.koin.core.context.GlobalContext
 import org.koin.dsl.module
 import viaduct.api.grts.*
+import viaduct.api.grts.Post as ViaductPost
 import viaduct.engine.SchemaFactory
 import viaduct.engine.api.ViaductSchema
 import viaduct.engine.runtime.execution.DefaultCoroutineInterop
@@ -56,7 +57,7 @@ class PostResolverTest : DefaultAbstractResolverTestBase() {
     fun `PostResolver returns post by id`() = runBlocking {
         val resolver = PostResolver(postRepository)
         val args = Query_Post_Arguments.Builder(context)
-            .id(postId.toString())
+            .id(context.globalIDFor(ViaductPost.Reflection, postId.toString()))
             .build()
 
         every { postRepository.findById(postId) } returns mockPost
@@ -69,7 +70,7 @@ class PostResolverTest : DefaultAbstractResolverTestBase() {
         )
 
         assertNotNull(result)
-        assertEquals(postId.toString(), result?.getId())
+        assertEquals(postId.toString(), result?.getId()?.internalID)
         assertEquals("Test Post", result?.getTitle())
     }
 
@@ -77,7 +78,7 @@ class PostResolverTest : DefaultAbstractResolverTestBase() {
     fun `PostResolver returns null when post not found`() = runBlocking {
         val resolver = PostResolver(postRepository)
         val args = Query_Post_Arguments.Builder(context)
-            .id(postId.toString())
+            .id(context.globalIDFor(ViaductPost.Reflection, postId.toString()))
             .build()
 
         every { postRepository.findById(postId) } returns null
