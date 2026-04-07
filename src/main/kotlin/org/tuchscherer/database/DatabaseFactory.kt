@@ -20,11 +20,4 @@ class DatabaseFactory(private val config: org.tuchscherer.config.DatabaseConfig)
             SchemaUtils.create(Users, Posts, Comments, Likes)
         }
     }
-
-    /**
-     * Get database connection.
-     */
-    fun getDatabase(): Database {
-        return Database.connect(config.url, driver = config.driver)
-    }
 }
