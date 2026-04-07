@@ -1,5 +1,5 @@
 [versions]
-viaduct = "0.25.0"
+viaduct = "0.27.0"
 ktor = "3.3.1"
 koin = "4.1.1"
 
@@ -8,6 +8,14 @@ viaduct-application = { id = "com.airbnb.viaduct.application-gradle-plugin", ver
 viaduct-module = { id = "com.airbnb.viaduct.module-gradle-plugin", version.ref = "viaduct" }
 
 [libraries]
+viaduct-tenant-api = { module = "com.airbnb.viaduct:tenant-api", version.ref = "viaduct" }
+viaduct-service-api = { module = "com.airbnb.viaduct:service-api", version.ref = "viaduct" }
+viaduct-service-wiring = { module = "com.airbnb.viaduct:service-wiring", version.ref = "viaduct" }
+viaduct-tenant-runtime = { module = "com.airbnb.viaduct:tenant-runtime", version.ref = "viaduct" }
+viaduct-engine-wiring = { module = "com.airbnb.viaduct:engine-wiring", version.ref = "viaduct" }
+viaduct-engine-runtime = { module = "com.airbnb.viaduct:engine-runtime", version.ref = "viaduct" }
+viaduct-engine-api = { module = "com.airbnb.viaduct:engine-api", version.ref = "viaduct" }
+
 ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
 ktor-server-netty = { module = "io.ktor:ktor-server-netty", version.ref = "ktor" }
 ktor-server-content-negotiation = { module = "io.ktor:ktor-server-content-negotiation", version.ref = "ktor" }
