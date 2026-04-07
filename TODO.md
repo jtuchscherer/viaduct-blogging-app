@@ -2,7 +2,7 @@
 
 **Status**: 🚀 In Progress — Phases 1–9 + 11–15 + 18 Complete, Phase 10 Next
 
-**Last Updated**: 2026-04-06 (Phases 12, 15a, 15 complete)
+**Last Updated**: 2026-04-07 (Added tech debt item for connection resolver testing)
 
 ## Test Statistics
 
@@ -43,6 +43,39 @@
 - **Phase 10**: Create Dockerfile for containerized deployment
 - **Phase 16**: Production database support — PostgreSQL/RDS, connection pooling, migrations
 - **Phase 17**: Production telemetry — structured logging, request tracing, metrics
+- **Tech Debt**: Investigate Viaduct 0.26.0 connection resolver testing API (see below)
+
+---
+
+## Tech Debt: Connection Resolver Testing API ⏳ TODO
+
+**Goal**: Replace the `runCatching` + relaxed mock workaround in `PostsConnectionResolver` tests with the proper Viaduct testing API.
+
+**Background**: Viaduct 0.26.0 release notes mention "extends ResolverTestBase to support ConnectionFieldExecutionContext, enabling unit testing of connection resolvers." Our current tests in `PostsResolverTest.kt` use a workaround:
+
+```kotlin
+val ctx = mockk<QueryResolvers.PostsConnection.Context>(relaxed = true)
+runCatching { resolver.resolve(ctx) }
+verify { postRepository.findPage(any(), any()) }
+```
+
+This works but has downsides:
+- Uses `relaxed = true` which can mask bugs (violates CLAUDE.md test quality principles)
+- Can't assert on the returned `PostsConnection` object
+- Relies on `runCatching` to swallow builder exceptions
+
+**Tasks**:
+- [ ] Investigate if `DefaultAbstractResolverTestBase` now has a `runConnectionFieldResolver` method or similar
+- [ ] Check Viaduct documentation/examples for the new connection testing pattern
+- [ ] If available, refactor `PostsConnectionResolver` tests to use the proper API
+- [ ] Remove the `runCatching` workaround and `relaxed = true` mock
+- [ ] Add assertions on the returned `PostsConnection` fields (edges, pageInfo, totalCount)
+
+**Key files**:
+- `src/test/kotlin/org/tuchscherer/resolvers/PostsResolverTest.kt` — tests to refactor
+- Viaduct 0.26.0 release: https://github.com/airbnb/viaduct/releases/tag/v0.26.0
+
+**Success Criteria**: `PostsConnectionResolver` tests use the official Viaduct testing API; no `relaxed = true` mocks; assertions verify the actual connection response structure.
 
 ---
 
