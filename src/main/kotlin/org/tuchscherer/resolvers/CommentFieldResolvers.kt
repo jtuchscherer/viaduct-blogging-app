@@ -19,13 +19,13 @@ class CommentAuthorResolver : CommentResolvers.Author() {
         val author = commentRepository.getAuthorForComment(commentId)
             ?: throw NotFoundException("Comment not found")
 
-        return ViaductUser.Builder(ctx)
-            .id(author.id.value.toString())
-            .username(author.username)
-            .email(author.email)
-            .name(author.name)
-            .createdAt(author.createdAt.toString())
-            .build()
+        return ViaductUser.of(ctx) {
+            id(author.id.value.toString())
+            username(author.username)
+            email(author.email)
+            name(author.name)
+            createdAt(author.createdAt.toString())
+        }
     }
 }
 
@@ -39,12 +39,12 @@ class CommentPostResolver : CommentResolvers.Post() {
         val post = commentRepository.getPostForComment(commentId)
             ?: throw NotFoundException("Comment not found")
 
-        return ViaductPost.Builder(ctx)
-            .id(post.id.value.toString())
-            .title(post.title)
-            .content(post.content)
-            .createdAt(post.createdAt.toString())
-            .updatedAt(post.updatedAt.toString())
-            .build()
+        return ViaductPost.of(ctx) {
+            id(post.id.value.toString())
+            title(post.title)
+            content(post.content)
+            createdAt(post.createdAt.toString())
+            updatedAt(post.updatedAt.toString())
+        }
     }
 }

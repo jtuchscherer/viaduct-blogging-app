@@ -27,12 +27,12 @@ class AdminStatsResolver(
     override suspend fun resolve(ctx: Context): AdminStats {
         requireAdmin(ctx.requestContext)
 
-        return AdminStats.Builder(ctx)
-            .userCount(userRepository.count().toInt())
-            .postCount(postRepository.count().toInt())
-            .commentCount(commentRepository.count().toInt())
-            .likeCount(likeRepository.count().toInt())
-            .build()
+        return AdminStats.of(ctx) {
+            userCount(userRepository.count().toInt())
+            postCount(postRepository.count().toInt())
+            commentCount(commentRepository.count().toInt())
+            likeCount(likeRepository.count().toInt())
+        }
     }
 }
 
@@ -47,13 +47,13 @@ class AdminUsersResolver(
         requireAdmin(ctx.requestContext)
 
         return userRepository.findAll().map { user ->
-            ViaductUser.Builder(ctx)
-                .id(user.id.value.toString())
-                .username(user.username)
-                .email(user.email)
-                .name(user.name)
-                .createdAt(user.createdAt.toString())
-                .build()
+            ViaductUser.of(ctx) {
+                id(user.id.value.toString())
+                username(user.username)
+                email(user.email)
+                name(user.name)
+                createdAt(user.createdAt.toString())
+            }
         }
     }
 }
@@ -70,13 +70,13 @@ class AdminUserResolver(
 
         val userId = UUID.fromString(ctx.arguments.id)
         return userRepository.findById(userId)?.let { user ->
-            ViaductUser.Builder(ctx)
-                .id(user.id.value.toString())
-                .username(user.username)
-                .email(user.email)
-                .name(user.name)
-                .createdAt(user.createdAt.toString())
-                .build()
+            ViaductUser.of(ctx) {
+                id(user.id.value.toString())
+                username(user.username)
+                email(user.email)
+                name(user.name)
+                createdAt(user.createdAt.toString())
+            }
         }
     }
 }
@@ -95,11 +95,11 @@ class AdminUserContentCountsResolver(
 
         val userId = UUID.fromString(ctx.arguments.userId)
 
-        return UserContentCounts.Builder(ctx)
-            .postCount(postRepository.countByAuthorId(userId).toInt())
-            .commentCount(commentRepository.countByUserId(userId).toInt())
-            .likeCount(likeRepository.countByUserId(userId).toInt())
-            .build()
+        return UserContentCounts.of(ctx) {
+            postCount(postRepository.countByAuthorId(userId).toInt())
+            commentCount(commentRepository.countByUserId(userId).toInt())
+            likeCount(likeRepository.countByUserId(userId).toInt())
+        }
     }
 }
 
@@ -114,13 +114,13 @@ class AdminPostsResolver(
         requireAdmin(ctx.requestContext)
 
         return postRepository.findAll().map { post ->
-            ViaductPost.Builder(ctx)
-                .id(post.id.value.toString())
-                .title(post.title)
-                .content(post.content)
-                .createdAt(post.createdAt.toString())
-                .updatedAt(post.updatedAt.toString())
-                .build()
+            ViaductPost.of(ctx) {
+                id(post.id.value.toString())
+                title(post.title)
+                content(post.content)
+                createdAt(post.createdAt.toString())
+                updatedAt(post.updatedAt.toString())
+            }
         }
     }
 }
@@ -137,13 +137,13 @@ class AdminPostResolver(
 
         val postId = UUID.fromString(ctx.arguments.id)
         return postRepository.findById(postId)?.let { post ->
-            ViaductPost.Builder(ctx)
-                .id(post.id.value.toString())
-                .title(post.title)
-                .content(post.content)
-                .createdAt(post.createdAt.toString())
-                .updatedAt(post.updatedAt.toString())
-                .build()
+            ViaductPost.of(ctx) {
+                id(post.id.value.toString())
+                title(post.title)
+                content(post.content)
+                createdAt(post.createdAt.toString())
+                updatedAt(post.updatedAt.toString())
+            }
         }
     }
 }
@@ -159,11 +159,11 @@ class AdminCommentsResolver(
         requireAdmin(ctx.requestContext)
 
         return commentRepository.findAll().map { comment ->
-            ViaductComment.Builder(ctx)
-                .id(comment.id.value.toString())
-                .content(comment.content)
-                .createdAt(comment.createdAt.toString())
-                .build()
+            ViaductComment.of(ctx) {
+                id(comment.id.value.toString())
+                content(comment.content)
+                createdAt(comment.createdAt.toString())
+            }
         }
     }
 }

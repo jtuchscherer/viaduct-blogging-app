@@ -19,13 +19,13 @@ class LikeUserResolver : LikeResolvers.User() {
         val user = likeRepository.getUserForLike(likeId)
             ?: throw NotFoundException("Like not found")
 
-        return ViaductUser.Builder(ctx)
-            .id(user.id.value.toString())
-            .username(user.username)
-            .email(user.email)
-            .name(user.name)
-            .createdAt(user.createdAt.toString())
-            .build()
+        return ViaductUser.of(ctx) {
+            id(user.id.value.toString())
+            username(user.username)
+            email(user.email)
+            name(user.name)
+            createdAt(user.createdAt.toString())
+        }
     }
 }
 
@@ -39,12 +39,12 @@ class LikePostResolver : LikeResolvers.Post() {
         val post = likeRepository.getPostForLike(likeId)
             ?: throw NotFoundException("Like not found")
 
-        return ViaductPost.Builder(ctx)
-            .id(post.id.value.toString())
-            .title(post.title)
-            .content(post.content)
-            .createdAt(post.createdAt.toString())
-            .updatedAt(post.updatedAt.toString())
-            .build()
+        return ViaductPost.of(ctx) {
+            id(post.id.value.toString())
+            title(post.title)
+            content(post.content)
+            createdAt(post.createdAt.toString())
+            updatedAt(post.updatedAt.toString())
+        }
     }
 }

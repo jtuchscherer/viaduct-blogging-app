@@ -18,10 +18,10 @@ class PostLikesResolver : PostResolvers.Likes() {
         val postId = UUID.fromString(postIdString)
 
         return likeRepository.findByPostId(postId).map { like ->
-            ViaductLike.Builder(ctx)
-                .id(like.id.value.toString())
-                .createdAt(like.createdAt.toString())
-                .build()
+            ViaductLike.of(ctx) {
+                id(like.id.value.toString())
+                createdAt(like.createdAt.toString())
+            }
         }
     }
 }

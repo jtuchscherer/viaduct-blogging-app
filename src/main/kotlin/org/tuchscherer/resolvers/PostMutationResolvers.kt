@@ -29,13 +29,13 @@ class CreatePostResolver(
             updatedAt = LocalDateTime.now()
         )
 
-        return ViaductPost.Builder(ctx)
-            .id(post.id.value.toString())
-            .title(post.title)
-            .content(post.content)
-            .createdAt(post.createdAt.toString())
-            .updatedAt(post.updatedAt.toString())
-            .build()
+        return ViaductPost.of(ctx) {
+            id(post.id.value.toString())
+            title(post.title)
+            content(post.content)
+            createdAt(post.createdAt.toString())
+            updatedAt(post.updatedAt.toString())
+        }
     }
 }
 
@@ -63,13 +63,13 @@ class UpdatePostResolver(
             content = input.content
         ) ?: throw NotFoundException("Failed to update post")
 
-        return ViaductPost.Builder(ctx)
-            .id(updatedPost.id.value.toString())
-            .title(updatedPost.title)
-            .content(updatedPost.content)
-            .createdAt(updatedPost.createdAt.toString())
-            .updatedAt(updatedPost.updatedAt.toString())
-            .build()
+        return ViaductPost.of(ctx) {
+            id(updatedPost.id.value.toString())
+            title(updatedPost.title)
+            content(updatedPost.content)
+            createdAt(updatedPost.createdAt.toString())
+            updatedAt(updatedPost.updatedAt.toString())
+        }
     }
 }
 

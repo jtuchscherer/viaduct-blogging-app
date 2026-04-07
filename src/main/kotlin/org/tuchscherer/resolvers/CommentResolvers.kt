@@ -35,11 +35,11 @@ class CreateCommentResolver(
             createdAt = LocalDateTime.now()
         )
 
-        return ViaductComment.Builder(ctx)
-            .id(comment.id.value.toString())
-            .content(comment.content)
-            .createdAt(comment.createdAt.toString())
-            .build()
+        return ViaductComment.of(ctx) {
+            id(comment.id.value.toString())
+            content(comment.content)
+            createdAt(comment.createdAt.toString())
+        }
     }
 }
 
@@ -70,11 +70,11 @@ class PostCommentsResolver(
         val postId = UUID.fromString(ctx.arguments.postId)
 
         return commentRepository.findByPostId(EntityID(postId, org.tuchscherer.database.Posts)).map { comment ->
-            ViaductComment.Builder(ctx)
-                .id(comment.id.value.toString())
-                .content(comment.content)
-                .createdAt(comment.createdAt.toString())
-                .build()
+            ViaductComment.of(ctx) {
+                id(comment.id.value.toString())
+                content(comment.content)
+                createdAt(comment.createdAt.toString())
+            }
         }
     }
 }

@@ -25,10 +25,10 @@ class LikePostMutationResolver(
         val existingLike = likeRepository.findByPostAndUser(post.id, user.id)
 
         if (existingLike != null) {
-            return ViaductLike.Builder(ctx)
-                .id(existingLike.id.value.toString())
-                .createdAt(existingLike.createdAt.toString())
-                .build()
+            return ViaductLike.of(ctx) {
+                id(existingLike.id.value.toString())
+                createdAt(existingLike.createdAt.toString())
+            }
         } else {
             val like = likeRepository.create(
                 postId = post.id,
@@ -36,10 +36,10 @@ class LikePostMutationResolver(
                 createdAt = LocalDateTime.now()
             )
 
-            return ViaductLike.Builder(ctx)
-                .id(like.id.value.toString())
-                .createdAt(like.createdAt.toString())
-                .build()
+            return ViaductLike.of(ctx) {
+                id(like.id.value.toString())
+                createdAt(like.createdAt.toString())
+            }
         }
     }
 }

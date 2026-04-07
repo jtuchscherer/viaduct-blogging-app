@@ -38,13 +38,13 @@ class AdminUpdateUserResolver(
             user.flush()
         }
 
-        return ViaductUser.Builder(ctx)
-            .id(user.id.value.toString())
-            .username(user.username)
-            .email(user.email)
-            .name(user.name)
-            .createdAt(user.createdAt.toString())
-            .build()
+        return ViaductUser.of(ctx) {
+            id(user.id.value.toString())
+            username(user.username)
+            email(user.email)
+            name(user.name)
+            createdAt(user.createdAt.toString())
+        }
     }
 }
 
@@ -72,12 +72,12 @@ class AdminDeleteUserResolver(
         val postsDeleted = postRepository.deleteByAuthorId(userId)
         val userDeleted = userRepository.delete(userId)
 
-        return AdminDeleteUserResult.Builder(ctx)
-            .success(userDeleted)
-            .postsDeleted(postsDeleted)
-            .commentsDeleted(commentsDeleted)
-            .likesDeleted(likesDeleted)
-            .build()
+        return AdminDeleteUserResult.of(ctx) {
+            success(userDeleted)
+            postsDeleted(postsDeleted)
+            commentsDeleted(commentsDeleted)
+            likesDeleted(likesDeleted)
+        }
     }
 }
 
@@ -102,13 +102,13 @@ class AdminUpdatePostResolver(
             content = input.content
         ) ?: throw NotFoundException("Post not found")
 
-        return ViaductPost.Builder(ctx)
-            .id(updatedPost.id.value.toString())
-            .title(updatedPost.title)
-            .content(updatedPost.content)
-            .createdAt(updatedPost.createdAt.toString())
-            .updatedAt(updatedPost.updatedAt.toString())
-            .build()
+        return ViaductPost.of(ctx) {
+            id(updatedPost.id.value.toString())
+            title(updatedPost.title)
+            content(updatedPost.content)
+            createdAt(updatedPost.createdAt.toString())
+            updatedAt(updatedPost.updatedAt.toString())
+        }
     }
 }
 

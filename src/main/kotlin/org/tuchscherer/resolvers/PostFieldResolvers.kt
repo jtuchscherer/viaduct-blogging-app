@@ -30,13 +30,13 @@ class PostAuthorResolver : PostResolvers.Author() {
     }
 
     private fun org.tuchscherer.database.User.toViaductUser(ctx: Context) =
-        ViaductUser.Builder(ctx)
-            .id(id.value.toString())
-            .username(username)
-            .email(email)
-            .name(name)
-            .createdAt(createdAt.toString())
-            .build()
+        ViaductUser.of(ctx) {
+            id(id.value.toString())
+            username(username)
+            email(email)
+            name(name)
+            createdAt(createdAt.toString())
+        }
 }
 
 @Resolver(objectValueFragment = "fragment _ on Post { id }")
@@ -48,11 +48,11 @@ class PostCommentsFieldResolver : PostResolvers.Comments() {
         val postId = UUID.fromString(postIdString)
 
         return commentRepository.findByPostId(postId).map { comment ->
-            ViaductComment.Builder(ctx)
-                .id(comment.id.value.toString())
-                .content(comment.content)
-                .createdAt(comment.createdAt.toString())
-                .build()
+            ViaductComment.of(ctx) {
+                id(comment.id.value.toString())
+                content(comment.content)
+                createdAt(comment.createdAt.toString())
+            }
         }
     }
 }

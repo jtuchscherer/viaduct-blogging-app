@@ -17,13 +17,13 @@ class PostsResolver(
 ) : QueryResolvers.Posts() {
     override suspend fun resolve(ctx: Context): List<ViaductPost> {
         return postRepository.findAll().map { post ->
-            ViaductPost.Builder(ctx)
-                .id(post.id.value.toString())
-                .title(post.title)
-                .content(post.content)
-                .createdAt(post.createdAt.toString())
-                .updatedAt(post.updatedAt.toString())
-                .build()
+            ViaductPost.of(ctx) {
+                id(post.id.value.toString())
+                title(post.title)
+                content(post.content)
+                createdAt(post.createdAt.toString())
+                updatedAt(post.updatedAt.toString())
+            }
         }
     }
 }
@@ -35,13 +35,13 @@ class PostResolver(
     override suspend fun resolve(ctx: Context): ViaductPost? {
         val postId = UUID.fromString(ctx.arguments.id)
         return postRepository.findById(postId)?.let { post ->
-            ViaductPost.Builder(ctx)
-                .id(post.id.value.toString())
-                .title(post.title)
-                .content(post.content)
-                .createdAt(post.createdAt.toString())
-                .updatedAt(post.updatedAt.toString())
-                .build()
+            ViaductPost.of(ctx) {
+                id(post.id.value.toString())
+                title(post.title)
+                content(post.content)
+                createdAt(post.createdAt.toString())
+                updatedAt(post.updatedAt.toString())
+            }
         }
     }
 }
@@ -67,35 +67,35 @@ class PostsConnectionResolver(
 
         val edges = posts.mapIndexed { i, post ->
             val cursor = encodeCursor(offsetLimit.offset + i)
-            val node = ViaductPost.Builder(ctx)
-                .id(post.id.value.toString())
-                .title(post.title)
-                .content(post.content)
-                .createdAt(post.createdAt.toString())
-                .updatedAt(post.updatedAt.toString())
-                .build()
-            PostEdge.Builder(ctx)
-                .node(node)
-                .cursor(cursor)
-                .build()
+            val node = ViaductPost.of(ctx) {
+                id(post.id.value.toString())
+                title(post.title)
+                content(post.content)
+                createdAt(post.createdAt.toString())
+                updatedAt(post.updatedAt.toString())
+            }
+            PostEdge.of(ctx) {
+                node(node)
+                cursor(cursor)
+            }
         }
 
         val hasNextPage = (offsetLimit.offset + posts.size) < totalCount
         val startCursor = if (edges.isNotEmpty()) encodeCursor(offsetLimit.offset) else null
         val endCursor = if (edges.isNotEmpty()) encodeCursor(offsetLimit.offset + edges.size - 1) else null
 
-        val pageInfo = PageInfo.Builder(ctx)
-            .hasNextPage(hasNextPage)
-            .hasPreviousPage(offsetLimit.offset > 0)
-            .startCursor(startCursor)
-            .endCursor(endCursor)
-            .build()
+        val pageInfo = PageInfo.of(ctx) {
+            hasNextPage(hasNextPage)
+            hasPreviousPage(offsetLimit.offset > 0)
+            startCursor(startCursor)
+            endCursor(endCursor)
+        }
 
-        return PostsConnection.Builder(ctx)
-            .totalCount(totalCount)
-            .edges(edges)
-            .pageInfo(pageInfo)
-            .build()
+        return PostsConnection.of(ctx) {
+            totalCount(totalCount)
+            edges(edges)
+            pageInfo(pageInfo)
+        }
     }
 }
 
@@ -107,13 +107,13 @@ class MyPostsResolver(
         val user = requireAuth(ctx.requestContext)
 
         return postRepository.findByAuthorId(user.id).map { post ->
-            ViaductPost.Builder(ctx)
-                .id(post.id.value.toString())
-                .title(post.title)
-                .content(post.content)
-                .createdAt(post.createdAt.toString())
-                .updatedAt(post.updatedAt.toString())
-                .build()
+            ViaductPost.of(ctx) {
+                id(post.id.value.toString())
+                title(post.title)
+                content(post.content)
+                createdAt(post.createdAt.toString())
+                updatedAt(post.updatedAt.toString())
+            }
         }
     }
 }
