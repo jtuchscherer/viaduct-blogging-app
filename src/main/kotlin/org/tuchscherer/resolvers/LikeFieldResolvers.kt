@@ -1,6 +1,7 @@
 package org.tuchscherer.viadapp.resolvers
 
 import org.tuchscherer.auth.RequestContext
+import org.tuchscherer.database.repositories.CommentRepository
 import org.tuchscherer.database.repositories.LikeRepository
 import org.tuchscherer.viadapp.resolvers.resolverbases.PostResolvers
 import org.koin.java.KoinJavaComponent.inject
@@ -53,5 +54,17 @@ class PostIsLikedByMeResolver : PostResolvers.IsLikedByMe() {
         }
 
         return likeRepository.existsByPostAndUser(postId, user.id.value)
+    }
+}
+
+@Resolver(objectValueFragment = "fragment _ on Post { id }")
+class PostCommentCountResolver : PostResolvers.CommentCount() {
+    private val commentRepository: CommentRepository by inject(CommentRepository::class.java)
+
+    override suspend fun resolve(ctx: Context): Int {
+        val postIdString = ctx.objectValue.getId()
+        val postId = UUID.fromString(postIdString)
+
+        return commentRepository.countByPostId(postId).toInt()
     }
 }

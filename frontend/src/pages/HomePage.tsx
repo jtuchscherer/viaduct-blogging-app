@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { gql } from '@apollo/client';
 import { useQuery } from '@apollo/client/react';
 import { Link } from 'react-router-dom';
-import { isContentEmpty, getExcerpt } from '../utils/content';
+import { isContentEmpty, getHtmlPreview } from '../utils/content';
 import type { Post } from '../types';
 
 const PAGE_SIZE = 10;
@@ -27,6 +27,7 @@ const GET_POSTS_CONNECTION = gql`
           }
           createdAt
           likeCount
+          commentCount
         }
       }
     }
@@ -118,10 +119,18 @@ export default function HomePage() {
                   <span className="post-date">{new Date(post.createdAt).toLocaleDateString()}</span>
                 </div>
                 {!isContentEmpty(post.content) && (
-                  <p className="post-excerpt">{getExcerpt(post.content)}</p>
+                  <div
+                    className="post-preview"
+                    dangerouslySetInnerHTML={{ __html: getHtmlPreview(post.content) }}
+                  />
                 )}
                 <div className="post-footer">
-                  <span className="like-count">❤️ {post.likeCount}</span>
+                  <div className="post-stats">
+                    <span className="like-count">❤️ {post.likeCount}</span>
+                    <Link to={`/post/${post.id}#comments-section`} className="comment-count">
+                      💬 {post.commentCount}
+                    </Link>
+                  </div>
                   <Link to={`/post/${post.id}`} className="read-more">
                     Read more →
                   </Link>

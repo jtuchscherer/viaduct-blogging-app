@@ -62,6 +62,10 @@ class ExposedCommentRepository : CommentRepository {
         Comment.find { Comments.postId eq postId }.count()
     }
 
+    override fun countByPostId(postId: UUID): Long = transaction {
+        Comment.find { Comments.postId eq postId }.count()
+    }
+
     override fun getAuthorForComment(commentId: UUID): org.tuchscherer.database.User? = transaction {
         Comment.findById(commentId)?.author
     }

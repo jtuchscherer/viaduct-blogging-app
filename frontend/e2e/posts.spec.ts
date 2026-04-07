@@ -164,8 +164,8 @@ test.describe('Blog Posts', () => {
   });
 
   // Regression: MyPostsPage used post.content.substring() which exposed raw HTML
-  // tags in excerpts for rich-text posts. Fixed to use getExcerpt() from utils/content.ts.
-  test('My Posts page excerpts do not show raw HTML tags for rich-text content', async ({ page }) => {
+  // tags in excerpts for rich-text posts. Fixed to use getHtmlPreview() from utils/content.ts.
+  test('My Posts page previews render rich-text content correctly', async ({ page }) => {
     const creds = await registerAndLogin(page, `htmlexcerpt_${Date.now()}`);
     await createPostViaAPI(
       page,
@@ -176,12 +176,12 @@ test.describe('Blog Posts', () => {
 
     await page.goto('/my-posts');
 
-    const excerpt = page.locator('.post-excerpt').first();
-    await expect(excerpt).toBeVisible();
+    const preview = page.locator('.post-preview').first();
+    await expect(preview).toBeVisible();
     // Plain text must be visible
-    await expect(excerpt).toContainText('Bold text');
-    // Raw HTML tags must NOT appear as text
-    const text = await excerpt.textContent();
+    await expect(preview).toContainText('Bold text');
+    // Raw HTML tags must NOT appear as text (they should be rendered as HTML)
+    const text = await preview.textContent();
     expect(text).not.toContain('<strong>');
     expect(text).not.toContain('<p>');
   });

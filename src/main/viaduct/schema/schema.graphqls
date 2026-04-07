@@ -15,6 +15,7 @@ type Post {
   content: String!
   author: User! @resolver
   comments: [Comment!]! @resolver
+  commentCount: Int! @resolver
   likes: [Like!]! @resolver
   likeCount: Int! @resolver
   isLikedByMe: Boolean! @resolver

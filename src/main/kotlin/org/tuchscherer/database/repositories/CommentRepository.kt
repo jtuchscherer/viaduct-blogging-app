@@ -50,9 +50,14 @@ interface CommentRepository {
     fun delete(id: UUID): Boolean
 
     /**
-     * Count comments for a post.
+     * Count comments for a post by EntityID.
      */
     fun countByPostId(postId: EntityID<UUID>): Long
+
+    /**
+     * Count comments for a post by UUID.
+     */
+    fun countByPostId(postId: UUID): Long
 
     /**
      * Get the author (User) for a comment by comment ID.

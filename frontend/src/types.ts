@@ -18,4 +18,5 @@ export interface Post {
   author: Author;
   createdAt: string;
   likeCount: number;
+  commentCount: number;
 }

@@ -10,7 +10,7 @@ Findings from a Clean Code / SOLID / security review of the codebase. These are 
 
 - [x] **Duplicate username check + layer violation in `/auth/register`** (`GraphQLServer.kt:175-195`): Removed raw Exposed DAO query; endpoint now delegates entirely to `authService.createUser()`.
 - [x] **Crash on deleted user in `/auth/me`** (`GraphQLServer.kt:244-249`): Replaced `principal!!` + `.first()` with safe access + `firstOrNull()`, returning 401/404 instead of crashing.
-- [x] **MyPostsPage shows raw HTML tags in excerpts** (`MyPostsPage.tsx:80-82`): Replaced `post.content.substring()` with `getExcerpt()` from `utils/content.ts`; moved helper out of `HomePage.tsx` into the shared util.
+- [x] **MyPostsPage shows raw HTML tags in excerpts** (`MyPostsPage.tsx:80-82`): Replaced `post.content.substring()` with `getHtmlPreview()` from `utils/content.ts` to render rich-text previews with proper formatting.
 
 ---
 

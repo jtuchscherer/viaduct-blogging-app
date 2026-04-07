@@ -1,7 +1,7 @@
 import { gql } from '@apollo/client';
 import { useQuery, useMutation } from '@apollo/client/react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useState, type FormEvent } from 'react';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
+import { useState, useEffect, type FormEvent } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import DOMPurify from 'dompurify';
 import type { Author, Comment } from '../types';
@@ -110,11 +110,22 @@ export default function PostDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [commentContent, setCommentContent] = useState('');
 
   const { loading, error, data, refetch } = useQuery<PostData>(GET_POST, {
     variables: { id },
   });
+
+  // Scroll to hash anchor after content loads
+  useEffect(() => {
+    if (!loading && data && location.hash) {
+      const element = document.getElementById(location.hash.slice(1));
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  }, [loading, data, location.hash]);
 
   const [likePost] = useMutation(LIKE_POST, {
     onCompleted: () => refetch(),
@@ -211,7 +222,7 @@ export default function PostDetailPage() {
         </div>
 
         <section className="comments-section">
-          <h2>Comments ({post.comments.length})</h2>
+          <h2 id="comments-section">Comments ({post.comments.length})</h2>
 
           {isAuthenticated && (
             <form onSubmit={handleCommentSubmit} className="comment-form">

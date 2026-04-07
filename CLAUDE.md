@@ -109,7 +109,7 @@ Viaduct instantiates resolvers via `KoinTenantCodeInjector`, which delegates to 
 
 ### Frontend conventions
 - **Shared types**: Define TypeScript interfaces used across pages in `frontend/src/types.ts`, not inline in each page
-- **Shared utilities**: Reusable functions like `getExcerpt()` belong in `frontend/src/utils/`, not duplicated per page
+- **Shared utilities**: Reusable functions like `getHtmlPreview()` belong in `frontend/src/utils/`, not duplicated per page
 - **Environment variables**: Use Vite env vars (`import.meta.env.VITE_API_URL`) for backend URLs; never hardcode `localhost:8080`
 - **GraphQL fragments**: Use fragments for shared field sets (e.g., post fields) to avoid duplication across queries
 

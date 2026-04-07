@@ -2,7 +2,7 @@ import { gql } from '@apollo/client';
 import { useQuery } from '@apollo/client/react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { getExcerpt } from '../utils/content';
+import { getHtmlPreview } from '../utils/content';
 
 const GET_MY_POSTS = gql`
   query GetMyPosts {
@@ -12,6 +12,7 @@ const GET_MY_POSTS = gql`
       content
       createdAt
       likeCount
+      commentCount
     }
   }
 `;
@@ -22,6 +23,7 @@ interface Post {
   content: string;
   createdAt: string;
   likeCount: number;
+  commentCount: number;
 }
 
 interface MyPostsData {
@@ -77,9 +79,17 @@ export default function MyPostsPage() {
                 <span className="post-author">by {user?.name}</span>
                 <span className="post-date">{new Date(post.createdAt).toLocaleDateString()}</span>
               </div>
-              <p className="post-excerpt">{getExcerpt(post.content)}</p>
+              <div
+                className="post-preview"
+                dangerouslySetInnerHTML={{ __html: getHtmlPreview(post.content) }}
+              />
               <div className="post-footer">
-                <span className="like-count">❤️ {post.likeCount}</span>
+                <div className="post-stats">
+                  <span className="like-count">❤️ {post.likeCount}</span>
+                  <Link to={`/post/${post.id}#comments-section`} className="comment-count">
+                    💬 {post.commentCount}
+                  </Link>
+                </div>
                 <div className="post-actions-inline">
                   <Link to={`/post/${post.id}`} className="read-more">
                     View

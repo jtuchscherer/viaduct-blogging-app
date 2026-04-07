@@ -69,6 +69,7 @@ val resolverModule = module {
     // Post field resolvers
     singleOf(::PostAuthorResolver)
     singleOf(::PostCommentsFieldResolver)
+    singleOf(::PostCommentCountResolver)
     singleOf(::PostLikesResolver)
     singleOf(::PostLikeCountResolver)
     singleOf(::PostIsLikedByMeResolver)
