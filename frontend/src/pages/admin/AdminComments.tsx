@@ -5,18 +5,20 @@ import { useState } from 'react';
 
 const ADMIN_COMMENTS = gql`
   query AdminComments {
-    adminComments {
-      id
-      content
-      author {
+    admin {
+      comments {
         id
-        username
+        content
+        author {
+          id
+          username
+        }
+        post {
+          id
+          title
+        }
+        createdAt
       }
-      post {
-        id
-        title
-      }
-      createdAt
     }
   }
 `;
@@ -42,7 +44,7 @@ interface Comment {
 }
 
 interface AdminCommentsData {
-  adminComments: Comment[];
+  admin: { comments: Comment[] };
 }
 
 export default function AdminComments() {
@@ -64,7 +66,7 @@ export default function AdminComments() {
   if (loading) return <div className="loading-spinner">Loading...</div>;
   if (error) return <div className="error-message">Error: {error.message}</div>;
 
-  const comments: Comment[] = data?.adminComments ?? [];
+  const comments: Comment[] = data?.admin?.comments ?? [];
 
   return (
     <div>

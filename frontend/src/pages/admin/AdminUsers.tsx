@@ -5,23 +5,27 @@ import { useState } from 'react';
 
 const ADMIN_USERS = gql`
   query AdminUsers {
-    adminUsers {
-      id
-      username
-      email
-      name
-      isAdmin
-      createdAt
+    admin {
+      users {
+        id
+        username
+        email
+        name
+        isAdmin
+        createdAt
+      }
     }
   }
 `;
 
 const ADMIN_USER_CONTENT_COUNTS = gql`
   query AdminUserContentCounts($userId: ID!) {
-    adminUserContentCounts(userId: $userId) {
-      postCount
-      commentCount
-      likeCount
+    admin {
+      userContentCounts(userId: $userId) {
+        postCount
+        commentCount
+        likeCount
+      }
     }
   }
 `;
@@ -47,7 +51,7 @@ interface User {
 }
 
 interface AdminUsersData {
-  adminUsers: User[];
+  admin: { users: User[] };
 }
 
 interface ContentCounts {
@@ -57,7 +61,7 @@ interface ContentCounts {
 }
 
 interface AdminUserContentCountsData {
-  adminUserContentCounts: ContentCounts;
+  admin: { userContentCounts: ContentCounts };
 }
 
 export default function AdminUsers() {
@@ -75,7 +79,7 @@ export default function AdminUsers() {
     setLoadingCounts(true);
     try {
       const result = await fetchContentCounts({ userId: user.id });
-      setContentCounts(result.data?.adminUserContentCounts ?? null);
+      setContentCounts(result.data?.admin?.userContentCounts ?? null);
     } catch {
       setContentCounts({ postCount: 0, commentCount: 0, likeCount: 0 });
     }
@@ -97,7 +101,7 @@ export default function AdminUsers() {
   if (loading) return <div className="loading-spinner">Loading...</div>;
   if (error) return <div className="error-message">Error: {error.message}</div>;
 
-  const users: User[] = data?.adminUsers ?? [];
+  const users: User[] = data?.admin?.users ?? [];
 
   return (
     <div>

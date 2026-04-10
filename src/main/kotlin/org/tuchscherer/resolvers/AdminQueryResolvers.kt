@@ -5,7 +5,7 @@ import org.tuchscherer.database.repositories.CommentRepository
 import org.tuchscherer.database.repositories.LikeRepository
 import org.tuchscherer.database.repositories.PostRepository
 import org.tuchscherer.database.repositories.UserRepository
-import org.tuchscherer.viadapp.resolvers.resolverbases.QueryResolvers
+import org.tuchscherer.viadapp.resolvers.resolverbases.AdminQueriesResolvers
 import viaduct.api.Resolver
 import viaduct.api.grts.AdminStats
 import viaduct.api.grts.Comment as ViaductComment
@@ -15,7 +15,7 @@ import viaduct.api.grts.UserContentCounts
 import java.util.*
 
 /**
- * Resolver for adminStats query - returns system-wide statistics.
+ * Resolver for admin.stats query - returns system-wide statistics.
  */
 @Resolver
 class AdminStatsResolver(
@@ -23,7 +23,7 @@ class AdminStatsResolver(
     private val postRepository: PostRepository,
     private val commentRepository: CommentRepository,
     private val likeRepository: LikeRepository
-) : QueryResolvers.AdminStats() {
+) : AdminQueriesResolvers.Stats() {
     override suspend fun resolve(ctx: Context): AdminStats {
         requireAdmin(ctx.requestContext)
 
@@ -37,12 +37,12 @@ class AdminStatsResolver(
 }
 
 /**
- * Resolver for adminUsers query - returns all users.
+ * Resolver for admin.users query - returns all users.
  */
 @Resolver
 class AdminUsersResolver(
     private val userRepository: UserRepository
-) : QueryResolvers.AdminUsers() {
+) : AdminQueriesResolvers.Users() {
     override suspend fun resolve(ctx: Context): List<ViaductUser> {
         requireAdmin(ctx.requestContext)
 
@@ -59,12 +59,12 @@ class AdminUsersResolver(
 }
 
 /**
- * Resolver for adminUser query - returns a single user by ID.
+ * Resolver for admin.user query - returns a single user by ID.
  */
 @Resolver
 class AdminUserResolver(
     private val userRepository: UserRepository
-) : QueryResolvers.AdminUser() {
+) : AdminQueriesResolvers.User() {
     override suspend fun resolve(ctx: Context): ViaductUser? {
         requireAdmin(ctx.requestContext)
 
@@ -82,14 +82,14 @@ class AdminUserResolver(
 }
 
 /**
- * Resolver for adminUserContentCounts query - returns content counts for a user.
+ * Resolver for admin.userContentCounts query - returns content counts for a user.
  */
 @Resolver
 class AdminUserContentCountsResolver(
     private val postRepository: PostRepository,
     private val commentRepository: CommentRepository,
     private val likeRepository: LikeRepository
-) : QueryResolvers.AdminUserContentCounts() {
+) : AdminQueriesResolvers.UserContentCounts() {
     override suspend fun resolve(ctx: Context): UserContentCounts {
         requireAdmin(ctx.requestContext)
 
@@ -104,12 +104,12 @@ class AdminUserContentCountsResolver(
 }
 
 /**
- * Resolver for adminPosts query - returns all posts.
+ * Resolver for admin.posts query - returns all posts.
  */
 @Resolver
 class AdminPostsResolver(
     private val postRepository: PostRepository
-) : QueryResolvers.AdminPosts() {
+) : AdminQueriesResolvers.Posts() {
     override suspend fun resolve(ctx: Context): List<ViaductPost> {
         requireAdmin(ctx.requestContext)
 
@@ -126,12 +126,12 @@ class AdminPostsResolver(
 }
 
 /**
- * Resolver for adminPost query - returns a single post by ID.
+ * Resolver for admin.post query - returns a single post by ID.
  */
 @Resolver
 class AdminPostResolver(
     private val postRepository: PostRepository
-) : QueryResolvers.AdminPost() {
+) : AdminQueriesResolvers.Post() {
     override suspend fun resolve(ctx: Context): ViaductPost? {
         requireAdmin(ctx.requestContext)
 
@@ -149,12 +149,12 @@ class AdminPostResolver(
 }
 
 /**
- * Resolver for adminComments query - returns all comments.
+ * Resolver for admin.comments query - returns all comments.
  */
 @Resolver
 class AdminCommentsResolver(
     private val commentRepository: CommentRepository
-) : QueryResolvers.AdminComments() {
+) : AdminQueriesResolvers.Comments() {
     override suspend fun resolve(ctx: Context): List<ViaductComment> {
         requireAdmin(ctx.requestContext)
 

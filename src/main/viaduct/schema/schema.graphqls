@@ -104,6 +104,17 @@ input AdminUpdatePostInput {
   content: String
 }
 
+# Namespace type grouping all admin queries
+type AdminQueries @namespaceType {
+  stats: AdminStats! @resolver
+  users: [User!]! @resolver
+  user(id: ID! @idOf(type: "User")): User @resolver
+  userContentCounts(userId: ID! @idOf(type: "User")): UserContentCounts! @resolver
+  posts: [Post!]! @resolver
+  post(id: ID! @idOf(type: "Post")): Post @resolver
+  comments: [Comment!]! @resolver
+}
+
 # Extend the Query type for read operations
 extend type Query {
   # Get all posts (public)
@@ -124,14 +135,8 @@ extend type Query {
   # Relay-style cursor pagination for posts (public)
   postsConnection(first: Int, after: String): PostsConnection @resolver
 
-  # Admin queries (require admin role)
-  adminStats: AdminStats! @resolver
-  adminUsers: [User!]! @resolver
-  adminUser(id: ID! @idOf(type: "User")): User @resolver
-  adminUserContentCounts(userId: ID! @idOf(type: "User")): UserContentCounts! @resolver
-  adminPosts: [Post!]! @resolver
-  adminPost(id: ID! @idOf(type: "Post")): Post @resolver
-  adminComments: [Comment!]! @resolver
+  # Admin queries (requires admin role)
+  admin: AdminQueries
 }
 
 # Extend mutations for write operations

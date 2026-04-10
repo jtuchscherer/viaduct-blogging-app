@@ -5,13 +5,15 @@ import { useState, useEffect } from 'react';
 
 const ADMIN_USER = gql`
   query AdminUser($id: ID!) {
-    adminUser(id: $id) {
-      id
-      username
-      email
-      name
-      isAdmin
-      createdAt
+    admin {
+      user(id: $id) {
+        id
+        username
+        email
+        name
+        isAdmin
+        createdAt
+      }
     }
   }
 `;
@@ -38,7 +40,7 @@ interface User {
 }
 
 interface AdminUserData {
-  adminUser: User | null;
+  admin: { user: User | null };
 }
 
 export default function AdminUserEdit() {
@@ -54,10 +56,10 @@ export default function AdminUserEdit() {
   const [saveError, setSaveError] = useState('');
 
   useEffect(() => {
-    if (data?.adminUser) {
-      setName(data.adminUser.name);
-      setEmail(data.adminUser.email);
-      setIsAdmin(data.adminUser.isAdmin);
+    if (data?.admin?.user) {
+      setName(data.admin.user.name);
+      setEmail(data.admin.user.email);
+      setIsAdmin(data.admin.user.isAdmin);
     }
   }, [data]);
 
@@ -87,9 +89,9 @@ export default function AdminUserEdit() {
 
   if (loading) return <div className="loading-spinner">Loading...</div>;
   if (error) return <div className="error-message">Error: {error.message}</div>;
-  if (!data?.adminUser) return <div className="error-message">User not found</div>;
+  if (!data?.admin?.user) return <div className="error-message">User not found</div>;
 
-  const user = data.adminUser;
+  const user = data.admin.user;
 
   return (
     <div>

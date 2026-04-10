@@ -6,16 +6,18 @@ import RichTextEditor from '../../components/RichTextEditor';
 
 const ADMIN_POST = gql`
   query AdminPost($id: ID!) {
-    adminPost(id: $id) {
-      id
-      title
-      content
-      author {
+    admin {
+      post(id: $id) {
         id
-        username
+        title
+        content
+        author {
+          id
+          username
+        }
+        createdAt
+        updatedAt
       }
-      createdAt
-      updatedAt
     }
   }
 `;
@@ -44,7 +46,7 @@ interface Post {
 }
 
 interface AdminPostData {
-  adminPost: Post | null;
+  admin: { post: Post | null };
 }
 
 export default function AdminPostEdit() {
@@ -60,9 +62,9 @@ export default function AdminPostEdit() {
   const [saveError, setSaveError] = useState('');
 
   // Initialize form when data loads
-  if (data?.adminPost && !initialized) {
-    setTitle(data.adminPost.title);
-    setContent(data.adminPost.content);
+  if (data?.admin?.post && !initialized) {
+    setTitle(data.admin.post.title);
+    setContent(data.admin.post.content);
     setInitialized(true);
   }
 
@@ -91,9 +93,9 @@ export default function AdminPostEdit() {
 
   if (loading) return <div className="loading-spinner">Loading...</div>;
   if (error) return <div className="error-message">Error: {error.message}</div>;
-  if (!data?.adminPost) return <div className="error-message">Post not found</div>;
+  if (!data?.admin?.post) return <div className="error-message">Post not found</div>;
 
-  const post = data.adminPost;
+  const post = data.admin.post;
 
   return (
     <div>

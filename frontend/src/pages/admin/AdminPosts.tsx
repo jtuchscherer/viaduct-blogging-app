@@ -5,15 +5,17 @@ import { useState } from 'react';
 
 const ADMIN_POSTS = gql`
   query AdminPosts {
-    adminPosts {
-      id
-      title
-      author {
+    admin {
+      posts {
         id
-        username
+        title
+        author {
+          id
+          username
+        }
+        createdAt
+        updatedAt
       }
-      createdAt
-      updatedAt
     }
   }
 `;
@@ -36,7 +38,7 @@ interface Post {
 }
 
 interface AdminPostsData {
-  adminPosts: Post[];
+  admin: { posts: Post[] };
 }
 
 export default function AdminPosts() {
@@ -58,7 +60,7 @@ export default function AdminPosts() {
   if (loading) return <div className="loading-spinner">Loading...</div>;
   if (error) return <div className="error-message">Error: {error.message}</div>;
 
-  const posts: Post[] = data?.adminPosts ?? [];
+  const posts: Post[] = data?.admin?.posts ?? [];
 
   return (
     <div>

@@ -4,11 +4,13 @@ import { Link } from 'react-router-dom';
 
 const ADMIN_STATS = gql`
   query AdminStats {
-    adminStats {
-      userCount
-      postCount
-      commentCount
-      likeCount
+    admin {
+      stats {
+        userCount
+        postCount
+        commentCount
+        likeCount
+      }
     }
   }
 `;
@@ -21,7 +23,7 @@ interface AdminStats {
 }
 
 interface AdminStatsData {
-  adminStats: AdminStats;
+  admin: { stats: AdminStats };
 }
 
 export default function AdminDashboard() {
@@ -30,7 +32,7 @@ export default function AdminDashboard() {
   if (loading) return <div className="loading-spinner">Loading...</div>;
   if (error) return <div className="error-message">Error: {error.message}</div>;
 
-  const stats = data?.adminStats;
+  const stats = data?.admin?.stats;
 
   return (
     <div>
