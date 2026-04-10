@@ -1,4 +1,5 @@
 @file:Suppress("DEPRECATION")
+@file:OptIn(viaduct.apiannotations.InternalApi::class, viaduct.apiannotations.ExperimentalApi::class)
 
 package org.tuchscherer.resolvers
 
@@ -14,7 +15,10 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.koin.core.context.GlobalContext
 import org.koin.dsl.module
+import viaduct.api.connection.OffsetLimit
 import viaduct.api.grts.*
+import viaduct.api.internal.InternalContext
+import viaduct.api.mocks.MockConnectionFieldExecutionContext
 import viaduct.api.types.Arguments.NoArguments
 import viaduct.engine.SchemaFactory
 import viaduct.engine.api.ViaductSchema
@@ -88,37 +92,54 @@ class PostsResolverTest : DefaultAbstractResolverTestBase() {
         assertEquals(0, result.size)
     }
 
-    // ── PostsConnectionResolver unit tests (Phase 15a) ────────────────────────
-    // ConnectionFieldExecutionContext is not compatible with DefaultAbstractResolverTestBase,
-    // so we call resolve() directly with a relaxed mock context and use runCatching to tolerate
-    // the builder failure. The relaxed mock's toOffsetLimit() returns OffsetLimit(0,0) which is
-    // fine — these tests verify the repository contract (which methods are called), not the
-    // argument parsing which is Viaduct's responsibility.
+    // ── PostsConnectionResolver unit tests ───────────────────────────────────
+    // Uses MockConnectionFieldExecutionContext (Viaduct test-fixtures) so we get a
+    // real InternalContext-backed context. No relaxed mocks, no runCatching — resolve()
+    // completes successfully and we can assert on the returned PostsConnection.
+
+    private fun buildConnectionContext(
+        first: Int = PostsConnectionResolver.DEFAULT_PAGE_SIZE,
+        offset: Int = 0
+    ): QueryResolvers.PostsConnection.Context {
+        val args = mockk<Query_PostsConnection_Arguments>()
+        every { args.toOffsetLimit(PostsConnectionResolver.DEFAULT_PAGE_SIZE) } returns
+            OffsetLimit(offset, first, false)
+        val selections = ossSelectionSetFactory.selectionsOn(PostsConnection.Reflection, "postsConnection", emptyMap())
+        val mockConnCtx = MockConnectionFieldExecutionContext<Query, Query, Query_PostsConnection_Arguments, PostsConnection>(
+            objectValue = Query.Builder(context).build(),
+            queryValue = Query.Builder(context).build(),
+            arguments = args,
+            requestContext = null,
+            selectionsValue = selections,
+            internalContext = context as InternalContext,
+            queryResults = buildContextQueryMap(emptyList()),
+            selectionSetFactory = ossSelectionSetFactory
+        )
+        return QueryResolvers.PostsConnection.Context(mockConnCtx)
+    }
 
     @Test
-    fun `PostsConnectionResolver calls findPage and count`() = runBlocking {
+    fun `PostsConnectionResolver returns connection with correct totalCount`() = runBlocking {
         val resolver = PostsConnectionResolver(postRepository)
         every { postRepository.findPage(any(), any()) } returns listOf(mockPost)
         every { postRepository.count() } returns 1L
 
-        val ctx = mockk<QueryResolvers.PostsConnection.Context>(relaxed = true)
-        runCatching { resolver.resolve(ctx) }
+        val result = resolver.resolve(buildConnectionContext())
 
-        verify { postRepository.findPage(any(), any()) }
-        verify { postRepository.count() }
+        assertNotNull(result)
+        assertEquals(1, result!!.getTotalCount())
     }
 
     @Test
-    fun `PostsConnectionResolver calls findPage with empty repository`() = runBlocking {
+    fun `PostsConnectionResolver returns empty connection for empty repository`() = runBlocking {
         val resolver = PostsConnectionResolver(postRepository)
         every { postRepository.findPage(any(), any()) } returns emptyList()
         every { postRepository.count() } returns 0L
 
-        val ctx = mockk<QueryResolvers.PostsConnection.Context>(relaxed = true)
-        runCatching { resolver.resolve(ctx) }
+        val result = resolver.resolve(buildConnectionContext())
 
-        verify { postRepository.findPage(any(), any()) }
-        verify { postRepository.count() }
+        assertNotNull(result)
+        assertEquals(0, result!!.getTotalCount())
     }
 
     @Test
@@ -127,8 +148,7 @@ class PostsResolverTest : DefaultAbstractResolverTestBase() {
         every { postRepository.findPage(any(), any()) } returns listOf(mockPost)
         every { postRepository.count() } returns 1L
 
-        val ctx = mockk<QueryResolvers.PostsConnection.Context>(relaxed = true)
-        runCatching { resolver.resolve(ctx) }
+        resolver.resolve(buildConnectionContext())
 
         verify(exactly = 0) { postRepository.findAll() }
     }
