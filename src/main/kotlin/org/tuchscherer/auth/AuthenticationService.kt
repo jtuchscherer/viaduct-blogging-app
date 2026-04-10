@@ -16,6 +16,13 @@ class AuthenticationService(
      * Throws exception if username already exists.
      */
     fun createUser(username: String, email: String, name: String, password: String): User {
+        require(username.isNotBlank()) { "Username cannot be blank" }
+        require(username.length <= 100) { "Username cannot exceed 100 characters" }
+        require(email.isNotBlank()) { "Email cannot be blank" }
+        require(email.length <= 255) { "Email cannot exceed 255 characters" }
+        require(name.isNotBlank()) { "Name cannot be blank" }
+        require(name.length <= 255) { "Name cannot exceed 255 characters" }
+
         if (userRepository.existsByUsername(username)) {
             throw UserAlreadyExistsException("Username '$username' already exists")
         }

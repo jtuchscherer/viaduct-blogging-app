@@ -1,6 +1,6 @@
 # Chores: Code Quality Review Findings
 
-**Last Updated**: 2026-04-09
+**Last Updated**: 2026-04-10
 
 Findings from a Clean Code / SOLID / security review of the codebase. These are tech-debt items and quality improvements — not feature work.
 
@@ -36,6 +36,6 @@ Findings from a Clean Code / SOLID / security review of the codebase. These are 
 ## Security (Medium Priority)
 
 - [x] **No input validation on mutations (blank check)** — `CreatePost`, `UpdatePost`, and `CreateComment` now reject blank title/content with a descriptive error. Maximum-length enforcement is still outstanding (see open item below).
-- [ ] **No maximum-length validation on mutations** — Title and content have no upper-bound check. A user could submit a multi-MB post body. Add server-side length limits.
+- [x] **No maximum-length validation on mutations** — Title and content have no upper-bound check. A user could submit a multi-MB post body. Add server-side length limits.
 - [ ] **No rate limiting on auth endpoints** — `/auth/login` and `/auth/register` have no brute-force protection. Add rate limiting middleware or per-IP throttling.
 - [x] **Hardcoded CORS origin and frontend API URLs** — CORS now reads `CORS_ORIGIN` env var (default `localhost:5173`) in `ServerConfig`/`AppConfig`. Frontend uses `VITE_API_URL` from `frontend/.env`; `apollo-client.ts`, `LoginPage.tsx`, `RegisterPage.tsx` all use `import.meta.env.VITE_API_URL`. Playwright fixtures use `process.env.API_URL`; `playwright.config.ts` uses `process.env.FRONTEND_URL`.

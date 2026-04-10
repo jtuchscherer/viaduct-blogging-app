@@ -182,6 +182,33 @@ class AuthenticationServiceTest {
     }
 
     @Test
+    fun `createUser throws IllegalArgumentException for username exceeding 100 characters`() {
+        val exception = assertThrows<IllegalArgumentException> {
+            authService.createUser("a".repeat(101), "email@test.com", "Name", "password")
+        }
+        assertTrue(exception.message!!.contains("100"))
+        verify(exactly = 0) { userRepository.existsByUsername(any()) }
+    }
+
+    @Test
+    fun `createUser throws IllegalArgumentException for email exceeding 255 characters`() {
+        val exception = assertThrows<IllegalArgumentException> {
+            authService.createUser("username", "a".repeat(256), "Name", "password")
+        }
+        assertTrue(exception.message!!.contains("255"))
+        verify(exactly = 0) { userRepository.existsByUsername(any()) }
+    }
+
+    @Test
+    fun `createUser throws IllegalArgumentException for name exceeding 255 characters`() {
+        val exception = assertThrows<IllegalArgumentException> {
+            authService.createUser("username", "email@test.com", "a".repeat(256), "password")
+        }
+        assertTrue(exception.message!!.contains("255"))
+        verify(exactly = 0) { userRepository.existsByUsername(any()) }
+    }
+
+    @Test
     fun `createUser handles special characters in username`() {
         val username = "user@123"
         val email = "test@example.com"

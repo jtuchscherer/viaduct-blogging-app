@@ -147,4 +147,38 @@ class UpdatePostResolverTest {
         }
         assertInstanceOf(IllegalArgumentException::class.java, e.cause)
     }
+
+    @Test
+    fun `UpdatePostResolver throws IllegalArgumentException for title exceeding 500 characters`() {
+        val resolver = UpdatePostResolver(postRepository)
+        val input = UpdatePostInput.Builder(tester.context).id(tester.context.globalIDFor(ViaductPost.Reflection, postId.toString())).title("a".repeat(501)).build()
+        val args = Mutation_UpdatePost_Arguments.Builder(tester.context).input(input).build()
+
+        val e = assertThrows<Exception> {
+            runBlocking {
+                tester.test(resolver) {
+                    arguments = args
+                    requestContext = RequestContext(user = mockUser)
+                }
+            }
+        }
+        assertInstanceOf(IllegalArgumentException::class.java, e.cause)
+    }
+
+    @Test
+    fun `UpdatePostResolver throws IllegalArgumentException for content exceeding 100000 characters`() {
+        val resolver = UpdatePostResolver(postRepository)
+        val input = UpdatePostInput.Builder(tester.context).id(tester.context.globalIDFor(ViaductPost.Reflection, postId.toString())).content("a".repeat(100_001)).build()
+        val args = Mutation_UpdatePost_Arguments.Builder(tester.context).input(input).build()
+
+        val e = assertThrows<Exception> {
+            runBlocking {
+                tester.test(resolver) {
+                    arguments = args
+                    requestContext = RequestContext(user = mockUser)
+                }
+            }
+        }
+        assertInstanceOf(IllegalArgumentException::class.java, e.cause)
+    }
 }

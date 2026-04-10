@@ -30,6 +30,9 @@ class AdminUpdateUserResolver(
         val user = userRepository.findById(userId)
             ?: throw NotFoundException("User not found")
 
+        input.name?.let { require(it.length <= 255) { "Name cannot exceed 255 characters" } }
+        input.email?.let { require(it.length <= 255) { "Email cannot exceed 255 characters" } }
+
         // Update fields if provided
         transaction {
             input.name?.let { user.name = it }
@@ -94,7 +97,11 @@ class AdminUpdatePostResolver(
         val input = ctx.arguments.input
         val postId = UUID.fromString(input.id.internalID)
 
-        input.title?.let { require(it.isNotBlank()) { "Title cannot be blank" } }
+        input.title?.let {
+            require(it.isNotBlank()) { "Title cannot be blank" }
+            require(it.length <= 500) { "Title cannot exceed 500 characters" }
+        }
+        input.content?.let { require(it.length <= 100_000) { "Content cannot exceed 100,000 characters" } }
 
         val updatedPost = postRepository.updateById(
             id = postId,

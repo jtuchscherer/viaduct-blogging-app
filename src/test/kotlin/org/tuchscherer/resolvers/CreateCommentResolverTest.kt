@@ -156,4 +156,21 @@ class CreateCommentResolverTest {
         }
         assertInstanceOf(IllegalArgumentException::class.java, e.cause)
     }
+
+    @Test
+    fun `CreateCommentResolver throws IllegalArgumentException for content exceeding 10000 characters`() {
+        val resolver = CreateCommentResolver(commentRepository, postRepository)
+        val input = CreateCommentInput.Builder(tester.context).postId(tester.context.globalIDFor(ViaductPost.Reflection, postId.toString())).content("a".repeat(10_001)).build()
+        val args = Mutation_CreateComment_Arguments.Builder(tester.context).input(input).build()
+
+        val e = assertThrows<Exception> {
+            runBlocking {
+                tester.test(resolver) {
+                    arguments = args
+                    requestContext = RequestContext(user = mockUser)
+                }
+            }
+        }
+        assertInstanceOf(IllegalArgumentException::class.java, e.cause)
+    }
 }

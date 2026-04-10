@@ -112,6 +112,7 @@ export default function PostDetailPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [commentContent, setCommentContent] = useState('');
+  const [commentError, setCommentError] = useState('');
 
   const { loading, error, data, refetch } = useQuery<PostData>(GET_POST, {
     variables: { id },
@@ -138,7 +139,11 @@ export default function PostDetailPage() {
   const [addComment] = useMutation(ADD_COMMENT, {
     onCompleted: () => {
       setCommentContent('');
+      setCommentError('');
       refetch();
+    },
+    onError: (err) => {
+      setCommentError(err.message);
     },
   });
 
@@ -227,6 +232,7 @@ export default function PostDetailPage() {
 
           {isAuthenticated && (
             <form onSubmit={handleCommentSubmit} className="comment-form">
+              {commentError && <div className="error-message">{commentError}</div>}
               <textarea
                 value={commentContent}
                 onChange={(e) => setCommentContent(e.target.value)}
