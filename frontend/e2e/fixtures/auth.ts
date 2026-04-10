@@ -1,6 +1,7 @@
 import { type Page } from '@playwright/test';
 
-const AUTH_URL = 'http://localhost:8080';
+export const API_URL = process.env.API_URL ?? 'http://localhost:8080';
+const AUTH_URL = API_URL;
 
 /** Register a new user via the API and return token + user. Unique username per call. */
 export async function registerUser(page: Page, suffix: string = Date.now().toString()) {

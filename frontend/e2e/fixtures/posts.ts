@@ -1,6 +1,8 @@
 import { type Page } from '@playwright/test';
 
-const GRAPHQL_URL = 'http://localhost:8080/graphql';
+import { API_URL } from './auth';
+
+const GRAPHQL_URL = `${API_URL}/graphql`;
 
 /** Create a post via the GraphQL API. Skips the UI for tests that don't test post creation itself. */
 export async function createPostViaAPI(

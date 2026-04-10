@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { registerUser, loginViaUI, registerAndLogin } from './fixtures/auth';
+import { registerUser, loginViaUI, registerAndLogin, API_URL } from './fixtures/auth';
 
 test.describe('Authentication', () => {
   test('register page renders correctly', async ({ page }) => {
@@ -104,13 +104,13 @@ test.describe('Authentication', () => {
   // Regression for: principal!! force-unwrap + .first() crash in /auth/me.
   // Fixed to use safe access + firstOrNull() returning 401/404 instead of 500.
   test('/auth/me returns 401 without a token', async ({ page }) => {
-    const response = await page.request.get('http://localhost:8080/auth/me');
+    const response = await page.request.get(`${API_URL}/auth/me`);
     expect(response.status()).toBe(401);
   });
 
   test('/auth/me returns 200 with a valid token', async ({ page }) => {
     const creds = await registerUser(page, `authme_${Date.now()}`);
-    const response = await page.request.get('http://localhost:8080/auth/me', {
+    const response = await page.request.get(`${API_URL}/auth/me`, {
       headers: { Authorization: `Bearer ${creds.token}` },
     });
     expect(response.status()).toBe(200);

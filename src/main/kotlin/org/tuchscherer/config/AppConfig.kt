@@ -59,7 +59,8 @@ data class AppConfig(
             server = ServerConfig(
                 graphqlPort = System.getenv("GRAPHQL_PORT")?.toIntOrNull() ?: 8080,
                 authPort = System.getenv("AUTH_PORT")?.toIntOrNull() ?: 8081,
-                viaductPackagePrefix = "org.tuchscherer.viadapp"
+                viaductPackagePrefix = "org.tuchscherer.viadapp",
+                corsOrigin = System.getenv("CORS_ORIGIN") ?: "localhost:5173"
             )
         )
 
@@ -79,7 +80,9 @@ data class AppConfig(
             server = ServerConfig(
                 graphqlPort = System.getenv("GRAPHQL_PORT")?.toIntOrNull() ?: 8080,
                 authPort = System.getenv("AUTH_PORT")?.toIntOrNull() ?: 8081,
-                viaductPackagePrefix = "org.tuchscherer.viadapp"
+                viaductPackagePrefix = "org.tuchscherer.viadapp",
+                corsOrigin = System.getenv("CORS_ORIGIN")
+                    ?: throw IllegalStateException("CORS_ORIGIN must be set in production")
             )
         )
     }

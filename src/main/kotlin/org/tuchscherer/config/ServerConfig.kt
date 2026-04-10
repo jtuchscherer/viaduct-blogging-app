@@ -6,5 +6,6 @@ package org.tuchscherer.config
 data class ServerConfig(
     val graphqlPort: Int = 8080,
     val authPort: Int = 8081,
-    val viaductPackagePrefix: String = "org.tuchscherer.viadapp"
+    val viaductPackagePrefix: String = "org.tuchscherer.viadapp",
+    val corsOrigin: String = "localhost:5173"
 )

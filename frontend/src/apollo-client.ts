@@ -3,7 +3,7 @@ import { setContext } from '@apollo/client/link/context';
 
 // HTTP connection to the GraphQL API
 const httpLink = createHttpLink({
-  uri: 'http://localhost:8080/graphql',
+  uri: `${import.meta.env.VITE_API_URL}/graphql`,
 });
 
 // Middleware to add auth token to requests

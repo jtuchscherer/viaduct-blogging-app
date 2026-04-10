@@ -58,7 +58,7 @@ class GraphQLServer(
             }
 
             install(CORS) {
-                allowHost("localhost:5173")
+                allowHost(serverConfig.corsOrigin)
                 allowHeader(HttpHeaders.ContentType)
                 allowHeader(HttpHeaders.Authorization)
                 allowMethod(HttpMethod.Get)
