@@ -20,4 +20,15 @@ class DatabaseFactory(private val config: org.tuchscherer.config.DatabaseConfig)
             SchemaUtils.create(Users, Posts, Comments, Likes)
         }
     }
+
+    fun healthCheck(): Boolean {
+        return try {
+            transaction {
+                exec("SELECT 1") { true } ?: true
+            }
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
 }

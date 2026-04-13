@@ -1,9 +1,13 @@
 package org.tuchscherer.config
 
+import io.micrometer.core.instrument.MeterRegistry
+import io.micrometer.prometheusmetrics.PrometheusConfig
+import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import org.tuchscherer.auth.AuthenticationService
 import org.tuchscherer.auth.JwtService
 import org.tuchscherer.auth.PasswordService
 import org.tuchscherer.database.DatabaseFactory
+import org.tuchscherer.web.GraphQLServer
 import org.tuchscherer.database.repositories.*
 import org.tuchscherer.viadapp.resolvers.*
 import org.koin.core.module.dsl.singleOf
@@ -45,11 +49,19 @@ val serviceModule = module {
 }
 
 /**
+ * Koin module for metrics.
+ * Provides a MeterRegistry for Micrometer instrumentation.
+ */
+val metricsModule = module {
+    single<MeterRegistry> { PrometheusMeterRegistry(PrometheusConfig.DEFAULT) }
+}
+
+/**
  * Koin module for server.
  * Provides GraphQLServer instance with all dependencies for both GraphQL and Auth endpoints.
  */
 val serverModule = module {
-    single { org.tuchscherer.web.GraphQLServer(get(), get(), get(), get()) }
+    singleOf(::GraphQLServer)
 }
 
 /**
@@ -120,6 +132,7 @@ val allModules = listOf(
     configModule,
     repositoryModule,
     serviceModule,
+    metricsModule,
     serverModule,
     resolverModule
 )

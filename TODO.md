@@ -1,8 +1,8 @@
 # TODO: Viaduct Blogging App — Implementation Plan
 
-**Status**: 🚀 In Progress — Phases 1–9 + 11–15 + 18 Complete, Phase 10 Next
+**Status**: 🚀 In Progress — Phases 1–9 + 11–15 + 17–18 Complete, Phase 10 Next
 
-**Last Updated**: 2026-04-10
+**Last Updated**: 2026-04-13
 
 ## Test Statistics
 
@@ -31,6 +31,7 @@
 | 11 — Cursor Pagination | `postsConnection(first, after)` via Viaduct `@connection`/`@edge`; `findPage` in repository; `ConnectionBuilder.fromList` in resolver |
 | 13 — Migrate Resolver Tests | Migrated to new `FieldResolverTester`/`MutationResolverTester` API where possible; `@Suppress("DEPRECATION")` for resolvers returning List/Boolean/Int (new API only supports single GRT returns); zero deprecation warnings in build |
 | 14 — Batch Author Resolver | `PostAuthorResolver` overrides `batchResolve`; `getAuthorsByPostIds` fetches all authors in one `inList` query; eliminates N+1 on posts list |
+| 17 — Production Telemetry | Structured JSON logging (Logstash, env-aware); `CallId` plugin (UUID per request, `X-Request-Id` header); `CallLogging` with MDC propagation; Micrometer + Prometheus `/metrics` endpoint; GraphQL operation name + duration logging; enhanced `/health` with DB check |
 | 18 — Rich Text Editor | Lexical editor on Create/Edit Post pages; toolbar with B/I/U, H2/H3, bullet/numbered lists, code blocks; HTML stored in `content` field; DOMPurify rendering in PostDetailPage; backward-compatible with legacy plain-text posts |
 | 15a — PostsConnectionResolver Tests | 4 unit tests documenting `findPage`+`count` contract; verifies `findAll` is never called |
 | 15 — DB-Level Cursor Pagination | `PostsConnectionResolver` uses `findPage(limit, offset)` via `toOffsetLimit()`; builds edges/PageInfo manually with `base64("__viaduct:idx:N")` cursors; eliminates full table scan |
@@ -42,7 +43,6 @@
 
 - **Phase 10**: Create Dockerfile for containerized deployment
 - **Phase 16**: Production database support — PostgreSQL/RDS, connection pooling, migrations
-- **Phase 17**: Production telemetry — structured logging, request tracing, metrics
 - **Tech Debt**: ~~Investigate Viaduct connection resolver testing API~~ ✅ DONE (see below)
 
 ---
@@ -227,7 +227,7 @@ The third test is the key regression guard: it documents that the current implem
 
 ---
 
-## Phase 17: Production Telemetry ⏳ TODO
+## Phase 17: Production Telemetry ✅ DONE
 
 **Goal**: Make production bugs triageable. When something goes wrong on AWS, you need to find the request, understand what it did, and see the error — without SSH-ing into a box.
 

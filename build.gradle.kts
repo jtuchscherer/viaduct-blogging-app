@@ -66,6 +66,15 @@ dependencies {
     // JWT for authentication
     implementation(libs.ktor.server.auth)
     implementation(libs.ktor.server.auth.jwt)
+    implementation(libs.ktor.server.call.logging)
+    implementation(libs.ktor.server.call.id)
+    implementation(libs.ktor.server.metrics.micrometer)
+    implementation(libs.micrometer.core)
+    implementation(libs.micrometer.registry.prometheus)
+    // JSON structured logging
+    implementation("net.logstash.logback:logstash-logback-encoder:8.0")
+    // Logback conditional config support
+    implementation("org.codehaus.janino:janino:3.1.12")
 
     // Koin for Dependency Injection
     implementation(libs.koin.core)

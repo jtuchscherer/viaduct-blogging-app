@@ -1,0 +1,39 @@
+<configuration>
+    <if condition='"PROD".equals(System.getenv("APP_ENV"))'>
+        <then>
+            <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+                <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+                    <includeCallerData>false</includeCallerData>
+                    <fieldNames>
+                        <timestamp>timestamp</timestamp>
+                        <message>message</message>
+                        <logger>logger</logger>
+                        <level>level</level>
+                        <thread>thread</thread>
+                    </fieldNames>
+                </encoder>
+            </appender>
+        </then>
+        <else>
+            <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+                <encoder>
+                    <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} [%X{requestId}] - %msg%n</pattern>
+                </encoder>
+            </appender>
+        </else>
+    </if>
+
+    <!-- Application loggers -->
+    <logger name="org.tuchscherer" level="INFO"/>
+    <logger name="io.ktor" level="INFO"/>
+
+    <!-- Suppress noisy framework loggers -->
+    <logger name="viaduct" level="WARN"/>
+    <logger name="org.jetbrains.exposed" level="WARN"/>
+    <logger name="com.zaxxer.hikari" level="WARN"/>
+    <logger name="io.netty" level="WARN"/>
+
+    <root level="WARN">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+</configuration>

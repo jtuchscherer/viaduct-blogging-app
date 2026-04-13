@@ -631,6 +631,29 @@ else
     print_error "Skipping second page test — no cursor returned from first page"
 fi
 
+# Step 11: Test Health and Metrics endpoints
+print_header "Step 11: Test Health and Metrics Endpoints"
+
+HEALTH_RESPONSE=$(curl -s $AUTH_URL/health)
+if echo $HEALTH_RESPONSE | grep -q '"status"'; then
+    print_success "Health endpoint returns status field"
+else
+    print_error "Health endpoint missing status field (got: $HEALTH_RESPONSE)"
+fi
+
+if echo $HEALTH_RESPONSE | grep -q '"db"'; then
+    print_success "Health endpoint returns db field"
+else
+    print_error "Health endpoint missing db field (got: $HEALTH_RESPONSE)"
+fi
+
+METRICS_RESPONSE=$(curl -s $AUTH_URL/metrics)
+if echo $METRICS_RESPONSE | grep -q "ktor_http_server_requests"; then
+    print_success "Metrics endpoint returns HTTP server request metrics"
+else
+    print_error "Metrics endpoint missing HTTP server request metrics (got: $METRICS_RESPONSE)"
+fi
+
 # Test Summary
 print_header "Test Summary"
 echo -e "${GREEN}Tests Passed: $TESTS_PASSED${NC}"

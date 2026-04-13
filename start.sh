@@ -16,11 +16,17 @@ NC='\033[0m' # No Color
 
 # Function to cleanup background processes on exit
 cleanup() {
+    trap - SIGINT SIGTERM EXIT  # prevent re-entrant calls
     echo ""
     echo -e "${YELLOW}🛑 Shutting down services...${NC}"
 
-    # Kill all background jobs
-    jobs -p | xargs -r kill 2>/dev/null || true
+    # Kill entire process groups so child processes (JVM, node) are also terminated
+    [ -n "$SERVER_PID" ] && kill -- -$SERVER_PID 2>/dev/null || true
+    [ -n "$FRONTEND_PID" ] && kill -- -$FRONTEND_PID 2>/dev/null || true
+
+    # Fallback: kill anything still holding the ports
+    lsof -ti :8080 | xargs kill 2>/dev/null || true
+    lsof -ti :5173 | xargs kill 2>/dev/null || true
 
     echo -e "${GREEN}✅ All services stopped${NC}"
     exit 0
@@ -97,7 +103,9 @@ echo -e "${BLUE}Services running:${NC}"
 echo "  🌐 Backend (GraphQL + Auth): http://localhost:8080"
 echo "     - GraphQL endpoint:       http://localhost:8080/graphql"
 echo "     - GraphiQL endpoint:      http://localhost:8080/graphiql?path=/graphql"
-echo "     - Auth endpoints:         http://localhost:8080/auth/*"
+echo "     - Auth endpoints:         http://localhost:8080/auth/*
+     - Health endpoint:        http://localhost:8080/health
+     - Metrics endpoint:       http://localhost:8080/metrics"
 echo "  ⚛️  Frontend:                 http://localhost:5173"
 echo ""
 echo -e "${BLUE}Logs:${NC}"
