@@ -73,7 +73,7 @@ done
 # --- Seed database ---
 
 echo -e "${BLUE}Seeding database...${NC}"
-./seed-database.sh data/blog.db
+./seed-database.sh data/blog.db || true
 echo ""
 
 # --- Wait for frontend ---
