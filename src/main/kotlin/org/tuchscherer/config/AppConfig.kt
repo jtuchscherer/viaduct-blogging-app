@@ -73,8 +73,7 @@ data class AppConfig(
                 expirationHours = 24
             ),
             database = DatabaseConfig(
-                url = System.getenv("DATABASE_URL")
-                    ?: throw IllegalStateException("DATABASE_URL must be set in production"),
+                url = System.getenv("DATABASE_URL") ?: "jdbc:sqlite:/app/data/blog.db",
                 driver = System.getenv("DATABASE_DRIVER") ?: "org.sqlite.JDBC"
             ),
             server = ServerConfig(

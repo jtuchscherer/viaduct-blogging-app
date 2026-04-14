@@ -1,0 +1,25 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/app/data
+    environment:
+      APP_ENV: PROD
+      DATABASE_URL: jdbc:sqlite:/app/data/blog.db
+      # Change this to a strong random secret in any real deployment
+      JWT_SECRET: dev-secret-change-in-production
+      # Host only (no scheme) — Ktor's allowHost takes the scheme separately
+      CORS_ORIGIN: localhost:5173
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Baked into the JS bundle at build time — must be reachable from the browser
+        VITE_API_URL: http://localhost:8080
+    ports:
+      - "5173:80"
+    depends_on:
+      - app

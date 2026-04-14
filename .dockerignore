@@ -1,0 +1,29 @@
+# Exclude all build output except the installDist distribution
+build/
+!build/install/
+
+# Gradle internals
+.gradle/
+gradle/wrapper/gradle-wrapper.jar
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# Git
+.git/
+.gitignore
+
+# Local database and logs
+*.db
+data/
+server.log
+frontend-dev.log
+docker-compose.log
+
+# IDE
+.idea/
+*.iml
+
+# OS
+.DS_Store

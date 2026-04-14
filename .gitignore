@@ -19,3 +19,4 @@ bin/
 
 # AI
 .claude/
+docker-compose.log

@@ -1,8 +1,8 @@
 # TODO: Viaduct Blogging App — Implementation Plan
 
-**Status**: 🚀 In Progress — Phases 1–9 + 11–15 + 17–18 Complete, Phase 10 Next
+**Status**: 🚀 In Progress — Phases 1–9 + 11–15 + 17–18 + 10 Complete, Phase 16 Next
 
-**Last Updated**: 2026-04-13
+**Last Updated**: 2026-04-14
 
 ## Test Statistics
 
@@ -38,10 +38,10 @@
 | 12 — Frontend Pagination UI | `HomePage` queries `postsConnection(first: 10)`; "Load More" via Apollo `fetchMore`; "Showing X of Y posts" counter; 4 Playwright tests × 3 browsers |
 | E2E fixes | Fixed `e2e.sh` spurious `cd ..` bug; fixed Playwright strict-mode selector failures (`main h1`, `.first()`); all 81 browser tests now passing |
 | CI fixes | Disabled `gradle-actions` proprietary caching component (`cache-disabled: true`) to suppress licensing warning |
+| 10 — Docker Deployment | `Dockerfile` (runtime image using `installDist` distribution), `docker-compose.yml` with SQLite volume, `.dockerignore`; `DATABASE_URL` defaults to `/app/data/blog.db` in prod config; note: multi-stage builder deferred until Viaduct jars are on a CI-accessible registry |
 
 ## Next Steps
 
-- **Phase 10**: Create Dockerfile for containerized deployment
 - **Phase 16**: Production database support — PostgreSQL/RDS, connection pooling, migrations
 - **Tech Debt**: ~~Investigate Viaduct connection resolver testing API~~ ✅ DONE (see below)
 
@@ -69,10 +69,10 @@
 **Goal**: Multi-stage Dockerfile for easy deployment.
 
 #### Tasks:
-- [ ] Multi-stage Dockerfile (build with Gradle, runtime with JRE-alpine)
-- [ ] Make `DATABASE_PATH`, `SERVER_PORT`, `JWT_SECRET` configurable via env vars
-- [ ] `.dockerignore` to exclude `build/`, `node_modules/`, etc.
-- [ ] Optional `docker-compose.yml` with SQLite volume mount
+- [x] Runtime Dockerfile (JRE-alpine, uses `installDist` distribution; multi-stage build deferred — Viaduct jars are not on Maven Central)
+- [x] Make `DATABASE_URL`, `JWT_SECRET`, `CORS_ORIGIN` configurable via env vars; `DATABASE_URL` defaults to `/app/data/blog.db`
+- [x] `.dockerignore` to exclude `build/` (except the fat JAR), `node_modules/`, etc.
+- [x] `docker-compose.yml` with SQLite volume mount
 - [ ] Update README with Docker instructions
 
 **Example Dockerfile:**
