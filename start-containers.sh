@@ -32,8 +32,13 @@ if ! command -v podman &>/dev/null; then
 fi
 
 if ! podman info &>/dev/null; then
-    echo -e "${RED}Podman daemon is not running. Please start Podman Desktop.${NC}"
-    exit 1
+    echo -e "${YELLOW}Podman machine is not running. Starting it...${NC}"
+    podman machine start
+    if ! podman info &>/dev/null; then
+        echo -e "${RED}Failed to start Podman machine.${NC}"
+        exit 1
+    fi
+    echo -e "${GREEN}Podman machine started${NC}"
 fi
 
 if [ ! -f ".env" ]; then
