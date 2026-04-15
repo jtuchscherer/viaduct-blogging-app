@@ -36,7 +36,16 @@ Frontend: http://localhost:5173
 
 ### `start-containers.sh` — Docker deployment
 
-Builds the Gradle distribution (`installDist`), starts the backend and frontend via `docker compose`, waits for both to be healthy, then seeds the database. Ctrl+C calls `docker compose down`.
+Builds the Gradle distribution (`installDist`), starts all three containers (postgres, app, frontend) via `docker compose`, waits for both to be healthy, then seeds the database. Ctrl+C calls `docker compose down`.
+
+Before running for the first time, create your `.env` file from the example:
+
+```bash
+cp .env.example .env
+# edit .env and set strong values for POSTGRES_PASSWORD and JWT_SECRET
+```
+
+Then start everything:
 
 ```bash
 ./start-containers.sh
@@ -66,13 +75,17 @@ Runs 38 curl-based tests against the live GraphQL and auth endpoints. The backen
 ./query-tests.sh
 ```
 
-### `seed-database.sh` — populate the SQLite database
+### `seed-database.sh` — populate the database
 
-Inserts sample data into a SQLite database file. The app must have been started at least once so the schema exists. Accepts the database path as an optional argument (defaults to `blog.db`).
+Inserts sample data into the PostgreSQL database. The app must have been started at least once so the schema exists (it is created automatically on startup). Connection is configured via environment variables (defaults match `.env.example`):
 
 ```bash
-./seed-database.sh           # uses blog.db
-./seed-database.sh data/blog.db
+# When running via start-containers.sh, this is called automatically.
+# To run manually against the docker-compose postgres container:
+source .env
+PGHOST=localhost PGPORT=5432 \
+    PGDATABASE="${POSTGRES_DB}" PGUSER="${POSTGRES_USER}" PGPASSWORD="${POSTGRES_PASSWORD}" \
+    ./seed-database.sh
 ```
 
 Creates:

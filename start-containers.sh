@@ -36,6 +36,12 @@ if ! docker info &>/dev/null; then
     exit 1
 fi
 
+if [ ! -f ".env" ]; then
+    echo -e "${RED}Missing .env file. Copy .env.example and fill in your values:${NC}"
+    echo "  cp .env.example .env"
+    exit 1
+fi
+
 echo -e "${GREEN}Prerequisites OK${NC}"
 echo ""
 
@@ -73,7 +79,13 @@ done
 # --- Seed database ---
 
 echo -e "${BLUE}Seeding database...${NC}"
-./seed-database.sh data/blog.db || true
+# Load credentials from .env so the seed script can connect to the postgres container
+set -a; source .env; set +a
+PGHOST=localhost PGPORT=5432 \
+    PGDATABASE="${POSTGRES_DB}" \
+    PGUSER="${POSTGRES_USER}" \
+    PGPASSWORD="${POSTGRES_PASSWORD}" \
+    ./seed-database.sh || true
 echo ""
 
 # --- Wait for frontend ---

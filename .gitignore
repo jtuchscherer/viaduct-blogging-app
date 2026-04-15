@@ -17,6 +17,9 @@ bin/
 # Logs
 *.log
 
+# Secrets
+.env
+
 # AI
 .claude/
 docker-compose.log

@@ -14,7 +14,11 @@ class DatabaseFactory(private val config: org.tuchscherer.config.DatabaseConfig)
      * Initialize database connection and create tables if they don't exist.
      */
     fun initialize() {
-        Database.connect(config.url, driver = config.driver)
+        if (config.user.isNotBlank()) {
+            Database.connect(config.url, driver = config.driver, user = config.user, password = config.password)
+        } else {
+            Database.connect(config.url, driver = config.driver)
+        }
 
         transaction {
             SchemaUtils.create(Users, Posts, Comments, Likes)

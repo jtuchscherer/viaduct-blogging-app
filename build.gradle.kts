@@ -51,6 +51,7 @@ dependencies {
 
     // Database dependencies
     implementation("org.xerial:sqlite-jdbc:3.49.1.0")
+    implementation("org.postgresql:postgresql:42.7.3")
     implementation("org.jetbrains.exposed:exposed-core:0.61.0")
     implementation("org.jetbrains.exposed:exposed-dao:0.61.0")
     implementation("org.jetbrains.exposed:exposed-jdbc:0.61.0")

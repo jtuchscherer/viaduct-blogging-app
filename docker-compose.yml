@@ -1,17 +1,32 @@
 services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 5s
+      retries: 5
+
   app:
     build: .
     ports:
       - "8080:8080"
-    volumes:
-      - ./data:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
     environment:
       APP_ENV: PROD
-      DATABASE_URL: jdbc:sqlite:/app/data/blog.db
-      # Change this to a strong random secret in any real deployment
-      JWT_SECRET: dev-secret-change-in-production
-      # Host only (no scheme) — Ktor's allowHost takes the scheme separately
-      CORS_ORIGIN: localhost:5173
+      DATABASE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      DATABASE_DRIVER: org.postgresql.Driver
+      DATABASE_USER: ${POSTGRES_USER}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      CORS_ORIGIN: ${CORS_ORIGIN}
 
   frontend:
     build:
