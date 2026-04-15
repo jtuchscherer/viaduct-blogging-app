@@ -1,7 +1,7 @@
 package org.tuchscherer.database.repositories
 
 import org.tuchscherer.database.User
-import org.jetbrains.exposed.dao.id.EntityID
+import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import java.time.LocalDateTime
 import java.util.*
 
@@ -56,6 +56,11 @@ interface UserRepository {
      * Get all users (for admin purposes).
      */
     fun findAll(): List<User>
+
+    /**
+     * Get a page of users ordered by createdAt descending.
+     */
+    fun findPage(limit: Int, offset: Int): List<User>
 
     /**
      * Count total users.

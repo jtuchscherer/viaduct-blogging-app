@@ -7,7 +7,7 @@ import org.tuchscherer.database.repositories.LikeRepository
 import org.tuchscherer.database.repositories.PostRepository
 import org.tuchscherer.database.repositories.UserRepository
 import org.tuchscherer.viadapp.resolvers.resolverbases.MutationResolvers
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import viaduct.api.Resolver
 import viaduct.api.grts.AdminDeleteUserResult
 import viaduct.api.grts.Post as ViaductPost

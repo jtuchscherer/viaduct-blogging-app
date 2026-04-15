@@ -2,8 +2,9 @@ package org.tuchscherer.database.repositories
 
 import org.tuchscherer.database.Comment
 import org.tuchscherer.database.Comments
-import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.core.dao.id.EntityID
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import java.time.LocalDateTime
 import java.util.*
 
@@ -76,6 +77,14 @@ class ExposedCommentRepository : CommentRepository {
 
     override fun findAll(): List<Comment> = transaction {
         Comment.all().toList()
+    }
+
+    override fun findPage(limit: Int, offset: Int): List<Comment> = transaction {
+        Comment.all()
+            .orderBy(Comments.createdAt to org.jetbrains.exposed.v1.core.SortOrder.DESC)
+            .limit(limit)
+            .offset(offset.toLong())
+            .toList()
     }
 
     override fun count(): Long = transaction {

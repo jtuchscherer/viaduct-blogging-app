@@ -6,8 +6,10 @@ import org.tuchscherer.database.Like
 import org.tuchscherer.database.Likes
 import org.tuchscherer.database.Post
 import org.tuchscherer.database.Posts
-import org.jetbrains.exposed.dao.id.EntityID
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.core.dao.id.EntityID
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.inList
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import java.time.LocalDateTime
 import java.util.*
 
@@ -75,7 +77,7 @@ class ExposedPostRepository : PostRepository {
 
     override fun findPage(limit: Int, offset: Int): List<Post> = transaction {
         Post.all()
-            .orderBy(Posts.createdAt to org.jetbrains.exposed.sql.SortOrder.DESC)
+            .orderBy(Posts.createdAt to org.jetbrains.exposed.v1.core.SortOrder.DESC)
             .limit(limit)
             .offset(offset.toLong())
             .toList()

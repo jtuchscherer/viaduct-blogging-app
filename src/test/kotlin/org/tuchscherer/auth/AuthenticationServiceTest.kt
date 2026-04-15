@@ -3,7 +3,7 @@ package org.tuchscherer.auth
 import org.tuchscherer.database.User
 import org.tuchscherer.database.repositories.UserRepository
 import io.mockk.*
-import org.jetbrains.exposed.dao.id.EntityID
+import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach

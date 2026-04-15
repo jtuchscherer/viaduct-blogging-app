@@ -4,9 +4,9 @@ import org.tuchscherer.database.Comments
 import org.tuchscherer.database.Likes
 import org.tuchscherer.database.Posts
 import org.tuchscherer.database.Users
-import org.jetbrains.exposed.sql.Database
-import org.jetbrains.exposed.sql.SchemaUtils
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.Database
+import org.jetbrains.exposed.v1.jdbc.SchemaUtils
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 
 /**
  * Helper class to set up and tear down H2 in-memory database for repository tests.

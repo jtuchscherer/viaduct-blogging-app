@@ -1,7 +1,7 @@
 package org.tuchscherer.database.repositories
 
 import org.tuchscherer.database.User
-import org.jetbrains.exposed.dao.id.EntityID
+import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.*

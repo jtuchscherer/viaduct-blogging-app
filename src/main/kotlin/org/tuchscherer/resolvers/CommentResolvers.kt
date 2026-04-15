@@ -7,7 +7,7 @@ import org.tuchscherer.database.repositories.CommentRepository
 import org.tuchscherer.database.repositories.PostRepository
 import org.tuchscherer.viadapp.resolvers.resolverbases.MutationResolvers
 import org.tuchscherer.viadapp.resolvers.resolverbases.QueryResolvers
-import org.jetbrains.exposed.dao.id.EntityID
+import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import viaduct.api.Resolver
 import viaduct.api.grts.Comment as ViaductComment
 import java.time.LocalDateTime

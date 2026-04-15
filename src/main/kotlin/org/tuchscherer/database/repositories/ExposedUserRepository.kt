@@ -2,7 +2,8 @@ package org.tuchscherer.database.repositories
 
 import org.tuchscherer.database.User
 import org.tuchscherer.database.Users
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import java.time.LocalDateTime
 import java.util.*
 
@@ -65,6 +66,14 @@ class ExposedUserRepository : UserRepository {
 
     override fun findAll(): List<User> = transaction {
         User.all().toList()
+    }
+
+    override fun findPage(limit: Int, offset: Int): List<User> = transaction {
+        User.all()
+            .orderBy(Users.createdAt to org.jetbrains.exposed.v1.core.SortOrder.DESC)
+            .limit(limit)
+            .offset(offset.toLong())
+            .toList()
     }
 
     override fun count(): Long = transaction {

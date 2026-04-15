@@ -1,7 +1,7 @@
 package org.tuchscherer.database.repositories
 
 import org.tuchscherer.database.Comment
-import org.jetbrains.exposed.dao.id.EntityID
+import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import java.time.LocalDateTime
 import java.util.*
 
@@ -75,6 +75,11 @@ interface CommentRepository {
      * Get all comments.
      */
     fun findAll(): List<Comment>
+
+    /**
+     * Get a page of comments ordered by createdAt descending.
+     */
+    fun findPage(limit: Int, offset: Int): List<Comment>
 
     /**
      * Count total comments.
