@@ -43,7 +43,16 @@
 ## Next Steps
 
 - **Phase 16**: Production database support — PostgreSQL/RDS, connection pooling, migrations
+- **UI Bug Fixes**: See section below
 - **Tech Debt**: ~~Investigate Viaduct connection resolver testing API~~ ✅ DONE (see below)
+
+---
+
+## UI Bug Fixes
+
+1. **"New Post" button too wide / text not centered** ✅ DONE — already renders correctly
+2. **Username wraps to two lines in header** ✅ DONE — added `white-space: nowrap` to `.user-name` in `Header.css`
+3. **Admin comments table overflows viewport** ✅ DONE — changed `.admin-table` from `overflow: hidden` to `overflow-x: auto` in `AdminLayout.css`
 
 ---
 

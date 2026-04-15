@@ -46,6 +46,7 @@
 
 .user-name {
   font-weight: 500;
+  white-space: nowrap;
 }
 
 .btn-primary,
