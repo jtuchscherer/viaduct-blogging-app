@@ -31,10 +31,10 @@ if ! command -v podman &>/dev/null; then
     exit 1
 fi
 
-if ! podman info &>/dev/null; then
+if ! podman machine list 2>/dev/null | grep -q "Currently running"; then
     echo -e "${YELLOW}Podman machine is not running. Starting it...${NC}"
     podman machine start
-    if ! podman info &>/dev/null; then
+    if ! podman machine list 2>/dev/null | grep -q "Currently running"; then
         echo -e "${RED}Failed to start Podman machine.${NC}"
         exit 1
     fi
