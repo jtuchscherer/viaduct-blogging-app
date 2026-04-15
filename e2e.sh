@@ -79,6 +79,14 @@ echo -e "${BLUE}Starting backend server...${NC}"
 SERVER_PID=$!
 wait_for_url "http://localhost:8080/health" "Backend (port 8080)"
 
+# --- Seed E2E admin user ---
+echo -e "${BLUE}Seeding E2E admin user...${NC}"
+curl -s -X POST http://localhost:8080/auth/register \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"e2e_admin","email":"e2e_admin@test.com","name":"E2E Admin","password":"e2eAdminPass1"}' > /dev/null
+sqlite3 blog.db "UPDATE users SET is_admin = 1 WHERE username = 'e2e_admin';"
+echo -e "${GREEN}✓ Admin user seeded${NC}"
+
 # --- Start frontend ---
 echo -e "${BLUE}Starting frontend dev server...${NC}"
 cd frontend && npm run dev > "$FRONTEND_LOG" 2>&1 &

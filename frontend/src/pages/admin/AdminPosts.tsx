@@ -3,18 +3,23 @@ import { useQuery, useMutation } from '@apollo/client/react';
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
 
+const PAGE_SIZE = 10;
+
 const ADMIN_POSTS = gql`
-  query AdminPosts {
+  query AdminPosts($limit: Int!, $offset: Int!) {
     admin {
-      posts {
-        id
-        title
-        author {
+      posts(limit: $limit, offset: $offset) {
+        totalCount
+        posts {
           id
-          username
+          title
+          author {
+            id
+            username
+          }
+          createdAt
+          updatedAt
         }
-        createdAt
-        updatedAt
       }
     }
   }
@@ -38,11 +43,14 @@ interface Post {
 }
 
 interface AdminPostsData {
-  admin: { posts: Post[] };
+  admin: { posts: { totalCount: number; posts: Post[] } };
 }
 
 export default function AdminPosts() {
-  const { data, loading, error, refetch } = useQuery<AdminPostsData>(ADMIN_POSTS);
+  const [offset, setOffset] = useState(0);
+  const { data, loading, error, refetch } = useQuery<AdminPostsData>(ADMIN_POSTS, {
+    variables: { limit: PAGE_SIZE, offset },
+  });
   const [deletePost] = useMutation(ADMIN_DELETE_POST);
   const [postToDelete, setPostToDelete] = useState<Post | null>(null);
 
@@ -60,7 +68,12 @@ export default function AdminPosts() {
   if (loading) return <div className="loading-spinner">Loading...</div>;
   if (error) return <div className="error-message">Error: {error.message}</div>;
 
-  const posts: Post[] = data?.admin?.posts ?? [];
+  const posts: Post[] = data?.admin?.posts.posts ?? [];
+  const totalCount = data?.admin?.posts.totalCount ?? 0;
+  const currentPage = Math.floor(offset / PAGE_SIZE) + 1;
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+  const rangeStart = totalCount === 0 ? 0 : offset + 1;
+  const rangeEnd = Math.min(offset + PAGE_SIZE, totalCount);
 
   return (
     <div>
@@ -81,7 +94,7 @@ export default function AdminPosts() {
           </thead>
           <tbody>
             {posts.map((post) => (
-              <tr key={post.id}>
+              <tr key={post.id} data-testid="admin-table-row">
                 <td className="truncate">{post.title}</td>
                 <td>{post.author.username}</td>
                 <td>{new Date(post.createdAt).toLocaleDateString()}</td>
@@ -103,6 +116,31 @@ export default function AdminPosts() {
             ))}
           </tbody>
         </table>
+      </div>
+
+      <div className="admin-pagination">
+        <span data-testid="admin-page-info">
+          {totalCount === 0 ? 'No posts' : `Showing ${rangeStart}–${rangeEnd} of ${totalCount}`}
+        </span>
+        <div className="admin-pagination-controls">
+          <button
+            data-testid="btn-prev-page"
+            className="btn-page"
+            onClick={() => { setOffset(offset - PAGE_SIZE); refetch(); }}
+            disabled={offset === 0}
+          >
+            Previous
+          </button>
+          <span className="admin-page-number">Page {currentPage} of {totalPages || 1}</span>
+          <button
+            data-testid="btn-next-page"
+            className="btn-page"
+            onClick={() => { setOffset(offset + PAGE_SIZE); refetch(); }}
+            disabled={offset + PAGE_SIZE >= totalCount}
+          >
+            Next
+          </button>
+        </div>
       </div>
 
       {postToDelete && (

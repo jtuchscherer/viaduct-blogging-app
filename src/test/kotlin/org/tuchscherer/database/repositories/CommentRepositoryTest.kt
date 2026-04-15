@@ -165,4 +165,51 @@ class CommentRepositoryTest {
 
         assertEquals(2, count)
     }
+
+    @Test
+    fun `findPage returns correct slice`() {
+        for (i in 1..5) {
+            commentRepository.create(
+                content = "Page comment $i",
+                postId = testPost.id,
+                authorId = testUser.id
+            )
+        }
+
+        val page = commentRepository.findPage(limit = 2, offset = 0)
+
+        assertEquals(2, page.size)
+    }
+
+    @Test
+    fun `findPage respects offset`() {
+        for (i in 1..5) {
+            commentRepository.create(
+                content = "Offset comment $i",
+                postId = testPost.id,
+                authorId = testUser.id
+            )
+        }
+
+        val firstPage = commentRepository.findPage(limit = 2, offset = 0)
+        val secondPage = commentRepository.findPage(limit = 2, offset = 2)
+
+        assertEquals(2, secondPage.size)
+        val firstPageIds = firstPage.map { it.id.value }.toSet()
+        val secondPageIds = secondPage.map { it.id.value }.toSet()
+        assertTrue(firstPageIds.intersect(secondPageIds).isEmpty())
+    }
+
+    @Test
+    fun `findPage beyond end returns empty list`() {
+        commentRepository.create(
+            content = "Only comment",
+            postId = testPost.id,
+            authorId = testUser.id
+        )
+
+        val page = commentRepository.findPage(limit = 10, offset = 100)
+
+        assertTrue(page.isEmpty())
+    }
 }

@@ -207,4 +207,58 @@ class UserRepositoryTest {
             )
         }
     }
+
+    @Test
+    fun `findPage returns correct slice`() {
+        for (i in 1..5) {
+            userRepository.create(
+                username = "pageuser$i",
+                email = "pageuser$i@example.com",
+                name = "Page User $i",
+                passwordHash = "hash",
+                salt = "salt"
+            )
+        }
+
+        val page = userRepository.findPage(limit = 2, offset = 0)
+
+        assertEquals(2, page.size)
+    }
+
+    @Test
+    fun `findPage respects offset`() {
+        for (i in 1..5) {
+            userRepository.create(
+                username = "offsetuser$i",
+                email = "offsetuser$i@example.com",
+                name = "Offset User $i",
+                passwordHash = "hash",
+                salt = "salt"
+            )
+        }
+
+        val firstPage = userRepository.findPage(limit = 2, offset = 0)
+        val secondPage = userRepository.findPage(limit = 2, offset = 2)
+
+        assertEquals(2, secondPage.size)
+        // Pages must not overlap
+        val firstPageIds = firstPage.map { it.id.value }.toSet()
+        val secondPageIds = secondPage.map { it.id.value }.toSet()
+        assertTrue(firstPageIds.intersect(secondPageIds).isEmpty())
+    }
+
+    @Test
+    fun `findPage beyond end returns empty list`() {
+        userRepository.create(
+            username = "singleuser",
+            email = "single@example.com",
+            name = "Single User",
+            passwordHash = "hash",
+            salt = "salt"
+        )
+
+        val page = userRepository.findPage(limit = 10, offset = 100)
+
+        assertTrue(page.isEmpty())
+    }
 }

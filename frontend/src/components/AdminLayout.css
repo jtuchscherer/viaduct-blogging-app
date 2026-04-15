@@ -338,3 +338,45 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+.admin-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 0 4px;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.admin-pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.admin-page-number {
+  color: #555;
+  font-size: 0.9rem;
+}
+
+.btn-page {
+  padding: 6px 14px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #fff;
+  color: #333;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.btn-page:hover:not(:disabled) {
+  background: #f0f0f0;
+  border-color: #bbb;
+}
+
+.btn-page:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

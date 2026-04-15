@@ -3,16 +3,21 @@ import { useQuery, useMutation } from '@apollo/client/react';
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
 
+const PAGE_SIZE = 10;
+
 const ADMIN_USERS = gql`
-  query AdminUsers {
+  query AdminUsers($limit: Int!, $offset: Int!) {
     admin {
-      users {
-        id
-        username
-        email
-        name
-        isAdmin
-        createdAt
+      users(limit: $limit, offset: $offset) {
+        totalCount
+        users {
+          id
+          username
+          email
+          name
+          isAdmin
+          createdAt
+        }
       }
     }
   }
@@ -51,7 +56,7 @@ interface User {
 }
 
 interface AdminUsersData {
-  admin: { users: User[] };
+  admin: { users: { totalCount: number; users: User[] } };
 }
 
 interface ContentCounts {
@@ -65,7 +70,10 @@ interface AdminUserContentCountsData {
 }
 
 export default function AdminUsers() {
-  const { data, loading, error, refetch } = useQuery<AdminUsersData>(ADMIN_USERS);
+  const [offset, setOffset] = useState(0);
+  const { data, loading, error, refetch } = useQuery<AdminUsersData>(ADMIN_USERS, {
+    variables: { limit: PAGE_SIZE, offset },
+  });
   const [deleteUser] = useMutation(ADMIN_DELETE_USER);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [contentCounts, setContentCounts] = useState<ContentCounts | null>(null);
@@ -101,7 +109,12 @@ export default function AdminUsers() {
   if (loading) return <div className="loading-spinner">Loading...</div>;
   if (error) return <div className="error-message">Error: {error.message}</div>;
 
-  const users: User[] = data?.admin?.users ?? [];
+  const users: User[] = data?.admin?.users.users ?? [];
+  const totalCount = data?.admin?.users.totalCount ?? 0;
+  const currentPage = Math.floor(offset / PAGE_SIZE) + 1;
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+  const rangeStart = totalCount === 0 ? 0 : offset + 1;
+  const rangeEnd = Math.min(offset + PAGE_SIZE, totalCount);
 
   return (
     <div>
@@ -123,7 +136,7 @@ export default function AdminUsers() {
           </thead>
           <tbody>
             {users.map((user) => (
-              <tr key={user.id}>
+              <tr key={user.id} data-testid="admin-table-row">
                 <td>{user.username}</td>
                 <td>{user.name}</td>
                 <td>{user.email}</td>
@@ -147,6 +160,31 @@ export default function AdminUsers() {
             ))}
           </tbody>
         </table>
+      </div>
+
+      <div className="admin-pagination">
+        <span data-testid="admin-page-info">
+          {totalCount === 0 ? 'No users' : `Showing ${rangeStart}–${rangeEnd} of ${totalCount}`}
+        </span>
+        <div className="admin-pagination-controls">
+          <button
+            data-testid="btn-prev-page"
+            className="btn-page"
+            onClick={() => { setOffset(offset - PAGE_SIZE); refetch(); }}
+            disabled={offset === 0}
+          >
+            Previous
+          </button>
+          <span className="admin-page-number">Page {currentPage} of {totalPages || 1}</span>
+          <button
+            data-testid="btn-next-page"
+            className="btn-page"
+            onClick={() => { setOffset(offset + PAGE_SIZE); refetch(); }}
+            disabled={offset + PAGE_SIZE >= totalCount}
+          >
+            Next
+          </button>
+        </div>
       </div>
 
       {userToDelete && (

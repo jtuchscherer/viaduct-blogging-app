@@ -3,21 +3,26 @@ import { useQuery, useMutation } from '@apollo/client/react';
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
 
+const PAGE_SIZE = 10;
+
 const ADMIN_COMMENTS = gql`
-  query AdminComments {
+  query AdminComments($limit: Int!, $offset: Int!) {
     admin {
-      comments {
-        id
-        content
-        author {
+      comments(limit: $limit, offset: $offset) {
+        totalCount
+        comments {
           id
-          username
+          content
+          author {
+            id
+            username
+          }
+          post {
+            id
+            title
+          }
+          createdAt
         }
-        post {
-          id
-          title
-        }
-        createdAt
       }
     }
   }
@@ -44,11 +49,14 @@ interface Comment {
 }
 
 interface AdminCommentsData {
-  admin: { comments: Comment[] };
+  admin: { comments: { totalCount: number; comments: Comment[] } };
 }
 
 export default function AdminComments() {
-  const { data, loading, error, refetch } = useQuery<AdminCommentsData>(ADMIN_COMMENTS);
+  const [offset, setOffset] = useState(0);
+  const { data, loading, error, refetch } = useQuery<AdminCommentsData>(ADMIN_COMMENTS, {
+    variables: { limit: PAGE_SIZE, offset },
+  });
   const [deleteComment] = useMutation(ADMIN_DELETE_COMMENT);
   const [commentToDelete, setCommentToDelete] = useState<Comment | null>(null);
 
@@ -66,7 +74,12 @@ export default function AdminComments() {
   if (loading) return <div className="loading-spinner">Loading...</div>;
   if (error) return <div className="error-message">Error: {error.message}</div>;
 
-  const comments: Comment[] = data?.admin?.comments ?? [];
+  const comments: Comment[] = data?.admin?.comments.comments ?? [];
+  const totalCount = data?.admin?.comments.totalCount ?? 0;
+  const currentPage = Math.floor(offset / PAGE_SIZE) + 1;
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+  const rangeStart = totalCount === 0 ? 0 : offset + 1;
+  const rangeEnd = Math.min(offset + PAGE_SIZE, totalCount);
 
   return (
     <div>
@@ -87,7 +100,7 @@ export default function AdminComments() {
           </thead>
           <tbody>
             {comments.map((comment) => (
-              <tr key={comment.id}>
+              <tr key={comment.id} data-testid="admin-table-row">
                 <td className="truncate">{comment.content}</td>
                 <td>{comment.author.username}</td>
                 <td className="truncate">
@@ -105,6 +118,31 @@ export default function AdminComments() {
             ))}
           </tbody>
         </table>
+      </div>
+
+      <div className="admin-pagination">
+        <span data-testid="admin-page-info">
+          {totalCount === 0 ? 'No comments' : `Showing ${rangeStart}–${rangeEnd} of ${totalCount}`}
+        </span>
+        <div className="admin-pagination-controls">
+          <button
+            data-testid="btn-prev-page"
+            className="btn-page"
+            onClick={() => { setOffset(offset - PAGE_SIZE); refetch(); }}
+            disabled={offset === 0}
+          >
+            Previous
+          </button>
+          <span className="admin-page-number">Page {currentPage} of {totalPages || 1}</span>
+          <button
+            data-testid="btn-next-page"
+            className="btn-page"
+            onClick={() => { setOffset(offset + PAGE_SIZE); refetch(); }}
+            disabled={offset + PAGE_SIZE >= totalCount}
+          >
+            Next
+          </button>
+        </div>
       </div>
 
       {commentToDelete && (

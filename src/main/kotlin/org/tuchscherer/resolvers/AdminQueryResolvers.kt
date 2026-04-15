@@ -7,7 +7,10 @@ import org.tuchscherer.database.repositories.PostRepository
 import org.tuchscherer.database.repositories.UserRepository
 import org.tuchscherer.viadapp.resolvers.resolverbases.AdminQueriesResolvers
 import viaduct.api.Resolver
+import viaduct.api.grts.AdminCommentsPage
+import viaduct.api.grts.AdminPostsPage
 import viaduct.api.grts.AdminStats
+import viaduct.api.grts.AdminUsersPage
 import viaduct.api.grts.Comment as ViaductComment
 import viaduct.api.grts.Post as ViaductPost
 import viaduct.api.grts.User as ViaductUser
@@ -37,16 +40,18 @@ class AdminStatsResolver(
 }
 
 /**
- * Resolver for admin.users query - returns all users.
+ * Resolver for admin.users query - returns a paginated page of users.
  */
 @Resolver
 class AdminUsersResolver(
     private val userRepository: UserRepository
 ) : AdminQueriesResolvers.Users() {
-    override suspend fun resolve(ctx: Context): List<ViaductUser> {
+    override suspend fun resolve(ctx: Context): AdminUsersPage {
         requireAdmin(ctx.requestContext)
 
-        return userRepository.findAll().map { user ->
+        val limit = ctx.arguments.limit ?: 10
+        val offset = ctx.arguments.offset ?: 0
+        val users = userRepository.findPage(limit, offset).map { user ->
             ViaductUser.of(ctx) {
                 id(ctx.globalIDFor(ViaductUser.Reflection, user.id.value.toString()))
                 username(user.username)
@@ -54,6 +59,10 @@ class AdminUsersResolver(
                 name(user.name)
                 createdAt(user.createdAt.toString())
             }
+        }
+        return AdminUsersPage.of(ctx) {
+            users(users)
+            totalCount(userRepository.count().toInt())
         }
     }
 }
@@ -104,16 +113,18 @@ class AdminUserContentCountsResolver(
 }
 
 /**
- * Resolver for admin.posts query - returns all posts.
+ * Resolver for admin.posts query - returns a paginated page of posts.
  */
 @Resolver
 class AdminPostsResolver(
     private val postRepository: PostRepository
 ) : AdminQueriesResolvers.Posts() {
-    override suspend fun resolve(ctx: Context): List<ViaductPost> {
+    override suspend fun resolve(ctx: Context): AdminPostsPage {
         requireAdmin(ctx.requestContext)
 
-        return postRepository.findAll().map { post ->
+        val limit = ctx.arguments.limit ?: 10
+        val offset = ctx.arguments.offset ?: 0
+        val posts = postRepository.findPage(limit, offset).map { post ->
             ViaductPost.of(ctx) {
                 id(ctx.globalIDFor(ViaductPost.Reflection, post.id.value.toString()))
                 title(post.title)
@@ -121,6 +132,10 @@ class AdminPostsResolver(
                 createdAt(post.createdAt.toString())
                 updatedAt(post.updatedAt.toString())
             }
+        }
+        return AdminPostsPage.of(ctx) {
+            posts(posts)
+            totalCount(postRepository.count().toInt())
         }
     }
 }
@@ -149,21 +164,27 @@ class AdminPostResolver(
 }
 
 /**
- * Resolver for admin.comments query - returns all comments.
+ * Resolver for admin.comments query - returns a paginated page of comments.
  */
 @Resolver
 class AdminCommentsResolver(
     private val commentRepository: CommentRepository
 ) : AdminQueriesResolvers.Comments() {
-    override suspend fun resolve(ctx: Context): List<ViaductComment> {
+    override suspend fun resolve(ctx: Context): AdminCommentsPage {
         requireAdmin(ctx.requestContext)
 
-        return commentRepository.findAll().map { comment ->
+        val limit = ctx.arguments.limit ?: 10
+        val offset = ctx.arguments.offset ?: 0
+        val comments = commentRepository.findPage(limit, offset).map { comment ->
             ViaductComment.of(ctx) {
                 id(ctx.globalIDFor(ViaductComment.Reflection, comment.id.value.toString()))
                 content(comment.content)
                 createdAt(comment.createdAt.toString())
             }
+        }
+        return AdminCommentsPage.of(ctx) {
+            comments(comments)
+            totalCount(commentRepository.count().toInt())
         }
     }
 }

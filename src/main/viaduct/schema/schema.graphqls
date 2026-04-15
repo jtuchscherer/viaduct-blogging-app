@@ -78,6 +78,21 @@ type AdminStats {
   likeCount: Int!
 }
 
+type AdminUsersPage {
+  users: [User!]!
+  totalCount: Int!
+}
+
+type AdminPostsPage {
+  posts: [Post!]!
+  totalCount: Int!
+}
+
+type AdminCommentsPage {
+  comments: [Comment!]!
+  totalCount: Int!
+}
+
 type UserContentCounts {
   postCount: Int!
   commentCount: Int!
@@ -107,12 +122,12 @@ input AdminUpdatePostInput {
 # Namespace type grouping all admin queries
 type AdminQueries @namespaceType {
   stats: AdminStats! @resolver
-  users: [User!]! @resolver
+  users(limit: Int = 10, offset: Int = 0): AdminUsersPage! @resolver
   user(id: ID! @idOf(type: "User")): User @resolver
   userContentCounts(userId: ID! @idOf(type: "User")): UserContentCounts! @resolver
-  posts: [Post!]! @resolver
+  posts(limit: Int = 10, offset: Int = 0): AdminPostsPage! @resolver
   post(id: ID! @idOf(type: "Post")): Post @resolver
-  comments: [Comment!]! @resolver
+  comments(limit: Int = 10, offset: Int = 0): AdminCommentsPage! @resolver
 }
 
 # Extend the Query type for read operations
