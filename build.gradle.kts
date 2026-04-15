@@ -51,7 +51,7 @@ dependencies {
 
     // Database dependencies
     implementation("org.xerial:sqlite-jdbc:3.49.1.0")
-    implementation("org.postgresql:postgresql:42.7.3")
+    implementation("org.postgresql:postgresql:42.7.7")
     implementation("org.jetbrains.exposed:exposed-core:0.61.0")
     implementation("org.jetbrains.exposed:exposed-dao:0.61.0")
     implementation("org.jetbrains.exposed:exposed-jdbc:0.61.0")
@@ -73,7 +73,7 @@ dependencies {
     implementation(libs.micrometer.core)
     implementation(libs.micrometer.registry.prometheus)
     // JSON structured logging
-    implementation("net.logstash.logback:logstash-logback-encoder:8.0")
+    implementation("net.logstash.logback:logstash-logback-encoder:8.1")
     // Logback conditional config support
     implementation("org.codehaus.janino:janino:3.1.12")
 
