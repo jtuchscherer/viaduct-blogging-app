@@ -24,7 +24,7 @@ export PGPASSWORD="${PGPASSWORD:-blog}"
 if command -v psql &>/dev/null; then
     PSQL="psql -h $PGHOST -p $PGPORT -U $PGUSER -d $PGDATABASE"
 else
-    PSQL="docker compose exec -T postgres psql -U $PGUSER -d $PGDATABASE"
+    PSQL="podman compose exec -T postgres psql -U $PGUSER -d $PGDATABASE"
 fi
 
 # Generate UUIDs (works on macOS and Linux)

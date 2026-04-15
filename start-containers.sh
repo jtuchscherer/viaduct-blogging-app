@@ -26,13 +26,13 @@ trap cleanup SIGINT SIGTERM EXIT
 
 echo -e "${BLUE}Checking prerequisites...${NC}"
 
-if ! command -v docker &>/dev/null; then
-    echo -e "${RED}Docker is not installed or not in PATH.${NC}"
+if ! command -v podman &>/dev/null; then
+    echo -e "${RED}Podman is not installed or not in PATH.${NC}"
     exit 1
 fi
 
-if ! docker info &>/dev/null; then
-    echo -e "${RED}Docker daemon is not running. Please start Docker Desktop.${NC}"
+if ! podman info &>/dev/null; then
+    echo -e "${RED}Podman daemon is not running. Please start Podman Desktop.${NC}"
     exit 1
 fi
 
@@ -55,7 +55,7 @@ echo ""
 # --- Start all containers ---
 
 echo -e "${BLUE}Starting containers...${NC}"
-docker compose up --build > docker-compose.log 2>&1 &
+podman compose up --build > docker-compose.log 2>&1 &
 COMPOSE_PID=$!
 echo -e "${GREEN}Containers started (PID: $COMPOSE_PID)${NC}"
 echo ""
