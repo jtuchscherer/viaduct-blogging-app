@@ -16,8 +16,8 @@ buildscript {
             "io.netty:netty-resolver:4.1.132.Final",
             "io.netty:netty-transport-native-epoll:4.1.132.Final",
             "io.netty:netty-transport-native-kqueue:4.1.132.Final",
-            "ch.qos.logback:logback-classic:1.5.25",
-            "ch.qos.logback:logback-core:1.5.25"
+            "ch.qos.logback:logback-classic:1.5.32",
+            "ch.qos.logback:logback-core:1.5.32"
         )
     }
 }
@@ -43,15 +43,15 @@ dependencies {
     implementation(libs.viaduct.service.api)
     implementation(libs.viaduct.service.wiring)
     implementation("javax.inject:javax.inject:1")
-    implementation("ch.qos.logback:logback-classic:1.5.25")
+    implementation("ch.qos.logback:logback-classic:1.5.32")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
 
     implementation("com.fasterxml.jackson.core:jackson-databind:2.21.2")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.21.2")
 
     // Database dependencies
-    implementation("org.xerial:sqlite-jdbc:3.49.1.0")
-    implementation("org.postgresql:postgresql:42.7.7")
+    implementation("org.xerial:sqlite-jdbc:3.53.0.0")
+    implementation("org.postgresql:postgresql:42.7.10")
     implementation(libs.exposed.core)
     implementation(libs.exposed.dao)
     implementation(libs.exposed.jdbc)
@@ -93,8 +93,8 @@ dependencies {
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
     testImplementation(libs.koin.test)
     testImplementation(libs.koin.test.junit5)
-    testImplementation("io.mockk:mockk:1.14.3")
-    testImplementation("com.h2database:h2:2.3.232")
+    testImplementation("io.mockk:mockk:1.14.9")
+    testImplementation("com.h2database:h2:2.4.240")
     testImplementation("org.assertj:assertj-core:3.27.7")
 }
 
