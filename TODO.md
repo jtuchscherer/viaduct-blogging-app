@@ -1,6 +1,6 @@
 # TODO: Viaduct Blogging App — Implementation Plan
 
-**Status**: 🚀 In Progress — Phases 1–9 + 11–15 + 17–18 + 10 Complete, Phase 16 Next
+**Status**: 🚀 In Progress — Phases 1–9 + 11–15 + 17–19 + 10 Complete, Phase 16 Next
 
 **Last Updated**: 2026-04-16
 
@@ -9,6 +9,7 @@
 | Suite | Count | Status |
 |---|---|---|
 | Unit + Integration tests (`./gradlew test`) | 196 | ✅ All passing |
+| Frontend unit tests (`npm test`) | 26 | ✅ All passing |
 | API E2E tests (`./query-tests.sh`) | 38 | ✅ All passing |
 | Browser E2E tests (Playwright, 40 tests × 3 browsers) | 120 runs | ✅ All passing |
 
@@ -36,6 +37,7 @@
 | 15a — PostsConnectionResolver Tests | 4 unit tests documenting `findPage`+`count` contract; verifies `findAll` is never called |
 | 15 — DB-Level Cursor Pagination | `PostsConnectionResolver` uses `findPage(limit, offset)` via `toOffsetLimit()`; builds edges/PageInfo manually with `base64("__viaduct:idx:N")` cursors; eliminates full table scan |
 | 12 — Frontend Pagination UI | `HomePage` queries `postsConnection(first: 10)`; "Load More" via Apollo `fetchMore`; "Showing X of Y posts" counter; 4 Playwright tests × 3 browsers |
+| 19 — Frontend Vitest Unit Tests | 26 unit tests across utils (`content.ts`), `AuthContext`, and `RichTextEditor`; Vitest + jsdom + Testing Library; `npm test` runs in <1s |
 | E2E fixes | Fixed `e2e.sh` spurious `cd ..` bug; fixed Playwright strict-mode selector failures (`main h1`, `.first()`); all 81 browser tests now passing |
 | CI fixes | Disabled `gradle-actions` proprietary caching component (`cache-disabled: true`) to suppress licensing warning |
 | 10 — Docker Deployment | `Dockerfile` (runtime image using `installDist` distribution), `docker-compose.yml` with SQLite volume, `.dockerignore`; `DATABASE_URL` defaults to `/app/data/blog.db` in prod config; note: multi-stage builder deferred until Viaduct jars are on a CI-accessible registry |
@@ -46,7 +48,7 @@
 - **UI Bug Fixes**: See section below
 - **Tech Debt**: ~~Investigate Viaduct connection resolver testing API~~ ✅ DONE (see below)
 - **Dependency upgrade**: logstash-logback-encoder 8.1 → 9.0 (blocked on Jackson 3 migration — 9.0 requires Jackson 3.0.1; do as two-step: upgrade Jackson first, then logstash)
-- **Phase 19**: Frontend unit test suite with Vitest — see section below
+- ~~**Phase 19**: Frontend unit test suite with Vitest~~ ✅ DONE
 
 ---
 
@@ -328,17 +330,17 @@ The third test is the key regression guard: it documents that the current implem
 
 ---
 
-## Phase 19: Frontend Unit Test Suite (Vitest) ⏳ TODO
+## Phase 19: Frontend Unit Test Suite (Vitest) ✅ DONE
 
 **Goal**: Add a fast, isolated unit test layer to the frontend that covers business logic, utility functions, and component behaviour — complementing the existing Playwright E2E suite.
 
 **Why Vitest**: Already aligns with the Vite toolchain (zero extra config for transforms), Jest-compatible API so the learning curve is minimal, and runs in Node with jsdom so tests are fast and CI-friendly without a browser.
 
 #### Setup tasks
-- [ ] Install `vitest`, `@vitest/ui`, `jsdom`, `@testing-library/react`, `@testing-library/user-event`, `@testing-library/jest-dom`
-- [ ] Add `vitest.config.ts` (or extend `vite.config.ts`) with `environment: 'jsdom'` and `setupFiles: ['./test/setup.ts']`
-- [ ] Add `test/setup.ts` importing `@testing-library/jest-dom` matchers
-- [ ] Add `"test": "vitest run"` and `"test:watch": "vitest"` scripts to `package.json`
+- [x] Install `vitest`, `@vitest/ui`, `jsdom`, `@testing-library/react`, `@testing-library/user-event`, `@testing-library/jest-dom`
+- [x] Add `vitest.config.ts` with `environment: 'jsdom'`, `globals: true`, `setupFiles`, and `include` pattern scoped to `test/`
+- [x] Add `test/setup.ts` importing `@testing-library/jest-dom` matchers + `ResizeObserver` polyfill for Lexical
+- [x] Add `"test": "vitest run"`, `"test:watch": "vitest"`, `"test:ui": "vitest --ui"` scripts to `package.json`
 - [ ] Wire into CI: add a `Run frontend unit tests` step after the existing lint step
 
 #### What to test (initial scope)

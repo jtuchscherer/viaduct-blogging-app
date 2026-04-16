@@ -102,6 +102,7 @@ If the database already has data it will prompt before clearing it.
 
 ```bash
 ./gradlew test                    # 196 backend unit + integration tests
+cd frontend && npm test           # 26 frontend unit tests (Vitest, runs in <1s)
 ./query-tests.sh                  # 38 API E2E tests (backend must be running)
 ./e2e.sh                          # 120 Playwright browser tests (starts servers automatically)
 cd frontend && npm run test:e2e   # Playwright only (servers must already be running)
@@ -112,6 +113,7 @@ cd frontend && npm run test:e2e   # Playwright only (servers must already be run
 | Suite | Count | Status |
 |---|---|---|
 | Unit + Integration (`./gradlew test`) | 196 | All passing |
+| Frontend unit tests (`npm test`) | 26 | All passing |
 | API E2E (`./query-tests.sh`) | 38 | All passing |
 | Browser E2E (Playwright, 40 tests × 3 browsers) | 120 runs | All passing |
 
@@ -137,7 +139,7 @@ This is the reference document for understanding the overall architecture.
 
 ### `TODO.md` — feature phases and roadmap
 
-Tracks every implementation phase with task checklists, technical approaches, and success criteria. Phases 1–15, 17–18, and 10 are complete. Currently tracks:
+Tracks every implementation phase with task checklists, technical approaches, and success criteria. Phases 1–15, 17–19, and 10 are complete. Currently tracks:
 
 - **Phase 16** (next): PostgreSQL/RDS support, HikariCP connection pooling, Flyway migrations
 - UI bug fix status
