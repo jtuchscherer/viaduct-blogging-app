@@ -2,7 +2,7 @@
 viaduct = "0.28.0"
 ktor = "3.4.2"
 koin = "4.2.1"
-micrometer = "1.15.0"
+micrometer = "1.16.5"
 exposed = "1.2.0"
 
 [plugins]

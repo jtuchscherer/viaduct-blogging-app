@@ -23,7 +23,7 @@ buildscript {
 }
 
 plugins {
-    kotlin("jvm") version "2.2.20"
+    kotlin("jvm") version "2.3.20"
     alias(libs.plugins.viaduct.application)
     alias(libs.plugins.viaduct.module)
     application
@@ -119,6 +119,16 @@ configurations.all {
         "io.netty:netty-transport-native-epoll:4.2.12.Final",
         "io.netty:netty-transport-native-kqueue:4.2.12.Final"
     )
+}
+
+// The Viaduct plugin unconditionally adds -Xcontext-receivers, which Kotlin 2.3+ rejects.
+// Strip it out after the plugin has configured the task since our code doesn't use that feature.
+afterEvaluate {
+    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+        compilerOptions {
+            freeCompilerArgs.set(freeCompilerArgs.get().filter { it != "-Xcontext-receivers" })
+        }
+    }
 }
 
 tasks.test {
