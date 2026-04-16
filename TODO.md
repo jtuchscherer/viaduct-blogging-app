@@ -86,7 +86,7 @@
 - [x] Make `DATABASE_URL`, `JWT_SECRET`, `CORS_ORIGIN` configurable via env vars; `DATABASE_URL` defaults to `/app/data/blog.db`
 - [x] `.dockerignore` to exclude `build/` (except the fat JAR), `node_modules/`, etc.
 - [x] `docker-compose.yml` with SQLite volume mount
-- [ ] Update README with Docker instructions
+- [x] Update README with Docker instructions
 
 **Example Dockerfile:**
 ```dockerfile
@@ -341,7 +341,7 @@ The third test is the key regression guard: it documents that the current implem
 - [x] Add `vitest.config.ts` with `environment: 'jsdom'`, `globals: true`, `setupFiles`, and `include` pattern scoped to `test/`
 - [x] Add `test/setup.ts` importing `@testing-library/jest-dom` matchers + `ResizeObserver` polyfill for Lexical
 - [x] Add `"test": "vitest run"`, `"test:watch": "vitest"`, `"test:ui": "vitest --ui"` scripts to `package.json`
-- [ ] Wire into CI: add a `Run frontend unit tests` step after the existing lint step
+- [x] Wire into CI: add a `Run frontend unit tests` step (Node 22, `npm ci && npm test`) after the backend test step
 
 #### What to test (initial scope)
 - **Utility functions** (`frontend/src/utils/`): `getHtmlPreview()` and any other pure functions — these are ideal first tests since they have no React dependencies
