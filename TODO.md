@@ -46,6 +46,7 @@
 - **UI Bug Fixes**: See section below
 - **Tech Debt**: ~~Investigate Viaduct connection resolver testing API~~ ✅ DONE (see below)
 - **Dependency upgrade**: logstash-logback-encoder 8.1 → 9.0 (blocked on Jackson 3 migration — 9.0 requires Jackson 3.0.1; do as two-step: upgrade Jackson first, then logstash)
+- **Phase 19**: Frontend unit test suite with Vitest — see section below
 
 ---
 
@@ -324,6 +325,44 @@ The third test is the key regression guard: it documents that the current implem
 **XSS note**: If storing/rendering HTML, always sanitize with `dompurify` before inserting into the DOM. If using Lexical JSON + Lexical's read-only renderer, no sanitization is needed.
 
 **Success Criteria**: Authors can write formatted posts with at minimum bold, italic, headings, and lists; content is persisted and rendered correctly; no XSS vulnerabilities introduced; Playwright tests pass.
+
+---
+
+## Phase 19: Frontend Unit Test Suite (Vitest) ⏳ TODO
+
+**Goal**: Add a fast, isolated unit test layer to the frontend that covers business logic, utility functions, and component behaviour — complementing the existing Playwright E2E suite.
+
+**Why Vitest**: Already aligns with the Vite toolchain (zero extra config for transforms), Jest-compatible API so the learning curve is minimal, and runs in Node with jsdom so tests are fast and CI-friendly without a browser.
+
+#### Setup tasks
+- [ ] Install `vitest`, `@vitest/ui`, `jsdom`, `@testing-library/react`, `@testing-library/user-event`, `@testing-library/jest-dom`
+- [ ] Add `vitest.config.ts` (or extend `vite.config.ts`) with `environment: 'jsdom'` and `setupFiles: ['./test/setup.ts']`
+- [ ] Add `test/setup.ts` importing `@testing-library/jest-dom` matchers
+- [ ] Add `"test": "vitest run"` and `"test:watch": "vitest"` scripts to `package.json`
+- [ ] Wire into CI: add a `Run frontend unit tests` step after the existing lint step
+
+#### What to test (initial scope)
+- **Utility functions** (`frontend/src/utils/`): `getHtmlPreview()` and any other pure functions — these are ideal first tests since they have no React dependencies
+- **Type guards / helpers** (`frontend/src/types.ts`): any runtime type-checking or transformation logic
+- **`RichTextEditor` component**: renders toolbar buttons; accepts and displays initial content; calls `onChange` when content changes
+- **`PostCard` / post preview components**: renders title, author, preview text correctly; truncates long previews; renders rich-text HTML safely via DOMPurify
+- **Auth utilities**: token parsing, `isAdmin` check derived from JWT claims
+- **Apollo mock layer**: set up `MockedProvider` wrapper so components that fire GraphQL queries can be tested in isolation
+
+#### Test conventions to follow
+- Mirror the backend convention: test behaviour, not implementation — assert on rendered output and return values, not internal state
+- Place tests in `frontend/test/` (mirroring `frontend/e2e/`), with subdirectories matching `src/` structure (e.g. `test/utils/`, `test/components/`)
+- Use `@testing-library/user-event` for interaction tests (click, type) rather than firing raw DOM events
+- Mock Apollo queries with `MockedProvider`; never make real network calls in unit tests
+- Keep E2E tests for full user journeys; unit tests for logic and component rendering
+
+**Key files to create**:
+- `frontend/vitest.config.ts`
+- `frontend/test/setup.ts`
+- `frontend/test/utils/*.test.ts`
+- `frontend/test/components/*.test.tsx`
+
+**Success Criteria**: `npm test` runs in < 10s; all unit tests pass; CI runs unit tests on every push; coverage report generated for utility and component files.
 
 ---
 
