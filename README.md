@@ -6,7 +6,8 @@ A full-stack blogging application with a Kotlin/Viaduct GraphQL backend and a Re
 
 - Java JDK 21
 - Node.js + npm
-- (Optional) Docker + Docker Compose — for containerised deployment
+- (Optional) Podman + `podman compose` — for containerised deployment
+- (Optional) `psql` — only needed to run `seed-database.sh` manually
 
 ## Quick Start
 
@@ -34,28 +35,69 @@ Backend:  http://localhost:8080
 Frontend: http://localhost:5173
 ```
 
-### `start-containers.sh` — Docker deployment
+### `start-containers.sh` — containerised deployment
 
-Builds the Gradle distribution (`installDist`), starts all three containers (postgres, app, frontend) via `docker compose`, waits for both to be healthy, then seeds the database. Ctrl+C calls `docker compose down`.
+Runs the full stack (PostgreSQL + backend + frontend) in containers via Podman Compose. On first run it builds the Gradle distribution (`installDist`), builds both container images, starts all three services, waits for them to be healthy, then seeds the database with sample data. Ctrl+C shuts everything down cleanly.
 
-Before running for the first time, create your `.env` file from the example:
+**Prerequisites:** Podman must be installed and its VM must be running (`podman machine start`). The script will start the VM automatically if it is stopped. `psql` is required only if you run `seed-database.sh` manually — the startup script handles seeding automatically.
+
+#### First-time setup
 
 ```bash
 cp .env.example .env
-# edit .env and set strong values for POSTGRES_PASSWORD and JWT_SECRET
+# Edit .env — set strong values for POSTGRES_PASSWORD and JWT_SECRET
 ```
 
-Then start everything:
+| Variable | Default | Notes |
+|---|---|---|
+| `POSTGRES_DB` | `blog` | Database name |
+| `POSTGRES_USER` | `blog` | Database user |
+| `POSTGRES_PASSWORD` | *(required)* | Set a strong password |
+| `JWT_SECRET` | *(required)* | Set a random secret for signing JWTs |
+| `CORS_ORIGIN` | `localhost:5173` | Allowed CORS origin for the backend |
+
+> **Note:** `VITE_API_URL` (`http://localhost:8080`) is baked into the frontend JS bundle at image build time. If you expose the backend on a different host or port, rebuild the frontend image with `--build-arg VITE_API_URL=<url>`.
+
+#### Start everything
 
 ```bash
 ./start-containers.sh
 ```
 
-Useful commands while running:
+Once healthy, services are available at:
+
+| Service | URL |
+|---|---|
+| Frontend | http://localhost:5173 |
+| Backend / GraphQL | http://localhost:8080/graphql |
+| GraphiQL | http://localhost:8080/graphiql?path=/graphql |
+| Health check | http://localhost:8080/health |
+| Prometheus metrics | http://localhost:8080/metrics |
+| PostgreSQL | localhost:5432 |
+
+#### Viewing logs
+
 ```bash
 tail -f docker-compose.log          # all container output
 docker compose logs -f app          # backend only
 docker compose logs -f frontend     # frontend only
+```
+
+#### Rebuilding after code changes
+
+```bash
+./gradlew installDist -x test       # rebuild the backend distribution
+docker compose up --build app       # rebuild and restart the backend container only
+docker compose up --build frontend  # rebuild and restart the frontend container only
+```
+
+#### Stopping
+
+Ctrl+C in the `start-containers.sh` terminal calls `docker compose down` automatically. To stop without the script:
+
+```bash
+docker compose down           # stop and remove containers (data volume is preserved)
+docker compose down -v        # also remove the postgres data volume (wipes the database)
 ```
 
 ### `e2e.sh` — full browser E2E test suite
