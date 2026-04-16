@@ -2,7 +2,7 @@
 
 **Status**: 🚀 In Progress — Phases 1–9 + 11–15 + 17–18 + 10 Complete, Phase 16 Next
 
-**Last Updated**: 2026-04-14
+**Last Updated**: 2026-04-16
 
 ## Test Statistics
 
@@ -45,6 +45,7 @@
 - **Phase 16**: Production database support — PostgreSQL/RDS, connection pooling, migrations
 - **UI Bug Fixes**: See section below
 - **Tech Debt**: ~~Investigate Viaduct connection resolver testing API~~ ✅ DONE (see below)
+- **Dependency upgrade**: logstash-logback-encoder 8.1 → 9.0 (blocked on Jackson 3 migration — 9.0 requires Jackson 3.0.1; do as two-step: upgrade Jackson first, then logstash)
 
 ---
 
