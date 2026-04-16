@@ -12,7 +12,7 @@
     "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
-    "@apollo/client": "^4.0.7",
+    "@apollo/client": "^4.1.7",
     "@lexical/code": "^0.42.0",
     "@lexical/history": "^0.42.0",
     "@lexical/html": "^0.42.0",
@@ -24,8 +24,8 @@
     "dompurify": "^3.3.3",
     "graphql": "^16.11.0",
     "lexical": "^0.42.0",
-    "react": "^19.1.1",
-    "react-dom": "^19.1.1",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
     "react-router-dom": "^7.13.2"
   },
   "devDependencies": {
@@ -41,7 +41,7 @@
     "eslint-plugin-react-refresh": "^0.4.22",
     "globals": "^17.4.0",
     "typescript": "~6.0.2",
-    "typescript-eslint": "^8.45.0",
-    "vite": "^8.0.3"
+    "typescript-eslint": "^8.58.2",
+    "vite": "^8.0.8"
   }
 }
