@@ -23,7 +23,7 @@ buildscript {
 }
 
 plugins {
-    kotlin("jvm") version "2.3.20"
+    alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.viaduct.application)
     alias(libs.plugins.viaduct.module)
     application
@@ -43,15 +43,15 @@ dependencies {
     implementation(libs.viaduct.service.api)
     implementation(libs.viaduct.service.wiring)
     implementation("javax.inject:javax.inject:1")
-    implementation("ch.qos.logback:logback-classic:1.5.32")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+    implementation(libs.logback.classic)
+    implementation(libs.kotlinx.coroutines.core)
 
-    implementation("com.fasterxml.jackson.core:jackson-databind:2.21.2")
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.21.2")
+    implementation(libs.jackson.databind)
+    implementation(libs.jackson.module.kotlin)
 
     // Database dependencies
-    implementation("org.xerial:sqlite-jdbc:3.53.0.0")
-    implementation("org.postgresql:postgresql:42.7.10")
+    implementation(libs.sqlite.jdbc)
+    implementation(libs.postgresql)
     implementation(libs.exposed.core)
     implementation(libs.exposed.dao)
     implementation(libs.exposed.jdbc)
@@ -73,9 +73,9 @@ dependencies {
     implementation(libs.micrometer.core)
     implementation(libs.micrometer.registry.prometheus)
     // JSON structured logging
-    implementation("net.logstash.logback:logstash-logback-encoder:8.1")
+    implementation(libs.logstash.logback.encoder)
     // Logback conditional config support
-    implementation("org.codehaus.janino:janino:3.1.12")
+    implementation(libs.janino)
 
     // Koin for Dependency Injection
     implementation(libs.koin.core)
@@ -87,15 +87,15 @@ dependencies {
     testImplementation(libs.viaduct.engine.wiring)
     testImplementation(libs.viaduct.engine.runtime)
     testImplementation(libs.viaduct.engine.api)
-    testImplementation("org.junit.jupiter:junit-jupiter:5.12.2")
-    testImplementation("org.junit.jupiter:junit-jupiter-engine:5.12.2")
-    testImplementation("org.junit.platform:junit-platform-launcher:1.12.2")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
+    testImplementation(libs.junit.jupiter)
+    testImplementation(libs.junit.jupiter.engine)
+    testImplementation(libs.junit.platform.launcher)
+    testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.koin.test)
     testImplementation(libs.koin.test.junit5)
-    testImplementation("io.mockk:mockk:1.14.9")
-    testImplementation("com.h2database:h2:2.4.240")
-    testImplementation("org.assertj:assertj-core:3.27.7")
+    testImplementation(libs.mockk)
+    testImplementation(libs.h2)
+    testImplementation(libs.assertj.core)
 }
 
 application {
@@ -103,21 +103,22 @@ application {
 }
 
 // Force Netty to a patched version to address CVEs (CRLF injection, HTTP request smuggling)
+val nettyVersion: String = libs.versions.netty.get()
 configurations.all {
     resolutionStrategy.force(
-        "io.netty:netty-codec-http:4.2.12.Final",
-        "io.netty:netty-codec-http2:4.2.12.Final",
-        "io.netty:netty-codec-base:4.2.12.Final",
-        "io.netty:netty-codec:4.2.12.Final",
-        "io.netty:netty-handler:4.2.12.Final",
-        "io.netty:netty-common:4.2.12.Final",
-        "io.netty:netty-buffer:4.2.12.Final",
-        "io.netty:netty-transport:4.2.12.Final",
-        "io.netty:netty-resolver:4.2.12.Final",
-        "io.netty:netty-transport-classes-epoll:4.2.12.Final",
-        "io.netty:netty-transport-classes-kqueue:4.2.12.Final",
-        "io.netty:netty-transport-native-epoll:4.2.12.Final",
-        "io.netty:netty-transport-native-kqueue:4.2.12.Final"
+        "io.netty:netty-codec-http:$nettyVersion",
+        "io.netty:netty-codec-http2:$nettyVersion",
+        "io.netty:netty-codec-base:$nettyVersion",
+        "io.netty:netty-codec:$nettyVersion",
+        "io.netty:netty-handler:$nettyVersion",
+        "io.netty:netty-common:$nettyVersion",
+        "io.netty:netty-buffer:$nettyVersion",
+        "io.netty:netty-transport:$nettyVersion",
+        "io.netty:netty-resolver:$nettyVersion",
+        "io.netty:netty-transport-classes-epoll:$nettyVersion",
+        "io.netty:netty-transport-classes-kqueue:$nettyVersion",
+        "io.netty:netty-transport-native-epoll:$nettyVersion",
+        "io.netty:netty-transport-native-kqueue:$nettyVersion"
     )
 }
 
