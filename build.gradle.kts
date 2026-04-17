@@ -108,8 +108,10 @@ application {
 // lines can be removed once Viaduct ships a fix.
 val viaductVersion: String = libs.versions.viaduct.get()
 val nettyVersion: String = libs.versions.netty.get()
+val jacksonCore3Version: String = libs.versions.jackson3.get()
 configurations.all {
     resolutionStrategy.force(
+        "tools.jackson.core:jackson-core:$jacksonCore3Version",
         "com.airbnb.viaduct:service-runtime:$viaductVersion",
         "com.airbnb.viaduct:service-wiring:$viaductVersion",
         "com.airbnb.viaduct:tenant-runtime:$viaductVersion",
