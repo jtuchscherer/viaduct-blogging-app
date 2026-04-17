@@ -47,7 +47,7 @@
 - **Phase 16**: Production database support — PostgreSQL/RDS, connection pooling, migrations
 - **UI Bug Fixes**: See section below
 - **Tech Debt**: ~~Investigate Viaduct connection resolver testing API~~ ✅ DONE (see below)
-- **Dependency upgrade**: logstash-logback-encoder 8.1 → 9.0 (blocked on Jackson 3 migration — 9.0 requires Jackson 3.0.1; do as two-step: upgrade Jackson first, then logstash)
+- ~~**Dependency upgrade**: logstash-logback-encoder 8.1 → 9.0~~ ✅ DONE — bumped to 9.0; Jackson 3 (`tools.jackson`) coexists with Jackson 2 (`com.fasterxml.jackson`) since they are separate namespaces; no code migration needed (Ktor 3.4.2 itself stays on Jackson 2.x)
 - ~~**Phase 19**: Frontend unit test suite with Vitest~~ ✅ DONE
 
 ---
