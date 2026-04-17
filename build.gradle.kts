@@ -102,10 +102,18 @@ application {
     mainClass.set("org.tuchscherer.viadapp.ViaductApplicationKt")
 }
 
-// Force Netty to a patched version to address CVEs (CRLF injection, HTTP request smuggling)
+// Force Netty to a patched version to address CVEs (CRLF injection, HTTP request smuggling).
+// Also force the four internal Viaduct artifacts that tenant-api:0.29.0's testFixturesApiElements
+// variant incorrectly declares as version "INCLUDED" (published module metadata bug). These four
+// lines can be removed once Viaduct ships a fix.
+val viaductVersion: String = libs.versions.viaduct.get()
 val nettyVersion: String = libs.versions.netty.get()
 configurations.all {
     resolutionStrategy.force(
+        "com.airbnb.viaduct:service-runtime:$viaductVersion",
+        "com.airbnb.viaduct:service-wiring:$viaductVersion",
+        "com.airbnb.viaduct:tenant-runtime:$viaductVersion",
+        "com.airbnb.viaduct:tenant-wiring:$viaductVersion",
         "io.netty:netty-codec-http:$nettyVersion",
         "io.netty:netty-codec-http2:$nettyVersion",
         "io.netty:netty-codec-base:$nettyVersion",
