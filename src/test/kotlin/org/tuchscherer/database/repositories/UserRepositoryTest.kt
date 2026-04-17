@@ -1,5 +1,6 @@
 package org.tuchscherer.database.repositories
 
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.*
@@ -260,5 +261,40 @@ class UserRepositoryTest {
         val page = userRepository.findPage(limit = 10, offset = 100)
 
         assertTrue(page.isEmpty())
+    }
+
+    @Test
+    fun `update persists user field changes`() {
+        val user = userRepository.create(
+            username = "updateuser",
+            email = "update@example.com",
+            name = "Original Name",
+            passwordHash = "hash",
+            salt = "salt"
+        )
+
+        transaction { user.name = "Updated Name" }
+        userRepository.update(user)
+
+        val found = userRepository.findById(user.id.value)
+        assertTrue(found != null)
+        assertEquals("Updated Name", found!!.name)
+    }
+
+    @Test
+    fun `count returns total number of users`() {
+        userRepository.create(username = "user1", email = "u1@example.com", name = "U1", passwordHash = "h", salt = "s")
+        userRepository.create(username = "user2", email = "u2@example.com", name = "U2", passwordHash = "h", salt = "s")
+
+        val count = userRepository.count()
+
+        assertEquals(2L, count)
+    }
+
+    @Test
+    fun `count returns zero when no users`() {
+        val count = userRepository.count()
+
+        assertEquals(0L, count)
     }
 }

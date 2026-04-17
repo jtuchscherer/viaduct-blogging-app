@@ -2,6 +2,7 @@ package org.tuchscherer.database.repositories
 
 import org.tuchscherer.database.User
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.*
@@ -324,5 +325,105 @@ class PostRepositoryTest {
         val result = postRepository.getAuthorsByPostIds(emptyList())
 
         assertTrue(result.isEmpty())
+    }
+
+    @Test
+    fun `update persists post field changes`() {
+        val post = postRepository.create(
+            title = "Original Title",
+            content = "Original Content",
+            authorId = testUser.id
+        )
+
+        org.jetbrains.exposed.v1.jdbc.transactions.transaction {
+            post.title = "Updated Title"
+            post.content = "Updated Content"
+        }
+        postRepository.update(post)
+
+        val found = postRepository.findById(post.id.value)
+        Assertions.assertNotNull(found)
+        assertEquals("Updated Title", found!!.title)
+        assertEquals("Updated Content", found.content)
+    }
+
+    @Test
+    fun `getAuthorForPost returns author when post exists`() {
+        val post = postRepository.create(
+            title = "Test Post",
+            content = "Content",
+            authorId = testUser.id
+        )
+
+        val author = postRepository.getAuthorForPost(post.id.value)
+
+        Assertions.assertNotNull(author)
+        assertEquals(testUser.id.value, author!!.id.value)
+    }
+
+    @Test
+    fun `getAuthorForPost returns null when post does not exist`() {
+        val author = postRepository.getAuthorForPost(UUID.randomUUID())
+
+        Assertions.assertNull(author)
+    }
+
+    @Test
+    fun `countByAuthorId returns post count for author`() {
+        postRepository.create(title = "Post 1", content = "c", authorId = testUser.id)
+        postRepository.create(title = "Post 2", content = "c", authorId = testUser.id)
+
+        val count = postRepository.countByAuthorId(testUser.id.value)
+
+        assertEquals(2L, count)
+    }
+
+    @Test
+    fun `countByAuthorId returns zero when author has no posts`() {
+        val count = postRepository.countByAuthorId(UUID.randomUUID())
+
+        assertEquals(0L, count)
+    }
+
+    @Test
+    fun `deleteByAuthorId removes all posts by author and cascades dependents`() {
+        val commentRepository = ExposedCommentRepository()
+        val likeRepository = ExposedLikeRepository()
+
+        val post1 = postRepository.create(title = "Post 1", content = "c", authorId = testUser.id)
+        val post2 = postRepository.create(title = "Post 2", content = "c", authorId = testUser.id)
+
+        commentRepository.create(content = "comment", postId = post1.id, authorId = testUser.id)
+        likeRepository.create(postId = post2.id, userId = testUser.id)
+
+        val deleted = postRepository.deleteByAuthorId(testUser.id.value)
+
+        assertEquals(2, deleted)
+        Assertions.assertNull(postRepository.findById(post1.id.value))
+        Assertions.assertNull(postRepository.findById(post2.id.value))
+        assertEquals(0, commentRepository.countByPostId(post1.id))
+        assertEquals(0, likeRepository.countByPostId(post2.id))
+    }
+
+    @Test
+    fun `deleteByAuthorId returns zero when author has no posts`() {
+        val deleted = postRepository.deleteByAuthorId(UUID.randomUUID())
+
+        assertEquals(0, deleted)
+    }
+
+    @Test
+    fun `updateById with both fields null leaves post unchanged`() {
+        val post = postRepository.create(
+            title = "Original Title",
+            content = "Original Content",
+            authorId = testUser.id
+        )
+
+        val updated = postRepository.updateById(id = post.id.value, title = null, content = null)
+
+        Assertions.assertNotNull(updated)
+        assertEquals("Original Title", updated!!.title)
+        assertEquals("Original Content", updated.content)
     }
 }

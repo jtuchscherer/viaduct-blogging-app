@@ -5,7 +5,9 @@ package org.tuchscherer.resolvers
 import org.tuchscherer.auth.RequestContext
 import org.tuchscherer.database.Like
 import org.tuchscherer.database.User
+import org.tuchscherer.database.repositories.CommentRepository
 import org.tuchscherer.database.repositories.LikeRepository
+import org.tuchscherer.viadapp.resolvers.PostCommentCountResolver
 import org.tuchscherer.viadapp.resolvers.PostIsLikedByMeResolver
 import org.tuchscherer.viadapp.resolvers.PostLikeCountResolver
 import org.tuchscherer.viadapp.resolvers.PostLikesResolver
@@ -31,6 +33,7 @@ import java.util.*
 class LikeFieldResolversTest : DefaultAbstractResolverTestBase() {
 
     private lateinit var likeRepository: LikeRepository
+    private lateinit var commentRepository: CommentRepository
     private lateinit var mockUser: User
     private lateinit var mockLike: Like
     private val userId = UUID.randomUUID()
@@ -52,6 +55,7 @@ class LikeFieldResolversTest : DefaultAbstractResolverTestBase() {
     @BeforeEach
     fun setup() {
         likeRepository = mockk<LikeRepository>()
+        commentRepository = mockk<CommentRepository>()
 
         mockUser = mockk<User>(relaxed = true)
         every { mockUser.id } returns EntityID(userId, mockk())
@@ -67,6 +71,7 @@ class LikeFieldResolversTest : DefaultAbstractResolverTestBase() {
         org.koin.core.context.startKoin {
             modules(module {
                 single<LikeRepository> { likeRepository }
+                single<CommentRepository> { commentRepository }
             })
         }
     }
@@ -184,5 +189,37 @@ class LikeFieldResolversTest : DefaultAbstractResolverTestBase() {
 
         assertFalse(result)
         verify(exactly = 0) { likeRepository.existsByPostAndUser(any<UUID>(), any<UUID>()) }
+    }
+
+    // ── PostCommentCountResolver ────────────────────────────────────────────
+
+    @Test
+    fun `PostCommentCountResolver returns comment count for post`() = runBlocking {
+        val resolver = PostCommentCountResolver()
+        every { commentRepository.countByPostId(postId) } returns 4L
+
+        val result = runFieldResolver(
+            resolver = resolver,
+            objectValue = postObj(),
+            queryValue = queryObj(),
+            arguments = NoArguments
+        )
+
+        assertEquals(4, result)
+    }
+
+    @Test
+    fun `PostCommentCountResolver returns zero when no comments`() = runBlocking {
+        val resolver = PostCommentCountResolver()
+        every { commentRepository.countByPostId(postId) } returns 0L
+
+        val result = runFieldResolver(
+            resolver = resolver,
+            objectValue = postObj(),
+            queryValue = queryObj(),
+            arguments = NoArguments
+        )
+
+        assertEquals(0, result)
     }
 }

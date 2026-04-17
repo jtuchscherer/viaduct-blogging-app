@@ -8,10 +8,15 @@ import org.tuchscherer.database.Comment
 import org.tuchscherer.database.Post
 import org.tuchscherer.database.User
 import org.tuchscherer.database.repositories.CommentRepository
+import org.tuchscherer.database.repositories.LikeRepository
 import org.tuchscherer.database.repositories.PostRepository
 import org.tuchscherer.database.repositories.UserRepository
 import org.tuchscherer.viadapp.resolvers.AdminCommentsResolver
+import org.tuchscherer.viadapp.resolvers.AdminPostResolver
 import org.tuchscherer.viadapp.resolvers.AdminPostsResolver
+import org.tuchscherer.viadapp.resolvers.AdminStatsResolver
+import org.tuchscherer.viadapp.resolvers.AdminUserContentCountsResolver
+import org.tuchscherer.viadapp.resolvers.AdminUserResolver
 import org.tuchscherer.viadapp.resolvers.AdminUsersResolver
 import io.mockk.*
 import kotlinx.coroutines.runBlocking
@@ -23,6 +28,7 @@ import org.junit.jupiter.api.assertThrows
 import org.koin.core.context.GlobalContext
 import org.koin.dsl.module
 import viaduct.api.grts.*
+import viaduct.api.grts.Post as ViaductPost
 import viaduct.engine.SchemaFactory
 import viaduct.engine.api.ViaductSchema
 import viaduct.engine.runtime.execution.DefaultCoroutineInterop
@@ -35,6 +41,7 @@ class AdminQueryResolversTest : DefaultAbstractResolverTestBase() {
     private lateinit var userRepository: UserRepository
     private lateinit var postRepository: PostRepository
     private lateinit var commentRepository: CommentRepository
+    private lateinit var likeRepository: LikeRepository
 
     private lateinit var mockAdminUser: User
     private lateinit var mockRegularUser: User
@@ -58,6 +65,7 @@ class AdminQueryResolversTest : DefaultAbstractResolverTestBase() {
         userRepository = mockk()
         postRepository = mockk()
         commentRepository = mockk()
+        likeRepository = mockk()
 
         mockAdminUser = mockk(relaxed = true)
         every { mockAdminUser.id } returns EntityID(adminUserId, mockk())
@@ -93,6 +101,7 @@ class AdminQueryResolversTest : DefaultAbstractResolverTestBase() {
                 single { userRepository }
                 single { postRepository }
                 single { commentRepository }
+                single { likeRepository }
             })
         }
     }
@@ -262,6 +271,214 @@ class AdminQueryResolversTest : DefaultAbstractResolverTestBase() {
     fun `AdminCommentsResolver throws AuthorizationException for non-admin user`() = runBlocking {
         val resolver = AdminCommentsResolver(commentRepository)
         val args = AdminQueries_Comments_Arguments.Builder(context).limit(10).offset(0).build()
+
+        assertThrows<AuthorizationException> {
+            runFieldResolver(
+                resolver = resolver,
+                objectValue = adminQueriesObj(),
+                queryValue = queryObj(),
+                arguments = args,
+                requestContext = RequestContext(user = mockRegularUser)
+            )
+        }
+    }
+
+    // ── AdminStatsResolver ────────────────────────────────────────────────────
+
+    @Test
+    fun `AdminStatsResolver returns aggregate counts`() = runBlocking {
+        val resolver = AdminStatsResolver(userRepository, postRepository, commentRepository, likeRepository)
+
+        every { userRepository.count() } returns 5L
+        every { postRepository.count() } returns 10L
+        every { commentRepository.count() } returns 20L
+        every { likeRepository.count() } returns 30L
+
+        val result = runFieldResolver(
+            resolver = resolver,
+            objectValue = adminQueriesObj(),
+            queryValue = queryObj(),
+            arguments = viaduct.api.types.Arguments.NoArguments,
+            requestContext = RequestContext(user = mockAdminUser)
+        )
+
+        assertEquals(5, result.getUserCount())
+        assertEquals(10, result.getPostCount())
+        assertEquals(20, result.getCommentCount())
+        assertEquals(30, result.getLikeCount())
+    }
+
+    @Test
+    fun `AdminStatsResolver throws AuthorizationException for non-admin user`() = runBlocking {
+        val resolver = AdminStatsResolver(userRepository, postRepository, commentRepository, likeRepository)
+
+        assertThrows<AuthorizationException> {
+            runFieldResolver(
+                resolver = resolver,
+                objectValue = adminQueriesObj(),
+                queryValue = queryObj(),
+                arguments = viaduct.api.types.Arguments.NoArguments,
+                requestContext = RequestContext(user = mockRegularUser)
+            )
+        }
+    }
+
+    // ── AdminUserResolver ─────────────────────────────────────────────────────
+
+    @Test
+    fun `AdminUserResolver returns user when found`() = runBlocking {
+        val resolver = AdminUserResolver(userRepository)
+        val args = AdminQueries_User_Arguments.Builder(context)
+            .id(context.globalIDFor(viaduct.api.grts.User.Reflection, dbUserId.toString()))
+            .build()
+
+        every { userRepository.findById(dbUserId) } returns mockDbUser
+
+        val result = runFieldResolver(
+            resolver = resolver,
+            objectValue = adminQueriesObj(),
+            queryValue = queryObj(),
+            arguments = args,
+            requestContext = RequestContext(user = mockAdminUser)
+        )
+
+        assertNotNull(result)
+        assertEquals(dbUserId.toString(), result!!.getId().internalID)
+        assertEquals("dbuser", result.getUsername())
+    }
+
+    @Test
+    fun `AdminUserResolver returns null when user not found`() = runBlocking {
+        val resolver = AdminUserResolver(userRepository)
+        val args = AdminQueries_User_Arguments.Builder(context)
+            .id(context.globalIDFor(viaduct.api.grts.User.Reflection, dbUserId.toString()))
+            .build()
+
+        every { userRepository.findById(dbUserId) } returns null
+
+        val result = runFieldResolver(
+            resolver = resolver,
+            objectValue = adminQueriesObj(),
+            queryValue = queryObj(),
+            arguments = args,
+            requestContext = RequestContext(user = mockAdminUser)
+        )
+
+        assertNull(result)
+    }
+
+    @Test
+    fun `AdminUserResolver throws AuthorizationException for non-admin user`() = runBlocking {
+        val resolver = AdminUserResolver(userRepository)
+        val args = AdminQueries_User_Arguments.Builder(context)
+            .id(context.globalIDFor(viaduct.api.grts.User.Reflection, dbUserId.toString()))
+            .build()
+
+        assertThrows<AuthorizationException> {
+            runFieldResolver(
+                resolver = resolver,
+                objectValue = adminQueriesObj(),
+                queryValue = queryObj(),
+                arguments = args,
+                requestContext = RequestContext(user = mockRegularUser)
+            )
+        }
+    }
+
+    // ── AdminUserContentCountsResolver ────────────────────────────────────────
+
+    @Test
+    fun `AdminUserContentCountsResolver returns content counts for user`() = runBlocking {
+        val resolver = AdminUserContentCountsResolver(postRepository, commentRepository, likeRepository)
+        val args = AdminQueries_UserContentCounts_Arguments.Builder(context)
+            .userId(context.globalIDFor(viaduct.api.grts.User.Reflection, dbUserId.toString()))
+            .build()
+
+        every { postRepository.countByAuthorId(dbUserId) } returns 3L
+        every { commentRepository.countByUserId(dbUserId) } returns 7L
+        every { likeRepository.countByUserId(dbUserId) } returns 15L
+
+        val result = runFieldResolver(
+            resolver = resolver,
+            objectValue = adminQueriesObj(),
+            queryValue = queryObj(),
+            arguments = args,
+            requestContext = RequestContext(user = mockAdminUser)
+        )
+
+        assertEquals(3, result.getPostCount())
+        assertEquals(7, result.getCommentCount())
+        assertEquals(15, result.getLikeCount())
+    }
+
+    @Test
+    fun `AdminUserContentCountsResolver throws AuthorizationException for non-admin user`() = runBlocking {
+        val resolver = AdminUserContentCountsResolver(postRepository, commentRepository, likeRepository)
+        val args = AdminQueries_UserContentCounts_Arguments.Builder(context)
+            .userId(context.globalIDFor(viaduct.api.grts.User.Reflection, dbUserId.toString()))
+            .build()
+
+        assertThrows<AuthorizationException> {
+            runFieldResolver(
+                resolver = resolver,
+                objectValue = adminQueriesObj(),
+                queryValue = queryObj(),
+                arguments = args,
+                requestContext = RequestContext(user = mockRegularUser)
+            )
+        }
+    }
+
+    // ── AdminPostResolver ─────────────────────────────────────────────────────
+
+    @Test
+    fun `AdminPostResolver returns post when found`() = runBlocking {
+        val resolver = AdminPostResolver(postRepository)
+        val args = AdminQueries_Post_Arguments.Builder(context)
+            .id(context.globalIDFor(ViaductPost.Reflection, postId.toString()))
+            .build()
+
+        every { postRepository.findById(postId) } returns mockPost
+
+        val result = runFieldResolver(
+            resolver = resolver,
+            objectValue = adminQueriesObj(),
+            queryValue = queryObj(),
+            arguments = args,
+            requestContext = RequestContext(user = mockAdminUser)
+        )
+
+        assertNotNull(result)
+        assertEquals(postId.toString(), result!!.getId().internalID)
+        assertEquals("Test Post", result.getTitle())
+    }
+
+    @Test
+    fun `AdminPostResolver returns null when post not found`() = runBlocking {
+        val resolver = AdminPostResolver(postRepository)
+        val args = AdminQueries_Post_Arguments.Builder(context)
+            .id(context.globalIDFor(ViaductPost.Reflection, postId.toString()))
+            .build()
+
+        every { postRepository.findById(postId) } returns null
+
+        val result = runFieldResolver(
+            resolver = resolver,
+            objectValue = adminQueriesObj(),
+            queryValue = queryObj(),
+            arguments = args,
+            requestContext = RequestContext(user = mockAdminUser)
+        )
+
+        assertNull(result)
+    }
+
+    @Test
+    fun `AdminPostResolver throws AuthorizationException for non-admin user`() = runBlocking {
+        val resolver = AdminPostResolver(postRepository)
+        val args = AdminQueries_Post_Arguments.Builder(context)
+            .id(context.globalIDFor(ViaductPost.Reflection, postId.toString()))
+            .build()
 
         assertThrows<AuthorizationException> {
             runFieldResolver(

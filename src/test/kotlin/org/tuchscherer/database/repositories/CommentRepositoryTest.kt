@@ -2,6 +2,7 @@ package org.tuchscherer.database.repositories
 
 import org.tuchscherer.database.Post
 import org.tuchscherer.database.User
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.*
@@ -211,5 +212,131 @@ class CommentRepositoryTest {
         val page = commentRepository.findPage(limit = 10, offset = 100)
 
         assertTrue(page.isEmpty())
+    }
+
+    @Test
+    fun `findByPostId by UUID returns comments for post`() {
+        commentRepository.create(content = "Comment 1", postId = testPost.id, authorId = testUser.id)
+        commentRepository.create(content = "Comment 2", postId = testPost.id, authorId = testUser.id)
+
+        val comments = commentRepository.findByPostId(testPost.id.value)
+
+        assertEquals(2, comments.size)
+    }
+
+    @Test
+    fun `findByPostId by UUID returns empty list when no comments`() {
+        val comments = commentRepository.findByPostId(UUID.randomUUID())
+
+        assertTrue(comments.isEmpty())
+    }
+
+    @Test
+    fun `update persists comment content changes`() {
+        val comment = commentRepository.create(
+            content = "Original content",
+            postId = testPost.id,
+            authorId = testUser.id
+        )
+
+        transaction { comment.content = "Updated content" }
+        commentRepository.update(comment)
+
+        val found = commentRepository.findById(comment.id.value)
+        Assertions.assertNotNull(found)
+        assertEquals("Updated content", found!!.content)
+    }
+
+    @Test
+    fun `countByPostId by UUID returns correct count`() {
+        commentRepository.create(content = "Comment 1", postId = testPost.id, authorId = testUser.id)
+        commentRepository.create(content = "Comment 2", postId = testPost.id, authorId = testUser.id)
+
+        val count = commentRepository.countByPostId(testPost.id.value)
+
+        assertEquals(2L, count)
+    }
+
+    @Test
+    fun `count returns total number of comments`() {
+        commentRepository.create(content = "Comment 1", postId = testPost.id, authorId = testUser.id)
+        commentRepository.create(content = "Comment 2", postId = testPost.id, authorId = testUser.id)
+
+        val count = commentRepository.count()
+
+        assertEquals(2L, count)
+    }
+
+    @Test
+    fun `findAll returns all comments`() {
+        commentRepository.create(content = "Comment 1", postId = testPost.id, authorId = testUser.id)
+        commentRepository.create(content = "Comment 2", postId = testPost.id, authorId = testUser.id)
+
+        val all = commentRepository.findAll()
+
+        assertEquals(2, all.size)
+    }
+
+    @Test
+    fun `countByUserId returns comment count for user`() {
+        commentRepository.create(content = "Comment 1", postId = testPost.id, authorId = testUser.id)
+        commentRepository.create(content = "Comment 2", postId = testPost.id, authorId = testUser.id)
+
+        val count = commentRepository.countByUserId(testUser.id.value)
+
+        assertEquals(2L, count)
+    }
+
+    @Test
+    fun `countByUserId returns zero for user with no comments`() {
+        val count = commentRepository.countByUserId(UUID.randomUUID())
+
+        assertEquals(0L, count)
+    }
+
+    @Test
+    fun `deleteByUserId removes all comments by user`() {
+        commentRepository.create(content = "Comment 1", postId = testPost.id, authorId = testUser.id)
+        commentRepository.create(content = "Comment 2", postId = testPost.id, authorId = testUser.id)
+
+        val deleted = commentRepository.deleteByUserId(testUser.id.value)
+
+        assertEquals(2, deleted)
+        assertEquals(0L, commentRepository.countByUserId(testUser.id.value))
+    }
+
+    @Test
+    fun `deleteByUserId returns zero when user has no comments`() {
+        val deleted = commentRepository.deleteByUserId(UUID.randomUUID())
+
+        assertEquals(0, deleted)
+    }
+
+    @Test
+    fun `getAuthorForComment returns author when comment exists`() {
+        val comment = commentRepository.create(
+            content = "Test comment",
+            postId = testPost.id,
+            authorId = testUser.id
+        )
+
+        val author = commentRepository.getAuthorForComment(comment.id.value)
+
+        Assertions.assertNotNull(author)
+        assertEquals(testUser.id.value, author!!.id.value)
+    }
+
+    @Test
+    fun `getPostForComment returns post when comment exists`() {
+        val comment = commentRepository.create(
+            content = "Test comment",
+            postId = testPost.id,
+            authorId = testUser.id
+        )
+
+        val post = commentRepository.getPostForComment(comment.id.value)
+
+        Assertions.assertNotNull(post)
+        assertEquals(testPost.id.value, post!!.id.value)
     }
 }
