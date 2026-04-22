@@ -69,12 +69,14 @@ echo "Seeding database: $PGDATABASE on $PGHOST:$PGPORT"
 # Fixed salt for all seed users (all users have password "password123")
 SALT="a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6"
 PASSWORD_HASH=$(hash_password "password123" "$SALT")
+E2E_ADMIN_HASH=$(hash_password "e2eAdminPass1" "$SALT")
 
 # Generate user UUIDs
 USER1_ID=$(generate_uuid)
 USER2_ID=$(generate_uuid)
 USER3_ID=$(generate_uuid)
 ADMIN_ID=$(generate_uuid)
+E2E_ADMIN_ID=$(generate_uuid)
 
 # Generate post UUIDs (12 posts: 4 per user)
 POST1_ID=$(generate_uuid)
@@ -138,7 +140,8 @@ INSERT INTO users (id, username, email, name, password_hash, salt, is_admin, cre
     ('${USER1_ID}', 'alice', 'alice@example.com', 'Alice Johnson', '${PASSWORD_HASH}', '${SALT}', false, '${NOW}'),
     ('${USER2_ID}', 'bob', 'bob@example.com', 'Bob Smith', '${PASSWORD_HASH}', '${SALT}', false, '${NOW}'),
     ('${USER3_ID}', 'charlie', 'charlie@example.com', 'Charlie Brown', '${PASSWORD_HASH}', '${SALT}', false, '${NOW}'),
-    ('${ADMIN_ID}', 'admin', 'admin@example.com', 'Admin User', '${PASSWORD_HASH}', '${SALT}', true, '${NOW}');
+    ('${ADMIN_ID}', 'admin', 'admin@example.com', 'Admin User', '${PASSWORD_HASH}', '${SALT}', true, '${NOW}'),
+    ('${E2E_ADMIN_ID}', 'e2e_admin', 'e2e_admin@test.com', 'E2E Admin', '${E2E_ADMIN_HASH}', '${SALT}', true, '${NOW}');
 
 -- Insert posts (12 posts: 4 per regular user)
 -- Alice's posts
@@ -212,7 +215,7 @@ echo ""
 echo "Database seeded successfully!"
 echo ""
 echo "=== Summary ==="
-echo "Users created: 4 (alice, bob, charlie, admin)"
+echo "Users created: 5 (alice, bob, charlie, admin, e2e_admin)"
 echo "Posts created: 12"
 echo "Comments created: 15"
 echo "Likes created: 20"
@@ -221,4 +224,5 @@ echo "=== Login credentials ==="
 echo "Username: alice    Password: password123"
 echo "Username: bob      Password: password123"
 echo "Username: charlie  Password: password123"
-echo "Username: admin    Password: password123 (admin user)"
+echo "Username: admin    Password: password123 (admin user)
+Username: e2e_admin Password: e2eAdminPass1 (E2E test admin user)"
