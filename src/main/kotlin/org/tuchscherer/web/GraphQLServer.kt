@@ -27,7 +27,10 @@ import org.tuchscherer.config.ServerConfig
 import org.tuchscherer.database.DatabaseFactory
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import viaduct.service.api.ExecutionInput
+import viaduct.service.api.SchemaId
 import viaduct.service.BasicViaductFactory
+import viaduct.service.SchemaRegistrationInfo
+import viaduct.service.SchemaScopeInfo
 import viaduct.service.TenantRegistrationInfo
 import java.util.UUID
 
@@ -54,11 +57,22 @@ class GraphQLServer(
     private val jwtAlgorithm by lazy { Algorithm.HMAC256(jwtConfig.secret) }
 
     private val viaduct = BasicViaductFactory.create(
+        schemaRegistrationInfo = SchemaRegistrationInfo(
+            scopes = listOf(
+                SchemaScopeInfo(schemaId = "public", scopesToApply = setOf("public")),
+                SchemaScopeInfo(schemaId = "admin", scopesToApply = setOf("public", "admin")),
+            )
+        ),
         tenantRegistrationInfo = TenantRegistrationInfo(
             tenantPackagePrefix = "org.tuchscherer.viadapp",
             tenantCodeInjector = org.tuchscherer.config.KoinTenantCodeInjector()
         )
     )
+
+    companion object {
+        val PUBLIC_SCHEMA = SchemaId.Scoped("public", setOf("public"))
+        val ADMIN_SCHEMA = SchemaId.Scoped("admin", setOf("public", "admin"))
+    }
 
     fun start() {
         embeddedServer(Netty, port = serverConfig.graphqlPort) {
@@ -70,6 +84,7 @@ class GraphQLServer(
                 allowHost(serverConfig.corsOrigin)
                 allowHeader(HttpHeaders.ContentType)
                 allowHeader(HttpHeaders.Authorization)
+                allowHeader("X-Schema")
                 allowMethod(HttpMethod.Get)
                 allowMethod(HttpMethod.Post)
                 allowMethod(HttpMethod.Put)
@@ -118,6 +133,11 @@ class GraphQLServer(
                         val user = token?.let { jwtService.getUserFromToken(it) }
                         val requestContext = user?.let { org.tuchscherer.auth.RequestContext(user = it) }
 
+                        val schemaId = when (call.request.headers["X-Schema"]) {
+                            "admin" -> ADMIN_SCHEMA
+                            else -> PUBLIC_SCHEMA
+                        }
+
                         val executionInput = ExecutionInput.create(
                             operationText = graphqlRequest.query,
                             variables = graphqlRequest.variables ?: emptyMap(),
@@ -125,7 +145,7 @@ class GraphQLServer(
                         )
 
                         val startMs = System.currentTimeMillis()
-                        val result = viaduct.execute(executionInput)
+                        val result = viaduct.execute(executionInput, schemaId)
                         val durationMs = System.currentTimeMillis() - startMs
 
                         val hasErrors = result.toSpecification()["errors"] != null

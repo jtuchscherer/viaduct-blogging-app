@@ -1,5 +1,5 @@
 # User type representing authenticated users
-type User implements Node {
+type User implements Node @scope(to: ["public", "admin"]) {
   id: ID!
   username: String!
   email: String!
@@ -10,7 +10,7 @@ type User implements Node {
 }
 
 # Post type for blog posts
-type Post implements Node {
+type Post implements Node @scope(to: ["public", "admin"]) {
   id: ID!
   title: String!
   content: String!
@@ -25,7 +25,7 @@ type Post implements Node {
 }
 
 # Comment type for post comments
-type Comment implements Node {
+type Comment implements Node @scope(to: ["public", "admin"]) {
   id: ID!
   content: String!
   author: User! @resolver
@@ -34,7 +34,7 @@ type Comment implements Node {
 }
 
 # Like type for post likes
-type Like implements Node {
+type Like implements Node @scope(to: ["public", "admin"]) {
   id: ID!
   user: User! @resolver
   post: Post! @resolver
@@ -42,85 +42,85 @@ type Like implements Node {
 }
 
 # Input types for mutations
-input CreatePostInput {
+input CreatePostInput @scope(to: ["public", "admin"]) {
   title: String!
   content: String!
 }
 
-input UpdatePostInput {
+input UpdatePostInput @scope(to: ["public", "admin"]) {
   id: ID! @idOf(type: "Post")
   title: String
   content: String
 }
 
-input CreateCommentInput {
+input CreateCommentInput @scope(to: ["public", "admin"]) {
   postId: ID! @idOf(type: "Post")
   content: String!
 }
 
 # Relay-style cursor pagination types
-type PostsConnection @connection {
+type PostsConnection @connection @scope(to: ["public", "admin"]) {
   edges: [PostEdge]
   pageInfo: PageInfo!
   totalCount: Int
 }
 
-type PostEdge @edge {
+type PostEdge @edge @scope(to: ["public", "admin"]) {
   node: Post
   cursor: String!
 }
 
 # Admin types
-type AdminStats {
+type AdminStats @scope(to: ["admin"]) {
   userCount: Int!
   postCount: Int!
   commentCount: Int!
   likeCount: Int!
 }
 
-type AdminUsersPage {
+type AdminUsersPage @scope(to: ["admin"]) {
   users: [User!]!
   totalCount: Int!
 }
 
-type AdminPostsPage {
+type AdminPostsPage @scope(to: ["admin"]) {
   posts: [Post!]!
   totalCount: Int!
 }
 
-type AdminCommentsPage {
+type AdminCommentsPage @scope(to: ["admin"]) {
   comments: [Comment!]!
   totalCount: Int!
 }
 
-type UserContentCounts {
+type UserContentCounts @scope(to: ["admin"]) {
   postCount: Int!
   commentCount: Int!
   likeCount: Int!
 }
 
-type AdminDeleteUserResult {
+type AdminDeleteUserResult @scope(to: ["admin"]) {
   success: Boolean!
   postsDeleted: Int!
   commentsDeleted: Int!
   likesDeleted: Int!
 }
 
-input AdminUpdateUserInput {
+input AdminUpdateUserInput @scope(to: ["admin"]) {
   id: ID! @idOf(type: "User")
   name: String
   email: String
   isAdmin: Boolean
 }
 
-input AdminUpdatePostInput {
+input AdminUpdatePostInput @scope(to: ["admin"]) {
   id: ID! @idOf(type: "Post")
   title: String
   content: String
 }
 
 # Namespace type grouping all admin queries
-type AdminQueries @namespaceType {
+type AdminQueries @namespaceType @scope(to: ["admin"]) {
   stats: AdminStats! @resolver
   users(limit: Int = 10, offset: Int = 0): AdminUsersPage! @resolver
   user(id: ID! @idOf(type: "User")): User @resolver
@@ -131,7 +131,7 @@ type AdminQueries @namespaceType {
 }
 
 # Extend the Query type for read operations
-extend type Query {
+extend type Query @scope(to: ["public", "admin"]) {
   # Get all posts (public)
   posts: [Post!]! @resolver
 
@@ -149,13 +149,15 @@ extend type Query {
 
   # Relay-style cursor pagination for posts (public)
   postsConnection(first: Int, after: String): PostsConnection @resolver
+}
 
+extend type Query @scope(to: ["admin"]) {
   # Admin queries (requires admin role)
   admin: AdminQueries
 }
 
 # Extend mutations for write operations
-extend type Mutation {
+extend type Mutation @scope(to: ["public", "admin"]) {
   # Post operations
   createPost(input: CreatePostInput!): Post! @resolver
   updatePost(input: UpdatePostInput!): Post! @resolver
@@ -168,7 +170,9 @@ extend type Mutation {
   # Like operations
   likePost(postId: ID! @idOf(type: "Post")): Like! @resolver
   unlikePost(postId: ID! @idOf(type: "Post")): Boolean! @resolver
+}
 
+extend type Mutation @scope(to: ["admin"]) {
   # Admin mutations (require admin role)
   adminUpdateUser(input: AdminUpdateUserInput!): User! @resolver
   adminDeleteUser(id: ID! @idOf(type: "User")): AdminDeleteUserResult! @resolver

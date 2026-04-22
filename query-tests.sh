@@ -654,6 +654,235 @@ else
     print_error "Metrics endpoint missing HTTP server request metrics (got: $METRICS_RESPONSE)"
 fi
 
+# Step 12: Test Admin API
+print_header "Step 12: Test Admin API"
+
+# Promote alice to admin in the database
+print_info "Promoting alice to admin..."
+sqlite3 blog.db "UPDATE users SET is_admin = 1 WHERE username = 'alice';"
+print_success "Alice promoted to admin"
+
+# Re-login to get a token that carries the updated admin flag
+print_info "Re-logging in as admin (alice)..."
+ADMIN_LOGIN_RESPONSE=$(curl -s -X POST $AUTH_URL/auth/login \
+    -H "Content-Type: application/json" \
+    -d '{"username": "alice", "password": "password123"}')
+ADMIN_TOKEN=$(echo $ADMIN_LOGIN_RESPONSE | grep -o '"token":"[^"]*' | sed 's/"token":"//')
+if [ ! -z "$ADMIN_TOKEN" ]; then
+    print_success "Admin re-login successful"
+else
+    print_error "Admin re-login failed"
+    echo "Response: $ADMIN_LOGIN_RESPONSE"
+fi
+
+# Fetch global user IDs via the 'me' query (returns GraphQL global IDs)
+ALICE_GID=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $ADMIN_TOKEN" \
+    -d '{"query": "{ me { id } }"}' \
+    | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data']['me']['id'])" 2>/dev/null || echo "")
+
+BOB_GID=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $USER2_TOKEN" \
+    -d '{"query": "{ me { id } }"}' \
+    | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data']['me']['id'])" 2>/dev/null || echo "")
+
+# --- Admin Queries ---
+
+print_info "Querying admin stats..."
+ADMIN_STATS_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $ADMIN_TOKEN" \
+    -H "X-Schema: admin" \
+    -d '{"query": "{ admin { stats { userCount postCount commentCount likeCount } } }"}')
+
+STATS_USER_COUNT=$(echo $ADMIN_STATS_RESPONSE | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data']['admin']['stats']['userCount'])" 2>/dev/null || echo "")
+if [ -n "$STATS_USER_COUNT" ] && [ "$STATS_USER_COUNT" -ge 2 ]; then
+    print_success "admin.stats returns userCount=$STATS_USER_COUNT (>= 2)"
+else
+    print_error "admin.stats userCount unexpected: '$STATS_USER_COUNT'"
+    echo "Response: $ADMIN_STATS_RESPONSE"
+fi
+
+STATS_POST_COUNT=$(echo $ADMIN_STATS_RESPONSE | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data']['admin']['stats']['postCount'])" 2>/dev/null || echo "")
+if [ -n "$STATS_POST_COUNT" ] && [ "$STATS_POST_COUNT" -ge 1 ]; then
+    print_success "admin.stats returns postCount=$STATS_POST_COUNT (>= 1)"
+else
+    print_error "admin.stats postCount unexpected: '$STATS_POST_COUNT'"
+fi
+
+print_info "Querying admin users list..."
+ADMIN_USERS_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $ADMIN_TOKEN" \
+    -H "X-Schema: admin" \
+    -d '{"query": "{ admin { users(limit: 10) { totalCount users { id username } } } }"}')
+
+USERS_TOTAL=$(echo $ADMIN_USERS_RESPONSE | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data']['admin']['users']['totalCount'])" 2>/dev/null || echo "")
+if [ -n "$USERS_TOTAL" ] && [ "$USERS_TOTAL" -ge 2 ]; then
+    print_success "admin.users returns totalCount=$USERS_TOTAL (>= 2)"
+else
+    print_error "admin.users totalCount unexpected: '$USERS_TOTAL'"
+    echo "Response: $ADMIN_USERS_RESPONSE"
+fi
+
+print_info "Querying admin user by ID..."
+ADMIN_USER_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $ADMIN_TOKEN" \
+    -H "X-Schema: admin" \
+    -d "{\"query\": \"{ admin { user(id: \\\"$ALICE_GID\\\") { username email } } }\"}")
+
+if echo $ADMIN_USER_RESPONSE | grep -q '"alice"'; then
+    print_success "admin.user(id) returns correct user (alice)"
+else
+    print_error "admin.user(id) failed"
+    echo "Response: $ADMIN_USER_RESPONSE"
+fi
+
+print_info "Querying admin userContentCounts..."
+ADMIN_CONTENT_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $ADMIN_TOKEN" \
+    -H "X-Schema: admin" \
+    -d "{\"query\": \"{ admin { userContentCounts(userId: \\\"$ALICE_GID\\\") { postCount commentCount likeCount } } }\"}")
+
+ALICE_POST_COUNT=$(echo $ADMIN_CONTENT_RESPONSE | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data']['admin']['userContentCounts']['postCount'])" 2>/dev/null || echo "")
+if [ -n "$ALICE_POST_COUNT" ] && [ "$ALICE_POST_COUNT" -ge 1 ]; then
+    print_success "admin.userContentCounts returns postCount=$ALICE_POST_COUNT for alice"
+else
+    print_error "admin.userContentCounts postCount unexpected: '$ALICE_POST_COUNT'"
+    echo "Response: $ADMIN_CONTENT_RESPONSE"
+fi
+
+print_info "Querying admin posts list..."
+ADMIN_POSTS_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $ADMIN_TOKEN" \
+    -H "X-Schema: admin" \
+    -d '{"query": "{ admin { posts(limit: 10) { totalCount posts { id title } } } }"}')
+
+POSTS_TOTAL=$(echo $ADMIN_POSTS_RESPONSE | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data']['admin']['posts']['totalCount'])" 2>/dev/null || echo "")
+if [ -n "$POSTS_TOTAL" ] && [ "$POSTS_TOTAL" -ge 1 ]; then
+    print_success "admin.posts returns totalCount=$POSTS_TOTAL (>= 1)"
+else
+    print_error "admin.posts totalCount unexpected: '$POSTS_TOTAL'"
+    echo "Response: $ADMIN_POSTS_RESPONSE"
+fi
+
+print_info "Querying admin post by ID..."
+ADMIN_POST_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $ADMIN_TOKEN" \
+    -H "X-Schema: admin" \
+    -d "{\"query\": \"{ admin { post(id: \\\"$POST1_ID\\\") { title } } }\"}")
+
+if echo $ADMIN_POST_RESPONSE | grep -q "Updated Title"; then
+    print_success "admin.post(id) returns correct post"
+else
+    print_error "admin.post(id) failed"
+    echo "Response: $ADMIN_POST_RESPONSE"
+fi
+
+print_info "Querying admin comments list..."
+ADMIN_COMMENTS_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $ADMIN_TOKEN" \
+    -H "X-Schema: admin" \
+    -d '{"query": "{ admin { comments(limit: 10) { totalCount comments { id content } } } }"}')
+
+COMMENTS_TOTAL=$(echo $ADMIN_COMMENTS_RESPONSE | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data']['admin']['comments']['totalCount'])" 2>/dev/null || echo "")
+if [ -n "$COMMENTS_TOTAL" ] && [ "$COMMENTS_TOTAL" -ge 1 ]; then
+    print_success "admin.comments returns totalCount=$COMMENTS_TOTAL (>= 1)"
+else
+    print_error "admin.comments totalCount unexpected: '$COMMENTS_TOTAL'"
+    echo "Response: $ADMIN_COMMENTS_RESPONSE"
+fi
+
+# --- Admin Mutations ---
+
+print_info "Testing adminUpdateUser mutation..."
+ADMIN_UPDATE_USER_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $ADMIN_TOKEN" \
+    -H "X-Schema: admin" \
+    -d "{\"query\": \"mutation { adminUpdateUser(input: { id: \\\"$BOB_GID\\\", name: \\\"Bob Updated\\\" }) { name } }\"}")
+
+if echo $ADMIN_UPDATE_USER_RESPONSE | grep -q "Bob Updated"; then
+    print_success "adminUpdateUser updated bob's name successfully"
+else
+    print_error "adminUpdateUser failed"
+    echo "Response: $ADMIN_UPDATE_USER_RESPONSE"
+fi
+
+print_info "Creating throwaway post for adminDeletePost test..."
+THROWAWAY_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $USER2_TOKEN" \
+    -d '{"query": "mutation { createPost(input: {title: \"Throwaway\", content: \"Will be admin-deleted\"}) { id } }"}')
+
+THROWAWAY_ID=$(echo $THROWAWAY_RESPONSE | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data']['createPost']['id'])" 2>/dev/null || echo "")
+
+if [ -n "$THROWAWAY_ID" ]; then
+    print_info "Testing adminDeletePost mutation..."
+    ADMIN_DEL_POST_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
+        -H "Content-Type: application/json" \
+        -H "Authorization: Bearer $ADMIN_TOKEN" \
+        -H "X-Schema: admin" \
+        -d "{\"query\": \"mutation { adminDeletePost(id: \\\"$THROWAWAY_ID\\\") }\"}")
+    if echo $ADMIN_DEL_POST_RESPONSE | grep -q "true"; then
+        print_success "adminDeletePost removed bob's throwaway post"
+    else
+        print_error "adminDeletePost failed"
+        echo "Response: $ADMIN_DEL_POST_RESPONSE"
+    fi
+else
+    print_error "Could not create throwaway post for adminDeletePost test"
+fi
+
+print_info "Testing adminDeleteComment mutation..."
+ADMIN_DEL_COMMENT_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $ADMIN_TOKEN" \
+    -H "X-Schema: admin" \
+    -d "{\"query\": \"mutation { adminDeleteComment(id: \\\"$COMMENT2_ID\\\") }\"}")
+
+if echo $ADMIN_DEL_COMMENT_RESPONSE | grep -q "true"; then
+    print_success "adminDeleteComment removed alice's comment"
+else
+    print_error "adminDeleteComment failed"
+    echo "Response: $ADMIN_DEL_COMMENT_RESPONSE"
+fi
+
+# --- Scope Enforcement (Negative Tests) ---
+
+print_info "Testing scope enforcement: admin query without X-Schema header..."
+NO_SCHEMA_QUERY=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $ADMIN_TOKEN" \
+    -d '{"query": "{ admin { stats { userCount } } }"}')
+
+if echo $NO_SCHEMA_QUERY | grep -q '"errors"'; then
+    print_success "Scope enforcement works: admin query rejected on public schema"
+else
+    print_error "Scope enforcement failed: admin query succeeded without X-Schema: admin"
+    echo "Response: $NO_SCHEMA_QUERY"
+fi
+
+print_info "Testing scope enforcement: admin mutation without X-Schema header..."
+NO_SCHEMA_MUTATION=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $ADMIN_TOKEN" \
+    -d "{\"query\": \"mutation { adminDeletePost(id: \\\"$POST1_ID\\\") }\"}")
+
+if echo $NO_SCHEMA_MUTATION | grep -q '"errors"'; then
+    print_success "Scope enforcement works: admin mutation rejected on public schema"
+else
+    print_error "Scope enforcement failed: admin mutation succeeded without X-Schema: admin"
+    echo "Response: $NO_SCHEMA_MUTATION"
+fi
+
 # Test Summary
 print_header "Test Summary"
 echo -e "${GREEN}Tests Passed: $TESTS_PASSED${NC}"
