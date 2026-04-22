@@ -24,7 +24,7 @@ val configModule = module {
     single { get<AppConfig>().jwt }
     single { get<AppConfig>().database }
     single { get<AppConfig>().server }
-    single { DatabaseFactory(get()) }
+    single { DatabaseFactory(get(), get()) }
 }
 
 /**

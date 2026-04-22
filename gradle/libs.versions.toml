@@ -11,6 +11,7 @@ jackson = "2.21.2"
 jackson3 = "3.1.1"
 sqlite-jdbc = "3.53.0.0"
 postgresql = "42.7.10"
+hikaricp = "6.3.0"
 logstash-logback-encoder = "9.0"
 janino = "3.1.12"
 junit-jupiter = "5.12.2"
@@ -66,6 +67,7 @@ jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", ver
 jackson-module-kotlin = { module = "com.fasterxml.jackson.module:jackson-module-kotlin", version.ref = "jackson" }
 sqlite-jdbc = { module = "org.xerial:sqlite-jdbc", version.ref = "sqlite-jdbc" }
 postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" }
+hikaricp = { module = "com.zaxxer:HikariCP", version.ref = "hikaricp" }
 logstash-logback-encoder = { module = "net.logstash.logback:logstash-logback-encoder", version.ref = "logstash-logback-encoder" }
 janino = { module = "org.codehaus.janino:janino", version.ref = "janino" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit-jupiter" }

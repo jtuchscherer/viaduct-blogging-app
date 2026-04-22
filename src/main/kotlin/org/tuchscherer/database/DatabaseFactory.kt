@@ -1,20 +1,36 @@
 package org.tuchscherer.database
 
+import com.zaxxer.hikari.HikariConfig
+import com.zaxxer.hikari.HikariDataSource
+import com.zaxxer.hikari.metrics.micrometer.MicrometerMetricsTrackerFactory
+import io.micrometer.core.instrument.MeterRegistry
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.SchemaUtils
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 
-/**
- * Factory for database initialization and connection management.
- * Replaces the singleton DatabaseConfig object for better testability.
- */
-class DatabaseFactory(private val config: org.tuchscherer.config.DatabaseConfig) {
+class DatabaseFactory(
+    private val config: org.tuchscherer.config.DatabaseConfig,
+    private val meterRegistry: MeterRegistry,
+) {
 
-    /**
-     * Initialize database connection and create tables if they don't exist.
-     */
     fun initialize() {
-        if (config.user.isNotBlank()) {
+        if (config.usePool) {
+            val hikari = HikariConfig().apply {
+                jdbcUrl = config.url
+                driverClassName = config.driver
+                username = config.user
+                password = config.password
+                maximumPoolSize = config.poolSize
+                minimumIdle = 2
+                connectionTimeout = 30_000
+                idleTimeout = 600_000
+                maxLifetime = 1_800_000
+                isAutoCommit = false
+                transactionIsolation = "TRANSACTION_READ_COMMITTED"
+                metricsTrackerFactory = MicrometerMetricsTrackerFactory(meterRegistry)
+            }
+            Database.connect(HikariDataSource(hikari))
+        } else if (config.user.isNotBlank()) {
             Database.connect(config.url, driver = config.driver, user = config.user, password = config.password)
         } else {
             Database.connect(config.url, driver = config.driver)

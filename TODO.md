@@ -1,8 +1,8 @@
 # TODO: Viaduct Blogging App — Implementation Plan
 
-**Status**: 🚀 In Progress — Phases 1–9 + 11–15 + 17–19 + 10 Complete, Phase 16 Next
+**Status**: 🚀 In Progress — Phases 1–9 + 11–15 + 17–19 + 10 + 16 (partial) Complete, Flyway migrations remaining
 
-**Last Updated**: 2026-04-16
+**Last Updated**: 2026-04-21
 
 ## Test Statistics
 
@@ -41,10 +41,11 @@
 | E2E fixes | Fixed `e2e.sh` spurious `cd ..` bug; fixed Playwright strict-mode selector failures (`main h1`, `.first()`); all 81 browser tests now passing |
 | CI fixes | Disabled `gradle-actions` proprietary caching component (`cache-disabled: true`) to suppress licensing warning |
 | 10 — Docker Deployment | `Dockerfile` (runtime image using `installDist` distribution), `docker-compose.yml` with SQLite volume, `.dockerignore`; `DATABASE_URL` defaults to `/app/data/blog.db` in prod config; note: multi-stage builder deferred until Viaduct jars are on a CI-accessible registry |
+| 16 (partial) — PostgreSQL + HikariCP | PostgreSQL JDBC driver; `start-containers.sh` + `docker-compose.yml` wire Postgres container; `DatabaseFactory` uses `HikariDataSource` in prod (`usePool=true`); Hikari pool metrics exposed via Micrometer at `/metrics`; Flyway migrations still outstanding |
 
 ## Next Steps
 
-- **Phase 16**: Production database support — PostgreSQL/RDS, connection pooling, migrations
+- **Phase 16**: Production database support — ~~PostgreSQL driver~~ ✅, ~~HikariCP connection pooling~~ ✅, ~~Hikari Micrometer metrics~~ ✅, Flyway migrations still outstanding
 - **UI Bug Fixes**: See section below
 - **Tech Debt**: ~~Investigate Viaduct connection resolver testing API~~ ✅ DONE (see below)
 - ~~**Dependency upgrade**: logstash-logback-encoder 8.1 → 9.0~~ ✅ DONE — bumped to 9.0; Jackson 3 (`tools.jackson`) coexists with Jackson 2 (`com.fasterxml.jackson`) since they are separate namespaces; no code migration needed (Ktor 3.4.2 itself stays on Jackson 2.x)
@@ -180,7 +181,7 @@ The third test is the key regression guard: it documents that the current implem
 
 ---
 
-## Phase 16: Production Database Support (PostgreSQL/RDS) ⏳ TODO
+## Phase 16: Production Database Support (PostgreSQL/RDS) 🔄 Partial
 
 **Goal**: Make the app deployable against AWS RDS PostgreSQL in production while keeping SQLite for local dev and H2 for unit tests.
 
@@ -188,15 +189,15 @@ The third test is the key regression guard: it documents that the current implem
 
 **Gaps to close:**
 
-#### 1. Add PostgreSQL JDBC driver dependency
-- Add `implementation("org.postgresql:postgresql:42.7.x")` to `build.gradle.kts`
-- Keep SQLite and H2 drivers for dev/test
+#### 1. ✅ Add PostgreSQL JDBC driver dependency
+- `implementation(libs.postgresql)` added to `build.gradle.kts`
+- SQLite and H2 drivers kept for dev/test
 
-#### 2. Add HikariCP connection pooling for prod
-- `DatabaseFactory.initialize()` currently calls `Database.connect(url, driver)` which creates bare connections — no pooling, no timeout handling
-- For RDS, use `Database.connect(HikariDataSource(hikariConfig))` in prod
-- Configure pool size, connection timeout, keepalive for RDS latency characteristics
-- Dev/test can continue with simple `Database.connect`
+#### 2. ✅ Add HikariCP connection pooling for prod
+- `DatabaseFactory` uses `HikariDataSource` when `usePool = true` (auto-enabled when `DATABASE_DRIVER` contains `postgresql`)
+- Pool size, connection timeout, idle timeout, max lifetime all configured
+- `MicrometerMetricsTrackerFactory` wired in — pool metrics visible at `/metrics` (`hikaricp_connections_*`)
+- Dev/test continue with bare `Database.connect`
 
 #### 3. Replace `SchemaUtils.create` with proper migrations (Flyway)
 - `SchemaUtils.create(Users, Posts, Comments, Likes)` is dev-only — it's a no-op if tables exist but cannot evolve the schema safely

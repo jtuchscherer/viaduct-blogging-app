@@ -52,6 +52,7 @@ dependencies {
     // Database dependencies
     implementation(libs.sqlite.jdbc)
     implementation(libs.postgresql)
+    implementation(libs.hikaricp)
     implementation(libs.exposed.core)
     implementation(libs.exposed.dao)
     implementation(libs.exposed.jdbc)

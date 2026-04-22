@@ -76,7 +76,9 @@ data class AppConfig(
                 url = System.getenv("DATABASE_URL") ?: "jdbc:sqlite:/app/data/blog.db",
                 driver = System.getenv("DATABASE_DRIVER") ?: "org.sqlite.JDBC",
                 user = System.getenv("DATABASE_USER") ?: "",
-                password = System.getenv("DATABASE_PASSWORD") ?: ""
+                password = System.getenv("DATABASE_PASSWORD") ?: "",
+                poolSize = System.getenv("DATABASE_POOL_SIZE")?.toIntOrNull() ?: 10,
+                usePool = System.getenv("DATABASE_DRIVER")?.contains("postgresql", ignoreCase = true) == true
             ),
             server = ServerConfig(
                 graphqlPort = System.getenv("GRAPHQL_PORT")?.toIntOrNull() ?: 8080,
