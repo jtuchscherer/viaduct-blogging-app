@@ -28,15 +28,6 @@ class PostAuthorResolver : PostResolvers.Author() {
             }
         }
     }
-
-    private fun org.tuchscherer.database.User.toViaductUser(ctx: Context) =
-        ViaductUser.of(ctx) {
-            id(ctx.globalIDFor(ViaductUser.Reflection, id.value.toString()))
-            username(username)
-            email(email)
-            name(name)
-            createdAt(createdAt.toString())
-        }
 }
 
 @Resolver(objectValueFragment = "fragment _ on Post { id }")
@@ -46,12 +37,6 @@ class PostCommentsFieldResolver : PostResolvers.Comments() {
     override suspend fun resolve(ctx: Context): List<ViaductComment> {
         val postId = UUID.fromString(ctx.objectValue.getId().internalID)
 
-        return commentRepository.findByPostId(postId).map { comment ->
-            ViaductComment.of(ctx) {
-                id(ctx.globalIDFor(ViaductComment.Reflection, comment.id.value.toString()))
-                content(comment.content)
-                createdAt(comment.createdAt.toString())
-            }
-        }
+        return commentRepository.findByPostId(postId).map { it.toViaductComment(ctx) }
     }
 }

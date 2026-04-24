@@ -1,5 +1,10 @@
 package org.tuchscherer.viadapp.resolvers
 
+import viaduct.api.context.ExecutionContext
+import viaduct.api.grts.Comment as ViaductComment
+import viaduct.api.grts.Post as ViaductPost
+import viaduct.api.grts.User as ViaductUser
+
 /**
  * Safe Long→Int conversion for GraphQL count fields.
  * GraphQL Int is 32-bit; repository counts are Long. Throws if the value exceeds Int.MAX_VALUE
@@ -9,3 +14,28 @@ internal fun Long.toCountInt(): Int {
     require(this <= Int.MAX_VALUE) { "Count value $this exceeds GraphQL Int range (${Int.MAX_VALUE})" }
     return toInt()
 }
+
+internal fun org.tuchscherer.database.User.toViaductUser(ctx: ExecutionContext) =
+    ViaductUser.of(ctx) {
+        id(ctx.globalIDFor(ViaductUser.Reflection, id.value.toString()))
+        username(username)
+        email(email)
+        name(name)
+        createdAt(createdAt.toString())
+    }
+
+internal fun org.tuchscherer.database.Post.toViaductPost(ctx: ExecutionContext) =
+    ViaductPost.of(ctx) {
+        id(ctx.globalIDFor(ViaductPost.Reflection, id.value.toString()))
+        title(title)
+        content(content)
+        createdAt(createdAt.toString())
+        updatedAt(updatedAt.toString())
+    }
+
+internal fun org.tuchscherer.database.Comment.toViaductComment(ctx: ExecutionContext) =
+    ViaductComment.of(ctx) {
+        id(ctx.globalIDFor(ViaductComment.Reflection, id.value.toString()))
+        content(content)
+        createdAt(createdAt.toString())
+    }

@@ -35,11 +35,7 @@ class CreateCommentResolver(
             createdAt = LocalDateTime.now()
         )
 
-        return ViaductComment.of(ctx) {
-            id(ctx.globalIDFor(ViaductComment.Reflection, comment.id.value.toString()))
-            content(comment.content)
-            createdAt(comment.createdAt.toString())
-        }
+        return comment.toViaductComment(ctx)
     }
 }
 
@@ -69,12 +65,6 @@ class PostCommentsResolver(
     override suspend fun resolve(ctx: Context): List<ViaductComment> {
         val postId = UUID.fromString(ctx.arguments.postId.internalID)
 
-        return commentRepository.findByPostId(postId).map { comment ->
-            ViaductComment.of(ctx) {
-                id(ctx.globalIDFor(ViaductComment.Reflection, comment.id.value.toString()))
-                content(comment.content)
-                createdAt(comment.createdAt.toString())
-            }
-        }
+        return commentRepository.findByPostId(postId).map { it.toViaductComment(ctx) }
     }
 }
