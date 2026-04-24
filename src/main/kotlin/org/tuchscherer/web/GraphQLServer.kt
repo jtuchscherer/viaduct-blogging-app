@@ -25,6 +25,7 @@ import org.tuchscherer.auth.JwtService
 import org.tuchscherer.config.JwtConfig
 import org.tuchscherer.config.ServerConfig
 import org.tuchscherer.database.DatabaseFactory
+import org.tuchscherer.database.repositories.UserRepository
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import viaduct.service.api.ExecutionInput
 import viaduct.service.api.SchemaId
@@ -47,6 +48,7 @@ data class GraphQLRequest(
 class GraphQLServer(
     private val jwtService: JwtService,
     private val authService: AuthenticationService,
+    private val userRepository: UserRepository,
     private val jwtConfig: JwtConfig,
     private val serverConfig: ServerConfig,
     private val meterRegistry: MeterRegistry,
@@ -199,7 +201,7 @@ class GraphQLServer(
                     call.respondText(prometheusRegistry.scrape(), ContentType.Text.Plain)
                 }
 
-                authRoutes(jwtService, authService)
+                authRoutes(jwtService, authService, userRepository)
             }
         }.start(wait = false)
     }
