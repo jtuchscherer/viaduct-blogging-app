@@ -156,7 +156,7 @@ function Toolbar({ disabled }: { disabled?: boolean }) {
     }
   };
 
-  const btn = (active: boolean, onClick: () => void, title: string, label: string) => (
+  const renderToolbarButton = (active: boolean, onClick: () => void, title: string, label: string) => (
     <button
       type="button"
       className={`toolbar-btn${active ? ' active' : ''}`}
@@ -172,18 +172,18 @@ function Toolbar({ disabled }: { disabled?: boolean }) {
 
   return (
     <div className="editor-toolbar">
-      {btn(isBold, () => formatText('bold'), 'Bold', 'B')}
-      {btn(isItalic, () => formatText('italic'), 'Italic', 'I')}
-      {btn(isUnderline, () => formatText('underline'), 'Underline', 'U')}
+      {renderToolbarButton(isBold, () => formatText('bold'), 'Bold', 'B')}
+      {renderToolbarButton(isItalic, () => formatText('italic'), 'Italic', 'I')}
+      {renderToolbarButton(isUnderline, () => formatText('underline'), 'Underline', 'U')}
       <span className="toolbar-divider" />
-      {btn(blockType === 'h1', () => formatBlock('h1'), 'Heading 1', 'H1')}
-      {btn(blockType === 'h2', () => formatBlock('h2'), 'Heading 2', 'H2')}
-      {btn(blockType === 'h3', () => formatBlock('h3'), 'Heading 3', 'H3')}
+      {renderToolbarButton(blockType === 'h1', () => formatBlock('h1'), 'Heading 1', 'H1')}
+      {renderToolbarButton(blockType === 'h2', () => formatBlock('h2'), 'Heading 2', 'H2')}
+      {renderToolbarButton(blockType === 'h3', () => formatBlock('h3'), 'Heading 3', 'H3')}
       <span className="toolbar-divider" />
-      {btn(blockType === 'bullet', () => toggleList('bullet'), 'Bullet list', '• List')}
-      {btn(blockType === 'number', () => toggleList('number'), 'Numbered list', '1. List')}
+      {renderToolbarButton(blockType === 'bullet', () => toggleList('bullet'), 'Bullet list', '• List')}
+      {renderToolbarButton(blockType === 'number', () => toggleList('number'), 'Numbered list', '1. List')}
       <span className="toolbar-divider" />
-      {btn(blockType === 'code', () => formatBlock('code'), 'Code block', '</>')}
+      {renderToolbarButton(blockType === 'code', () => formatBlock('code'), 'Code block', '</>')}
     </div>
   );
 }
