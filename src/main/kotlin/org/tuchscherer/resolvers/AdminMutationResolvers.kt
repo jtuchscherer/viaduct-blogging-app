@@ -33,7 +33,6 @@ class AdminUpdateUserResolver(
         input.name?.let { require(it.length <= 255) { "Name cannot exceed 255 characters" } }
         input.email?.let { require(it.length <= 255) { "Email cannot exceed 255 characters" } }
 
-        // Update fields if provided
         transaction {
             input.name?.let { user.name = it }
             input.email?.let { user.email = it }
