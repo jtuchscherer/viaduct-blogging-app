@@ -18,10 +18,6 @@ class ExposedLikeRepository : LikeRepository {
         Like.findById(id)
     }
 
-    override fun findByPostId(postId: EntityID<UUID>): List<Like> = transaction {
-        Like.find { Likes.postId eq postId }.toList()
-    }
-
     override fun findByPostId(postId: UUID): List<Like> = transaction {
         Like.find { Likes.postId eq postId }.toList()
     }
@@ -68,10 +64,6 @@ class ExposedLikeRepository : LikeRepository {
         } else {
             false
         }
-    }
-
-    override fun countByPostId(postId: EntityID<UUID>): Long = transaction {
-        Like.find { Likes.postId eq postId }.count()
     }
 
     override fun countByPostId(postId: UUID): Long = transaction {

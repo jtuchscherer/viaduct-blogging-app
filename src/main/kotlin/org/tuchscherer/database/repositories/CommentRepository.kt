@@ -15,12 +15,7 @@ interface CommentRepository {
     fun findById(id: UUID): Comment?
 
     /**
-     * Find all comments for a specific post by EntityID.
-     */
-    fun findByPostId(postId: EntityID<UUID>): List<Comment>
-
-    /**
-     * Find all comments for a specific post by UUID.
+     * Find all comments for a specific post.
      */
     fun findByPostId(postId: UUID): List<Comment>
 
@@ -50,12 +45,7 @@ interface CommentRepository {
     fun delete(id: UUID): Boolean
 
     /**
-     * Count comments for a post by EntityID.
-     */
-    fun countByPostId(postId: EntityID<UUID>): Long
-
-    /**
-     * Count comments for a post by UUID.
+     * Count comments for a post.
      */
     fun countByPostId(postId: UUID): Long
 

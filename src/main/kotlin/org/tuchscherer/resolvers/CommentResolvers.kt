@@ -7,7 +7,6 @@ import org.tuchscherer.database.repositories.CommentRepository
 import org.tuchscherer.database.repositories.PostRepository
 import org.tuchscherer.viadapp.resolvers.resolverbases.MutationResolvers
 import org.tuchscherer.viadapp.resolvers.resolverbases.QueryResolvers
-import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import viaduct.api.Resolver
 import viaduct.api.grts.Comment as ViaductComment
 import java.time.LocalDateTime
@@ -70,7 +69,7 @@ class PostCommentsResolver(
     override suspend fun resolve(ctx: Context): List<ViaductComment> {
         val postId = UUID.fromString(ctx.arguments.postId.internalID)
 
-        return commentRepository.findByPostId(EntityID(postId, org.tuchscherer.database.Posts)).map { comment ->
+        return commentRepository.findByPostId(postId).map { comment ->
             ViaductComment.of(ctx) {
                 id(ctx.globalIDFor(ViaductComment.Reflection, comment.id.value.toString()))
                 content(comment.content)

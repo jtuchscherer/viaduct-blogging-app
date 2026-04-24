@@ -117,7 +117,7 @@ class BlogWorkflowIntegrationTest {
         val post = postRepository.create("Post", "content", user.id)
         commentRepository.create("Great post!", post.id, user.id, LocalDateTime.now())
 
-        val comments = commentRepository.findByPostId(post.id)
+        val comments = commentRepository.findByPostId(post.id.value)
         assertEquals(1, comments.size)
         assertEquals("Great post!", comments[0].content)
         assertEquals(user.id, comments[0].authorId)
@@ -164,7 +164,7 @@ class BlogWorkflowIntegrationTest {
 
         likeRepository.create(post.id, user.id, LocalDateTime.now())
 
-        assertEquals(1L, likeRepository.countByPostId(post.id))
+        assertEquals(1L, likeRepository.countByPostId(post.id.value))
         assertTrue(likeRepository.existsByPostAndUser(post.id, user.id))
     }
 
@@ -176,7 +176,7 @@ class BlogWorkflowIntegrationTest {
 
         likeRepository.deleteByPostAndUser(post.id, user.id)
 
-        assertEquals(0L, likeRepository.countByPostId(post.id))
+        assertEquals(0L, likeRepository.countByPostId(post.id.value))
         assertFalse(likeRepository.existsByPostAndUser(post.id, user.id))
     }
 
@@ -191,7 +191,7 @@ class BlogWorkflowIntegrationTest {
         likeRepository.create(post.id, bob.id, LocalDateTime.now())
         likeRepository.create(post.id, carol.id, LocalDateTime.now())
 
-        assertEquals(3L, likeRepository.countByPostId(post.id))
+        assertEquals(3L, likeRepository.countByPostId(post.id.value))
         assertTrue(likeRepository.existsByPostAndUser(post.id, alice.id))
         assertTrue(likeRepository.existsByPostAndUser(post.id, bob.id))
         assertTrue(likeRepository.existsByPostAndUser(post.id, carol.id))
@@ -227,12 +227,12 @@ class BlogWorkflowIntegrationTest {
         // Two readers comment
         commentRepository.create("Loved it!", post.id, reader1.id, LocalDateTime.now())
         commentRepository.create("Very informative", post.id, reader2.id, LocalDateTime.now())
-        assertEquals(2, commentRepository.findByPostId(post.id).size)
+        assertEquals(2, commentRepository.findByPostId(post.id.value).size)
 
         // Both readers like the post
         likeRepository.create(post.id, reader1.id, LocalDateTime.now())
         likeRepository.create(post.id, reader2.id, LocalDateTime.now())
-        assertEquals(2L, likeRepository.countByPostId(post.id))
+        assertEquals(2L, likeRepository.countByPostId(post.id.value))
 
         // Author updates the post
         val updated = postRepository.updateById(post.id.value, title = "Great Article (Updated)")
@@ -240,7 +240,7 @@ class BlogWorkflowIntegrationTest {
 
         // Reader1 unlikes
         likeRepository.deleteByPostAndUser(post.id, reader1.id)
-        assertEquals(1L, likeRepository.countByPostId(post.id))
+        assertEquals(1L, likeRepository.countByPostId(post.id.value))
         assertFalse(likeRepository.existsByPostAndUser(post.id, reader1.id))
         assertTrue(likeRepository.existsByPostAndUser(post.id, reader2.id))
     }

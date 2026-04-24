@@ -104,7 +104,7 @@ class CommentRepositoryTest {
             authorId = testUser.id
         )
 
-        val comments = commentRepository.findByPostId(testPost.id)
+        val comments = commentRepository.findByPostId(testPost.id.value)
 
         assertEquals(2, comments.size)
     }
@@ -162,7 +162,7 @@ class CommentRepositoryTest {
             authorId = testUser.id
         )
 
-        val count = commentRepository.countByPostId(testPost.id)
+        val count = commentRepository.countByPostId(testPost.id.value)
 
         assertEquals(2, count)
     }

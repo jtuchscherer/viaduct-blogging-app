@@ -62,7 +62,7 @@ class PostCommentsResolverTest : DefaultAbstractResolverTestBase() {
             .postId(context.globalIDFor(ViaductPost.Reflection, postId.toString()))
             .build()
 
-        every { commentRepository.findByPostId(any<EntityID<UUID>>()) } returns listOf(mockComment)
+        every { commentRepository.findByPostId(any<UUID>()) } returns listOf(mockComment)
 
         val result = runFieldResolver(
             resolver = resolver,
@@ -83,7 +83,7 @@ class PostCommentsResolverTest : DefaultAbstractResolverTestBase() {
             .postId(context.globalIDFor(ViaductPost.Reflection, postId.toString()))
             .build()
 
-        every { commentRepository.findByPostId(any<EntityID<UUID>>()) } returns emptyList()
+        every { commentRepository.findByPostId(any<UUID>()) } returns emptyList()
 
         val result = runFieldResolver(
             resolver = resolver,
