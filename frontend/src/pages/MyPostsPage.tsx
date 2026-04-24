@@ -3,6 +3,7 @@ import { useQuery } from '@apollo/client/react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { getHtmlPreview } from '../utils/content';
+import type { Post } from '../types';
 
 const GET_MY_POSTS = gql`
   query GetMyPosts {
@@ -16,15 +17,6 @@ const GET_MY_POSTS = gql`
     }
   }
 `;
-
-interface Post {
-  id: string;
-  title: string;
-  content: string;
-  createdAt: string;
-  likeCount: number;
-  commentCount: number;
-}
 
 interface MyPostsData {
   myPosts: Post[];
