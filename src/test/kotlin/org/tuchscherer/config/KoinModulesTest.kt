@@ -4,6 +4,9 @@ import org.tuchscherer.auth.AuthenticationService
 import org.tuchscherer.auth.JwtService
 import org.tuchscherer.auth.PasswordService
 import org.tuchscherer.database.repositories.*
+import org.tuchscherer.web.AuthDependencies
+import org.tuchscherer.web.GraphQLServer
+import org.tuchscherer.web.ObservabilityDependencies
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -172,6 +175,44 @@ class KoinModulesTest : KoinTest {
         assertNotNull(passwordService)
         assertNotNull(jwtService)
         assertNotNull(authService)
+    }
+
+    @Test
+    fun `serverModule provides AuthDependencies bundled from individual deps`() {
+        startKoin {
+            modules(allModules)
+        }
+
+        val authDeps: AuthDependencies by inject()
+        assertNotNull(authDeps.jwtService)
+        assertNotNull(authDeps.authService)
+        assertNotNull(authDeps.userRepository)
+        assertNotNull(authDeps.jwtConfig)
+    }
+
+    @Test
+    fun `serverModule provides ObservabilityDependencies bundled from individual deps`() {
+        startKoin {
+            modules(allModules)
+        }
+
+        val obsDeps: ObservabilityDependencies by inject()
+        assertNotNull(obsDeps.meterRegistry)
+        assertNotNull(obsDeps.databaseFactory)
+    }
+
+    @Test
+    fun `serverModule resolves GraphQLServer with grouped dependencies`() {
+        // Pins the wire-up: the constructor takes AuthDependencies +
+        // ServerConfig + ObservabilityDependencies. If anyone reverts to a
+        // flat seven-arg constructor and forgets to update Koin bindings,
+        // this test catches it.
+        startKoin {
+            modules(allModules)
+        }
+
+        val server: GraphQLServer by inject()
+        assertNotNull(server)
     }
 
 }

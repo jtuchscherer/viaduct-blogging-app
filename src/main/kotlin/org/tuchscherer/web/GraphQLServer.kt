@@ -43,20 +43,38 @@ data class GraphQLRequest(
 )
 
 /**
+ * Auth-related dependencies for GraphQLServer: token verification, user lookups,
+ * and JWT signing configuration. Grouped together because they all participate
+ * in authenticating incoming requests and powering the auth endpoints.
+ */
+data class AuthDependencies(
+    val jwtService: JwtService,
+    val authService: AuthenticationService,
+    val userRepository: UserRepository,
+    val jwtConfig: JwtConfig,
+)
+
+/**
+ * Observability dependencies for GraphQLServer: metrics registry and a
+ * database health probe. Grouped because they wire up the /metrics and
+ * /health endpoints.
+ */
+data class ObservabilityDependencies(
+    val meterRegistry: MeterRegistry,
+    val databaseFactory: DatabaseFactory,
+)
+
+/**
  * Ktor server hosting the GraphQL endpoint and delegating auth routes to AuthRoutes.
  */
 class GraphQLServer(
-    private val jwtService: JwtService,
-    private val authService: AuthenticationService,
-    private val userRepository: UserRepository,
-    private val jwtConfig: JwtConfig,
+    private val authDeps: AuthDependencies,
     private val serverConfig: ServerConfig,
-    private val meterRegistry: MeterRegistry,
-    private val databaseFactory: DatabaseFactory
+    private val observability: ObservabilityDependencies,
 ) {
 
     private val logger = LoggerFactory.getLogger(GraphQLServer::class.java)
-    private val jwtAlgorithm by lazy { Algorithm.HMAC256(jwtConfig.secret) }
+    private val jwtAlgorithm by lazy { Algorithm.HMAC256(authDeps.jwtConfig.secret) }
 
     private val viaduct = BasicViaductFactory.create(
         schemaRegistrationInfo = SchemaRegistrationInfo(
@@ -106,14 +124,14 @@ class GraphQLServer(
             }
 
             install(MicrometerMetrics) {
-                registry = meterRegistry
+                registry = observability.meterRegistry
             }
 
             install(Authentication) {
                 jwt("auth-jwt") {
                     verifier(
                         JWT.require(jwtAlgorithm)
-                            .withIssuer(jwtConfig.issuer)
+                            .withIssuer(authDeps.jwtConfig.issuer)
                             .build()
                     )
                     validate { credential ->
@@ -132,7 +150,7 @@ class GraphQLServer(
 
                         val authHeader = call.request.headers["Authorization"]
                         val token = authHeader?.removePrefix("Bearer ")?.trim()
-                        val user = token?.let { jwtService.getUserFromToken(it) }
+                        val user = token?.let { authDeps.jwtService.getUserFromToken(it) }
                         val requestContext = user?.let { org.tuchscherer.auth.RequestContext(user = it) }
 
                         val schemaId = when (call.request.headers["X-Schema"]) {
@@ -179,7 +197,7 @@ class GraphQLServer(
                 }
 
                 get("/health") {
-                    val dbUp = databaseFactory.healthCheck()
+                    val dbUp = observability.databaseFactory.healthCheck()
                     val version = System.getenv("APP_VERSION") ?: "unknown"
                     val status = if (dbUp) "UP" else "DOWN"
                     val response = mapOf(
@@ -196,12 +214,12 @@ class GraphQLServer(
                 }
 
                 get("/metrics") {
-                    val prometheusRegistry = meterRegistry as? PrometheusMeterRegistry
+                    val prometheusRegistry = observability.meterRegistry as? PrometheusMeterRegistry
                         ?: return@get call.respond(HttpStatusCode.NotFound, "Prometheus registry not configured")
                     call.respondText(prometheusRegistry.scrape(), ContentType.Text.Plain)
                 }
 
-                authRoutes(jwtService, authService, userRepository)
+                authRoutes(authDeps.jwtService, authDeps.authService, authDeps.userRepository)
             }
         }.start(wait = false)
     }
