@@ -92,6 +92,25 @@ class CommentRepositoryTest {
     }
 
     @Test
+    fun `findByIds returns map of matching comments and omits missing ids`() {
+        val c1 = commentRepository.create(content = "one", postId = testPost.id, authorId = testUser.id)
+        val c2 = commentRepository.create(content = "two", postId = testPost.id, authorId = testUser.id)
+        val missingId = UUID.randomUUID()
+
+        val result = commentRepository.findByIds(listOf(c1.id.value, c2.id.value, missingId))
+
+        assertEquals(2, result.size)
+        assertEquals("one", result[c1.id.value]?.content)
+        assertEquals("two", result[c2.id.value]?.content)
+        assertFalse(result.containsKey(missingId))
+    }
+
+    @Test
+    fun `findByIds returns empty map for empty input`() {
+        assertTrue(commentRepository.findByIds(emptyList()).isEmpty())
+    }
+
+    @Test
     fun `findByPostId returns all comments for post`() {
         commentRepository.create(
             content = "Comment 1",
