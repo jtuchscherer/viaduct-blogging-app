@@ -16,15 +16,7 @@ class PostsResolver(
     private val postRepository: PostRepository
 ) : QueryResolvers.Posts() {
     override suspend fun resolve(ctx: Context): List<ViaductPost> {
-        return postRepository.findAll().map { post ->
-            ViaductPost.of(ctx) {
-                id(ctx.globalIDFor(ViaductPost.Reflection, post.id.value.toString()))
-                title(post.title)
-                content(post.content)
-                createdAt(post.createdAt.toString())
-                updatedAt(post.updatedAt.toString())
-            }
-        }
+        return postRepository.findAll().map { it.toViaductPost(ctx) }
     }
 }
 
@@ -34,15 +26,7 @@ class PostResolver(
 ) : QueryResolvers.Post() {
     override suspend fun resolve(ctx: Context): ViaductPost? {
         val postId = UUID.fromString(ctx.arguments.id.internalID)
-        return postRepository.findById(postId)?.let { post ->
-            ViaductPost.of(ctx) {
-                id(ctx.globalIDFor(ViaductPost.Reflection, post.id.value.toString()))
-                title(post.title)
-                content(post.content)
-                createdAt(post.createdAt.toString())
-                updatedAt(post.updatedAt.toString())
-            }
-        }
+        return postRepository.findById(postId)?.toViaductPost(ctx)
     }
 }
 
@@ -67,15 +51,8 @@ class PostsConnectionResolver(
 
         val edges = posts.mapIndexed { i, post ->
             val cursor = encodeCursor(offsetLimit.offset + i)
-            val node = ViaductPost.of(ctx) {
-                id(ctx.globalIDFor(ViaductPost.Reflection, post.id.value.toString()))
-                title(post.title)
-                content(post.content)
-                createdAt(post.createdAt.toString())
-                updatedAt(post.updatedAt.toString())
-            }
             PostEdge.of(ctx) {
-                node(node)
+                node(post.toViaductPost(ctx))
                 cursor(cursor)
             }
         }
@@ -105,15 +82,6 @@ class MyPostsResolver(
 ) : QueryResolvers.MyPosts() {
     override suspend fun resolve(ctx: Context): List<ViaductPost> {
         val user = requireAuth(ctx.requestContext)
-
-        return postRepository.findByAuthorId(user.id).map { post ->
-            ViaductPost.of(ctx) {
-                id(ctx.globalIDFor(ViaductPost.Reflection, post.id.value.toString()))
-                title(post.title)
-                content(post.content)
-                createdAt(post.createdAt.toString())
-                updatedAt(post.updatedAt.toString())
-            }
-        }
+        return postRepository.findByAuthorId(user.id).map { it.toViaductPost(ctx) }
     }
 }

@@ -15,17 +15,9 @@ class LikeUserResolver : LikeResolvers.User() {
 
     override suspend fun resolve(ctx: Context): ViaductUser {
         val likeId = UUID.fromString(ctx.objectValue.getId().internalID)
-
         val user = likeRepository.getUserForLike(likeId)
             ?: throw NotFoundException("Like not found")
-
-        return ViaductUser.of(ctx) {
-            id(ctx.globalIDFor(ViaductUser.Reflection, user.id.value.toString()))
-            username(user.username)
-            email(user.email)
-            name(user.name)
-            createdAt(user.createdAt.toString())
-        }
+        return user.toViaductUser(ctx)
     }
 }
 
@@ -35,16 +27,8 @@ class LikePostResolver : LikeResolvers.Post() {
 
     override suspend fun resolve(ctx: Context): ViaductPost {
         val likeId = UUID.fromString(ctx.objectValue.getId().internalID)
-
         val post = likeRepository.getPostForLike(likeId)
             ?: throw NotFoundException("Like not found")
-
-        return ViaductPost.of(ctx) {
-            id(ctx.globalIDFor(ViaductPost.Reflection, post.id.value.toString()))
-            title(post.title)
-            content(post.content)
-            createdAt(post.createdAt.toString())
-            updatedAt(post.updatedAt.toString())
-        }
+        return post.toViaductPost(ctx)
     }
 }

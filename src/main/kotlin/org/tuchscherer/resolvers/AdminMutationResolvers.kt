@@ -41,13 +41,7 @@ class AdminUpdateUserResolver(
             user.flush()
         }
 
-        return ViaductUser.of(ctx) {
-            id(ctx.globalIDFor(ViaductUser.Reflection, user.id.value.toString()))
-            username(user.username)
-            email(user.email)
-            name(user.name)
-            createdAt(user.createdAt.toString())
-        }
+        return user.toViaductUser(ctx)
     }
 }
 
@@ -109,13 +103,7 @@ class AdminUpdatePostResolver(
             content = input.content
         ) ?: throw NotFoundException("Post not found")
 
-        return ViaductPost.of(ctx) {
-            id(ctx.globalIDFor(ViaductPost.Reflection, updatedPost.id.value.toString()))
-            title(updatedPost.title)
-            content(updatedPost.content)
-            createdAt(updatedPost.createdAt.toString())
-            updatedAt(updatedPost.updatedAt.toString())
-        }
+        return updatedPost.toViaductPost(ctx)
     }
 }
 

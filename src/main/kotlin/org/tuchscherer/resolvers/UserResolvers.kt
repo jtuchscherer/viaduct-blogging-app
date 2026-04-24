@@ -14,13 +14,7 @@ class MeResolver : QueryResolvers.Me() {
     override suspend fun resolve(ctx: Context): ViaductUser? {
         val user = requireAuth(ctx.requestContext)
 
-        return ViaductUser.of(ctx) {
-            id(ctx.globalIDFor(ViaductUser.Reflection, user.id.value.toString()))
-            username(user.username)
-            email(user.email)
-            name(user.name)
-            createdAt(user.createdAt.toString())
-        }
+        return user.toViaductUser(ctx)
     }
 }
 

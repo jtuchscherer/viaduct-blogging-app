@@ -31,13 +31,7 @@ class CreatePostResolver(
             updatedAt = LocalDateTime.now()
         )
 
-        return ViaductPost.of(ctx) {
-            id(ctx.globalIDFor(ViaductPost.Reflection, post.id.value.toString()))
-            title(post.title)
-            content(post.content)
-            createdAt(post.createdAt.toString())
-            updatedAt(post.updatedAt.toString())
-        }
+        return post.toViaductPost(ctx)
     }
 }
 
@@ -72,13 +66,7 @@ class UpdatePostResolver(
             content = input.content
         ) ?: throw NotFoundException("Failed to update post")
 
-        return ViaductPost.of(ctx) {
-            id(ctx.globalIDFor(ViaductPost.Reflection, updatedPost.id.value.toString()))
-            title(updatedPost.title)
-            content(updatedPost.content)
-            createdAt(updatedPost.createdAt.toString())
-            updatedAt(updatedPost.updatedAt.toString())
-        }
+        return updatedPost.toViaductPost(ctx)
     }
 }
 
