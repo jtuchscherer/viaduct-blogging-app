@@ -4,6 +4,7 @@ import org.tuchscherer.database.Comment
 import org.tuchscherer.database.Comments
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.inList
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import java.time.LocalDateTime
 import java.util.*
@@ -15,6 +16,12 @@ class ExposedCommentRepository : CommentRepository {
 
     override fun findById(id: UUID): Comment? = transaction {
         Comment.findById(id)
+    }
+
+    override fun findByIds(ids: List<UUID>): Map<UUID, Comment> = transaction {
+        if (ids.isEmpty()) return@transaction emptyMap()
+        Comment.find { Comments.id inList ids.map { EntityID(it, Comments) } }
+            .associateBy { it.id.value }
     }
 
     override fun findByPostId(postId: UUID): List<Comment> = transaction {

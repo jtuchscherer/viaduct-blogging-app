@@ -15,6 +15,11 @@ interface PostRepository {
     fun findById(id: UUID): Post?
 
     /**
+     * Find multiple posts by IDs in a single query. Missing IDs are absent from the map.
+     */
+    fun findByIds(ids: List<UUID>): Map<UUID, Post>
+
+    /**
      * Find all posts by a specific author.
      */
     fun findByAuthorId(authorId: EntityID<UUID>): List<Post>
@@ -71,16 +76,10 @@ interface PostRepository {
     fun countByAuthor(authorId: EntityID<UUID>): Long
 
     /**
-     * Get the author (User) for a post by post ID.
-     * Returns null if post not found.
+     * Get author IDs for multiple posts in a single query.
+     * Returns a map from post ID to author ID; missing entries mean the post was not found.
      */
-    fun getAuthorForPost(postId: UUID): org.tuchscherer.database.User?
-
-    /**
-     * Get authors for multiple posts in a single query.
-     * Returns a map from post ID to User; missing entries mean the post was not found.
-     */
-    fun getAuthorsByPostIds(postIds: List<UUID>): Map<UUID, org.tuchscherer.database.User>
+    fun getAuthorIdsByPostIds(postIds: List<UUID>): Map<UUID, UUID>
 
     /**
      * Count posts by author using UUID.

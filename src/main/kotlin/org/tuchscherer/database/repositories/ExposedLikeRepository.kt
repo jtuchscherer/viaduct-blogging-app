@@ -5,6 +5,7 @@ import org.tuchscherer.database.Likes
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.inList
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import java.time.LocalDateTime
 import java.util.*
@@ -16,6 +17,12 @@ class ExposedLikeRepository : LikeRepository {
 
     override fun findById(id: UUID): Like? = transaction {
         Like.findById(id)
+    }
+
+    override fun findByIds(ids: List<UUID>): Map<UUID, Like> = transaction {
+        if (ids.isEmpty()) return@transaction emptyMap()
+        Like.find { Likes.id inList ids.map { EntityID(it, Likes) } }
+            .associateBy { it.id.value }
     }
 
     override fun findByPostId(postId: UUID): List<Like> = transaction {

@@ -82,23 +82,23 @@ class PostFieldResolversTest : DefaultAbstractResolverTestBase() {
     // ── PostAuthorResolver ──────────────────────────────────────────────
 
     @Test
-    fun `PostAuthorResolver calls getAuthorsByPostIds in batch for found posts`() = runBlocking {
+    fun `PostAuthorResolver calls getAuthorIdsByPostIds in batch for found posts`() = runBlocking {
         val resolver = PostAuthorResolver()
-        every { postRepository.getAuthorsByPostIds(listOf(postId)) } returns mapOf(postId to mockUser)
+        every { postRepository.getAuthorIdsByPostIds(listOf(postId)) } returns mapOf(postId to userId)
 
         val ctx = mockk<PostResolvers.Author.Context>(relaxed = true)
         coEvery { ctx.objectValue.getId() } returns context.globalIDFor(ViaductPost.Reflection, postId.toString())
 
-        // ViaductUser.Builder(ctx) requires a real framework InternalContext — full result is
-        // verified via integration tests. Here we confirm the batch repository method is called.
+        // ctx.nodeFor requires a real framework InternalContext — refetch is verified via
+        // integration tests. Here we confirm the batch repository method is called.
         runCatching { resolver.batchResolve(listOf(ctx)) }
-        verify { postRepository.getAuthorsByPostIds(listOf(postId)) }
+        verify { postRepository.getAuthorIdsByPostIds(listOf(postId)) }
     }
 
     @Test
     fun `PostAuthorResolver returns error FieldValue when post not found`() = runBlocking {
         val resolver = PostAuthorResolver()
-        every { postRepository.getAuthorsByPostIds(listOf(postId)) } returns emptyMap()
+        every { postRepository.getAuthorIdsByPostIds(listOf(postId)) } returns emptyMap()
 
         val ctx = mockk<PostResolvers.Author.Context>(relaxed = true)
         coEvery { ctx.objectValue.getId() } returns context.globalIDFor(ViaductPost.Reflection, postId.toString())

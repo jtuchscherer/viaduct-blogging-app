@@ -2,6 +2,7 @@ package org.tuchscherer.viadapp.resolvers
 
 import viaduct.api.context.ExecutionContext
 import viaduct.api.grts.Comment as ViaductComment
+import viaduct.api.grts.Like as ViaductLike
 import viaduct.api.grts.Post as ViaductPost
 import viaduct.api.grts.User as ViaductUser
 
@@ -37,5 +38,11 @@ internal fun org.tuchscherer.database.Comment.toViaductComment(ctx: ExecutionCon
     ViaductComment.of(ctx) {
         id(ctx.globalIDFor(ViaductComment.Reflection, id.value.toString()))
         content(content)
+        createdAt(createdAt.toString())
+    }
+
+internal fun org.tuchscherer.database.Like.toViaductLike(ctx: ExecutionContext) =
+    ViaductLike.of(ctx) {
+        id(ctx.globalIDFor(ViaductLike.Reflection, id.value.toString()))
         createdAt(createdAt.toString())
     }

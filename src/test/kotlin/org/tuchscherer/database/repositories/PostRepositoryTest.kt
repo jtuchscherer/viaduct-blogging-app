@@ -307,22 +307,20 @@ class PostRepositoryTest {
     }
 
     @Test
-    fun `getAuthorsByPostIds returns map of post ID to author`() {
+    fun `getAuthorIdsByPostIds returns map of post ID to author ID`() {
         val post1 = postRepository.create(title = "Post 1", content = "c", authorId = testUser.id)
         val post2 = postRepository.create(title = "Post 2", content = "c", authorId = testUser.id)
-        val unrelatedPost = postRepository.create(title = "Post 3", content = "c", authorId = testUser.id)
 
-        val result = postRepository.getAuthorsByPostIds(listOf(post1.id.value, post2.id.value))
+        val result = postRepository.getAuthorIdsByPostIds(listOf(post1.id.value, post2.id.value))
 
         assertEquals(2, result.size)
-        assertEquals(testUser.id.value, result[post1.id.value]?.id?.value)
-        assertEquals(testUser.id.value, result[post2.id.value]?.id?.value)
-        assertFalse(result.containsKey(unrelatedPost.id.value))
+        assertEquals(testUser.id.value, result[post1.id.value])
+        assertEquals(testUser.id.value, result[post2.id.value])
     }
 
     @Test
-    fun `getAuthorsByPostIds returns empty map for empty input`() {
-        val result = postRepository.getAuthorsByPostIds(emptyList())
+    fun `getAuthorIdsByPostIds returns empty map for empty input`() {
+        val result = postRepository.getAuthorIdsByPostIds(emptyList())
 
         assertTrue(result.isEmpty())
     }
@@ -345,27 +343,6 @@ class PostRepositoryTest {
         Assertions.assertNotNull(found)
         assertEquals("Updated Title", found!!.title)
         assertEquals("Updated Content", found.content)
-    }
-
-    @Test
-    fun `getAuthorForPost returns author when post exists`() {
-        val post = postRepository.create(
-            title = "Test Post",
-            content = "Content",
-            authorId = testUser.id
-        )
-
-        val author = postRepository.getAuthorForPost(post.id.value)
-
-        Assertions.assertNotNull(author)
-        assertEquals(testUser.id.value, author!!.id.value)
-    }
-
-    @Test
-    fun `getAuthorForPost returns null when post does not exist`() {
-        val author = postRepository.getAuthorForPost(UUID.randomUUID())
-
-        Assertions.assertNull(author)
     }
 
     @Test

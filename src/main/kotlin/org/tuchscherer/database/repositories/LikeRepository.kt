@@ -15,6 +15,11 @@ interface LikeRepository {
     fun findById(id: UUID): Like?
 
     /**
+     * Find multiple likes by IDs in a single query. Missing IDs are absent from the map.
+     */
+    fun findByIds(ids: List<UUID>): Map<UUID, Like>
+
+    /**
      * Find all likes for a specific post.
      */
     fun findByPostId(postId: UUID): List<Like>
