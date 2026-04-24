@@ -526,6 +526,29 @@ class AdminUpdateMutationResolversTest {
     }
 
     @Test
+    fun `AdminUpdatePostResolver throws IllegalArgumentException for blank content`() {
+        // Until centralised in PostValidation, AdminUpdatePost only checked
+        // content length and silently accepted whitespace-only content,
+        // diverging from CreatePost / UpdatePost. Lock that gap shut.
+        val resolver = AdminUpdatePostResolver(postRepository)
+        val input = AdminUpdatePostInput.Builder(updatePostTester.context)
+            .id(updatePostTester.context.globalIDFor(ViaductPost.Reflection, postId.toString()))
+            .content("   ")
+            .build()
+        val args = Mutation_AdminUpdatePost_Arguments.Builder(updatePostTester.context).input(input).build()
+
+        val e = assertThrows<Exception> {
+            runBlocking {
+                updatePostTester.test(resolver) {
+                    arguments = args
+                    requestContext = RequestContext(user = mockAdminUser)
+                }
+            }
+        }
+        assertInstanceOf(IllegalArgumentException::class.java, e.cause)
+    }
+
+    @Test
     fun `AdminUpdatePostResolver throws IllegalArgumentException for title exceeding 500 characters`() {
         val resolver = AdminUpdatePostResolver(postRepository)
         val input = AdminUpdatePostInput.Builder(updatePostTester.context)
