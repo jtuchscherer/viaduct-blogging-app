@@ -54,7 +54,10 @@ class UpdatePostResolver(
             require(it.isNotBlank()) { "Title cannot be blank" }
             require(it.length <= 500) { "Title cannot exceed 500 characters" }
         }
-        input.content?.let { require(it.length <= 100_000) { "Content cannot exceed 100,000 characters" } }
+        input.content?.let {
+            require(it.isNotBlank()) { "Content cannot be blank" }
+            require(it.length <= 100_000) { "Content cannot exceed 100,000 characters" }
+        }
 
         val existingPost = postRepository.findById(postId)
             ?: throw NotFoundException("Post not found")
