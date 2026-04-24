@@ -16,6 +16,11 @@ interface UserRepository {
     fun findById(id: UUID): User?
 
     /**
+     * Find multiple users by their IDs. Returns a map of ID to User for efficient batch lookups.
+     */
+    fun findByIds(ids: List<UUID>): Map<UUID, User>
+
+    /**
      * Find a user by their unique username.
      */
     fun findByUsername(username: String): User?

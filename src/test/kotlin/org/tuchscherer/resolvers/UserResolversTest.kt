@@ -8,6 +8,7 @@ import org.tuchscherer.database.User
 import org.tuchscherer.database.repositories.UserRepository
 import org.tuchscherer.viadapp.resolvers.MeResolver
 import org.tuchscherer.viadapp.resolvers.UserIsAdminResolver
+import org.tuchscherer.viadapp.resolvers.resolverbases.UserResolvers
 import io.mockk.*
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
@@ -118,50 +119,66 @@ class UserResolversTest : DefaultAbstractResolverTestBase() {
 
     // ── UserIsAdminResolver ───────────────────────────────────────────────────
 
+    private fun batchCtx(id: UUID = userId): UserResolvers.IsAdmin.Context {
+        val ctx = mockk<UserResolvers.IsAdmin.Context>(relaxed = true)
+        val globalId = this@UserResolversTest.context.globalIDFor(ViaductUser.Reflection, id.toString())
+        coEvery { ctx.objectValue.getId() } returns globalId
+        return ctx
+    }
+
     @Test
     fun `UserIsAdminResolver returns false for regular user`() = runBlocking {
-        val resolver = UserIsAdminResolver()
+        val resolver = UserIsAdminResolver(userRepository)
         every { mockUser.isAdmin } returns false
-        every { userRepository.findById(userId) } returns mockUser
+        every { userRepository.findByIds(listOf(userId)) } returns mapOf(userId to mockUser)
 
-        val result = runFieldResolver(
-            resolver = resolver,
-            objectValue = userObj(),
-            queryValue = queryObj(),
-            arguments = NoArguments
-        )
+        val results = resolver.batchResolve(listOf(batchCtx()))
 
-        assertFalse(result)
+        assertEquals(1, results.size)
+        assertFalse(results[0].get())
     }
 
     @Test
     fun `UserIsAdminResolver returns true for admin user`() = runBlocking {
-        val resolver = UserIsAdminResolver()
+        val resolver = UserIsAdminResolver(userRepository)
         every { mockUser.isAdmin } returns true
-        every { userRepository.findById(userId) } returns mockUser
+        every { userRepository.findByIds(listOf(userId)) } returns mapOf(userId to mockUser)
 
-        val result = runFieldResolver(
-            resolver = resolver,
-            objectValue = userObj(),
-            queryValue = queryObj(),
-            arguments = NoArguments
-        )
+        val results = resolver.batchResolve(listOf(batchCtx()))
 
-        assertTrue(result)
+        assertEquals(1, results.size)
+        assertTrue(results[0].get())
     }
 
     @Test
     fun `UserIsAdminResolver returns false when user not found`() = runBlocking {
-        val resolver = UserIsAdminResolver()
-        every { userRepository.findById(userId) } returns null
+        val resolver = UserIsAdminResolver(userRepository)
+        every { userRepository.findByIds(listOf(userId)) } returns emptyMap()
 
-        val result = runFieldResolver(
-            resolver = resolver,
-            objectValue = userObj(),
-            queryValue = queryObj(),
-            arguments = NoArguments
-        )
+        val results = resolver.batchResolve(listOf(batchCtx()))
 
-        assertFalse(result)
+        assertEquals(1, results.size)
+        assertFalse(results[0].get())
+    }
+
+    @Test
+    fun `UserIsAdminResolver batches multiple users in single DB call`() = runBlocking {
+        val id1 = UUID.randomUUID()
+        val id2 = UUID.randomUUID()
+        val user1 = mockk<org.tuchscherer.database.User>(relaxed = true).also {
+            every { it.isAdmin } returns false
+        }
+        val user2 = mockk<org.tuchscherer.database.User>(relaxed = true).also {
+            every { it.isAdmin } returns true
+        }
+        every { userRepository.findByIds(any()) } returns mapOf(id1 to user1, id2 to user2)
+
+        val resolver = UserIsAdminResolver(userRepository)
+        val results = resolver.batchResolve(listOf(batchCtx(id1), batchCtx(id2)))
+
+        assertEquals(2, results.size)
+        assertFalse(results[0].get())
+        assertTrue(results[1].get())
+        verify(exactly = 1) { userRepository.findByIds(any()) }
     }
 }
