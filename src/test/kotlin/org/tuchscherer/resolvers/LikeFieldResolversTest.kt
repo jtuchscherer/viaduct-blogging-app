@@ -17,6 +17,7 @@ import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.koin.core.context.GlobalContext
 import org.koin.dsl.module
 import viaduct.api.grts.*
@@ -127,6 +128,21 @@ class LikeFieldResolversTest : DefaultAbstractResolverTestBase() {
     }
 
     @Test
+    fun `PostLikeCountResolver throws when count exceeds Int MAX_VALUE (toCountInt guard)`() = runBlocking {
+        val resolver = PostLikeCountResolver()
+        every { likeRepository.countByPostId(postId) } returns Int.MAX_VALUE.toLong() + 1L
+
+        assertThrows<IllegalArgumentException> {
+            runFieldResolver(
+                resolver = resolver,
+                objectValue = postObj(),
+                queryValue = queryObj(),
+                arguments = NoArguments
+            )
+        }
+    }
+
+    @Test
     fun `PostLikeCountResolver returns zero when no likes`() = runBlocking {
         val resolver = PostLikeCountResolver()
         every { likeRepository.countByPostId(postId) } returns 0L
@@ -221,5 +237,20 @@ class LikeFieldResolversTest : DefaultAbstractResolverTestBase() {
         )
 
         assertEquals(0, result)
+    }
+
+    @Test
+    fun `PostCommentCountResolver throws when count exceeds Int MAX_VALUE (toCountInt guard)`() = runBlocking {
+        val resolver = PostCommentCountResolver()
+        every { commentRepository.countByPostId(postId) } returns Int.MAX_VALUE.toLong() + 1L
+
+        assertThrows<IllegalArgumentException> {
+            runFieldResolver(
+                resolver = resolver,
+                objectValue = postObj(),
+                queryValue = queryObj(),
+                arguments = NoArguments
+            )
+        }
     }
 }

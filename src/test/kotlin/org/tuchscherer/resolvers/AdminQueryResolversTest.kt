@@ -165,6 +165,24 @@ class AdminQueryResolversTest : DefaultAbstractResolverTestBase() {
         }
     }
 
+    @Test
+    fun `AdminUsersResolver throws when totalCount exceeds Int MAX_VALUE (toCountInt guard)`() = runBlocking {
+        val resolver = AdminUsersResolver(userRepository)
+        val args = AdminQueries_Users_Arguments.Builder(context).limit(10).offset(0).build()
+        every { userRepository.findPage(10, 0) } returns emptyList()
+        every { userRepository.count() } returns Int.MAX_VALUE.toLong() + 1L
+
+        assertThrows<IllegalArgumentException> {
+            runFieldResolver(
+                resolver = resolver,
+                objectValue = adminQueriesObj(),
+                queryValue = queryObj(),
+                arguments = args,
+                requestContext = RequestContext(user = mockAdminUser)
+            )
+        }
+    }
+
     // ── AdminPostsResolver ────────────────────────────────────────────────────
 
     @Test
@@ -220,6 +238,24 @@ class AdminQueryResolversTest : DefaultAbstractResolverTestBase() {
                 queryValue = queryObj(),
                 arguments = args,
                 requestContext = RequestContext(user = mockRegularUser)
+            )
+        }
+    }
+
+    @Test
+    fun `AdminPostsResolver throws when totalCount exceeds Int MAX_VALUE (toCountInt guard)`() = runBlocking {
+        val resolver = AdminPostsResolver(postRepository)
+        val args = AdminQueries_Posts_Arguments.Builder(context).limit(10).offset(0).build()
+        every { postRepository.findPage(10, 0) } returns emptyList()
+        every { postRepository.count() } returns Int.MAX_VALUE.toLong() + 1L
+
+        assertThrows<IllegalArgumentException> {
+            runFieldResolver(
+                resolver = resolver,
+                objectValue = adminQueriesObj(),
+                queryValue = queryObj(),
+                arguments = args,
+                requestContext = RequestContext(user = mockAdminUser)
             )
         }
     }
@@ -283,6 +319,24 @@ class AdminQueryResolversTest : DefaultAbstractResolverTestBase() {
         }
     }
 
+    @Test
+    fun `AdminCommentsResolver throws when totalCount exceeds Int MAX_VALUE (toCountInt guard)`() = runBlocking {
+        val resolver = AdminCommentsResolver(commentRepository)
+        val args = AdminQueries_Comments_Arguments.Builder(context).limit(10).offset(0).build()
+        every { commentRepository.findPage(10, 0) } returns emptyList()
+        every { commentRepository.count() } returns Int.MAX_VALUE.toLong() + 1L
+
+        assertThrows<IllegalArgumentException> {
+            runFieldResolver(
+                resolver = resolver,
+                objectValue = adminQueriesObj(),
+                queryValue = queryObj(),
+                arguments = args,
+                requestContext = RequestContext(user = mockAdminUser)
+            )
+        }
+    }
+
     // ── AdminStatsResolver ────────────────────────────────────────────────────
 
     @Test
@@ -306,6 +360,85 @@ class AdminQueryResolversTest : DefaultAbstractResolverTestBase() {
         assertEquals(10, result.getPostCount())
         assertEquals(20, result.getCommentCount())
         assertEquals(30, result.getLikeCount())
+    }
+
+    // Overflow guards — each test pins one toCountInt() call site. If any site
+    // reverts to a silent toInt(), the matching test fails. Testing each source
+    // independently catches partial reverts that an aggregate test would miss.
+    @Test
+    fun `AdminStatsResolver throws when userCount exceeds Int MAX_VALUE`() = runBlocking {
+        val resolver = AdminStatsResolver(userRepository, postRepository, commentRepository, likeRepository)
+        every { userRepository.count() } returns Int.MAX_VALUE.toLong() + 1L
+        every { postRepository.count() } returns 0L
+        every { commentRepository.count() } returns 0L
+        every { likeRepository.count() } returns 0L
+
+        assertThrows<IllegalArgumentException> {
+            runFieldResolver(
+                resolver = resolver,
+                objectValue = adminQueriesObj(),
+                queryValue = queryObj(),
+                arguments = viaduct.api.types.Arguments.NoArguments,
+                requestContext = RequestContext(user = mockAdminUser)
+            )
+        }
+    }
+
+    @Test
+    fun `AdminStatsResolver throws when postCount exceeds Int MAX_VALUE`() = runBlocking {
+        val resolver = AdminStatsResolver(userRepository, postRepository, commentRepository, likeRepository)
+        every { userRepository.count() } returns 0L
+        every { postRepository.count() } returns Int.MAX_VALUE.toLong() + 1L
+        every { commentRepository.count() } returns 0L
+        every { likeRepository.count() } returns 0L
+
+        assertThrows<IllegalArgumentException> {
+            runFieldResolver(
+                resolver = resolver,
+                objectValue = adminQueriesObj(),
+                queryValue = queryObj(),
+                arguments = viaduct.api.types.Arguments.NoArguments,
+                requestContext = RequestContext(user = mockAdminUser)
+            )
+        }
+    }
+
+    @Test
+    fun `AdminStatsResolver throws when commentCount exceeds Int MAX_VALUE`() = runBlocking {
+        val resolver = AdminStatsResolver(userRepository, postRepository, commentRepository, likeRepository)
+        every { userRepository.count() } returns 0L
+        every { postRepository.count() } returns 0L
+        every { commentRepository.count() } returns Int.MAX_VALUE.toLong() + 1L
+        every { likeRepository.count() } returns 0L
+
+        assertThrows<IllegalArgumentException> {
+            runFieldResolver(
+                resolver = resolver,
+                objectValue = adminQueriesObj(),
+                queryValue = queryObj(),
+                arguments = viaduct.api.types.Arguments.NoArguments,
+                requestContext = RequestContext(user = mockAdminUser)
+            )
+        }
+    }
+
+    @Test
+    fun `AdminStatsResolver throws when likeCount exceeds Int MAX_VALUE`() = runBlocking {
+        val resolver = AdminStatsResolver(userRepository, postRepository, commentRepository, likeRepository)
+        every { userRepository.count() } returns 0L
+        every { postRepository.count() } returns 0L
+        every { commentRepository.count() } returns 0L
+        every { likeRepository.count() } returns Int.MAX_VALUE.toLong() + 1L
+
+        assertThrows<IllegalArgumentException> {
+            runFieldResolver(
+                resolver = resolver,
+                objectValue = adminQueriesObj(),
+                queryValue = queryObj(),
+                arguments = viaduct.api.types.Arguments.NoArguments,
+                requestContext = RequestContext(user = mockAdminUser)
+            )
+        }
     }
 
     @Test
@@ -409,6 +542,69 @@ class AdminQueryResolversTest : DefaultAbstractResolverTestBase() {
         assertEquals(3, result.getPostCount())
         assertEquals(7, result.getCommentCount())
         assertEquals(15, result.getLikeCount())
+    }
+
+    @Test
+    fun `AdminUserContentCountsResolver throws when postCount exceeds Int MAX_VALUE`() = runBlocking {
+        val resolver = AdminUserContentCountsResolver(postRepository, commentRepository, likeRepository)
+        val args = AdminQueries_UserContentCounts_Arguments.Builder(context)
+            .userId(context.globalIDFor(viaduct.api.grts.User.Reflection, dbUserId.toString()))
+            .build()
+        every { postRepository.countByAuthorId(dbUserId) } returns Int.MAX_VALUE.toLong() + 1L
+        every { commentRepository.countByUserId(dbUserId) } returns 0L
+        every { likeRepository.countByUserId(dbUserId) } returns 0L
+
+        assertThrows<IllegalArgumentException> {
+            runFieldResolver(
+                resolver = resolver,
+                objectValue = adminQueriesObj(),
+                queryValue = queryObj(),
+                arguments = args,
+                requestContext = RequestContext(user = mockAdminUser)
+            )
+        }
+    }
+
+    @Test
+    fun `AdminUserContentCountsResolver throws when commentCount exceeds Int MAX_VALUE`() = runBlocking {
+        val resolver = AdminUserContentCountsResolver(postRepository, commentRepository, likeRepository)
+        val args = AdminQueries_UserContentCounts_Arguments.Builder(context)
+            .userId(context.globalIDFor(viaduct.api.grts.User.Reflection, dbUserId.toString()))
+            .build()
+        every { postRepository.countByAuthorId(dbUserId) } returns 0L
+        every { commentRepository.countByUserId(dbUserId) } returns Int.MAX_VALUE.toLong() + 1L
+        every { likeRepository.countByUserId(dbUserId) } returns 0L
+
+        assertThrows<IllegalArgumentException> {
+            runFieldResolver(
+                resolver = resolver,
+                objectValue = adminQueriesObj(),
+                queryValue = queryObj(),
+                arguments = args,
+                requestContext = RequestContext(user = mockAdminUser)
+            )
+        }
+    }
+
+    @Test
+    fun `AdminUserContentCountsResolver throws when likeCount exceeds Int MAX_VALUE`() = runBlocking {
+        val resolver = AdminUserContentCountsResolver(postRepository, commentRepository, likeRepository)
+        val args = AdminQueries_UserContentCounts_Arguments.Builder(context)
+            .userId(context.globalIDFor(viaduct.api.grts.User.Reflection, dbUserId.toString()))
+            .build()
+        every { postRepository.countByAuthorId(dbUserId) } returns 0L
+        every { commentRepository.countByUserId(dbUserId) } returns 0L
+        every { likeRepository.countByUserId(dbUserId) } returns Int.MAX_VALUE.toLong() + 1L
+
+        assertThrows<IllegalArgumentException> {
+            runFieldResolver(
+                resolver = resolver,
+                objectValue = adminQueriesObj(),
+                queryValue = queryObj(),
+                arguments = args,
+                requestContext = RequestContext(user = mockAdminUser)
+            )
+        }
     }
 
     @Test
