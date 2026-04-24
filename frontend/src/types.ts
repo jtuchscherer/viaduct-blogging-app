@@ -17,6 +17,9 @@ export interface Post {
   content: string;
   author: Author;
   createdAt: string;
+  updatedAt?: string;
   likeCount: number;
   commentCount: number;
+  isLikedByMe?: boolean;
+  comments?: Comment[];
 }

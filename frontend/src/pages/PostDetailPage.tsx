@@ -4,7 +4,7 @@ import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useState, useEffect, type FormEvent } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import DOMPurify from 'dompurify';
-import type { Author, Comment } from '../types';
+import type { Post } from '../types';
 
 const GET_POST = gql`
   query GetPost($id: ID!) {
@@ -89,17 +89,6 @@ function renderContent(content: string): string {
       return `<p>${escaped}</p>`;
     })
     .join('');
-}
-
-interface Post {
-  id: string;
-  title: string;
-  content: string;
-  author: Author;
-  createdAt: string;
-  likeCount: number;
-  isLikedByMe: boolean;
-  comments: Comment[];
 }
 
 interface PostData {
@@ -228,7 +217,7 @@ export default function PostDetailPage() {
         </div>
 
         <section className="comments-section">
-          <h2 id="comments-section">Comments ({post.comments.length})</h2>
+          <h2 id="comments-section">Comments ({post.comments?.length ?? 0})</h2>
 
           {isAuthenticated && (
             <form onSubmit={handleCommentSubmit} className="comment-form">
@@ -253,7 +242,7 @@ export default function PostDetailPage() {
           )}
 
           <div className="comments-list">
-            {post.comments.map((comment) => (
+            {(post.comments ?? []).map((comment) => (
               <div key={comment.id} className="comment">
                 <div className="comment-header">
                   <strong>{comment.author.name}</strong>
