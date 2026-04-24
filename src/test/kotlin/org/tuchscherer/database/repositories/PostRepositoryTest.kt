@@ -85,6 +85,25 @@ class PostRepositoryTest {
     }
 
     @Test
+    fun `findByIds returns map of matching posts and omits missing ids`() {
+        val post1 = postRepository.create(title = "P1", content = "c", authorId = testUser.id)
+        val post2 = postRepository.create(title = "P2", content = "c", authorId = testUser.id)
+        val missingId = UUID.randomUUID()
+
+        val result = postRepository.findByIds(listOf(post1.id.value, post2.id.value, missingId))
+
+        assertEquals(2, result.size)
+        assertEquals("P1", result[post1.id.value]?.title)
+        assertEquals("P2", result[post2.id.value]?.title)
+        assertFalse(result.containsKey(missingId))
+    }
+
+    @Test
+    fun `findByIds returns empty map for empty input`() {
+        assertTrue(postRepository.findByIds(emptyList()).isEmpty())
+    }
+
+    @Test
     fun `findByAuthorId returns all posts by author`() {
         postRepository.create(
             title = "Post 1",

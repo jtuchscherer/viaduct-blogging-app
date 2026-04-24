@@ -493,6 +493,77 @@ else
     echo "Response: $NESTED_QUERY_RESPONSE"
 fi
 
+# Step 8.5: Test Relay node(id) refetch for every Node type.
+# These queries require @resolver on the Node types in schema.graphqls —
+# without it Viaduct generates no NodeResolvers base class and the server
+# responds with "No node resolver found for type X". Runs before Step 9
+# because delete-post cascades remove comment/like rows.
+print_header "Step 8.5: Test Relay node(id) refetch"
+
+# Fetch alice's global User ID via GraphQL (USER1_ID from /auth/register is a raw UUID)
+USER1_GID=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $USER1_TOKEN" \
+    -d '{"query":"query { me { id } }"}' \
+    | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data']['me']['id'])")
+
+NODE_POST_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -d "{\"query\":\"query { node(id: \\\"$POST1_ID\\\") { __typename id ... on Post { title } } }\"}")
+if echo "$NODE_POST_RESPONSE" | grep -q '"__typename":"Post"' && \
+   echo "$NODE_POST_RESPONSE" | grep -q "\"id\":\"$POST1_ID\""; then
+    print_success "node(id) returns Post with matching id and __typename"
+else
+    print_error "node(id) failed for Post: $NODE_POST_RESPONSE"
+fi
+
+# COMMENT2_ID is still alive — COMMENT1_ID was deleted in Step 6.
+NODE_COMMENT_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -d "{\"query\":\"query { node(id: \\\"$COMMENT2_ID\\\") { __typename id ... on Comment { content } } }\"}")
+if echo "$NODE_COMMENT_RESPONSE" | grep -q '"__typename":"Comment"'; then
+    print_success "node(id) returns Comment with __typename=Comment"
+else
+    print_error "node(id) failed for Comment: $NODE_COMMENT_RESPONSE"
+fi
+
+# LIKE1_ID was removed by unlikePost in Step 7 — create a fresh like for this probe.
+FRESH_LIKE_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $USER2_TOKEN" \
+    -d "{\"query\":\"mutation { likePost(postId: \\\"$POST1_ID\\\") { id } }\"}")
+FRESH_LIKE_ID=$(echo "$FRESH_LIKE_RESPONSE" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data']['likePost']['id'])")
+
+NODE_LIKE_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -d "{\"query\":\"query { node(id: \\\"$FRESH_LIKE_ID\\\") { __typename id } }\"}")
+if echo "$NODE_LIKE_RESPONSE" | grep -q '"__typename":"Like"'; then
+    print_success "node(id) returns Like with __typename=Like"
+else
+    print_error "node(id) failed for Like: $NODE_LIKE_RESPONSE"
+fi
+
+NODE_USER_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -d "{\"query\":\"query { node(id: \\\"$USER1_GID\\\") { __typename id ... on User { username } } }\"}")
+if echo "$NODE_USER_RESPONSE" | grep -q '"__typename":"User"' && \
+   echo "$NODE_USER_RESPONSE" | grep -q '"username":"alice"'; then
+    print_success "node(id) returns User with __typename=User and correct username"
+else
+    print_error "node(id) failed for User: $NODE_USER_RESPONSE"
+fi
+
+# Regression guard: Post.author is wired through ctx.nodeFor, so querying
+# Post.author.username exercises the UserNodeResolver indirectly.
+POST_AUTHOR_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -d "{\"query\":\"query { post(id: \\\"$POST1_ID\\\") { author { username } } }\"}")
+if echo "$POST_AUTHOR_RESPONSE" | grep -q '"username":"alice"'; then
+    print_success "Post.author resolves via UserNodeResolver (ctx.nodeFor delegation works)"
+else
+    print_error "Post.author failed: $POST_AUTHOR_RESPONSE"
+fi
+
 # Step 9: Test Delete Post
 print_header "Step 9: Test Delete Post"
 

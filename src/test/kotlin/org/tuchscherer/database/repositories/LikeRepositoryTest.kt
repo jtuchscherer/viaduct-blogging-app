@@ -87,6 +87,32 @@ class LikeRepositoryTest {
     }
 
     @Test
+    fun `findByIds returns map of matching likes and omits missing ids`() {
+        val user2 = userRepository.create(
+            username = "liker2",
+            email = "liker2@example.com",
+            name = "Liker 2",
+            passwordHash = "hash",
+            salt = "salt"
+        )
+        val like1 = likeRepository.create(postId = testPost.id, userId = testUser.id)
+        val like2 = likeRepository.create(postId = testPost.id, userId = user2.id)
+        val missingId = UUID.randomUUID()
+
+        val result = likeRepository.findByIds(listOf(like1.id.value, like2.id.value, missingId))
+
+        assertEquals(2, result.size)
+        assertTrue(result.containsKey(like1.id.value))
+        assertTrue(result.containsKey(like2.id.value))
+        assertFalse(result.containsKey(missingId))
+    }
+
+    @Test
+    fun `findByIds returns empty map for empty input`() {
+        assertTrue(likeRepository.findByIds(emptyList()).isEmpty())
+    }
+
+    @Test
     fun `findByPostId returns all likes for post`() {
         val user2 = userRepository.create(
             username = "user2",
