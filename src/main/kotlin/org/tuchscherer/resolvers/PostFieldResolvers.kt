@@ -1,5 +1,6 @@
 package org.tuchscherer.viadapp.resolvers
 
+import org.tuchscherer.auth.NotFoundException
 import org.tuchscherer.database.repositories.CommentRepository
 import org.tuchscherer.database.repositories.PostRepository
 import org.tuchscherer.viadapp.resolvers.resolverbases.PostResolvers
@@ -16,16 +17,12 @@ class PostAuthorResolver : PostResolvers.Author() {
 
     override suspend fun batchResolve(contexts: List<Context>): List<FieldValue<ViaductUser>> {
         val postIds = contexts.map { UUID.fromString(it.objectValue.getId().internalID) }
-        val authorsById = postRepository.getAuthorsByPostIds(postIds)
+        val authorIdByPostId = postRepository.getAuthorIdsByPostIds(postIds)
 
-        return contexts.map { ctx ->
-            val postId = UUID.fromString(ctx.objectValue.getId().internalID)
-            val author = authorsById[postId]
-            if (author != null) {
-                FieldValue.ofValue(author.toViaductUser(ctx))
-            } else {
-                FieldValue.ofError(RuntimeException("Post not found: $postId"))
-            }
+        return contexts.zip(postIds).map { (ctx, postId) ->
+            val authorId = authorIdByPostId[postId]
+                ?: return@map FieldValue.ofError(NotFoundException("Post not found: $postId"))
+            FieldValue.ofValue(ctx.nodeFor(ctx.globalIDFor(ViaductUser.Reflection, authorId.toString())))
         }
     }
 }

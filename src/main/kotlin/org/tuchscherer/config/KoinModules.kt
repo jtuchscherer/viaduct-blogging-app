@@ -122,6 +122,12 @@ val resolverModule = module {
     singleOf(::AdminUpdatePostResolver)
     singleOf(::AdminDeletePostResolver)
     singleOf(::AdminDeleteCommentResolver)
+
+    // Node resolvers (Relay refetch via node(id))
+    singleOf(::UserNodeResolver)
+    singleOf(::PostNodeResolver)
+    singleOf(::CommentNodeResolver)
+    singleOf(::LikeNodeResolver)
 }
 
 /**

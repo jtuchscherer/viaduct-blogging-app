@@ -15,6 +15,11 @@ interface CommentRepository {
     fun findById(id: UUID): Comment?
 
     /**
+     * Find multiple comments by IDs in a single query. Missing IDs are absent from the map.
+     */
+    fun findByIds(ids: List<UUID>): Map<UUID, Comment>
+
+    /**
      * Find all comments for a specific post.
      */
     fun findByPostId(postId: UUID): List<Comment>

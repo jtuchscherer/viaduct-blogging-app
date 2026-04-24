@@ -22,6 +22,12 @@ class ExposedPostRepository : PostRepository {
         Post.findById(id)
     }
 
+    override fun findByIds(ids: List<UUID>): Map<UUID, Post> = transaction {
+        if (ids.isEmpty()) return@transaction emptyMap()
+        Post.find { Posts.id inList ids.map { EntityID(it, Posts) } }
+            .associateBy { it.id.value }
+    }
+
     override fun findByAuthorId(authorId: EntityID<UUID>): List<Post> = transaction {
         Post.find { Posts.authorId eq authorId }.toList()
     }
@@ -91,14 +97,10 @@ class ExposedPostRepository : PostRepository {
         Post.find { Posts.authorId eq authorId }.count()
     }
 
-    override fun getAuthorForPost(postId: UUID): org.tuchscherer.database.User? = transaction {
-        Post.findById(postId)?.author
-    }
-
-    override fun getAuthorsByPostIds(postIds: List<UUID>): Map<UUID, org.tuchscherer.database.User> = transaction {
+    override fun getAuthorIdsByPostIds(postIds: List<UUID>): Map<UUID, UUID> = transaction {
         if (postIds.isEmpty()) return@transaction emptyMap()
         Post.find { Posts.id inList postIds.map { EntityID(it, Posts) } }
-            .associate { post -> post.id.value to post.author }
+            .associate { it.id.value to it.authorId.value }
     }
 
     override fun countByAuthorId(authorId: UUID): Long = transaction {
