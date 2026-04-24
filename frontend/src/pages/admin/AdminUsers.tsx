@@ -78,18 +78,34 @@ export default function AdminUsers() {
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [contentCounts, setContentCounts] = useState<ContentCounts | null>(null);
   const [loadingCounts, setLoadingCounts] = useState(false);
+  const [countsError, setCountsError] = useState<string | null>(null);
   const { refetch: fetchContentCounts } = useQuery<AdminUserContentCountsData>(ADMIN_USER_CONTENT_COUNTS, {
     skip: true,
   });
 
+  const resetDeleteDialog = () => {
+    setUserToDelete(null);
+    setContentCounts(null);
+    setCountsError(null);
+  };
+
   const handleDeleteClick = async (user: User) => {
     setUserToDelete(user);
+    setContentCounts(null);
+    setCountsError(null);
     setLoadingCounts(true);
     try {
       const result = await fetchContentCounts({ userId: user.id });
       setContentCounts(result.data?.admin?.userContentCounts ?? null);
-    } catch {
-      setContentCounts({ postCount: 0, commentCount: 0, likeCount: 0 });
+    } catch (err) {
+      // Don't silently fall back to zeros — that would show the admin a
+      // misleadingly-empty impact summary and let them delete a user with
+      // lots of content thinking there's none. Surface the error and keep
+      // the confirm button disabled until the admin retries or cancels.
+      console.error('Failed to fetch user content counts:', err);
+      setCountsError(
+        err instanceof Error ? err.message : 'Failed to load content counts'
+      );
     }
     setLoadingCounts(false);
   };
@@ -98,8 +114,7 @@ export default function AdminUsers() {
     if (!userToDelete) return;
     try {
       await deleteUser({ variables: { id: userToDelete.id } });
-      setUserToDelete(null);
-      setContentCounts(null);
+      resetDeleteDialog();
       refetch();
     } catch (err) {
       console.error('Failed to delete user:', err);
@@ -196,6 +211,10 @@ export default function AdminUsers() {
             </p>
             {loadingCounts ? (
               <p>Loading content counts...</p>
+            ) : countsError ? (
+              <div className="error-message" data-testid="content-counts-error">
+                Couldn't load what would be deleted: {countsError}. Please retry or cancel.
+              </div>
             ) : (
               contentCounts && (
                 <div className="warning">
@@ -211,14 +230,24 @@ export default function AdminUsers() {
             <div className="confirm-modal-actions">
               <button
                 className="btn-cancel"
-                onClick={() => {
-                  setUserToDelete(null);
-                  setContentCounts(null);
-                }}
+                onClick={resetDeleteDialog}
               >
                 Cancel
               </button>
-              <button className="btn-confirm-delete" onClick={confirmDelete} disabled={loadingCounts}>
+              {countsError && (
+                <button
+                  className="btn-page"
+                  data-testid="btn-retry-counts"
+                  onClick={() => userToDelete && handleDeleteClick(userToDelete)}
+                >
+                  Retry
+                </button>
+              )}
+              <button
+                className="btn-confirm-delete"
+                onClick={confirmDelete}
+                disabled={loadingCounts || contentCounts === null}
+              >
                 Delete User
               </button>
             </div>
