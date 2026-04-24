@@ -32,7 +32,7 @@ class PostLikeCountResolver : PostResolvers.LikeCount() {
     override suspend fun resolve(ctx: Context): Int {
         val postId = UUID.fromString(ctx.objectValue.getId().internalID)
 
-        return likeRepository.countByPostId(postId).toInt()
+        return likeRepository.countByPostId(postId).toCountInt()
     }
 }
 
@@ -61,6 +61,6 @@ class PostCommentCountResolver : PostResolvers.CommentCount() {
     override suspend fun resolve(ctx: Context): Int {
         val postId = UUID.fromString(ctx.objectValue.getId().internalID)
 
-        return commentRepository.countByPostId(postId).toInt()
+        return commentRepository.countByPostId(postId).toCountInt()
     }
 }

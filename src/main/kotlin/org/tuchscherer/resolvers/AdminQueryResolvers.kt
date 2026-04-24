@@ -31,10 +31,10 @@ class AdminStatsResolver(
         requireAdmin(ctx.requestContext)
 
         return AdminStats.of(ctx) {
-            userCount(userRepository.count().toInt())
-            postCount(postRepository.count().toInt())
-            commentCount(commentRepository.count().toInt())
-            likeCount(likeRepository.count().toInt())
+            userCount(userRepository.count().toCountInt())
+            postCount(postRepository.count().toCountInt())
+            commentCount(commentRepository.count().toCountInt())
+            likeCount(likeRepository.count().toCountInt())
         }
     }
 }
@@ -62,7 +62,7 @@ class AdminUsersResolver(
         }
         return AdminUsersPage.of(ctx) {
             users(users)
-            totalCount(userRepository.count().toInt())
+            totalCount(userRepository.count().toCountInt())
         }
     }
 }
@@ -105,9 +105,9 @@ class AdminUserContentCountsResolver(
         val userId = UUID.fromString(ctx.arguments.userId.internalID)
 
         return UserContentCounts.of(ctx) {
-            postCount(postRepository.countByAuthorId(userId).toInt())
-            commentCount(commentRepository.countByUserId(userId).toInt())
-            likeCount(likeRepository.countByUserId(userId).toInt())
+            postCount(postRepository.countByAuthorId(userId).toCountInt())
+            commentCount(commentRepository.countByUserId(userId).toCountInt())
+            likeCount(likeRepository.countByUserId(userId).toCountInt())
         }
     }
 }
@@ -135,7 +135,7 @@ class AdminPostsResolver(
         }
         return AdminPostsPage.of(ctx) {
             posts(posts)
-            totalCount(postRepository.count().toInt())
+            totalCount(postRepository.count().toCountInt())
         }
     }
 }
@@ -184,7 +184,7 @@ class AdminCommentsResolver(
         }
         return AdminCommentsPage.of(ctx) {
             comments(comments)
-            totalCount(commentRepository.count().toInt())
+            totalCount(commentRepository.count().toCountInt())
         }
     }
 }
