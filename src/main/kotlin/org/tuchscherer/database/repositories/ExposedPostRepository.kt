@@ -74,10 +74,7 @@ class ExposedPostRepository : PostRepository {
 
     override fun delete(id: UUID): Boolean = transaction {
         val post = Post.findById(id) ?: return@transaction false
-        // Delete dependents first to satisfy FK constraints
-        Like.find { Likes.postId eq post.id }.forEach { it.delete() }
-        Comment.find { Comments.postId eq post.id }.forEach { it.delete() }
-        post.delete()
+        deleteWithDependents(post)
         true
     }
 
@@ -109,13 +106,18 @@ class ExposedPostRepository : PostRepository {
 
     override fun deleteByAuthorId(authorId: UUID): Int = transaction {
         val posts = Post.find { Posts.authorId eq authorId }.toList()
-        val count = posts.size
-        posts.forEach { post ->
-            // Delete dependents first to satisfy FK constraints
-            Like.find { Likes.postId eq post.id }.forEach { it.delete() }
-            Comment.find { Comments.postId eq post.id }.forEach { it.delete() }
-            post.delete()
-        }
-        count
+        posts.forEach(::deleteWithDependents)
+        posts.size
+    }
+
+    /**
+     * Delete [post] along with its likes and comments. Dependents go first so
+     * the foreign-key constraints on Likes.postId and Comments.postId stay
+     * satisfied. Must be called inside an existing transaction.
+     */
+    private fun deleteWithDependents(post: Post) {
+        Like.find { Likes.postId eq post.id }.forEach { it.delete() }
+        Comment.find { Comments.postId eq post.id }.forEach { it.delete() }
+        post.delete()
     }
 }
