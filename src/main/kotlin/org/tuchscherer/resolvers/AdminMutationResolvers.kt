@@ -91,11 +91,8 @@ class AdminUpdatePostResolver(
         val input = ctx.arguments.input
         val postId = UUID.fromString(input.id.internalID)
 
-        input.title?.let {
-            require(it.isNotBlank()) { "Title cannot be blank" }
-            require(it.length <= 500) { "Title cannot exceed 500 characters" }
-        }
-        input.content?.let { require(it.length <= 100_000) { "Content cannot exceed 100,000 characters" } }
+        input.title?.let(PostValidation::validateTitle)
+        input.content?.let(PostValidation::validateContent)
 
         val updatedPost = postRepository.updateById(
             id = postId,

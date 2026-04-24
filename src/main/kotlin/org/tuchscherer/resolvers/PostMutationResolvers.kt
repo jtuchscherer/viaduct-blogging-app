@@ -18,10 +18,8 @@ class CreatePostResolver(
         val input = ctx.arguments.input
         val user = requireAuth(ctx.requestContext)
 
-        require(input.title.isNotBlank()) { "Title cannot be blank" }
-        require(input.title.length <= 500) { "Title cannot exceed 500 characters" }
-        require(input.content.isNotBlank()) { "Content cannot be blank" }
-        require(input.content.length <= 100_000) { "Content cannot exceed 100,000 characters" }
+        PostValidation.validateTitle(input.title)
+        PostValidation.validateContent(input.content)
 
         val post = postRepository.create(
             title = input.title,
@@ -44,14 +42,8 @@ class UpdatePostResolver(
         val postId = UUID.fromString(input.id.internalID)
         val user = requireAuth(ctx.requestContext)
 
-        input.title?.let {
-            require(it.isNotBlank()) { "Title cannot be blank" }
-            require(it.length <= 500) { "Title cannot exceed 500 characters" }
-        }
-        input.content?.let {
-            require(it.isNotBlank()) { "Content cannot be blank" }
-            require(it.length <= 100_000) { "Content cannot exceed 100,000 characters" }
-        }
+        input.title?.let(PostValidation::validateTitle)
+        input.content?.let(PostValidation::validateContent)
 
         val existingPost = postRepository.findById(postId)
             ?: throw NotFoundException("Post not found")
