@@ -29,6 +29,7 @@ import {
   FORMAT_TEXT_COMMAND,
   $getRoot,
   $createParagraphNode,
+  $createTextNode,
   type LexicalNode,
   type EditorState,
   type LexicalEditor,
@@ -232,15 +233,29 @@ export default function RichTextEditor({
     editorState: (editor: LexicalEditor) => {
       const html = normalizeToHtml(initialContent);
       if (!html) return;
+      // DOMParser itself doesn't throw on malformed HTML — it returns a
+      // <parsererror> element. The risky call is $generateNodesFromDOM,
+      // which can throw if Lexical encounters DOM it can't import. Narrow
+      // the catch to that call and fall back to plain text so the user
+      // doesn't open an empty editor and silently lose their content.
+      const dom = new DOMParser().parseFromString(html, 'text/html');
+      let nodes: LexicalNode[];
       try {
-        const dom = new DOMParser().parseFromString(html, 'text/html');
-        const nodes = $generateNodesFromDOM(editor, dom);
-        const root = $getRoot();
-        root.clear();
-        nodes.forEach((n: LexicalNode) => root.append(n));
+        nodes = $generateNodesFromDOM(editor, dom);
       } catch (e) {
-        console.error('RichTextEditor: failed to parse initial content', e);
+        const fallbackText = dom.body.textContent ?? '';
+        console.error(
+          `RichTextEditor: failed to import HTML into Lexical (${html.length} chars). ` +
+            `Falling back to plain text. Cause:`,
+          e,
+        );
+        const paragraph = $createParagraphNode();
+        if (fallbackText) paragraph.append($createTextNode(fallbackText));
+        nodes = [paragraph];
       }
+      const root = $getRoot();
+      root.clear();
+      nodes.forEach((n: LexicalNode) => root.append(n));
     },
     onError: (error: Error) => console.error('RichTextEditor error:', error),
   };
