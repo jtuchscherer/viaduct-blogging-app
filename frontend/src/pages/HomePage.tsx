@@ -3,6 +3,7 @@ import { gql } from '@apollo/client';
 import { useQuery } from '@apollo/client/react';
 import { Link } from 'react-router-dom';
 import { isContentEmpty, getHtmlPreview } from '../utils/content';
+import { appendConnectionEdges } from '../utils/pagination';
 import type { Post } from '../types';
 
 const PAGE_SIZE = 10;
@@ -64,13 +65,10 @@ export default function HomePage() {
       updateQuery(prev, { fetchMoreResult }) {
         if (!fetchMoreResult) return prev;
         return {
-          postsConnection: {
-            ...fetchMoreResult.postsConnection,
-            edges: [
-              ...prev.postsConnection.edges,
-              ...fetchMoreResult.postsConnection.edges,
-            ],
-          },
+          postsConnection: appendConnectionEdges(
+            prev.postsConnection,
+            fetchMoreResult.postsConnection,
+          ),
         };
       },
     });
