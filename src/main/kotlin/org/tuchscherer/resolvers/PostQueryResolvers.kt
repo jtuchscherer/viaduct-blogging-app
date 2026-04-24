@@ -63,7 +63,7 @@ class PostsConnectionResolver(
     override suspend fun resolve(ctx: Context): PostsConnection? {
         val offsetLimit = ctx.arguments.toOffsetLimit(DEFAULT_PAGE_SIZE)
         val posts = postRepository.findPage(offsetLimit.limit, offsetLimit.offset)
-        val totalCount = postRepository.count().toInt()
+        val totalCount = postRepository.count().toCountInt()
 
         val edges = posts.mapIndexed { i, post ->
             val cursor = encodeCursor(offsetLimit.offset + i)
