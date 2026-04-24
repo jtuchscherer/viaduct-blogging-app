@@ -227,8 +227,8 @@ class PostRepositoryTest {
 
         assertTrue(deleted)
         Assertions.assertNull(postRepository.findById(post.id.value))
-        assertEquals(0, commentRepository.countByPostId(post.id))
-        assertEquals(0, likeRepository.countByPostId(post.id))
+        assertEquals(0, commentRepository.countByPostId(post.id.value))
+        assertEquals(0, likeRepository.countByPostId(post.id.value))
     }
 
     @Test
@@ -401,8 +401,8 @@ class PostRepositoryTest {
         assertEquals(2, deleted)
         Assertions.assertNull(postRepository.findById(post1.id.value))
         Assertions.assertNull(postRepository.findById(post2.id.value))
-        assertEquals(0, commentRepository.countByPostId(post1.id))
-        assertEquals(0, likeRepository.countByPostId(post2.id))
+        assertEquals(0, commentRepository.countByPostId(post1.id.value))
+        assertEquals(0, likeRepository.countByPostId(post2.id.value))
     }
 
     @Test

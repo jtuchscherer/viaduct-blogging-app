@@ -15,12 +15,7 @@ interface LikeRepository {
     fun findById(id: UUID): Like?
 
     /**
-     * Find all likes for a specific post by EntityID.
-     */
-    fun findByPostId(postId: EntityID<UUID>): List<Like>
-
-    /**
-     * Find all likes for a specific post by UUID.
+     * Find all likes for a specific post.
      */
     fun findByPostId(postId: UUID): List<Like>
 
@@ -59,12 +54,7 @@ interface LikeRepository {
     fun deleteByPostAndUser(postId: EntityID<UUID>, userId: EntityID<UUID>): Boolean
 
     /**
-     * Count likes for a post by EntityID.
-     */
-    fun countByPostId(postId: EntityID<UUID>): Long
-
-    /**
-     * Count likes for a post by UUID.
+     * Count likes for a post.
      */
     fun countByPostId(postId: UUID): Long
 

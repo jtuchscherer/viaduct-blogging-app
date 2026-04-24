@@ -105,7 +105,7 @@ class LikeRepositoryTest {
             userId = user2.id
         )
 
-        val likes = likeRepository.findByPostId(testPost.id)
+        val likes = likeRepository.findByPostId(testPost.id.value)
 
         assertEquals(2, likes.size)
     }
@@ -232,7 +232,7 @@ class LikeRepositoryTest {
             userId = user2.id
         )
 
-        val count = likeRepository.countByPostId(testPost.id)
+        val count = likeRepository.countByPostId(testPost.id.value)
 
         assertEquals(2, count)
     }
