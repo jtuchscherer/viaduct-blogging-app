@@ -2,7 +2,9 @@ package org.tuchscherer.database.repositories
 
 import org.tuchscherer.database.User
 import org.tuchscherer.database.Users
+import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.inList
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import java.time.LocalDateTime
 import java.util.*
@@ -15,6 +17,12 @@ class ExposedUserRepository : UserRepository {
 
     override fun findById(id: UUID): User? = transaction {
         User.findById(id)
+    }
+
+    override fun findByIds(ids: List<UUID>): Map<UUID, User> = transaction {
+        if (ids.isEmpty()) return@transaction emptyMap()
+        User.find { Users.id inList ids.map { EntityID(it, Users) } }
+            .associateBy { it.id.value }
     }
 
     override fun findByUsername(username: String): User? = transaction {
