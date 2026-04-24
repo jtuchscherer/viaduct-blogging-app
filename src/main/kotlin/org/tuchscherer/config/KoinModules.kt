@@ -7,7 +7,9 @@ import org.tuchscherer.auth.AuthenticationService
 import org.tuchscherer.auth.JwtService
 import org.tuchscherer.auth.PasswordService
 import org.tuchscherer.database.DatabaseFactory
+import org.tuchscherer.web.AuthDependencies
 import org.tuchscherer.web.GraphQLServer
+import org.tuchscherer.web.ObservabilityDependencies
 import org.tuchscherer.database.repositories.*
 import org.tuchscherer.viadapp.resolvers.*
 import org.koin.core.module.dsl.singleOf
@@ -61,6 +63,8 @@ val metricsModule = module {
  * Provides GraphQLServer instance with all dependencies for both GraphQL and Auth endpoints.
  */
 val serverModule = module {
+    singleOf(::AuthDependencies)
+    singleOf(::ObservabilityDependencies)
     singleOf(::GraphQLServer)
 }
 
