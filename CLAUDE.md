@@ -144,8 +144,8 @@ frontend/e2e/
 - **No `@Disabled` tests without a plan**: Every disabled test must have a comment linking to a chore or issue. Prefer fixing or deleting over disabling.
 - **Cover edge cases**: Empty/blank inputs, not-found lookups, authorization failures, and boundary conditions (e.g., pagination with 0 results) should all have tests.
 
-### Known Viaduct test infrastructure limitation
-`ConnectionFieldExecutionContext` (used by `PostsConnectionResolver`) is not compatible with `DefaultAbstractResolverTestBase`. Test pagination via the repository layer (`findPage`) and `query-tests.sh` instead.
+### Connection resolver testing
+`PostsConnectionResolver` uses `ConnectionFieldExecutionContext`, which the standard `runFieldResolver` helper doesn't accept. Build the context directly with `MockConnectionFieldExecutionContext` (Viaduct test fixtures) and call `resolver.resolve(ctx)` — see `PostsResolverTest`. Mock `arguments.toOffsetLimit(any<Int>())` because `ConnectionBuilder.fromSlice` calls it internally with Viaduct's default page size in addition to the resolver's call.
 
 ## Definition of Done
 

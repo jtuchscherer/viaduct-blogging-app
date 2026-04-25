@@ -102,8 +102,9 @@ class PostsResolverTest : DefaultAbstractResolverTestBase() {
         offset: Int = 0
     ): QueryResolvers.PostsConnection.Context {
         val args = mockk<Query_PostsConnection_Arguments>()
-        every { args.toOffsetLimit(PostsConnectionResolver.DEFAULT_PAGE_SIZE) } returns
-            OffsetLimit(offset, first)
+        // 0.30 ConnectionBuilder.fromSlice internally calls arguments.toOffsetLimit(maxLimit)
+        // with Viaduct's own default to derive the offset for cursor encoding, so match any int.
+        every { args.toOffsetLimit(any<Int>()) } returns OffsetLimit(offset, first)
         val selections = ossSelectionSetFactory.selectionsOn(PostsConnection.Reflection, "postsConnection", emptyMap())
         val mockConnCtx = MockConnectionFieldExecutionContext<Query, Query, Query_PostsConnection_Arguments, PostsConnection>(
             objectValue = Query.Builder(context).build(),
@@ -154,9 +155,48 @@ class PostsResolverTest : DefaultAbstractResolverTestBase() {
     }
 
     @Test
-    fun `PostsConnectionResolver encodeCursor produces correct Viaduct cursor format`() {
-        // Viaduct cursor format: base64("__viaduct:idx:N")
-        val cursor = PostsConnectionResolver.encodeCursor(1)
-        assertEquals("X192aWFkdWN0OmlkeDox", cursor)
+    fun `PostsConnectionResolver populates pageInfo with hasNextPage when more pages exist`() = runBlocking {
+        val resolver = PostsConnectionResolver(postRepository)
+        every { postRepository.findPage(any(), any()) } returns listOf(mockPost)
+        every { postRepository.count() } returns 5L
+
+        val result = resolver.resolve(buildConnectionContext(first = 1, offset = 0))
+
+        assertNotNull(result)
+        val pageInfo = result!!.getPageInfo()
+        assertTrue(pageInfo.getHasNextPage())
+        assertFalse(pageInfo.getHasPreviousPage())
+        assertNotNull(pageInfo.getStartCursor())
+        assertNotNull(pageInfo.getEndCursor())
+    }
+
+    @Test
+    fun `PostsConnectionResolver populates pageInfo with hasPreviousPage when offset is positive`() = runBlocking {
+        val resolver = PostsConnectionResolver(postRepository)
+        every { postRepository.findPage(any(), any()) } returns listOf(mockPost)
+        every { postRepository.count() } returns 5L
+
+        val result = resolver.resolve(buildConnectionContext(first = 1, offset = 2))
+
+        assertNotNull(result)
+        val pageInfo = result!!.getPageInfo()
+        assertTrue(pageInfo.getHasPreviousPage())
+        assertTrue(pageInfo.getHasNextPage())
+    }
+
+    @Test
+    fun `PostsConnectionResolver returns empty edges and null cursors when page is empty`() = runBlocking {
+        val resolver = PostsConnectionResolver(postRepository)
+        every { postRepository.findPage(any(), any()) } returns emptyList()
+        every { postRepository.count() } returns 0L
+
+        val result = resolver.resolve(buildConnectionContext())
+
+        assertNotNull(result)
+        assertEquals(0, result!!.getEdges()?.size ?: 0)
+        val pageInfo = result.getPageInfo()
+        assertFalse(pageInfo.getHasNextPage())
+        assertNull(pageInfo.getStartCursor())
+        assertNull(pageInfo.getEndCursor())
     }
 }
