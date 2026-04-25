@@ -103,7 +103,7 @@ class PostsResolverTest : DefaultAbstractResolverTestBase() {
     ): QueryResolvers.PostsConnection.Context {
         val args = mockk<Query_PostsConnection_Arguments>()
         every { args.toOffsetLimit(PostsConnectionResolver.DEFAULT_PAGE_SIZE) } returns
-            OffsetLimit(offset, first, false)
+            OffsetLimit(offset, first)
         val selections = ossSelectionSetFactory.selectionsOn(PostsConnection.Reflection, "postsConnection", emptyMap())
         val mockConnCtx = MockConnectionFieldExecutionContext<Query, Query, Query_PostsConnection_Arguments, PostsConnection>(
             objectValue = Query.Builder(context).build(),

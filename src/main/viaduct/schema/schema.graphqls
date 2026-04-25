@@ -1,20 +1,20 @@
 # User type representing authenticated users
-type User implements Node @resolver @scope(to: ["public", "admin"]) {
+type User implements Node @resolver(isBatching: true) @scope(to: ["public", "admin"]) {
   id: ID!
   username: String!
   email: String!
   name: String!
-  isAdmin: Boolean! @resolver
+  isAdmin: Boolean! @resolver(isBatching: true)
   posts: [Post!]! @resolver
   createdAt: String!
 }
 
 # Post type for blog posts
-type Post implements Node @resolver @scope(to: ["public", "admin"]) {
+type Post implements Node @resolver(isBatching: true) @scope(to: ["public", "admin"]) {
   id: ID!
   title: String!
   content: String!
-  author: User! @resolver
+  author: User! @resolver(isBatching: true)
   comments: [Comment!]! @resolver
   commentCount: Int! @resolver
   likes: [Like!]! @resolver
@@ -25,7 +25,7 @@ type Post implements Node @resolver @scope(to: ["public", "admin"]) {
 }
 
 # Comment type for post comments
-type Comment implements Node @resolver @scope(to: ["public", "admin"]) {
+type Comment implements Node @resolver(isBatching: true) @scope(to: ["public", "admin"]) {
   id: ID!
   content: String!
   author: User! @resolver
@@ -34,7 +34,7 @@ type Comment implements Node @resolver @scope(to: ["public", "admin"]) {
 }
 
 # Like type for post likes
-type Like implements Node @resolver @scope(to: ["public", "admin"]) {
+type Like implements Node @resolver(isBatching: true) @scope(to: ["public", "admin"]) {
   id: ID!
   user: User! @resolver
   post: Post! @resolver

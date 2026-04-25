@@ -89,7 +89,7 @@ class PostFieldResolversTest : DefaultAbstractResolverTestBase() {
         val ctx = mockk<PostResolvers.Author.Context>(relaxed = true)
         coEvery { ctx.objectValue.getId() } returns context.globalIDFor(ViaductPost.Reflection, postId.toString())
 
-        // ctx.nodeFor requires a real framework InternalContext — refetch is verified via
+        // ctx.nodeRef requires a real framework InternalContext — refetch is verified via
         // integration tests. Here we confirm the batch repository method is called.
         runCatching { resolver.batchResolve(listOf(ctx)) }
         verify { postRepository.getAuthorIdsByPostIds(listOf(postId)) }
