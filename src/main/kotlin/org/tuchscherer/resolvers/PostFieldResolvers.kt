@@ -22,7 +22,7 @@ class PostAuthorResolver : PostResolvers.Author() {
         return contexts.zip(postIds).map { (ctx, postId) ->
             val authorId = authorIdByPostId[postId]
                 ?: return@map FieldValue.ofError(NotFoundException("Post not found: $postId"))
-            FieldValue.ofValue(ctx.nodeFor(ctx.globalIDFor(ViaductUser.Reflection, authorId.toString())))
+            FieldValue.ofValue(ctx.nodeRef(ctx.globalIDFor(ViaductUser.Reflection, authorId.toString())))
         }
     }
 }
