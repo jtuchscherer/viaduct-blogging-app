@@ -37,11 +37,13 @@ const ADMIN_USER_CONTENT_COUNTS = gql`
 
 const ADMIN_DELETE_USER = gql`
   mutation AdminDeleteUser($id: ID!) {
-    adminDeleteUser(id: $id) {
-      success
-      postsDeleted
-      commentsDeleted
-      likesDeleted
+    admin {
+      deleteUser(id: $id) {
+        success
+        postsDeleted
+        commentsDeleted
+        likesDeleted
+      }
     }
   }
 `;

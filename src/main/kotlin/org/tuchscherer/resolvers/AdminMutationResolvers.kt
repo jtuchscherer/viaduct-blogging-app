@@ -6,7 +6,7 @@ import org.tuchscherer.database.repositories.CommentRepository
 import org.tuchscherer.database.repositories.LikeRepository
 import org.tuchscherer.database.repositories.PostRepository
 import org.tuchscherer.database.repositories.UserRepository
-import org.tuchscherer.viadapp.resolvers.resolverbases.MutationResolvers
+import org.tuchscherer.viadapp.resolvers.resolverbases.AdminMutationsResolvers
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import viaduct.api.Resolver
 import viaduct.api.grts.AdminDeleteUserResult
@@ -20,7 +20,7 @@ import java.util.*
 @Resolver
 class AdminUpdateUserResolver(
     private val userRepository: UserRepository
-) : MutationResolvers.AdminUpdateUser() {
+) : AdminMutationsResolvers.UpdateUser() {
     override suspend fun resolve(ctx: Context): ViaductUser {
         requireAdmin(ctx.requestContext)
 
@@ -53,7 +53,7 @@ class AdminDeleteUserResolver(
     private val postRepository: PostRepository,
     private val commentRepository: CommentRepository,
     private val likeRepository: LikeRepository
-) : MutationResolvers.AdminDeleteUser() {
+) : AdminMutationsResolvers.DeleteUser() {
     override suspend fun resolve(ctx: Context): AdminDeleteUserResult {
         requireAdmin(ctx.requestContext)
 
@@ -83,7 +83,7 @@ class AdminDeleteUserResolver(
 @Resolver
 class AdminUpdatePostResolver(
     private val postRepository: PostRepository
-) : MutationResolvers.AdminUpdatePost() {
+) : AdminMutationsResolvers.UpdatePost() {
     override suspend fun resolve(ctx: Context): ViaductPost {
         requireAdmin(ctx.requestContext)
 
@@ -109,7 +109,7 @@ class AdminUpdatePostResolver(
 @Resolver
 class AdminDeletePostResolver(
     private val postRepository: PostRepository
-) : MutationResolvers.AdminDeletePost() {
+) : AdminMutationsResolvers.DeletePost() {
     override suspend fun resolve(ctx: Context): Boolean {
         requireAdmin(ctx.requestContext)
 
@@ -129,7 +129,7 @@ class AdminDeletePostResolver(
 @Resolver
 class AdminDeleteCommentResolver(
     private val commentRepository: CommentRepository
-) : MutationResolvers.AdminDeleteComment() {
+) : AdminMutationsResolvers.DeleteComment() {
     override suspend fun resolve(ctx: Context): Boolean {
         requireAdmin(ctx.requestContext)
 

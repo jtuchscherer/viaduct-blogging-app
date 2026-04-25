@@ -30,7 +30,9 @@ const ADMIN_COMMENTS = gql`
 
 const ADMIN_DELETE_COMMENT = gql`
   mutation AdminDeleteComment($id: ID!) {
-    adminDeleteComment(id: $id)
+    admin {
+      deleteComment(id: $id)
+    }
   }
 `;
 

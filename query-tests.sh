@@ -878,7 +878,7 @@ ADMIN_UPDATE_USER_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer $ADMIN_TOKEN" \
     -H "X-Schema: admin" \
-    -d "{\"query\": \"mutation { adminUpdateUser(input: { id: \\\"$BOB_GID\\\", name: \\\"Bob Updated\\\" }) { name } }\"}")
+    -d "{\"query\": \"mutation { admin { updateUser(input: { id: \\\"$BOB_GID\\\", name: \\\"Bob Updated\\\" }) { name } } }\"}")
 
 if echo $ADMIN_UPDATE_USER_RESPONSE | grep -q "Bob Updated"; then
     print_success "adminUpdateUser updated bob's name successfully"
@@ -901,7 +901,7 @@ if [ -n "$THROWAWAY_ID" ]; then
         -H "Content-Type: application/json" \
         -H "Authorization: Bearer $ADMIN_TOKEN" \
         -H "X-Schema: admin" \
-        -d "{\"query\": \"mutation { adminDeletePost(id: \\\"$THROWAWAY_ID\\\") }\"}")
+        -d "{\"query\": \"mutation { admin { deletePost(id: \\\"$THROWAWAY_ID\\\") } }\"}")
     if echo $ADMIN_DEL_POST_RESPONSE | grep -q "true"; then
         print_success "adminDeletePost removed bob's throwaway post"
     else
@@ -917,7 +917,7 @@ ADMIN_DEL_COMMENT_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer $ADMIN_TOKEN" \
     -H "X-Schema: admin" \
-    -d "{\"query\": \"mutation { adminDeleteComment(id: \\\"$COMMENT2_ID\\\") }\"}")
+    -d "{\"query\": \"mutation { admin { deleteComment(id: \\\"$COMMENT2_ID\\\") } }\"}")
 
 if echo $ADMIN_DEL_COMMENT_RESPONSE | grep -q "true"; then
     print_success "adminDeleteComment removed alice's comment"
@@ -945,7 +945,7 @@ print_info "Testing scope enforcement: admin mutation without X-Schema header...
 NO_SCHEMA_MUTATION=$(curl -s -X POST $GRAPHQL_URL \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer $ADMIN_TOKEN" \
-    -d "{\"query\": \"mutation { adminDeletePost(id: \\\"$POST1_ID\\\") }\"}")
+    -d "{\"query\": \"mutation { admin { deletePost(id: \\\"$POST1_ID\\\") } }\"}")
 
 if echo $NO_SCHEMA_MUTATION | grep -q '"errors"'; then
     print_success "Scope enforcement works: admin mutation rejected on public schema"

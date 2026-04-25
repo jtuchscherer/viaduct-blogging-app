@@ -24,11 +24,13 @@ const ADMIN_POST = gql`
 
 const ADMIN_UPDATE_POST = gql`
   mutation AdminUpdatePost($input: AdminUpdatePostInput!) {
-    adminUpdatePost(input: $input) {
-      id
-      title
-      content
-      updatedAt
+    admin {
+      updatePost(input: $input) {
+        id
+        title
+        content
+        updatedAt
+      }
     }
   }
 `;

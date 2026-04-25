@@ -20,12 +20,14 @@ const ADMIN_USER = gql`
 
 const ADMIN_UPDATE_USER = gql`
   mutation AdminUpdateUser($input: AdminUpdateUserInput!) {
-    adminUpdateUser(input: $input) {
-      id
-      username
-      email
-      name
-      isAdmin
+    admin {
+      updateUser(input: $input) {
+        id
+        username
+        email
+        name
+        isAdmin
+      }
     }
   }
 `;

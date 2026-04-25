@@ -27,7 +27,9 @@ const ADMIN_POSTS = gql`
 
 const ADMIN_DELETE_POST = gql`
   mutation AdminDeletePost($id: ID!) {
-    adminDeletePost(id: $id)
+    admin {
+      deletePost(id: $id)
+    }
   }
 `;
 
