@@ -151,14 +151,19 @@ class UserResolversTest : DefaultAbstractResolverTestBase() {
     }
 
     @Test
-    fun `UserIsAdminResolver returns false when user not found`() = runBlocking {
+    fun `UserIsAdminResolver surfaces NotFoundException for missing user instead of defaulting to false`() = runBlocking {
+        // A deleted-or-missing user is not the same as a non-admin user;
+        // the prior `?: false` path silently misclassified them.
         val resolver = UserIsAdminResolver(userRepository)
         every { userRepository.findByIds(listOf(userId)) } returns emptyMap()
 
         val results = resolver.batchResolve(listOf(batchCtx()))
 
         assertEquals(1, results.size)
-        assertFalse(results[0].get())
+        assertTrue(results[0].isError)
+        val err = runCatching { results[0].get() }.exceptionOrNull()
+        assertTrue(err is org.tuchscherer.auth.NotFoundException, "Expected NotFoundException, got $err")
+        assertTrue(err!!.message!!.contains(userId.toString()))
     }
 
     @Test

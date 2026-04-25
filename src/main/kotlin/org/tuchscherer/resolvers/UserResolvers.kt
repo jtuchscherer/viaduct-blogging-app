@@ -1,5 +1,6 @@
 package org.tuchscherer.viadapp.resolvers
 
+import org.tuchscherer.auth.NotFoundException
 import org.tuchscherer.auth.requireAuth
 import org.tuchscherer.database.repositories.UserRepository
 import org.tuchscherer.viadapp.resolvers.resolverbases.QueryResolvers
@@ -25,6 +26,9 @@ class UserIsAdminResolver(
     override suspend fun batchResolve(contexts: List<Context>): List<FieldValue<Boolean>> {
         val ids = contexts.map { UUID.fromString(it.objectValue.getId().internalID) }
         val usersById = userRepository.findByIds(ids)
-        return ids.map { id -> FieldValue.ofValue(usersById[id]?.isAdmin ?: false) }
+        return ids.map { id ->
+            usersById[id]?.let { FieldValue.ofValue(it.isAdmin) }
+                ?: FieldValue.ofError(NotFoundException("User not found: $id"))
+        }
     }
 }
