@@ -172,11 +172,16 @@ extend type Mutation @scope(to: ["public", "admin"]) {
   unlikePost(postId: ID! @idOf(type: "Post")): Boolean! @resolver
 }
 
+# Namespace type grouping all admin mutations, mirroring AdminQueries.
+type AdminMutations @namespaceType @scope(to: ["admin"]) {
+  updateUser(input: AdminUpdateUserInput!): User! @resolver
+  deleteUser(id: ID! @idOf(type: "User")): AdminDeleteUserResult! @resolver
+  updatePost(input: AdminUpdatePostInput!): Post! @resolver
+  deletePost(id: ID! @idOf(type: "Post")): Boolean! @resolver
+  deleteComment(id: ID! @idOf(type: "Comment")): Boolean! @resolver
+}
+
 extend type Mutation @scope(to: ["admin"]) {
-  # Admin mutations (require admin role)
-  adminUpdateUser(input: AdminUpdateUserInput!): User! @resolver
-  adminDeleteUser(id: ID! @idOf(type: "User")): AdminDeleteUserResult! @resolver
-  adminUpdatePost(input: AdminUpdatePostInput!): Post! @resolver
-  adminDeletePost(id: ID! @idOf(type: "Post")): Boolean! @resolver
-  adminDeleteComment(id: ID! @idOf(type: "Comment")): Boolean! @resolver
+  # Admin mutations (requires admin role) — clients call mutation { admin { updateUser(...) } }
+  admin: AdminMutations
 }
