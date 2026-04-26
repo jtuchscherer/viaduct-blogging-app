@@ -113,10 +113,6 @@ val jacksonCore3Version: String = libs.versions.jackson3.get()
 configurations.all {
     resolutionStrategy.force(
         "tools.jackson.core:jackson-core:$jacksonCore3Version",
-        "com.airbnb.viaduct:service-runtime:$viaductVersion",
-        "com.airbnb.viaduct:service-wiring:$viaductVersion",
-        "com.airbnb.viaduct:tenant-runtime:$viaductVersion",
-        "com.airbnb.viaduct:tenant-wiring:$viaductVersion",
         "io.netty:netty-codec-http:$nettyVersion",
         "io.netty:netty-codec-http2:$nettyVersion",
         "io.netty:netty-codec-base:$nettyVersion",
