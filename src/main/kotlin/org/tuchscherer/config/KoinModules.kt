@@ -3,9 +3,12 @@ package org.tuchscherer.config
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
+import graphql.execution.instrumentation.Instrumentation
 import org.tuchscherer.auth.AuthenticationService
 import org.tuchscherer.auth.JwtService
 import org.tuchscherer.auth.PasswordService
+import org.tuchscherer.complexity.BlogFieldComplexityCalculator
+import org.tuchscherer.complexity.QueryComplexityInstrumentation
 import org.tuchscherer.database.DatabaseFactory
 import org.tuchscherer.web.AuthDependencies
 import org.tuchscherer.web.GraphQLServer
@@ -14,8 +17,6 @@ import org.tuchscherer.database.repositories.*
 import org.tuchscherer.viadapp.resolvers.*
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
-import viaduct.service.BasicViaductFactory
-import viaduct.service.TenantRegistrationInfo
 
 /**
  * Koin module for application configuration.
@@ -56,6 +57,15 @@ val serviceModule = module {
  */
 val metricsModule = module {
     single<MeterRegistry> { PrometheusMeterRegistry(PrometheusConfig.DEFAULT) }
+}
+
+/**
+ * Koin module for the GraphQL query complexity guard. Plugs into Viaduct via
+ * the chained Instrumentation passed to GraphQLServer.
+ */
+val complexityModule = module {
+    singleOf(::BlogFieldComplexityCalculator)
+    single<Instrumentation> { QueryComplexityInstrumentation.create(get()) }
 }
 
 /**
@@ -143,6 +153,7 @@ val allModules = listOf(
     repositoryModule,
     serviceModule,
     metricsModule,
+    complexityModule,
     serverModule,
     resolverModule
 )
