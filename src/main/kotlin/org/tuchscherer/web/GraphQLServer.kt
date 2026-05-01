@@ -28,6 +28,7 @@ import org.tuchscherer.database.DatabaseFactory
 import org.tuchscherer.database.repositories.UserRepository
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import graphql.execution.instrumentation.Instrumentation
+import org.tuchscherer.complexity.withInstrumentation
 import viaduct.api.bootstrap.ViaductTenantAPIBootstrapper
 import viaduct.service.ViaductBuilder
 import viaduct.service.api.ExecutionInput
@@ -77,24 +78,22 @@ class GraphQLServer(
     private val logger = LoggerFactory.getLogger(GraphQLServer::class.java)
     private val jwtAlgorithm by lazy { Algorithm.HMAC256(authDeps.jwtConfig.secret) }
 
-    private val viaduct = run {
-        val schemaConfig = SchemaConfiguration.fromResources(
-            scopes = setOf(
-                SchemaConfiguration.ScopeConfig("public", setOf("public")),
-                SchemaConfiguration.ScopeConfig("admin", setOf("public", "admin")),
+    private val viaduct = ViaductBuilder()
+        .withTenantAPIBootstrapperBuilder(
+            ViaductTenantAPIBootstrapper.Builder()
+                .tenantPackagePrefix("org.tuchscherer.viadapp")
+                .tenantCodeInjector(org.tuchscherer.config.KoinTenantCodeInjector())
+        )
+        .withSchemaConfiguration(
+            SchemaConfiguration.fromResources(
+                scopes = setOf(
+                    SchemaConfiguration.ScopeConfig("public", setOf("public")),
+                    SchemaConfiguration.ScopeConfig("admin", setOf("public", "admin")),
+                )
             )
         )
-        val viaductBuilder = ViaductBuilder()
-            .withTenantAPIBootstrapperBuilder(
-                ViaductTenantAPIBootstrapper.Builder()
-                    .tenantPackagePrefix("org.tuchscherer.viadapp")
-                    .tenantCodeInjector(org.tuchscherer.config.KoinTenantCodeInjector())
-            )
-            .withSchemaConfiguration(schemaConfig)
-        @Suppress("DEPRECATION")
-        viaductBuilder.builder.withInstrumentation(complexityInstrumentation, chainInstrumentationWithDefaults = true)
-        viaductBuilder.build()
-    }
+        .withInstrumentation(complexityInstrumentation, chainInstrumentationWithDefaults = true)
+        .build()
 
     companion object {
         val PUBLIC_SCHEMA = SchemaId.Scoped("public", setOf("public"))
