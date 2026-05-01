@@ -30,9 +30,7 @@ kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 viaduct-tenant-api = { module = "com.airbnb.viaduct:tenant-api", version.ref = "viaduct" }
 viaduct-service-api = { module = "com.airbnb.viaduct:service-api", version.ref = "viaduct" }
 viaduct-service-wiring = { module = "com.airbnb.viaduct:service-wiring", version.ref = "viaduct" }
-viaduct-service-runtime = { module = "com.airbnb.viaduct:service-runtime", version.ref = "viaduct" }
 viaduct-tenant-runtime = { module = "com.airbnb.viaduct:tenant-runtime", version.ref = "viaduct" }
-viaduct-tenant-wiring = { module = "com.airbnb.viaduct:tenant-wiring", version.ref = "viaduct" }
 viaduct-engine-wiring = { module = "com.airbnb.viaduct:engine-wiring", version.ref = "viaduct" }
 viaduct-engine-runtime = { module = "com.airbnb.viaduct:engine-runtime", version.ref = "viaduct" }
 viaduct-engine-api = { module = "com.airbnb.viaduct:engine-api", version.ref = "viaduct" }

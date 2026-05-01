@@ -3,12 +3,12 @@ package org.tuchscherer.config
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
-import graphql.execution.instrumentation.Instrumentation
 import org.tuchscherer.auth.AuthenticationService
 import org.tuchscherer.auth.JwtService
 import org.tuchscherer.auth.PasswordService
 import org.tuchscherer.complexity.BlogFieldComplexityCalculator
-import org.tuchscherer.complexity.QueryComplexityInstrumentation
+import org.tuchscherer.complexity.GuardedViaduct
+import org.tuchscherer.complexity.QueryComplexityGuard
 import org.tuchscherer.database.DatabaseFactory
 import org.tuchscherer.web.AuthDependencies
 import org.tuchscherer.web.GraphQLServer
@@ -17,6 +17,11 @@ import org.tuchscherer.database.repositories.*
 import org.tuchscherer.viadapp.resolvers.*
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
+import viaduct.service.BasicViaductFactory
+import viaduct.service.SchemaRegistrationInfo
+import viaduct.service.SchemaScopeInfo
+import viaduct.service.TenantRegistrationInfo
+import viaduct.service.api.Viaduct
 
 /**
  * Koin module for application configuration.
@@ -60,12 +65,28 @@ val metricsModule = module {
 }
 
 /**
- * Koin module for the GraphQL query complexity guard. Plugs into Viaduct via
- * the chained Instrumentation passed to GraphQLServer.
+ * Koin module for the Viaduct instance and the pre-execution complexity guard
+ * that wraps it. The exposed [Viaduct] is a [GuardedViaduct] that scores incoming
+ * queries above Viaduct entirely — no graphql-java types appear in Viaduct's API.
  */
-val complexityModule = module {
+val viaductModule = module {
     singleOf(::BlogFieldComplexityCalculator)
-    single<Instrumentation> { QueryComplexityInstrumentation.create(get()) }
+    single { QueryComplexityGuard(get()) }
+    single<Viaduct> {
+        val underlying = BasicViaductFactory.create(
+            schemaRegistrationInfo = SchemaRegistrationInfo(
+                scopes = listOf(
+                    SchemaScopeInfo(schemaId = "public", scopesToApply = setOf("public")),
+                    SchemaScopeInfo(schemaId = "admin", scopesToApply = setOf("public", "admin")),
+                )
+            ),
+            tenantRegistrationInfo = TenantRegistrationInfo(
+                tenantPackagePrefix = "org.tuchscherer.viadapp",
+                tenantCodeInjector = KoinTenantCodeInjector(),
+            ),
+        )
+        GuardedViaduct(underlying, get())
+    }
 }
 
 /**
@@ -153,7 +174,7 @@ val allModules = listOf(
     repositoryModule,
     serviceModule,
     metricsModule,
-    complexityModule,
+    viaductModule,
     serverModule,
     resolverModule
 )

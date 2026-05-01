@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test
 import java.io.File
 
 /**
- * End-to-end check that real queries from query-tests.sh score under [QueryComplexityInstrumentation.MAX_COMPLEXITY]
+ * End-to-end check that real queries from query-tests.sh score under [QueryComplexityGuard.MAX_COMPLEXITY]
  * and that an obviously expensive nested/paginated query exceeds it.
  *
  * Builds the schema from SDL and runs graphql-java's [QueryComplexityCalculator] — no Viaduct
@@ -40,7 +40,7 @@ class QueryComplexityIntegrationTest {
     @Test
     fun `simple post lookup with author scores well under threshold`() {
         val query = "{ post(id: \"abc\") { id title author { username } } }"
-        assertTrue(score(query) < QueryComplexityInstrumentation.MAX_COMPLEXITY)
+        assertTrue(score(query) < QueryComplexityGuard.MAX_COMPLEXITY)
     }
 
     @Test
@@ -55,7 +55,7 @@ class QueryComplexityIntegrationTest {
             } }
         """.trimIndent()
         val s = score(query)
-        assertTrue(s < QueryComplexityInstrumentation.MAX_COMPLEXITY, "expected <${QueryComplexityInstrumentation.MAX_COMPLEXITY}, got $s")
+        assertTrue(s < QueryComplexityGuard.MAX_COMPLEXITY, "expected <${QueryComplexityGuard.MAX_COMPLEXITY}, got $s")
     }
 
     @Test
@@ -68,34 +68,34 @@ class QueryComplexityIntegrationTest {
             } }
         """.trimIndent()
         val s = score(query)
-        assertTrue(s < QueryComplexityInstrumentation.MAX_COMPLEXITY, "expected <${QueryComplexityInstrumentation.MAX_COMPLEXITY}, got $s")
+        assertTrue(s < QueryComplexityGuard.MAX_COMPLEXITY, "expected <${QueryComplexityGuard.MAX_COMPLEXITY}, got $s")
     }
 
     @Test
     fun `admin users page query is under threshold`() {
         val query = "{ admin { users(limit: 10) { totalCount users { id username } } } }"
-        assertTrue(score(query) < QueryComplexityInstrumentation.MAX_COMPLEXITY)
+        assertTrue(score(query) < QueryComplexityGuard.MAX_COMPLEXITY)
     }
 
     @Test
     fun `large postsConnection first arg blows past threshold`() {
         val query = "{ postsConnection(first: 50) { edges { node { id author { id } } } } }"
         val s = score(query)
-        assertTrue(s > QueryComplexityInstrumentation.MAX_COMPLEXITY, "expected >${QueryComplexityInstrumentation.MAX_COMPLEXITY}, got $s")
+        assertTrue(s > QueryComplexityGuard.MAX_COMPLEXITY, "expected >${QueryComplexityGuard.MAX_COMPLEXITY}, got $s")
     }
 
     @Test
     fun `deeply nested list traversal blows past threshold`() {
         val query = "{ posts { comments { author { posts { id } } } } }"
         val s = score(query)
-        assertTrue(s > QueryComplexityInstrumentation.MAX_COMPLEXITY, "expected >${QueryComplexityInstrumentation.MAX_COMPLEXITY}, got $s")
+        assertTrue(s > QueryComplexityGuard.MAX_COMPLEXITY, "expected >${QueryComplexityGuard.MAX_COMPLEXITY}, got $s")
     }
 
     @Test
     fun `threshold and depth limit are the documented values`() {
-        // Pin the configured limits so accidental edits to QueryComplexityInstrumentation
+        // Pin the configured limits so accidental edits to QueryComplexityGuard
         // are caught here rather than only failing the existing query-tests.sh suite.
-        assertEquals(150, QueryComplexityInstrumentation.MAX_COMPLEXITY)
-        assertEquals(8, QueryComplexityInstrumentation.MAX_DEPTH)
+        assertEquals(150, QueryComplexityGuard.MAX_COMPLEXITY)
+        assertEquals(8, QueryComplexityGuard.MAX_DEPTH)
     }
 }
