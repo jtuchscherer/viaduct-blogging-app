@@ -1,6 +1,6 @@
 # Multi-Tenancy Implementation Plan
 
-**Last Updated**: 2026-05-01
+**Last Updated**: 2026-05-01 (Phase 0 fully complete)
 
 This plan implements Viaduct's multi-tenancy concept in the blogging app: separate Gradle
 subprojects ("tenant modules") where each module owns its own schema fragments, resolvers,
@@ -25,20 +25,23 @@ discriminator column. **Phase 1** (analytics) is simpler and validates the multi
 
 ---
 
-## Phase 0 — Core Refactor: `Post` → `BlogPost` + `Post` Interface ✅ DONE (323 tests, 0 failures)
+## Phase 0 — Core Refactor: `Post` → `BlogPost` + `Post` Interface ✅ DONE
 
-Pure rename + schema extraction. **No behavior changes.** All existing tests must pass after
-this phase.
+All tests green: 323 unit tests, 63 query tests, 10 Playwright e2e test suites (Chromium).
 
 **Delivered:**
 - `interface Post` with all shared fields including `readTimeMinutes: Float! @resolver(isBatching: true)`
 - `type BlogPost implements Post & Node` with `content: String!` as its only additional field
-- `PostEdge.node: Post`, `Comment.post: Post`, `Like.post: Post` all use the interface
+- `PostEdge.node: BlogPost` (kept concrete — the connection is blog-post-specific; `content` is
+  queried directly; a mixed-type feed would be a separate query with interface-typed edges)
+- `Comment.post: Post`, `Like.post: Post` use the interface for Phase 2 type dispatch
 - `postType VARCHAR(50) DEFAULT 'BLOG_POST'` column added to `Posts` table
 - `PostType` object in `Tables.kt` with `BLOG_POST` and `CHECKED_LIST` constants
 - All resolver imports updated; `BlogPostNodeResolver` replaces `PostNodeResolver`
 - `BlogFieldComplexityCalculator` updated: parent `"BlogPost"` instead of `"Post"`
 - Unused `ViaductBlogPost` import removed from `CommentFieldResolvers` and `LikeObjectFieldResolvers`
+- Playwright e2e fixture: `API_URL` default changed from `localhost` to `127.0.0.1` (Node.js
+  resolves `localhost` → `::1` on macOS but Ktor only binds IPv4)
 
 ### Schema changes (`src/main/viaduct/schema/schema.graphqls`)
 
@@ -64,8 +67,9 @@ this phase.
 2. Rename `type Post` → `type BlogPost implements Post & Node`; `content: String!` stays on
    `BlogPost` only.
 
-3. `PostEdge.node` becomes `Post` (interface) so the connection is forward-compatible with
-   new post types.
+3. `PostEdge.node` stays `BlogPost` (not the interface). The `postsConnection` is a
+   blog-post–specific connection; the frontend queries `content` directly on nodes, which is
+   not on the `Post` interface. A future mixed-type feed would use a separate query.
 
 4. All existing queries/mutations that returned `Post` now return `BlogPost`:
    `posts`, `myPosts`, `post`, `createPost`, `updatePost`, `admin.post`, `admin.posts`.
