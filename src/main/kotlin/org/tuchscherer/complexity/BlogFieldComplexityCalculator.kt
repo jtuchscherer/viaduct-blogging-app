@@ -39,7 +39,7 @@ class BlogFieldComplexityCalculator : FieldComplexityCalculator {
     private fun isUnboundedListResolver(parent: String, name: String): Boolean =
         when (parent) {
             "Query" -> name in UNBOUNDED_QUERY_LISTS
-            "Post" -> name in UNBOUNDED_POST_LISTS
+            "BlogPost" -> name in UNBOUNDED_POST_LISTS
             "User" -> name == "posts"
             else -> false
         }

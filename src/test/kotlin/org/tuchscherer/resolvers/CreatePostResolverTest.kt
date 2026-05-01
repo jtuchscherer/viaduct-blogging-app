@@ -20,7 +20,7 @@ import org.koin.dsl.module
 import viaduct.api.grts.CreatePostInput
 import viaduct.api.grts.Mutation
 import viaduct.api.grts.Mutation_CreatePost_Arguments
-import viaduct.api.grts.Post as ViaductPost
+import viaduct.api.grts.BlogPost as ViaductBlogPost
 import viaduct.api.grts.Query
 import viaduct.api.testing.MutationResolverTester
 import java.time.LocalDateTime
@@ -34,7 +34,7 @@ class CreatePostResolverTest {
     private val userId = UUID.randomUUID()
     private val postId = UUID.randomUUID()
 
-    private val tester = MutationResolverTester.create<Query, Mutation, Mutation_CreatePost_Arguments, ViaductPost>(ViaductTestConfig.testerConfig)
+    private val tester = MutationResolverTester.create<Query, Mutation, Mutation_CreatePost_Arguments, ViaductBlogPost>(ViaductTestConfig.testerConfig)
 
     @BeforeEach
     fun setup() {

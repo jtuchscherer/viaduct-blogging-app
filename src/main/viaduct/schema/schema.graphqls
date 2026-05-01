@@ -5,12 +5,27 @@ type User implements Node @resolver(isBatching: true) @scope(to: ["public", "adm
   email: String!
   name: String!
   isAdmin: Boolean! @resolver(isBatching: true)
-  posts: [Post!]! @resolver
+  posts: [BlogPost!]! @resolver
   createdAt: String!
 }
 
-# Post type for blog posts
-type Post implements Node @resolver(isBatching: true) @scope(to: ["public", "admin"]) {
+# Post interface — shared contract for all post types
+interface Post @scope(to: ["public", "admin"]) {
+  id: ID!
+  title: String!
+  author: User! @resolver(isBatching: true)
+  comments: [Comment!]! @resolver
+  commentCount: Int! @resolver
+  likes: [Like!]! @resolver
+  likeCount: Int! @resolver
+  isLikedByMe: Boolean! @resolver
+  createdAt: String!
+  updatedAt: String!
+  readTimeMinutes: Float! @resolver(isBatching: true)
+}
+
+# BlogPost type for blog posts
+type BlogPost implements Post & Node @resolver(isBatching: true) @scope(to: ["public", "admin"]) {
   id: ID!
   title: String!
   content: String!
@@ -22,6 +37,7 @@ type Post implements Node @resolver(isBatching: true) @scope(to: ["public", "adm
   isLikedByMe: Boolean! @resolver
   createdAt: String!
   updatedAt: String!
+  readTimeMinutes: Float! @resolver(isBatching: true)
 }
 
 # Comment type for post comments
@@ -48,13 +64,13 @@ input CreatePostInput @scope(to: ["public", "admin"]) {
 }
 
 input UpdatePostInput @scope(to: ["public", "admin"]) {
-  id: ID! @idOf(type: "Post")
+  id: ID! @idOf(type: "BlogPost")
   title: String
   content: String
 }
 
 input CreateCommentInput @scope(to: ["public", "admin"]) {
-  postId: ID! @idOf(type: "Post")
+  postId: ID! @idOf(type: "BlogPost")
   content: String!
 }
 
@@ -84,7 +100,7 @@ type AdminUsersPage @scope(to: ["admin"]) {
 }
 
 type AdminPostsPage @scope(to: ["admin"]) {
-  posts: [Post!]!
+  posts: [BlogPost!]!
   totalCount: Int!
 }
 
@@ -114,7 +130,7 @@ input AdminUpdateUserInput @scope(to: ["admin"]) {
 }
 
 input AdminUpdatePostInput @scope(to: ["admin"]) {
-  id: ID! @idOf(type: "Post")
+  id: ID! @idOf(type: "BlogPost")
   title: String
   content: String
 }
@@ -126,26 +142,26 @@ type AdminQueries @namespaceType @scope(to: ["admin"]) {
   user(id: ID! @idOf(type: "User")): User @resolver
   userContentCounts(userId: ID! @idOf(type: "User")): UserContentCounts! @resolver
   posts(limit: Int = 10, offset: Int = 0): AdminPostsPage! @resolver
-  post(id: ID! @idOf(type: "Post")): Post @resolver
+  post(id: ID! @idOf(type: "BlogPost")): BlogPost @resolver
   comments(limit: Int = 10, offset: Int = 0): AdminCommentsPage! @resolver
 }
 
 # Extend the Query type for read operations
 extend type Query @scope(to: ["public", "admin"]) {
   # Get all posts (public)
-  posts: [Post!]! @resolver
+  posts: [BlogPost!]! @resolver
 
   # Get a single post by ID (public)
-  post(id: ID! @idOf(type: "Post")): Post @resolver
+  post(id: ID! @idOf(type: "BlogPost")): BlogPost @resolver
 
   # Get current user's posts (requires auth)
-  myPosts: [Post!]! @resolver
+  myPosts: [BlogPost!]! @resolver
 
   # Get current authenticated user
   me: User @resolver
 
   # Get comments for a specific post
-  postComments(postId: ID! @idOf(type: "Post")): [Comment!]! @resolver
+  postComments(postId: ID! @idOf(type: "BlogPost")): [Comment!]! @resolver
 
   # Relay-style cursor pagination for posts (public)
   postsConnection(first: Int, after: String): PostsConnection @resolver
@@ -159,25 +175,25 @@ extend type Query @scope(to: ["admin"]) {
 # Extend mutations for write operations
 extend type Mutation @scope(to: ["public", "admin"]) {
   # Post operations
-  createPost(input: CreatePostInput!): Post! @resolver
-  updatePost(input: UpdatePostInput!): Post! @resolver
-  deletePost(id: ID! @idOf(type: "Post")): Boolean! @resolver
+  createPost(input: CreatePostInput!): BlogPost! @resolver
+  updatePost(input: UpdatePostInput!): BlogPost! @resolver
+  deletePost(id: ID! @idOf(type: "BlogPost")): Boolean! @resolver
 
   # Comment operations
   createComment(input: CreateCommentInput!): Comment! @resolver
   deleteComment(id: ID! @idOf(type: "Comment")): Boolean! @resolver
 
   # Like operations
-  likePost(postId: ID! @idOf(type: "Post")): Like! @resolver
-  unlikePost(postId: ID! @idOf(type: "Post")): Boolean! @resolver
+  likePost(postId: ID! @idOf(type: "BlogPost")): Like! @resolver
+  unlikePost(postId: ID! @idOf(type: "BlogPost")): Boolean! @resolver
 }
 
 # Namespace type grouping all admin mutations, mirroring AdminQueries.
 type AdminMutations @namespaceType @scope(to: ["admin"]) {
   updateUser(input: AdminUpdateUserInput!): User! @resolver
   deleteUser(id: ID! @idOf(type: "User")): AdminDeleteUserResult! @resolver
-  updatePost(input: AdminUpdatePostInput!): Post! @resolver
-  deletePost(id: ID! @idOf(type: "Post")): Boolean! @resolver
+  updatePost(input: AdminUpdatePostInput!): BlogPost! @resolver
+  deletePost(id: ID! @idOf(type: "BlogPost")): Boolean! @resolver
   deleteComment(id: ID! @idOf(type: "Comment")): Boolean! @resolver
 }
 

@@ -3,14 +3,14 @@ package org.tuchscherer.viadapp.resolvers
 import org.tuchscherer.auth.RequestContext
 import org.tuchscherer.database.repositories.CommentRepository
 import org.tuchscherer.database.repositories.LikeRepository
-import org.tuchscherer.viadapp.resolvers.resolverbases.PostResolvers
+import org.tuchscherer.viadapp.resolvers.resolverbases.BlogPostResolvers
 import org.koin.java.KoinJavaComponent.inject
 import viaduct.api.Resolver
 import viaduct.api.grts.Like as ViaductLike
 import java.util.*
 
-@Resolver(objectValueFragment = "fragment _ on Post { id }")
-class PostLikesResolver : PostResolvers.Likes() {
+@Resolver(objectValueFragment = "fragment _ on BlogPost { id }")
+class PostLikesResolver : BlogPostResolvers.Likes() {
     private val likeRepository: LikeRepository by inject(LikeRepository::class.java)
 
     override suspend fun resolve(ctx: Context): List<ViaductLike> {
@@ -25,8 +25,8 @@ class PostLikesResolver : PostResolvers.Likes() {
     }
 }
 
-@Resolver(objectValueFragment = "fragment _ on Post { id }")
-class PostLikeCountResolver : PostResolvers.LikeCount() {
+@Resolver(objectValueFragment = "fragment _ on BlogPost { id }")
+class PostLikeCountResolver : BlogPostResolvers.LikeCount() {
     private val likeRepository: LikeRepository by inject(LikeRepository::class.java)
 
     override suspend fun resolve(ctx: Context): Int {
@@ -36,8 +36,8 @@ class PostLikeCountResolver : PostResolvers.LikeCount() {
     }
 }
 
-@Resolver(objectValueFragment = "fragment _ on Post { id }")
-class PostIsLikedByMeResolver : PostResolvers.IsLikedByMe() {
+@Resolver(objectValueFragment = "fragment _ on BlogPost { id }")
+class PostIsLikedByMeResolver : BlogPostResolvers.IsLikedByMe() {
     private val likeRepository: LikeRepository by inject(LikeRepository::class.java)
 
     override suspend fun resolve(ctx: Context): Boolean {
@@ -54,8 +54,8 @@ class PostIsLikedByMeResolver : PostResolvers.IsLikedByMe() {
     }
 }
 
-@Resolver(objectValueFragment = "fragment _ on Post { id }")
-class PostCommentCountResolver : PostResolvers.CommentCount() {
+@Resolver(objectValueFragment = "fragment _ on BlogPost { id }")
+class PostCommentCountResolver : BlogPostResolvers.CommentCount() {
     private val commentRepository: CommentRepository by inject(CommentRepository::class.java)
 
     override suspend fun resolve(ctx: Context): Int {

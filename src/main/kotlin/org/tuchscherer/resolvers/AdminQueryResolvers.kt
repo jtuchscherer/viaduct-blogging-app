@@ -11,7 +11,7 @@ import viaduct.api.grts.AdminCommentsPage
 import viaduct.api.grts.AdminPostsPage
 import viaduct.api.grts.AdminStats
 import viaduct.api.grts.AdminUsersPage
-import viaduct.api.grts.Post as ViaductPost
+import viaduct.api.grts.BlogPost as ViaductBlogPost
 import viaduct.api.grts.User as ViaductUser
 import viaduct.api.grts.UserContentCounts
 import java.util.*
@@ -92,7 +92,7 @@ class AdminPostsResolver(
 
         val limit = ctx.arguments.limit ?: 10
         val offset = ctx.arguments.offset ?: 0
-        val posts = postRepository.findPage(limit, offset).map { it.toViaductPost(ctx) }
+        val posts = postRepository.findPage(limit, offset).map { it.toViaductBlogPost(ctx) }
         return AdminPostsPage.of(ctx) {
             posts(posts)
             totalCount(postRepository.count().toCountInt())
@@ -104,11 +104,11 @@ class AdminPostsResolver(
 class AdminPostResolver(
     private val postRepository: PostRepository
 ) : AdminQueriesResolvers.Post() {
-    override suspend fun resolve(ctx: Context): ViaductPost? {
+    override suspend fun resolve(ctx: Context): ViaductBlogPost? {
         requireAdmin(ctx.requestContext)
 
         val postId = UUID.fromString(ctx.arguments.id.internalID)
-        return postRepository.findById(postId)?.toViaductPost(ctx)
+        return postRepository.findById(postId)?.toViaductBlogPost(ctx)
     }
 }
 

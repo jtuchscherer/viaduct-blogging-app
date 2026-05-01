@@ -6,7 +6,7 @@ import org.tuchscherer.auth.requireAuth
 import org.tuchscherer.database.repositories.PostRepository
 import org.tuchscherer.viadapp.resolvers.resolverbases.MutationResolvers
 import viaduct.api.Resolver
-import viaduct.api.grts.Post as ViaductPost
+import viaduct.api.grts.BlogPost as ViaductBlogPost
 import java.time.LocalDateTime
 import java.util.*
 
@@ -14,7 +14,7 @@ import java.util.*
 class CreatePostResolver(
     private val postRepository: PostRepository
 ) : MutationResolvers.CreatePost() {
-    override suspend fun resolve(ctx: Context): ViaductPost {
+    override suspend fun resolve(ctx: Context): ViaductBlogPost {
         val input = ctx.arguments.input
         val user = requireAuth(ctx.requestContext)
 
@@ -29,7 +29,7 @@ class CreatePostResolver(
             updatedAt = LocalDateTime.now()
         )
 
-        return post.toViaductPost(ctx)
+        return post.toViaductBlogPost(ctx)
     }
 }
 
@@ -37,7 +37,7 @@ class CreatePostResolver(
 class UpdatePostResolver(
     private val postRepository: PostRepository
 ) : MutationResolvers.UpdatePost() {
-    override suspend fun resolve(ctx: Context): ViaductPost {
+    override suspend fun resolve(ctx: Context): ViaductBlogPost {
         val input = ctx.arguments.input
         val postId = UUID.fromString(input.id.internalID)
         val user = requireAuth(ctx.requestContext)
@@ -58,7 +58,7 @@ class UpdatePostResolver(
             content = input.content
         ) ?: throw NotFoundException("Failed to update post")
 
-        return updatedPost.toViaductPost(ctx)
+        return updatedPost.toViaductBlogPost(ctx)
     }
 }
 

@@ -14,10 +14,20 @@ object Users : UUIDTable("users") {
     val createdAt = datetime("created_at").default(LocalDateTime.now())
 }
 
+/**
+ * Discriminator values stored in [Posts.postType].
+ * Each tenant module that introduces a new post type adds a constant here.
+ */
+object PostType {
+    const val BLOG_POST = "BLOG_POST"
+    const val CHECKED_LIST = "CHECKED_LIST"
+}
+
 object Posts : UUIDTable("posts") {
     val title = varchar("title", 500)
     val content = text("content")
     val authorId = reference("author_id", Users)
+    val postType = varchar("post_type", 50).default(PostType.BLOG_POST)
     val createdAt = datetime("created_at").default(LocalDateTime.now())
     val updatedAt = datetime("updated_at").default(LocalDateTime.now())
 }

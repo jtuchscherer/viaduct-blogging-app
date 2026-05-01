@@ -93,16 +93,18 @@ class QueryComplexityIntegrationTest {
 
     @Test
     fun `realistic frontend pagination query scores under threshold`() {
-        // The HomePage GET_POSTS_CONNECTION query: 7 fields per post + author with 3 fields,
-        // first=10. Scored 161 — pinned here so tightening the threshold below this re-breaks
-        // the home page (which the e2e suite also catches, but the loop is faster here).
+        // The HomePage GET_POSTS_CONNECTION query: interface fields + BlogPost inline fragment
+        // for content + author with 3 fields, first=10. Pinned here so tightening the threshold
+        // below this re-breaks the home page (which the e2e suite also catches, but the loop is
+        // faster here). content accessed via ... on BlogPost { content } after Phase 0.
         val query = """
             { postsConnection(first: 10) {
                 totalCount
                 pageInfo { hasNextPage endCursor }
                 edges {
                   node {
-                    id title content
+                    id title
+                    ... on BlogPost { content }
                     author { id name username }
                     createdAt likeCount commentCount
                   }

@@ -1,9 +1,9 @@
 package org.tuchscherer.viadapp.resolvers
 
 import viaduct.api.context.ExecutionContext
+import viaduct.api.grts.BlogPost as ViaductBlogPost
 import viaduct.api.grts.Comment as ViaductComment
 import viaduct.api.grts.Like as ViaductLike
-import viaduct.api.grts.Post as ViaductPost
 import viaduct.api.grts.User as ViaductUser
 
 /**
@@ -25,9 +25,9 @@ internal fun org.tuchscherer.database.User.toViaductUser(ctx: ExecutionContext) 
         createdAt(createdAt.toString())
     }
 
-internal fun org.tuchscherer.database.Post.toViaductPost(ctx: ExecutionContext) =
-    ViaductPost.of(ctx) {
-        id(ctx.globalIDFor(ViaductPost.Reflection, id.value.toString()))
+internal fun org.tuchscherer.database.Post.toViaductBlogPost(ctx: ExecutionContext) =
+    ViaductBlogPost.of(ctx) {
+        id(ctx.globalIDFor(ViaductBlogPost.Reflection, id.value.toString()))
         title(title)
         content(content)
         createdAt(createdAt.toString())

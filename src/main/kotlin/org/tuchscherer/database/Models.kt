@@ -25,6 +25,7 @@ class Post(id: EntityID<UUID>) : UUIDEntity(id) {
     var title by Posts.title
     var content by Posts.content
     var authorId by Posts.authorId
+    var postType by Posts.postType
     var createdAt by Posts.createdAt
     var updatedAt by Posts.updatedAt
 

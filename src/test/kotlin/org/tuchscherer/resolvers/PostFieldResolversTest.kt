@@ -9,7 +9,7 @@ import org.tuchscherer.database.repositories.CommentRepository
 import org.tuchscherer.database.repositories.PostRepository
 import org.tuchscherer.viadapp.resolvers.PostAuthorResolver
 import org.tuchscherer.viadapp.resolvers.PostCommentsFieldResolver
-import org.tuchscherer.viadapp.resolvers.resolverbases.PostResolvers
+import org.tuchscherer.viadapp.resolvers.resolverbases.BlogPostResolvers
 import io.mockk.*
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
@@ -19,8 +19,8 @@ import org.junit.jupiter.api.Test
 import org.koin.core.context.GlobalContext
 import org.koin.dsl.module
 import viaduct.api.grts.*
+import viaduct.api.grts.BlogPost as ViaductBlogPost
 import viaduct.api.grts.Comment as ViaductComment
-import viaduct.api.grts.Post as ViaductPost
 import viaduct.api.types.Arguments.NoArguments
 import viaduct.engine.SchemaFactory
 import viaduct.engine.api.ViaductSchema
@@ -43,8 +43,8 @@ class PostFieldResolversTest : DefaultAbstractResolverTestBase() {
 
     private fun queryObj() = Query.Builder(context).build()
 
-    private fun postObj(id: UUID = postId) = ViaductPost.Builder(context)
-        .id(context.globalIDFor(ViaductPost.Reflection, id.toString()))
+    private fun postObj(id: UUID = postId) = ViaductBlogPost.Builder(context)
+        .id(context.globalIDFor(ViaductBlogPost.Reflection, id.toString()))
         .title("Test Post")
         .content("Test content")
         .createdAt("2025-01-01T10:00:00")
@@ -86,8 +86,8 @@ class PostFieldResolversTest : DefaultAbstractResolverTestBase() {
         val resolver = PostAuthorResolver()
         every { postRepository.getAuthorIdsByPostIds(listOf(postId)) } returns mapOf(postId to userId)
 
-        val ctx = mockk<PostResolvers.Author.Context>(relaxed = true)
-        coEvery { ctx.objectValue.getId() } returns context.globalIDFor(ViaductPost.Reflection, postId.toString())
+        val ctx = mockk<BlogPostResolvers.Author.Context>(relaxed = true)
+        coEvery { ctx.objectValue.getId() } returns context.globalIDFor(ViaductBlogPost.Reflection, postId.toString())
 
         // ctx.nodeRef requires a real framework InternalContext — refetch is verified via
         // integration tests. Here we confirm the batch repository method is called.
@@ -100,8 +100,8 @@ class PostFieldResolversTest : DefaultAbstractResolverTestBase() {
         val resolver = PostAuthorResolver()
         every { postRepository.getAuthorIdsByPostIds(listOf(postId)) } returns emptyMap()
 
-        val ctx = mockk<PostResolvers.Author.Context>(relaxed = true)
-        coEvery { ctx.objectValue.getId() } returns context.globalIDFor(ViaductPost.Reflection, postId.toString())
+        val ctx = mockk<BlogPostResolvers.Author.Context>(relaxed = true)
+        coEvery { ctx.objectValue.getId() } returns context.globalIDFor(ViaductBlogPost.Reflection, postId.toString())
 
         val results = resolver.batchResolve(listOf(ctx))
 

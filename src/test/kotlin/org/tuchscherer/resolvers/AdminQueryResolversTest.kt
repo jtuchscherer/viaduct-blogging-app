@@ -28,7 +28,7 @@ import org.junit.jupiter.api.assertThrows
 import org.koin.core.context.GlobalContext
 import org.koin.dsl.module
 import viaduct.api.grts.*
-import viaduct.api.grts.Post as ViaductPost
+import viaduct.api.grts.BlogPost as ViaductBlogPost
 import viaduct.engine.SchemaFactory
 import viaduct.engine.api.ViaductSchema
 import viaduct.engine.runtime.execution.DefaultCoroutineInterop
@@ -631,7 +631,7 @@ class AdminQueryResolversTest : DefaultAbstractResolverTestBase() {
     fun `AdminPostResolver returns post when found`() = runBlocking {
         val resolver = AdminPostResolver(postRepository)
         val args = AdminQueries_Post_Arguments.Builder(context)
-            .id(context.globalIDFor(ViaductPost.Reflection, postId.toString()))
+            .id(context.globalIDFor(ViaductBlogPost.Reflection, postId.toString()))
             .build()
 
         every { postRepository.findById(postId) } returns mockPost
@@ -653,7 +653,7 @@ class AdminQueryResolversTest : DefaultAbstractResolverTestBase() {
     fun `AdminPostResolver returns null when post not found`() = runBlocking {
         val resolver = AdminPostResolver(postRepository)
         val args = AdminQueries_Post_Arguments.Builder(context)
-            .id(context.globalIDFor(ViaductPost.Reflection, postId.toString()))
+            .id(context.globalIDFor(ViaductBlogPost.Reflection, postId.toString()))
             .build()
 
         every { postRepository.findById(postId) } returns null
@@ -673,7 +673,7 @@ class AdminQueryResolversTest : DefaultAbstractResolverTestBase() {
     fun `AdminPostResolver throws AuthorizationException for non-admin user`() = runBlocking {
         val resolver = AdminPostResolver(postRepository)
         val args = AdminQueries_Post_Arguments.Builder(context)
-            .id(context.globalIDFor(ViaductPost.Reflection, postId.toString()))
+            .id(context.globalIDFor(ViaductBlogPost.Reflection, postId.toString()))
             .build()
 
         assertThrows<AuthorizationException> {
