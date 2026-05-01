@@ -28,7 +28,7 @@ import org.tuchscherer.database.DatabaseFactory
 import org.tuchscherer.database.repositories.UserRepository
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import graphql.execution.instrumentation.Instrumentation
-import org.tuchscherer.complexity.withInstrumentation
+import org.tuchscherer.config.withInstrumentation
 import viaduct.api.bootstrap.ViaductTenantAPIBootstrapper
 import viaduct.service.ViaductBuilder
 import viaduct.service.api.ExecutionInput
