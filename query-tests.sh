@@ -954,6 +954,32 @@ else
     echo "Response: $NO_SCHEMA_MUTATION"
 fi
 
+# --- Query Complexity Guard (Negative Tests) ---
+
+print_info "Testing complexity guard: large 'first' arg should be rejected..."
+COMPLEXITY_OVER=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -d '{"query": "{ postsConnection(first: 50) { edges { node { id title author { id name } } } } }"}')
+
+if echo $COMPLEXITY_OVER | grep -q "maximum query complexity exceeded"; then
+    print_success "Complexity guard rejected over-budget postsConnection(first: 50) query"
+else
+    print_error "Complexity guard failed: over-budget query was not rejected"
+    echo "Response: $COMPLEXITY_OVER"
+fi
+
+print_info "Testing depth guard: 9-level nested query should be rejected..."
+DEPTH_OVER=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -d '{"query": "{ posts { author { posts { author { posts { author { posts { author { id } } } } } } } } }"}')
+
+if echo $DEPTH_OVER | grep -q "maximum query depth exceeded"; then
+    print_success "Depth guard rejected 9-level nested query"
+else
+    print_error "Depth guard failed: deeply-nested query was not rejected"
+    echo "Response: $DEPTH_OVER"
+fi
+
 # Test Summary
 print_header "Test Summary"
 echo -e "${GREEN}Tests Passed: $TESTS_PASSED${NC}"
