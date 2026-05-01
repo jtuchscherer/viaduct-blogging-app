@@ -1,6 +1,8 @@
 import { type Page } from '@playwright/test';
 
-export const API_URL = process.env.API_URL ?? 'http://localhost:8080';
+// Use 127.0.0.1 instead of localhost: Node.js resolves localhost → ::1 (IPv6) on macOS,
+// but the Ktor backend only binds to IPv4 (127.0.0.1:8080).
+export const API_URL = process.env.API_URL ?? 'http://127.0.0.1:8080';
 const AUTH_URL = API_URL;
 
 /** Register a new user via the API and return token + user. Unique username per call. */
