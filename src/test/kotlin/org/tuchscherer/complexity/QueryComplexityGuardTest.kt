@@ -31,6 +31,22 @@ class QueryComplexityGuardTest {
     }
 
     @Test
+    fun `mutation with NonNull input variable does not throw - guard receives variables`() {
+        // Regression: the calculator threw NonNullableValueCoercedAsNullException when run
+        // with empty variables, breaking every real client mutation.
+        val query = "mutation CreatePost(\$input: CreatePostInput!) { createPost(input: \$input) { id } }"
+        val variables = mapOf("input" to mapOf("title" to "t", "content" to "c"))
+        assertNull(guard.check(query, variables))
+    }
+
+    @Test
+    fun `query with malformed schema reference passes through to Viaduct`() {
+        // If the calculator throws on something the validator would catch (unknown field),
+        // we let Viaduct produce the canonical error rather than swallowing it as a complexity issue.
+        assertNull(guard.check("{ thisFieldDoesNotExist { foo } }"))
+    }
+
+    @Test
     fun `unparseable query is passed through so Viaduct can produce its own parse error`() {
         // Letting Viaduct format the error keeps response shape consistent with all other
         // syntax errors clients see, instead of inventing a second error format here.
@@ -52,7 +68,7 @@ class QueryComplexityGuardTest {
 
     @Test
     fun `depth and complexity limits are the documented values`() {
-        assertEquals(150, QueryComplexityGuard.MAX_COMPLEXITY)
+        assertEquals(250, QueryComplexityGuard.MAX_COMPLEXITY)
         assertEquals(8, QueryComplexityGuard.MAX_DEPTH)
     }
 }

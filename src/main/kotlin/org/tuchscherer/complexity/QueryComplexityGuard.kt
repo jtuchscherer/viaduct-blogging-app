@@ -41,8 +41,11 @@ class QueryComplexityGuard(
     /**
      * Returns a [GraphQLError] explaining the rejection, or null if the query is within limits.
      * Hand the returned error to [GuardedViaduct] which packages it into an ExecutionResult.
+     *
+     * @param variables the operation's variables, needed so [QueryComplexityCalculator] can
+     *        resolve NonNull arguments without throwing (e.g. `mutation($input: CreatePostInput!)`).
      */
-    fun check(query: String): GraphQLError? {
+    fun check(query: String, variables: Map<String, Any?> = emptyMap()): GraphQLError? {
         val doc = try {
             Parser.parse(query)
         } catch (_: Exception) {
@@ -56,13 +59,21 @@ class QueryComplexityGuard(
             return abortError("maximum query depth exceeded $depth > $maxDepth")
         }
 
-        val score = QueryComplexityCalculator.newCalculator()
-            .schema(schema)
-            .document(doc)
-            .fieldComplexityCalculator(calculator)
-            .variables(CoercedVariables.emptyVariables())
-            .build()
-            .calculate()
+        val score = try {
+            QueryComplexityCalculator.newCalculator()
+                .schema(schema)
+                .document(doc)
+                .fieldComplexityCalculator(calculator)
+                .variables(CoercedVariables.of(variables))
+                .build()
+                .calculate()
+        } catch (e: Exception) {
+            // The calculator can throw on schema mismatches the validator would catch (unknown
+            // fields, wrong arg types, etc). Let Viaduct produce the canonical validation error
+            // rather than masking it as a complexity failure.
+            logger.debug("complexity calc skipped: ${e.message}")
+            return null
+        }
         if (score > maxComplexity) {
             logger.warn("query rejected: complexity $score > $maxComplexity")
             return abortError("maximum query complexity exceeded $score > $maxComplexity")
@@ -100,7 +111,7 @@ class QueryComplexityGuard(
     }
 
     companion object {
-        const val MAX_COMPLEXITY = 150
+        const val MAX_COMPLEXITY = 250
         const val MAX_DEPTH = 8
     }
 }

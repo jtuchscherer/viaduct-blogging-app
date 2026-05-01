@@ -92,10 +92,32 @@ class QueryComplexityIntegrationTest {
     }
 
     @Test
+    fun `realistic frontend pagination query scores under threshold`() {
+        // The HomePage GET_POSTS_CONNECTION query: 7 fields per post + author with 3 fields,
+        // first=10. Scored 161 — pinned here so tightening the threshold below this re-breaks
+        // the home page (which the e2e suite also catches, but the loop is faster here).
+        val query = """
+            { postsConnection(first: 10) {
+                totalCount
+                pageInfo { hasNextPage endCursor }
+                edges {
+                  node {
+                    id title content
+                    author { id name username }
+                    createdAt likeCount commentCount
+                  }
+                }
+            } }
+        """.trimIndent()
+        val s = score(query)
+        assertTrue(s < QueryComplexityGuard.MAX_COMPLEXITY, "expected <${QueryComplexityGuard.MAX_COMPLEXITY}, got $s")
+    }
+
+    @Test
     fun `threshold and depth limit are the documented values`() {
         // Pin the configured limits so accidental edits to QueryComplexityGuard
         // are caught here rather than only failing the existing query-tests.sh suite.
-        assertEquals(150, QueryComplexityGuard.MAX_COMPLEXITY)
+        assertEquals(250, QueryComplexityGuard.MAX_COMPLEXITY)
         assertEquals(8, QueryComplexityGuard.MAX_DEPTH)
     }
 }
