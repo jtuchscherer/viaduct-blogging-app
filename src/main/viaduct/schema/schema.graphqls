@@ -9,7 +9,9 @@ type User implements Node @resolver(isBatching: true) @scope(to: ["public", "adm
   createdAt: String!
 }
 
-# Post interface — shared contract for all post types
+# Post interface — shared contract for all post types.
+# readTimeMinutes is intentionally absent here: it is provided by the analytics
+# tenant module (PostAnalytics.graphqls) which extends each concrete post type.
 interface Post @scope(to: ["public", "admin"]) {
   id: ID!
   title: String!
@@ -21,7 +23,6 @@ interface Post @scope(to: ["public", "admin"]) {
   isLikedByMe: Boolean! @resolver
   createdAt: String!
   updatedAt: String!
-  readTimeMinutes: Float! @resolver(isBatching: true)
 }
 
 # BlogPost type for blog posts
@@ -37,7 +38,6 @@ type BlogPost implements Post & Node @resolver(isBatching: true) @scope(to: ["pu
   isLikedByMe: Boolean! @resolver
   createdAt: String!
   updatedAt: String!
-  readTimeMinutes: Float! @resolver(isBatching: true)
 }
 
 # Comment type for post comments

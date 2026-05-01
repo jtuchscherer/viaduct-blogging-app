@@ -55,7 +55,7 @@ class BlogFieldComplexityCalculator : FieldComplexityCalculator {
         const val DEFAULT_PAGINATION_SIZE = 10
 
         private val PAGINATED_ADMIN_FIELDS = setOf("users", "posts", "comments")
-        private val UNBOUNDED_QUERY_LISTS = setOf("posts", "myPosts", "postComments")
+        private val UNBOUNDED_QUERY_LISTS = setOf("posts", "myPosts", "postComments", "trending")
         private val UNBOUNDED_POST_LISTS = setOf("comments", "likes")
     }
 }

@@ -39,6 +39,8 @@ viaductModule {
 }
 
 dependencies {
+    implementation(project(":modules:analytics"))
+
     implementation(libs.viaduct.tenant.api)
     implementation(libs.viaduct.service.api)
     implementation(libs.viaduct.service.wiring)

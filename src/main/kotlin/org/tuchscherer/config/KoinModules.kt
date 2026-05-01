@@ -3,6 +3,7 @@ package org.tuchscherer.config
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
+import org.tuchscherer.analytics.analyticsKoinModule
 import org.tuchscherer.auth.AuthenticationService
 import org.tuchscherer.auth.JwtService
 import org.tuchscherer.auth.PasswordService
@@ -176,5 +177,6 @@ val allModules = listOf(
     metricsModule,
     viaductModule,
     serverModule,
-    resolverModule
+    resolverModule,
+    analyticsKoinModule,
 )
