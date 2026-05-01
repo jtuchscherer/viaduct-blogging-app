@@ -19,7 +19,7 @@ class GuardedViaduct(
 ) : Viaduct {
 
     override fun execute(executionInput: ExecutionInput, schemaId: SchemaId): ExecutionResult =
-        guard.check(executionInput.operationText)
+        guard.check(executionInput.operationText, executionInput.variables)
             ?.let(::abortResult)
             ?: delegate.execute(executionInput, schemaId)
 
@@ -27,7 +27,7 @@ class GuardedViaduct(
         executionInput: ExecutionInput,
         schemaId: SchemaId,
     ): CompletableFuture<ExecutionResult> =
-        guard.check(executionInput.operationText)
+        guard.check(executionInput.operationText, executionInput.variables)
             ?.let { CompletableFuture.completedFuture(abortResult(it)) }
             ?: delegate.executeAsync(executionInput, schemaId)
 
