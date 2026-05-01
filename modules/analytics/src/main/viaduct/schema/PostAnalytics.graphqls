@@ -1,0 +1,19 @@
+# Analytics module — tenant-owned schema fragment.
+# Extends BlogPost with viewCount and readTimeMinutes, adds a trending query,
+# and a recordPostView mutation. This module owns the read-time and view-count
+# concern; neither field exists in the base schema without this module.
+
+extend type BlogPost @scope(to: ["public", "admin"]) {
+  viewCount: Int! @resolver(isBatching: true)
+  readTimeMinutes: Float! @resolver(isBatching: true)
+}
+
+extend type Query @scope(to: ["public", "admin"]) {
+  # Returns the most-viewed posts, ordered by view count descending.
+  trending(limit: Int = 10): [BlogPost!]! @resolver
+}
+
+extend type Mutation @scope(to: ["public", "admin"]) {
+  # Increments the view count for a post. No auth required.
+  recordPostView(postId: ID! @idOf(type: "BlogPost")): Boolean! @resolver
+}

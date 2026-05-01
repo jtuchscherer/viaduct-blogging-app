@@ -33,10 +33,16 @@ class QueryComplexityGuard(
 
     private val schema: GraphQLSchema by lazy {
         val builtin = File("build/viaduct/centralSchema/BUILTIN_SCHEMA.graphqls").readText()
-        val app = File("src/main/viaduct/schema/schema.graphqls").readText()
-        val typeRegistry = SchemaParser().parse("$builtin\n$app")
+        val modules = loadModuleSchemas()
+        val typeRegistry = SchemaParser().parse("$builtin\n$modules")
         SchemaGenerator().makeExecutableSchema(typeRegistry, RuntimeWiring.MOCKED_WIRING)
     }
+
+    private fun loadModuleSchemas(): String =
+        MODULE_SCHEMA_PATHS
+            .map(::File)
+            .filter { it.exists() }
+            .joinToString("\n") { it.readText() }
 
     /**
      * Returns a [GraphQLError] explaining the rejection, or null if the query is within limits.
@@ -113,5 +119,16 @@ class QueryComplexityGuard(
     companion object {
         const val MAX_COMPLEXITY = 250
         const val MAX_DEPTH = 8
+
+        /**
+         * Schema files to merge into the complexity-check schema.
+         * Paths that don't exist yet are silently skipped so the guard works correctly
+         * before all modules are present (e.g. checkedlist not yet added).
+         */
+        internal val MODULE_SCHEMA_PATHS = listOf(
+            "src/main/viaduct/schema/schema.graphqls",
+            "modules/analytics/src/main/viaduct/schema/PostAnalytics.graphqls",
+            "modules/checkedlist/src/main/viaduct/schema/CheckedList.graphqls",
+        )
     }
 }

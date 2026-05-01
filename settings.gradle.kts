@@ -1,5 +1,7 @@
 rootProject.name = "viaduct-blogging-app"
 
+include(":modules:analytics")
+
 val viaductVersion: String by settings
 
 pluginManagement {

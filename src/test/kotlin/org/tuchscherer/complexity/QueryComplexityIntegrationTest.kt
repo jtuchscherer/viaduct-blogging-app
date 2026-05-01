@@ -23,8 +23,13 @@ class QueryComplexityIntegrationTest {
 
     private val schema: GraphQLSchema by lazy {
         val builtin = File("build/viaduct/centralSchema/BUILTIN_SCHEMA.graphqls").readText()
-        val app = File("src/main/viaduct/schema/schema.graphqls").readText()
-        val typeRegistry = SchemaParser().parse("$builtin\n$app")
+        // Use the same module-aware schema loader as QueryComplexityGuard so tests
+        // reflect the actual schema the guard enforces at runtime.
+        val modules = QueryComplexityGuard.MODULE_SCHEMA_PATHS
+            .map(::File)
+            .filter { it.exists() }
+            .joinToString("\n") { it.readText() }
+        val typeRegistry = SchemaParser().parse("$builtin\n$modules")
         SchemaGenerator().makeExecutableSchema(typeRegistry, RuntimeWiring.MOCKED_WIRING)
     }
 
@@ -121,5 +126,28 @@ class QueryComplexityIntegrationTest {
         // are caught here rather than only failing the existing query-tests.sh suite.
         assertEquals(250, QueryComplexityGuard.MAX_COMPLEXITY)
         assertEquals(8, QueryComplexityGuard.MAX_DEPTH)
+    }
+
+    // ── Analytics module ────────────────────────────────────────────────────
+
+    @Test
+    fun `trending with default limit is under threshold`() {
+        val query = "{ trending { id title } }"
+        val s = score(query)
+        assertTrue(s < QueryComplexityGuard.MAX_COMPLEXITY, "expected <${QueryComplexityGuard.MAX_COMPLEXITY}, got $s")
+    }
+
+    @Test
+    fun `trending with nested author and comments blows past threshold`() {
+        val query = "{ trending { comments { author { posts { id } } } } }"
+        val s = score(query)
+        assertTrue(s > QueryComplexityGuard.MAX_COMPLEXITY, "expected >${QueryComplexityGuard.MAX_COMPLEXITY}, got $s")
+    }
+
+    @Test
+    fun `trending applies DEFAULT_LIST_MULTIPLIER to child cost`() {
+        // id is a scalar leaf → childComplexity = 0, so id costs 1 + 0 = 1
+        // { trending { id } } → 1 + 10 * 1 = 11
+        assertEquals(1 + 10 * 1, score("{ trending { id } }"))
     }
 }

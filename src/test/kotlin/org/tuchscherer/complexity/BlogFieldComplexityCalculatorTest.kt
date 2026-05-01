@@ -66,6 +66,20 @@ class BlogFieldComplexityCalculatorTest {
         assertEquals(3, calculate(parent = "AdminCommentsPage", name = "comments", child = 2))
     }
 
+    // ── Analytics module ────────────────────────────────────────────────────
+
+    @Test
+    fun `trending applies DEFAULT_LIST_MULTIPLIER to child cost`() {
+        // trending returns [BlogPost!]! — same unbounded multiplier as posts/myPosts
+        assertEquals(31, calculate(parent = "Query", name = "trending", child = 3))
+        assertEquals(21, calculate(parent = "Query", name = "trending", child = 2))
+    }
+
+    @Test
+    fun `viewCount on BlogPost is a scalar field costing 1 plus child`() {
+        assertEquals(1, calculate(parent = "BlogPost", name = "viewCount", child = 0))
+    }
+
     private fun calculate(
         parent: String,
         name: String,
