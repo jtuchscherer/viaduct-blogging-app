@@ -509,12 +509,12 @@ USER1_GID=$(curl -s -X POST $GRAPHQL_URL \
 
 NODE_POST_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
     -H "Content-Type: application/json" \
-    -d "{\"query\":\"query { node(id: \\\"$POST1_ID\\\") { __typename id ... on Post { title } } }\"}")
-if echo "$NODE_POST_RESPONSE" | grep -q '"__typename":"Post"' && \
+    -d "{\"query\":\"query { node(id: \\\"$POST1_ID\\\") { __typename id ... on BlogPost { title } } }\"}")
+if echo "$NODE_POST_RESPONSE" | grep -q '"__typename":"BlogPost"' && \
    echo "$NODE_POST_RESPONSE" | grep -q "\"id\":\"$POST1_ID\""; then
-    print_success "node(id) returns Post with matching id and __typename"
+    print_success "node(id) returns BlogPost with matching id and __typename"
 else
-    print_error "node(id) failed for Post: $NODE_POST_RESPONSE"
+    print_error "node(id) failed for BlogPost: $NODE_POST_RESPONSE"
 fi
 
 # COMMENT2_ID is still alive — COMMENT1_ID was deleted in Step 6.

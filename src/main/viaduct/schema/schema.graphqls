@@ -82,7 +82,7 @@ type PostsConnection @connection @scope(to: ["public", "admin"]) {
 }
 
 type PostEdge @edge @scope(to: ["public", "admin"]) {
-  node: Post
+  node: BlogPost
   cursor: String!
 }
 
