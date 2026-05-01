@@ -29,6 +29,6 @@ class LikePostResolver : LikeResolvers.Post() {
         val likeId = UUID.fromString(ctx.objectValue.getId().internalID)
         val post = likeRepository.getPostForLike(likeId)
             ?: throw NotFoundException("Like not found")
-        return post.toViaductPost(ctx)
+        return post.toViaductBlogPost(ctx)
     }
 }

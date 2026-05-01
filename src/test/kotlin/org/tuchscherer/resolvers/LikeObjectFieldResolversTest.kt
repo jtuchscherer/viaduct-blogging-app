@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.koin.core.context.GlobalContext
 import org.koin.dsl.module
+import viaduct.api.grts.BlogPost as ViaductBlogPost
 import viaduct.api.grts.Like as ViaductLike
 import viaduct.api.grts.Post as ViaductPost
 import viaduct.api.grts.Query
@@ -113,9 +114,10 @@ class LikeObjectFieldResolversTest {
             arguments = NoArguments
         }
 
-        assertEquals(postId.toString(), result.getId().internalID)
-        assertEquals("Test Post", result.getTitle())
-        assertEquals("Test content", result.getContent())
+        val blogPost = result as ViaductBlogPost
+        assertEquals(postId.toString(), blogPost.getId().internalID)
+        assertEquals("Test Post", blogPost.getTitle())
+        assertEquals("Test content", blogPost.getContent())
     }
 
     @Test

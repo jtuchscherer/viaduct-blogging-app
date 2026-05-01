@@ -10,7 +10,7 @@ import org.tuchscherer.viadapp.resolvers.resolverbases.AdminMutationsResolvers
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import viaduct.api.Resolver
 import viaduct.api.grts.AdminDeleteUserResult
-import viaduct.api.grts.Post as ViaductPost
+import viaduct.api.grts.BlogPost as ViaductBlogPost
 import viaduct.api.grts.User as ViaductUser
 import java.util.*
 
@@ -84,7 +84,7 @@ class AdminDeleteUserResolver(
 class AdminUpdatePostResolver(
     private val postRepository: PostRepository
 ) : AdminMutationsResolvers.UpdatePost() {
-    override suspend fun resolve(ctx: Context): ViaductPost {
+    override suspend fun resolve(ctx: Context): ViaductBlogPost {
         requireAdmin(ctx.requestContext)
 
         val input = ctx.arguments.input
@@ -99,7 +99,7 @@ class AdminUpdatePostResolver(
             content = input.content
         ) ?: throw NotFoundException("Post not found")
 
-        return updatedPost.toViaductPost(ctx)
+        return updatedPost.toViaductBlogPost(ctx)
     }
 }
 

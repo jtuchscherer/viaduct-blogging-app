@@ -11,9 +11,9 @@ import org.tuchscherer.database.repositories.CommentRepository
 import org.tuchscherer.database.repositories.LikeRepository
 import org.tuchscherer.database.repositories.PostRepository
 import org.tuchscherer.database.repositories.UserRepository
+import org.tuchscherer.viadapp.resolvers.BlogPostNodeResolver
 import org.tuchscherer.viadapp.resolvers.CommentNodeResolver
 import org.tuchscherer.viadapp.resolvers.LikeNodeResolver
-import org.tuchscherer.viadapp.resolvers.PostNodeResolver
 import org.tuchscherer.viadapp.resolvers.UserNodeResolver
 import org.tuchscherer.viadapp.resolvers.resolverbases.NodeResolvers
 import io.mockk.coEvery
@@ -24,9 +24,9 @@ import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import viaduct.api.grts.BlogPost as ViaductBlogPost
 import viaduct.api.grts.Comment as ViaductComment
 import viaduct.api.grts.Like as ViaductLike
-import viaduct.api.grts.Post as ViaductPost
 import viaduct.api.grts.User as ViaductUser
 import viaduct.engine.SchemaFactory
 import viaduct.engine.api.ViaductSchema
@@ -82,27 +82,27 @@ class NodeResolversTest : DefaultAbstractResolverTestBase() {
         assertTrue(err!!.message!!.contains(id.toString()))
     }
 
-    // ── PostNodeResolver ───────────────────────────────────────────────────────
+    // ── BlogPostNodeResolver ───────────────────────────────────────────────────
 
     @Test
-    fun `PostNodeResolver calls findByIds once for the whole batch`() = runBlocking {
+    fun `BlogPostNodeResolver calls findByIds once for the whole batch`() = runBlocking {
         val repo = mockk<PostRepository>()
         val id1 = UUID.randomUUID()
         val id2 = UUID.randomUUID()
         every { repo.findByIds(listOf(id1, id2)) } returns mapOf(id1 to mockk(relaxed = true), id2 to mockk(relaxed = true))
 
-        runCatching { PostNodeResolver(repo).batchResolve(listOf(postNodeCtx(id1), postNodeCtx(id2))) }
+        runCatching { BlogPostNodeResolver(repo).batchResolve(listOf(postNodeCtx(id1), postNodeCtx(id2))) }
 
         verify(exactly = 1) { repo.findByIds(listOf(id1, id2)) }
     }
 
     @Test
-    fun `PostNodeResolver returns NotFoundException FieldValue for missing id`() = runBlocking {
+    fun `BlogPostNodeResolver returns NotFoundException FieldValue for missing id`() = runBlocking {
         val repo = mockk<PostRepository>()
         val id = UUID.randomUUID()
         every { repo.findByIds(listOf(id)) } returns emptyMap()
 
-        val results = PostNodeResolver(repo).batchResolve(listOf(postNodeCtx(id)))
+        val results = BlogPostNodeResolver(repo).batchResolve(listOf(postNodeCtx(id)))
 
         assertEquals(1, results.size)
         assertTrue(results[0].isError)
@@ -172,9 +172,9 @@ class NodeResolversTest : DefaultAbstractResolverTestBase() {
         return ctx
     }
 
-    private fun postNodeCtx(id: UUID): NodeResolvers.Post.Context {
-        val ctx = mockk<NodeResolvers.Post.Context>(relaxed = true)
-        coEvery { ctx.id } returns context.globalIDFor(ViaductPost.Reflection, id.toString())
+    private fun postNodeCtx(id: UUID): NodeResolvers.BlogPost.Context {
+        val ctx = mockk<NodeResolvers.BlogPost.Context>(relaxed = true)
+        coEvery { ctx.id } returns context.globalIDFor(ViaductBlogPost.Reflection, id.toString())
         return ctx
     }
 

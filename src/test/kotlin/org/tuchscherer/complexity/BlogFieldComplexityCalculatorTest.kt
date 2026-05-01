@@ -14,14 +14,14 @@ class BlogFieldComplexityCalculatorTest {
 
     @Test
     fun `scalar fields cost 1 plus child`() {
-        assertEquals(1, calculate(parent = "Post", name = "title", child = 0))
+        assertEquals(1, calculate(parent = "BlogPost", name = "title", child = 0))
         assertEquals(3, calculate(parent = "User", name = "username", child = 2))
     }
 
     @Test
     fun `single-object resolvers and wrapper fields default to 1 plus child`() {
         assertEquals(4, calculate(parent = "Query", name = "post", child = 3))
-        assertEquals(3, calculate(parent = "Post", name = "author", child = 2))
+        assertEquals(3, calculate(parent = "BlogPost", name = "author", child = 2))
         assertEquals(5, calculate(parent = "AdminUsersPage", name = "users", child = 4))
         assertEquals(3, calculate(parent = "PostEdge", name = "node", child = 2))
     }
@@ -30,8 +30,8 @@ class BlogFieldComplexityCalculatorTest {
     fun `unbounded list resolvers multiply child by 10`() {
         assertEquals(31, calculate(parent = "Query", name = "posts", child = 3))
         assertEquals(21, calculate(parent = "Query", name = "myPosts", child = 2))
-        assertEquals(41, calculate(parent = "Post", name = "comments", child = 4))
-        assertEquals(31, calculate(parent = "Post", name = "likes", child = 3))
+        assertEquals(41, calculate(parent = "BlogPost", name = "comments", child = 4))
+        assertEquals(31, calculate(parent = "BlogPost", name = "likes", child = 3))
         assertEquals(21, calculate(parent = "User", name = "posts", child = 2))
     }
 
@@ -59,9 +59,9 @@ class BlogFieldComplexityCalculatorTest {
     }
 
     @Test
-    fun `Post comments and likes are list resolvers but admin wrapper comments are not`() {
-        // Post.comments → unbounded list resolver, multiplier 10
-        assertEquals(21, calculate(parent = "Post", name = "comments", child = 2))
+    fun `BlogPost comments and likes are list resolvers but admin wrapper comments are not`() {
+        // BlogPost.comments → unbounded list resolver, multiplier 10
+        assertEquals(21, calculate(parent = "BlogPost", name = "comments", child = 2))
         // AdminCommentsPage.comments → wrapper field, no multiplier (parent's pagination already applied)
         assertEquals(3, calculate(parent = "AdminCommentsPage", name = "comments", child = 2))
     }

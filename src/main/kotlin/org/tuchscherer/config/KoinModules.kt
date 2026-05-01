@@ -160,7 +160,7 @@ val resolverModule = module {
 
     // Node resolvers (Relay refetch via node(id))
     singleOf(::UserNodeResolver)
-    singleOf(::PostNodeResolver)
+    singleOf(::BlogPostNodeResolver)
     singleOf(::CommentNodeResolver)
     singleOf(::LikeNodeResolver)
 }

@@ -8,9 +8,9 @@ import org.tuchscherer.database.repositories.UserRepository
 import org.tuchscherer.viadapp.resolvers.resolverbases.NodeResolvers
 import viaduct.api.FieldValue
 import viaduct.api.Resolver
+import viaduct.api.grts.BlogPost as ViaductBlogPost
 import viaduct.api.grts.Comment as ViaductComment
 import viaduct.api.grts.Like as ViaductLike
-import viaduct.api.grts.Post as ViaductPost
 import viaduct.api.grts.User as ViaductUser
 
 import java.util.UUID
@@ -30,14 +30,14 @@ class UserNodeResolver(
 }
 
 @Resolver
-class PostNodeResolver(
+class BlogPostNodeResolver(
     private val postRepository: PostRepository
-) : NodeResolvers.Post() {
-    override suspend fun batchResolve(contexts: List<Context>): List<FieldValue<ViaductPost>> {
+) : NodeResolvers.BlogPost() {
+    override suspend fun batchResolve(contexts: List<Context>): List<FieldValue<ViaductBlogPost>> {
         val ids = contexts.map { UUID.fromString(it.id.internalID) }
         val byId = postRepository.findByIds(ids)
         return contexts.zip(ids).map { (ctx, id) ->
-            byId[id]?.let { FieldValue.ofValue(it.toViaductPost(ctx)) }
+            byId[id]?.let { FieldValue.ofValue(it.toViaductBlogPost(ctx)) }
                 ?: FieldValue.ofError(NotFoundException("Post not found: $id"))
         }
     }

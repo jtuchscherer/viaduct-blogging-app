@@ -29,6 +29,6 @@ class CommentPostResolver : CommentResolvers.Post() {
         val commentId = UUID.fromString(ctx.objectValue.getId().internalID)
         val post = commentRepository.getPostForComment(commentId)
             ?: throw NotFoundException("Comment not found")
-        return post.toViaductPost(ctx)
+        return post.toViaductBlogPost(ctx)
     }
 }
