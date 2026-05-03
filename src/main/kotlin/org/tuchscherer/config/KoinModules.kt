@@ -5,6 +5,13 @@ import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import org.tuchscherer.analytics.analyticsKoinModule
 import org.tuchscherer.auth.AuthenticationService
+import org.tuchscherer.checkedlist.ViaductCheckedListCurrentUserProvider
+import org.tuchscherer.checkedlist.ViaductPostCreationPort
+import org.tuchscherer.checkedlist.ViaductPostSocialAccess
+import org.tuchscherer.checkedlist.checkedListKoinModule
+import org.tuchscherer.checkedlist.port.CheckedListCurrentUserProvider
+import org.tuchscherer.checkedlist.port.PostCreationPort
+import org.tuchscherer.checkedlist.port.PostSocialPort
 import org.tuchscherer.auth.JwtService
 import org.tuchscherer.auth.PasswordService
 import org.tuchscherer.complexity.BlogFieldComplexityCalculator
@@ -167,6 +174,17 @@ val resolverModule = module {
 }
 
 /**
+ * Koin module for port implementations bridging checkedlist tenant module to root project.
+ * Registered separately so the checkedlist module's own Koin module stays free of root-project
+ * compile-time imports.
+ */
+val checkedListPortModule = module {
+    single<PostCreationPort> { ViaductPostCreationPort() }
+    single<PostSocialPort> { ViaductPostSocialAccess(get(), get()) }
+    single<CheckedListCurrentUserProvider> { ViaductCheckedListCurrentUserProvider() }
+}
+
+/**
  * All application modules combined.
  * Use this list when starting Koin.
  */
@@ -179,4 +197,6 @@ val allModules = listOf(
     serverModule,
     resolverModule,
     analyticsKoinModule,
+    checkedListPortModule,
+    checkedListKoinModule,
 )

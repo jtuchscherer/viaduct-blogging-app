@@ -1,6 +1,7 @@
 rootProject.name = "viaduct-blogging-app"
 
 include(":modules:analytics")
+include(":modules:checkedlist")
 
 val viaductVersion: String by settings
 

@@ -1092,6 +1092,184 @@ else
     echo "Response: $NO_SCHEMA_MUTATION"
 fi
 
+# --- CheckedList Module ---
+
+print_header "CheckedList Module Tests"
+
+# Create a checklist post with two initial items.
+print_info "Creating a checklist post with two items..."
+CREATE_CHECKLIST_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $USER1_TOKEN" \
+    -d '{"query": "mutation { createCheckedListPost(input: {title: \"My Test Checklist\", items: [\"Buy milk\", \"Buy bread\"]}) { id title } }"}')
+CHECKLIST_POST_ID=$(echo $CREATE_CHECKLIST_RESPONSE | grep -o '"id":"[^"]*' | head -1 | sed 's/"id":"//')
+
+if [ ! -z "$CHECKLIST_POST_ID" ] && echo $CREATE_CHECKLIST_RESPONSE | grep -q '"My Test Checklist"'; then
+    print_success "CheckedListPost created (ID: $CHECKLIST_POST_ID)"
+else
+    print_error "CheckedListPost creation failed"
+    echo "Response: $CREATE_CHECKLIST_RESPONSE"
+fi
+
+# Query checkedListPosts — should include our new post and its initial items.
+print_info "Querying checkedListPosts..."
+CHECKED_LIST_QUERY=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -d '{"query": "{ checkedListPosts { id title items { id text checked position } } }"}')
+
+if echo $CHECKED_LIST_QUERY | grep -q '"My Test Checklist"'; then
+    print_success "checkedListPosts query returns our checklist"
+else
+    print_error "checkedListPosts query failed or did not return our checklist"
+    echo "Response: $CHECKED_LIST_QUERY"
+fi
+
+if echo $CHECKED_LIST_QUERY | grep -q '"Buy milk"'; then
+    print_success "checkedListPosts items include initial items from creation"
+else
+    print_error "checkedListPosts items did not include initial items"
+    echo "Response: $CHECKED_LIST_QUERY"
+fi
+
+# Query checkedListPosts without authentication — should succeed (public read).
+print_info "Querying checkedListPosts without authentication..."
+UNAUTH_QUERY=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -d '{"query": "{ checkedListPosts { id title } }"}')
+if echo $UNAUTH_QUERY | grep -q '"checkedListPosts"' && ! echo $UNAUTH_QUERY | grep -q '"errors"'; then
+    print_success "checkedListPosts is accessible without authentication"
+else
+    print_error "checkedListPosts returned errors without authentication"
+    echo "Response: $UNAUTH_QUERY"
+fi
+
+# Add a third item via addCheckedListItem.
+print_info "Adding a checklist item via addCheckedListItem..."
+ADD_ITEM_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $USER1_TOKEN" \
+    -d "{\"query\": \"mutation { addCheckedListItem(input: {postId: \\\"$CHECKLIST_POST_ID\\\", text: \\\"Buy eggs\\\"}) { id text checked position } }\"}")
+CHECKLIST_ITEM_ID=$(echo $ADD_ITEM_RESPONSE | grep -o '"id":"[^"]*' | head -1 | sed 's/"id":"//')
+
+if [ ! -z "$CHECKLIST_ITEM_ID" ] && echo $ADD_ITEM_RESPONSE | grep -q '"Buy eggs"'; then
+    print_success "addCheckedListItem added item (ID: $CHECKLIST_ITEM_ID)"
+else
+    print_error "addCheckedListItem failed"
+    echo "Response: $ADD_ITEM_RESPONSE"
+fi
+
+if echo $ADD_ITEM_RESPONSE | grep -q '"checked":false'; then
+    print_success "New item starts with checked=false"
+else
+    print_error "New item did not start with checked=false"
+    echo "Response: $ADD_ITEM_RESPONSE"
+fi
+
+# Verify sequential position (initial items are 0,1 so new item should be 2).
+if echo $ADD_ITEM_RESPONSE | grep -q '"position":2'; then
+    print_success "addCheckedListItem assigned sequential position=2"
+else
+    print_error "addCheckedListItem did not assign expected position=2"
+    echo "Response: $ADD_ITEM_RESPONSE"
+fi
+
+# Toggle item — should flip checked from false to true.
+print_info "Toggling checklist item to checked=true..."
+TOGGLE_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $USER1_TOKEN" \
+    -d "{\"query\": \"mutation { toggleCheckedListItem(id: \\\"$CHECKLIST_ITEM_ID\\\") { id text checked } }\"}")
+
+if echo $TOGGLE_RESPONSE | grep -q '"checked":true'; then
+    print_success "toggleCheckedListItem flipped item to checked=true"
+else
+    print_error "toggleCheckedListItem did not flip item to checked=true"
+    echo "Response: $TOGGLE_RESPONSE"
+fi
+
+# Toggle back — should flip back to false.
+print_info "Toggling item back to checked=false..."
+TOGGLE_BACK_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $USER1_TOKEN" \
+    -d "{\"query\": \"mutation { toggleCheckedListItem(id: \\\"$CHECKLIST_ITEM_ID\\\") { id checked } }\"}")
+
+if echo $TOGGLE_BACK_RESPONSE | grep -q '"checked":false'; then
+    print_success "toggleCheckedListItem toggled back to checked=false"
+else
+    print_error "toggleCheckedListItem did not toggle back to false"
+    echo "Response: $TOGGLE_BACK_RESPONSE"
+fi
+
+# Delete item — should return true.
+print_info "Deleting checklist item..."
+DELETE_ITEM_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $USER1_TOKEN" \
+    -d "{\"query\": \"mutation { deleteCheckedListItem(id: \\\"$CHECKLIST_ITEM_ID\\\") }\"}")
+
+if echo $DELETE_ITEM_RESPONSE | grep -q '"deleteCheckedListItem":true'; then
+    print_success "deleteCheckedListItem removed the item"
+else
+    print_error "deleteCheckedListItem failed"
+    echo "Response: $DELETE_ITEM_RESPONSE"
+fi
+
+# Delete same item again — should return false (already gone).
+print_info "Deleting the same item again (expect false)..."
+DELETE_AGAIN_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $USER1_TOKEN" \
+    -d "{\"query\": \"mutation { deleteCheckedListItem(id: \\\"$CHECKLIST_ITEM_ID\\\") }\"}")
+
+if echo $DELETE_AGAIN_RESPONSE | grep -q '"deleteCheckedListItem":false'; then
+    print_success "deleteCheckedListItem returns false for already-deleted item"
+else
+    print_error "deleteCheckedListItem did not return false for non-existent item"
+    echo "Response: $DELETE_AGAIN_RESPONSE"
+fi
+
+# node(id) resolution — CheckedListPost should resolve via the Node interface.
+print_info "Testing node(id) resolution for CheckedListPost..."
+NODE_CHECKLIST_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -d "{\"query\": \"{ node(id: \\\"$CHECKLIST_POST_ID\\\") { id __typename ... on CheckedListPost { title } } }\"}")
+
+if echo $NODE_CHECKLIST_RESPONSE | grep -q '"__typename":"CheckedListPost"' && \
+   echo $NODE_CHECKLIST_RESPONSE | grep -q '"My Test Checklist"'; then
+    print_success "node(id) resolves CheckedListPost with correct title and __typename"
+else
+    print_error "node(id) did not resolve CheckedListPost correctly"
+    echo "Response: $NODE_CHECKLIST_RESPONSE"
+fi
+
+# Auth enforcement: createCheckedListPost without token should fail.
+print_info "Testing auth: createCheckedListPost requires authentication..."
+UNAUTH_CREATE=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -d '{"query": "mutation { createCheckedListPost(input: {title: \"No Auth\", items: []}) { id } }"}')
+
+if echo $UNAUTH_CREATE | grep -q '"errors"'; then
+    print_success "createCheckedListPost requires authentication"
+else
+    print_error "createCheckedListPost did not reject unauthenticated request"
+    echo "Response: $UNAUTH_CREATE"
+fi
+
+# Input validation: blank title should be rejected.
+print_info "Testing input validation: blank title is rejected..."
+BLANK_TITLE_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $USER1_TOKEN" \
+    -d '{"query": "mutation { createCheckedListPost(input: {title: \"   \", items: [\"Item\"]}) { id } }"}')
+
+if echo $BLANK_TITLE_RESPONSE | grep -q '"errors"'; then
+    print_success "createCheckedListPost rejected blank title"
+else
+    print_error "createCheckedListPost accepted blank title"
+    echo "Response: $BLANK_TITLE_RESPONSE"
+fi
+
 # --- Query Complexity Guard (Negative Tests) ---
 
 print_info "Testing complexity guard: large 'first' arg should be rejected..."

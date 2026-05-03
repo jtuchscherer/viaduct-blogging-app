@@ -25,6 +25,10 @@ class BlogFieldComplexityCalculator : FieldComplexityCalculator {
             return 1 + mult * childComplexity
         }
 
+        if (isChecklistItemList(parent, name)) {
+            return 1 + CHECKLIST_ITEM_MULTIPLIER * childComplexity
+        }
+
         if (isUnboundedListResolver(parent, name)) {
             return 1 + DEFAULT_LIST_MULTIPLIER * childComplexity
         }
@@ -40,9 +44,18 @@ class BlogFieldComplexityCalculator : FieldComplexityCalculator {
         when (parent) {
             "Query" -> name in UNBOUNDED_QUERY_LISTS
             "BlogPost" -> name in UNBOUNDED_POST_LISTS
+            "CheckedListPost" -> name in UNBOUNDED_POST_LISTS
             "User" -> name == "posts"
             else -> false
         }
+
+    /**
+     * Returns true for list fields that use [CHECKLIST_ITEM_MULTIPLIER] instead of
+     * [DEFAULT_LIST_MULTIPLIER]. Checklist items are lightweight scalar containers
+     * (id, text, checked, position) so a lower multiplier reflects typical usage.
+     */
+    private fun isChecklistItemList(parent: String, name: String): Boolean =
+        parent == "CheckedListPost" && name == "items"
 
     private fun paginationMultiplier(args: Map<String, Any?>): Int {
         val first = args["first"] as? Int
@@ -54,8 +67,15 @@ class BlogFieldComplexityCalculator : FieldComplexityCalculator {
         const val DEFAULT_LIST_MULTIPLIER = 10
         const val DEFAULT_PAGINATION_SIZE = 10
 
+        /**
+         * Lower multiplier used for [CheckedListPost.items]. Checklist items are lightweight
+         * scalars (id, text, checked, position) — a factor of 5 caps a full-item query at
+         * roughly 10 posts × (title + 5 × 4 items) = 210, safely under [MAX_COMPLEXITY].
+         */
+        const val CHECKLIST_ITEM_MULTIPLIER = 5
+
         private val PAGINATED_ADMIN_FIELDS = setOf("users", "posts", "comments")
-        private val UNBOUNDED_QUERY_LISTS = setOf("posts", "myPosts", "postComments", "trending")
+        private val UNBOUNDED_QUERY_LISTS = setOf("posts", "myPosts", "postComments", "trending", "checkedListPosts")
         private val UNBOUNDED_POST_LISTS = setOf("comments", "likes")
     }
 }
