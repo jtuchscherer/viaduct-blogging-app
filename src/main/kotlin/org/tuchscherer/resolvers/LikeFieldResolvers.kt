@@ -14,7 +14,7 @@ class PostLikesResolver : BlogPostResolvers.Likes() {
     private val likeRepository: LikeRepository by inject(LikeRepository::class.java)
 
     override suspend fun resolve(ctx: Context): List<ViaductLike> {
-        val postId = UUID.fromString(ctx.objectValue.getId().internalID)
+        val postId = UUID.fromString(ctx.getObjectValue().getId().internalID)
 
         return likeRepository.findByPostId(postId).map { like ->
             ViaductLike.of(ctx) {
@@ -30,7 +30,7 @@ class PostLikeCountResolver : BlogPostResolvers.LikeCount() {
     private val likeRepository: LikeRepository by inject(LikeRepository::class.java)
 
     override suspend fun resolve(ctx: Context): Int {
-        val postId = UUID.fromString(ctx.objectValue.getId().internalID)
+        val postId = UUID.fromString(ctx.getObjectValue().getId().internalID)
 
         return likeRepository.countByPostId(postId).toCountInt()
     }
@@ -41,7 +41,7 @@ class PostIsLikedByMeResolver : BlogPostResolvers.IsLikedByMe() {
     private val likeRepository: LikeRepository by inject(LikeRepository::class.java)
 
     override suspend fun resolve(ctx: Context): Boolean {
-        val postId = UUID.fromString(ctx.objectValue.getId().internalID)
+        val postId = UUID.fromString(ctx.getObjectValue().getId().internalID)
 
         // Get authenticated user (optional for this field)
         val user = (ctx.requestContext as? RequestContext)?.user
@@ -59,7 +59,7 @@ class PostCommentCountResolver : BlogPostResolvers.CommentCount() {
     private val commentRepository: CommentRepository by inject(CommentRepository::class.java)
 
     override suspend fun resolve(ctx: Context): Int {
-        val postId = UUID.fromString(ctx.objectValue.getId().internalID)
+        val postId = UUID.fromString(ctx.getObjectValue().getId().internalID)
 
         return commentRepository.countByPostId(postId).toCountInt()
     }

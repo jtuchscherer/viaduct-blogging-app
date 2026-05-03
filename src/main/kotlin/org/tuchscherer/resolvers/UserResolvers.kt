@@ -24,7 +24,7 @@ class UserIsAdminResolver(
     private val userRepository: UserRepository
 ) : UserResolvers.IsAdmin() {
     override suspend fun batchResolve(contexts: List<Context>): List<FieldValue<Boolean>> {
-        val ids = contexts.map { UUID.fromString(it.objectValue.getId().internalID) }
+        val ids = contexts.map { UUID.fromString(it.getObjectValue().getId().internalID) }
         val usersById = userRepository.findByIds(ids)
         return ids.map { id ->
             usersById[id]?.let { FieldValue.ofValue(it.isAdmin) }

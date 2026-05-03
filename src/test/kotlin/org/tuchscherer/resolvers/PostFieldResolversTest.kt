@@ -87,7 +87,7 @@ class PostFieldResolversTest : DefaultAbstractResolverTestBase() {
         every { postRepository.getAuthorIdsByPostIds(listOf(postId)) } returns mapOf(postId to userId)
 
         val ctx = mockk<BlogPostResolvers.Author.Context>(relaxed = true)
-        coEvery { ctx.objectValue.getId() } returns context.globalIDFor(ViaductBlogPost.Reflection, postId.toString())
+        coEvery { ctx.getObjectValue().getId() } returns context.globalIDFor(ViaductBlogPost.Reflection, postId.toString())
 
         // ctx.nodeRef requires a real framework InternalContext — refetch is verified via
         // integration tests. Here we confirm the batch repository method is called.
@@ -101,7 +101,7 @@ class PostFieldResolversTest : DefaultAbstractResolverTestBase() {
         every { postRepository.getAuthorIdsByPostIds(listOf(postId)) } returns emptyMap()
 
         val ctx = mockk<BlogPostResolvers.Author.Context>(relaxed = true)
-        coEvery { ctx.objectValue.getId() } returns context.globalIDFor(ViaductBlogPost.Reflection, postId.toString())
+        coEvery { ctx.getObjectValue().getId() } returns context.globalIDFor(ViaductBlogPost.Reflection, postId.toString())
 
         val results = resolver.batchResolve(listOf(ctx))
 
