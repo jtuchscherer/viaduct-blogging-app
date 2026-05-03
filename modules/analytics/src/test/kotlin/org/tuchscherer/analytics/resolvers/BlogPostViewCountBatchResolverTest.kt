@@ -41,7 +41,7 @@ class BlogPostViewCountBatchResolverTest : DefaultAbstractResolverTestBase() {
 
     private fun mockContext(postId: UUID): BlogPostResolvers.ViewCount.Context {
         val ctx = mockk<BlogPostResolvers.ViewCount.Context>(relaxed = true)
-        coEvery { ctx.objectValue.getId() } returns
+        coEvery { ctx.getObjectValue().getId() } returns
             context.globalIDFor(ViaductBlogPost.Reflection, postId.toString())
         return ctx
     }
