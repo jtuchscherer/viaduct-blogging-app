@@ -150,4 +150,50 @@ class QueryComplexityIntegrationTest {
         // { trending { id } } → 1 + 10 * 1 = 11
         assertEquals(1 + 10 * 1, score("{ trending { id } }"))
     }
+
+    // ── CheckedList module ──────────────────────────────────────────────────
+
+    @Test
+    fun `checkedListPosts with scalar fields only is under threshold`() {
+        val query = "{ checkedListPosts { id title createdAt } }"
+        val s = score(query)
+        assertTrue(s < QueryComplexityGuard.MAX_COMPLEXITY, "expected <${QueryComplexityGuard.MAX_COMPLEXITY}, got $s")
+    }
+
+    @Test
+    fun `checkedListPosts with items is under threshold`() {
+        // Realistic frontend query: 10 posts × (id+title + 5 items × 4 fields).
+        // items uses CHECKLIST_ITEM_MULTIPLIER=5, not DEFAULT_LIST_MULTIPLIER=10.
+        // items { id text checked position } cost = 1 + 5*(1+1+1+1) = 21
+        // per-post child = id(1) + title(1) + items(21) = 23
+        // checkedListPosts = 1 + 10*23 = 231 < 250 ✓
+        val query = "{ checkedListPosts { id title items { id text checked position } } }"
+        val s = score(query)
+        assertTrue(s < QueryComplexityGuard.MAX_COMPLEXITY, "expected <${QueryComplexityGuard.MAX_COMPLEXITY}, got $s")
+    }
+
+    @Test
+    fun `deeply nested checkedListPost traversal blows past threshold`() {
+        val query = "{ checkedListPosts { comments { author { posts { id } } } } }"
+        val s = score(query)
+        assertTrue(s > QueryComplexityGuard.MAX_COMPLEXITY, "expected >${QueryComplexityGuard.MAX_COMPLEXITY}, got $s")
+    }
+
+    @Test
+    fun `checkedListPosts applies DEFAULT_LIST_MULTIPLIER to child cost`() {
+        // id is scalar leaf → childComplexity = 0, so id costs 1
+        // { checkedListPosts { id } } → 1 + 10 * 1 = 11
+        assertEquals(1 + 10 * 1, score("{ checkedListPosts { id } }"))
+    }
+
+    @Test
+    fun `items field on CheckedListPost uses CHECKLIST_ITEM_MULTIPLIER`() {
+        // items is a checklist-item list: uses CHECKLIST_ITEM_MULTIPLIER = 5, not 10
+        // id is scalar leaf → cost 1
+        // items { id } = 1 + 5 * 1 = 6
+        // checkedListPosts { items { id } } = 1 + 10 * 6 = 61
+        val query = "{ checkedListPosts { items { id } } }"
+        val s = score(query)
+        assertEquals(1 + 10 * (1 + 5 * 1), s)
+    }
 }

@@ -1,0 +1,58 @@
+# CheckedList module — tenant-owned schema fragment.
+# Defines CheckedListPost (implements Post & Node) and CheckedListItem (implements Node),
+# mutations for creating/modifying checklist posts and items, and a query for listing them.
+
+# A single item in a CheckedListPost.
+type CheckedListItem implements Node @resolver(isBatching: true) @scope(to: ["public", "admin"]) {
+  id: ID!
+  text: String!
+  checked: Boolean!
+  position: Int!
+  createdAt: String!
+}
+
+# A post whose body is an ordered checklist of items.
+type CheckedListPost implements Post & Node @resolver(isBatching: true) @scope(to: ["public", "admin"]) {
+  id: ID!
+  title: String!
+  items: [CheckedListItem!]! @resolver
+  author: User! @resolver(isBatching: true)
+  comments: [Comment!]! @resolver
+  commentCount: Int! @resolver
+  likes: [Like!]! @resolver
+  likeCount: Int! @resolver
+  isLikedByMe: Boolean! @resolver
+  createdAt: String!
+  updatedAt: String!
+}
+
+# Input type for creating a new checklist post with initial items.
+input CreateCheckedListPostInput @scope(to: ["public", "admin"]) {
+  title: String!
+  items: [String!]!
+}
+
+# Input type for adding an item to an existing checklist post.
+input AddCheckedListItemInput @scope(to: ["public", "admin"]) {
+  postId: ID! @idOf(type: "CheckedListPost")
+  text: String!
+}
+
+extend type Query @scope(to: ["public", "admin"]) {
+  # Returns all checklist posts, newest first.
+  checkedListPosts: [CheckedListPost!]! @resolver
+}
+
+extend type Mutation @scope(to: ["public", "admin"]) {
+  # Creates a new checklist post with optional initial items. Requires authentication.
+  createCheckedListPost(input: CreateCheckedListPostInput!): CheckedListPost! @resolver
+
+  # Adds an item to an existing checklist post. Requires authentication and ownership.
+  addCheckedListItem(input: AddCheckedListItemInput!): CheckedListItem! @resolver
+
+  # Toggles the checked state of a checklist item. Requires authentication and post ownership.
+  toggleCheckedListItem(id: ID! @idOf(type: "CheckedListItem")): CheckedListItem! @resolver
+
+  # Deletes a checklist item. Requires authentication and post ownership.
+  deleteCheckedListItem(id: ID! @idOf(type: "CheckedListItem")): Boolean! @resolver
+}

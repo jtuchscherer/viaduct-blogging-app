@@ -40,6 +40,7 @@ viaductModule {
 
 dependencies {
     implementation(project(":modules:analytics"))
+    implementation(project(":modules:checkedlist"))
 
     implementation(libs.viaduct.tenant.api)
     implementation(libs.viaduct.service.api)
