@@ -17,7 +17,7 @@ class PostAuthorResolver : BlogPostResolvers.Author() {
     private val postRepository: PostRepository by inject(PostRepository::class.java)
 
     override suspend fun batchResolve(contexts: List<Context>): List<FieldValue<ViaductUser>> {
-        val postIds = contexts.map { UUID.fromString(it.objectValue.getId().internalID) }
+        val postIds = contexts.map { UUID.fromString(it.getObjectValue().getId().internalID) }
         val authorIdByPostId = postRepository.getAuthorIdsByPostIds(postIds)
 
         return contexts.zip(postIds).map { (ctx, postId) ->
@@ -33,7 +33,7 @@ class PostCommentsFieldResolver : BlogPostResolvers.Comments() {
     private val commentRepository: CommentRepository by inject(CommentRepository::class.java)
 
     override suspend fun resolve(ctx: Context): List<ViaductComment> {
-        val postId = UUID.fromString(ctx.objectValue.getId().internalID)
+        val postId = UUID.fromString(ctx.getObjectValue().getId().internalID)
 
         return commentRepository.findByPostId(postId).map { it.toViaductComment(ctx) }
     }

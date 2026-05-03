@@ -16,7 +16,7 @@ class LikeUserResolver : LikeResolvers.User() {
     private val likeRepository: LikeRepository by inject(LikeRepository::class.java)
 
     override suspend fun resolve(ctx: Context): ViaductUser {
-        val likeId = UUID.fromString(ctx.objectValue.getId().internalID)
+        val likeId = UUID.fromString(ctx.getObjectValue().getId().internalID)
         val user = likeRepository.getUserForLike(likeId)
             ?: throw NotFoundException("Like not found")
         return user.toViaductUser(ctx)
@@ -28,7 +28,7 @@ class LikePostResolver : LikeResolvers.Post() {
     private val likeRepository: LikeRepository by inject(LikeRepository::class.java)
 
     override suspend fun resolve(ctx: Context): ViaductPost {
-        val likeId = UUID.fromString(ctx.objectValue.getId().internalID)
+        val likeId = UUID.fromString(ctx.getObjectValue().getId().internalID)
         val post = likeRepository.getPostForLike(likeId)
             ?: throw NotFoundException("Like not found")
         return when (post.postType) {

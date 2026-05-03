@@ -122,7 +122,7 @@ class UserResolversTest : DefaultAbstractResolverTestBase() {
     private fun batchCtx(id: UUID = userId): UserResolvers.IsAdmin.Context {
         val ctx = mockk<UserResolvers.IsAdmin.Context>(relaxed = true)
         val globalId = this@UserResolversTest.context.globalIDFor(ViaductUser.Reflection, id.toString())
-        coEvery { ctx.objectValue.getId() } returns globalId
+        coEvery { ctx.getObjectValue().getId() } returns globalId
         return ctx
     }
 
