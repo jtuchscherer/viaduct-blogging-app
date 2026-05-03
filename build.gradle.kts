@@ -42,9 +42,8 @@ dependencies {
     implementation(project(":modules:analytics"))
     implementation(project(":modules:checkedlist"))
 
-    implementation(libs.viaduct.tenant.api)
-    implementation(libs.viaduct.service.api)
-    implementation(libs.viaduct.service.wiring)
+    implementation(libs.viaduct.api)
+    implementation(libs.viaduct.runtime)
     implementation(libs.graphql.java)
     implementation("javax.inject:javax.inject:1")
     implementation(libs.logback.classic)
@@ -87,11 +86,8 @@ dependencies {
     implementation(libs.koin.ktor)
 
     // Testing
-    testImplementation(testFixtures(libs.viaduct.tenant.runtime))
-    testImplementation(testFixtures(libs.viaduct.tenant.api))
-    testImplementation(libs.viaduct.engine.wiring)
-    testImplementation(libs.viaduct.engine.runtime)
-    testImplementation(libs.viaduct.engine.api)
+    testImplementation(testFixtures(libs.viaduct.api))
+    testImplementation(testFixtures(libs.viaduct.runtime))
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.junit.jupiter.engine)
     testImplementation(libs.junit.platform.launcher)

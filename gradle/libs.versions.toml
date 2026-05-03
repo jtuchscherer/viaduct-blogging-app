@@ -1,5 +1,5 @@
 [versions]
-viaduct = "0.30.0"
+viaduct = "0.31.0"
 kotlin = "2.3.20"
 ktor = "3.4.2"
 koin = "4.2.1"
@@ -27,13 +27,8 @@ viaduct-module = { id = "com.airbnb.viaduct.module-gradle-plugin", version.ref =
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 
 [libraries]
-viaduct-tenant-api = { module = "com.airbnb.viaduct:tenant-api", version.ref = "viaduct" }
-viaduct-service-api = { module = "com.airbnb.viaduct:service-api", version.ref = "viaduct" }
-viaduct-service-wiring = { module = "com.airbnb.viaduct:service-wiring", version.ref = "viaduct" }
-viaduct-tenant-runtime = { module = "com.airbnb.viaduct:tenant-runtime", version.ref = "viaduct" }
-viaduct-engine-wiring = { module = "com.airbnb.viaduct:engine-wiring", version.ref = "viaduct" }
-viaduct-engine-runtime = { module = "com.airbnb.viaduct:engine-runtime", version.ref = "viaduct" }
-viaduct-engine-api = { module = "com.airbnb.viaduct:engine-api", version.ref = "viaduct" }
+viaduct-api = { module = "com.airbnb.viaduct:api", version.ref = "viaduct" }
+viaduct-runtime = { module = "com.airbnb.viaduct:runtime", version.ref = "viaduct" }
 graphql-java = { module = "com.graphql-java:graphql-java", version = "25.0" }
 
 ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
