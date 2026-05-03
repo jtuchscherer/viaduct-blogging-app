@@ -86,8 +86,8 @@ dependencies {
     implementation(libs.koin.ktor)
 
     // Testing
-    testImplementation(testFixtures(libs.viaduct.api))
-    testImplementation(testFixtures(libs.viaduct.runtime))
+    testImplementation(testFixtures(libs.viaduct.tenant.api))
+    testImplementation(testFixtures(libs.viaduct.tenant.runtime))
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.junit.jupiter.engine)
     testImplementation(libs.junit.platform.launcher)

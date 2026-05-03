@@ -18,7 +18,7 @@ class BlogPostViewCountBatchResolver : BlogPostResolvers.ViewCount() {
     private val postViewRepository: PostViewRepository by inject(PostViewRepository::class.java)
 
     override suspend fun batchResolve(contexts: List<Context>): List<FieldValue<Int>> {
-        val postIds = contexts.map { UUID.fromString(it.objectValue.getId().internalID) }
+        val postIds = contexts.map { UUID.fromString(it.getObjectValue().getId().internalID) }
         return resolveViewCounts(postIds, postViewRepository)
     }
 }
