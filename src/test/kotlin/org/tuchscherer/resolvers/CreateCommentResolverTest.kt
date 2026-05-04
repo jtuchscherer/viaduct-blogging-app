@@ -14,7 +14,6 @@ import io.mockk.*
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -23,15 +22,17 @@ import org.koin.core.context.GlobalContext
 import org.koin.dsl.module
 import viaduct.api.grts.Comment as ViaductComment
 import viaduct.api.grts.CreateCommentInput
-import viaduct.api.grts.Mutation
 import viaduct.api.grts.Mutation_CreateComment_Arguments
 import viaduct.api.grts.BlogPost as ViaductBlogPost
 import viaduct.api.grts.Query
-import viaduct.api.testing.MutationResolverTester
+import viaduct.engine.SchemaFactory
+import viaduct.engine.api.ViaductSchema
+import viaduct.engine.runtime.execution.DefaultCoroutineInterop
+import viaduct.tenant.testing.DefaultAbstractResolverTestBase
 import java.time.LocalDateTime
 import java.util.UUID
 
-class CreateCommentResolverTest {
+class CreateCommentResolverTest : DefaultAbstractResolverTestBase() {
 
     private lateinit var commentRepository: CommentRepository
     private lateinit var postRepository: PostRepository
@@ -42,7 +43,9 @@ class CreateCommentResolverTest {
     private val postId = UUID.randomUUID()
     private val commentId = UUID.randomUUID()
 
-    private val tester = MutationResolverTester.create<Query, Mutation, Mutation_CreateComment_Arguments, ViaductComment>(ViaductTestConfig.testerConfig)
+    override fun getSchema(): ViaductSchema = SchemaFactory(DefaultCoroutineInterop).fromResources()
+
+    private fun queryObj() = Query.Builder(context).build()
 
     @BeforeEach
     fun setup() {
@@ -76,8 +79,8 @@ class CreateCommentResolverTest {
     @Test
     fun `CreateCommentResolver creates comment successfully`() = runBlocking {
         val resolver = CreateCommentResolver(commentRepository, postRepository)
-        val input = CreateCommentInput.Builder(tester.context).postId(tester.context.globalIDFor(ViaductBlogPost.Reflection, postId.toString())).content("New comment").build()
-        val args = Mutation_CreateComment_Arguments.Builder(tester.context).input(input).build()
+        val input = CreateCommentInput.Builder(context).postId(context.globalIDFor(ViaductBlogPost.Reflection, postId.toString())).content("New comment").build()
+        val args = Mutation_CreateComment_Arguments.Builder(context).input(input).build()
 
         every { postRepository.findById(postId) } returns mockPost
         every {
@@ -89,10 +92,12 @@ class CreateCommentResolverTest {
             )
         } returns mockComment
 
-        val result = tester.test(resolver) {
-            arguments = args
+        val result = runMutationFieldResolver(
+            resolver = resolver,
+            queryValue = queryObj(),
+            arguments = args,
             requestContext = RequestContext(user = mockUser)
-        }
+        )
 
         assertNotNull(result)
         assertEquals(commentId.toString(), result.getId().internalID)
@@ -100,77 +105,72 @@ class CreateCommentResolverTest {
     }
 
     @Test
-    fun `CreateCommentResolver throws exception when not authenticated`() {
+    fun `CreateCommentResolver throws exception when not authenticated`() = runBlocking {
         val resolver = CreateCommentResolver(commentRepository, postRepository)
-        val input = CreateCommentInput.Builder(tester.context).postId(tester.context.globalIDFor(ViaductBlogPost.Reflection, postId.toString())).content("New comment").build()
-        val args = Mutation_CreateComment_Arguments.Builder(tester.context).input(input).build()
+        val input = CreateCommentInput.Builder(context).postId(context.globalIDFor(ViaductBlogPost.Reflection, postId.toString())).content("New comment").build()
+        val args = Mutation_CreateComment_Arguments.Builder(context).input(input).build()
 
-        // MutationResolverTester wraps exceptions in InvocationTargetException
-        val e1 = assertThrows<Exception> {
-            runBlocking {
-                tester.test(resolver) {
-                    arguments = args
-                    requestContext = RequestContext()
-                }
-            }
+        assertThrows<AuthenticationException> {
+            runMutationFieldResolver(
+                resolver = resolver,
+                queryValue = queryObj(),
+                arguments = args,
+                requestContext = RequestContext()
+            )
         }
-        assertInstanceOf(AuthenticationException::class.java, e1.cause)
         verify(exactly = 0) { commentRepository.create(any(), any(), any(), any()) }
     }
 
     @Test
-    fun `CreateCommentResolver throws exception when post not found`() {
+    fun `CreateCommentResolver throws exception when post not found`() = runBlocking {
         val resolver = CreateCommentResolver(commentRepository, postRepository)
-        val input = CreateCommentInput.Builder(tester.context).postId(tester.context.globalIDFor(ViaductBlogPost.Reflection, postId.toString())).content("New comment").build()
-        val args = Mutation_CreateComment_Arguments.Builder(tester.context).input(input).build()
+        val input = CreateCommentInput.Builder(context).postId(context.globalIDFor(ViaductBlogPost.Reflection, postId.toString())).content("New comment").build()
+        val args = Mutation_CreateComment_Arguments.Builder(context).input(input).build()
 
         every { postRepository.findById(postId) } returns null
 
-        val e = assertThrows<Exception> {
-            runBlocking {
-                tester.test(resolver) {
-                    arguments = args
-                    requestContext = RequestContext(user = mockUser)
-                }
-            }
+        assertThrows<NotFoundException> {
+            runMutationFieldResolver(
+                resolver = resolver,
+                queryValue = queryObj(),
+                arguments = args,
+                requestContext = RequestContext(user = mockUser)
+            )
         }
-        assertInstanceOf(NotFoundException::class.java, e.cause)
         verify(exactly = 0) { commentRepository.create(any(), any(), any(), any()) }
     }
 
     @Test
-    fun `CreateCommentResolver throws IllegalArgumentException for blank content`() {
+    fun `CreateCommentResolver throws IllegalArgumentException for blank content`() = runBlocking {
         val resolver = CreateCommentResolver(commentRepository, postRepository)
-        val input = CreateCommentInput.Builder(tester.context).postId(tester.context.globalIDFor(ViaductBlogPost.Reflection, postId.toString())).content("   ").build()
-        val args = Mutation_CreateComment_Arguments.Builder(tester.context).input(input).build()
+        val input = CreateCommentInput.Builder(context).postId(context.globalIDFor(ViaductBlogPost.Reflection, postId.toString())).content("   ").build()
+        val args = Mutation_CreateComment_Arguments.Builder(context).input(input).build()
 
         every { postRepository.findById(postId) } returns mockPost
 
-        val e = assertThrows<Exception> {
-            runBlocking {
-                tester.test(resolver) {
-                    arguments = args
-                    requestContext = RequestContext(user = mockUser)
-                }
-            }
+        assertThrows<IllegalArgumentException> {
+            runMutationFieldResolver(
+                resolver = resolver,
+                queryValue = queryObj(),
+                arguments = args,
+                requestContext = RequestContext(user = mockUser)
+            )
         }
-        assertInstanceOf(IllegalArgumentException::class.java, e.cause)
     }
 
     @Test
-    fun `CreateCommentResolver throws IllegalArgumentException for content exceeding 10000 characters`() {
+    fun `CreateCommentResolver throws IllegalArgumentException for content exceeding 10000 characters`() = runBlocking {
         val resolver = CreateCommentResolver(commentRepository, postRepository)
-        val input = CreateCommentInput.Builder(tester.context).postId(tester.context.globalIDFor(ViaductBlogPost.Reflection, postId.toString())).content("a".repeat(10_001)).build()
-        val args = Mutation_CreateComment_Arguments.Builder(tester.context).input(input).build()
+        val input = CreateCommentInput.Builder(context).postId(context.globalIDFor(ViaductBlogPost.Reflection, postId.toString())).content("a".repeat(10_001)).build()
+        val args = Mutation_CreateComment_Arguments.Builder(context).input(input).build()
 
-        val e = assertThrows<Exception> {
-            runBlocking {
-                tester.test(resolver) {
-                    arguments = args
-                    requestContext = RequestContext(user = mockUser)
-                }
-            }
+        assertThrows<IllegalArgumentException> {
+            runMutationFieldResolver(
+                resolver = resolver,
+                queryValue = queryObj(),
+                arguments = args,
+                requestContext = RequestContext(user = mockUser)
+            )
         }
-        assertInstanceOf(IllegalArgumentException::class.java, e.cause)
     }
 }
