@@ -37,7 +37,7 @@ class DatabaseFactory(
         }
 
         transaction {
-            SchemaUtils.create(Users, Posts, Comments, Likes)
+            SchemaUtils.createMissingTablesAndColumns(Users, Posts, Comments, Likes)
         }
     }
 
