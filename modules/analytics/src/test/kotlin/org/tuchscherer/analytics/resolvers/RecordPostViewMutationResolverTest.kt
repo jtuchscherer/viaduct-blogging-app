@@ -12,11 +12,11 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.koin.core.context.GlobalContext
 import org.koin.dsl.module
-import viaduct.api.grts.BlogPost as ViaductBlogPost
 import viaduct.engine.SchemaFactory
 import viaduct.engine.api.ViaductSchema
 import viaduct.engine.runtime.execution.DefaultCoroutineInterop
 import viaduct.tenant.testing.DefaultAbstractResolverTestBase
+import java.util.Base64
 import java.util.UUID
 
 class RecordPostViewMutationResolverTest : DefaultAbstractResolverTestBase() {
@@ -38,34 +38,82 @@ class RecordPostViewMutationResolverTest : DefaultAbstractResolverTestBase() {
         }
     }
 
+    /** Encode a Viaduct global ID exactly as the framework does: base64("TypeName:internalId"). */
+    private fun encodeGlobalId(typeName: String, internalId: String): String =
+        Base64.getEncoder().encodeToString("$typeName:$internalId".toByteArray())
+
     @Test
-    fun `returns true after recording the view`() = runBlocking {
+    fun `returns true after recording a BlogPost view`() = runBlocking {
         justRun { postViewRepository.incrementViewCount(postId) }
 
         val resolver = RecordPostViewMutationResolver()
         val ctx = mockk<MutationResolvers.RecordPostView.Context>(relaxed = true)
-        every { ctx.arguments.postId } returns
-            context.globalIDFor(ViaductBlogPost.Reflection, postId.toString())
+        every { ctx.arguments.postId } returns encodeGlobalId("BlogPost", postId.toString())
 
-        val result = resolver.resolve(ctx)
-
-        assertTrue(result)
+        assertTrue(resolver.resolve(ctx))
     }
 
     @Test
-    fun `increments view count for the correct post ID`() = runBlocking {
-        val otherId = UUID.randomUUID()
-        // Only postId is stubbed; calling incrementViewCount(otherId) would throw,
-        // proving the resolver extracted the correct ID from the argument.
+    fun `returns true after recording a CheckedListPost view`() = runBlocking {
         justRun { postViewRepository.incrementViewCount(postId) }
 
         val resolver = RecordPostViewMutationResolver()
         val ctx = mockk<MutationResolvers.RecordPostView.Context>(relaxed = true)
-        every { ctx.arguments.postId } returns
-            context.globalIDFor(ViaductBlogPost.Reflection, postId.toString())
+        every { ctx.arguments.postId } returns encodeGlobalId("CheckedListPost", postId.toString())
 
-        // If the resolver passes the wrong ID, justRun won't match and MockK will throw
-        val result = resolver.resolve(ctx)
-        assertTrue(result)
+        assertTrue(resolver.resolve(ctx))
+    }
+
+    @Test
+    fun `increments view count for the correct BlogPost ID`() = runBlocking {
+        // Only postId is stubbed; calling incrementViewCount with any other ID would throw,
+        // proving the resolver correctly extracted the UUID from the encoded argument.
+        justRun { postViewRepository.incrementViewCount(postId) }
+
+        val resolver = RecordPostViewMutationResolver()
+        val ctx = mockk<MutationResolvers.RecordPostView.Context>(relaxed = true)
+        every { ctx.arguments.postId } returns encodeGlobalId("BlogPost", postId.toString())
+
+        assertTrue(resolver.resolve(ctx))
+    }
+
+    @Test
+    fun `increments view count for the correct CheckedListPost ID`() = runBlocking {
+        justRun { postViewRepository.incrementViewCount(postId) }
+
+        val resolver = RecordPostViewMutationResolver()
+        val ctx = mockk<MutationResolvers.RecordPostView.Context>(relaxed = true)
+        every { ctx.arguments.postId } returns encodeGlobalId("CheckedListPost", postId.toString())
+
+        assertTrue(resolver.resolve(ctx))
+    }
+
+    // ── decodeInternalId unit tests ───────────────────────────────────────────
+
+    @Test
+    fun `decodeInternalId extracts UUID from BlogPost global ID`() {
+        val encoded = encodeGlobalId("BlogPost", postId.toString())
+        assertEquals(postId, RecordPostViewMutationResolver.decodeInternalId(encoded))
+    }
+
+    @Test
+    fun `decodeInternalId extracts UUID from CheckedListPost global ID`() {
+        val encoded = encodeGlobalId("CheckedListPost", postId.toString())
+        assertEquals(postId, RecordPostViewMutationResolver.decodeInternalId(encoded))
+    }
+
+    @Test
+    fun `decodeInternalId throws for non-base64 input`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            RecordPostViewMutationResolver.decodeInternalId("not-valid-base64!!!")
+        }
+    }
+
+    @Test
+    fun `decodeInternalId throws when decoded value has no colon`() {
+        val noColon = Base64.getEncoder().encodeToString("nouuidhere".toByteArray())
+        assertThrows(IllegalArgumentException::class.java) {
+            RecordPostViewMutationResolver.decodeInternalId(noColon)
+        }
     }
 }
