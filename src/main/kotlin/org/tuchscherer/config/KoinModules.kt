@@ -3,7 +3,9 @@ package org.tuchscherer.config
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
+import org.tuchscherer.analytics.ViaductPostTypeLookupPort
 import org.tuchscherer.analytics.analyticsKoinModule
+import org.tuchscherer.analytics.port.PostTypeLookupPort
 import org.tuchscherer.auth.AuthenticationService
 import org.tuchscherer.checkedlist.ViaductCheckedListCurrentUserProvider
 import org.tuchscherer.checkedlist.ViaductPostCreationPort
@@ -185,6 +187,15 @@ val checkedListPortModule = module {
 }
 
 /**
+ * Koin module for port implementations bridging the analytics tenant module to the root project.
+ * Provides [PostTypeLookupPort] so the analytics module can resolve post types without a
+ * compile-time dependency on the root project's repositories.
+ */
+val analyticsPortModule = module {
+    single<PostTypeLookupPort> { ViaductPostTypeLookupPort(get()) }
+}
+
+/**
  * All application modules combined.
  * Use this list when starting Koin.
  */
@@ -197,6 +208,7 @@ val allModules = listOf(
     serverModule,
     resolverModule,
     analyticsKoinModule,
+    analyticsPortModule,
     checkedListPortModule,
     checkedListKoinModule,
 )

@@ -270,3 +270,64 @@ test.describe('CheckedList — node(id) resolution', () => {
     expect(body.data.node.id).toBe(post.id);
   });
 });
+
+// ── analytics: viewCount & readTimeMinutes ────────────────────────────────────
+
+test.describe('CheckedList — analytics (viewCount & readTimeMinutes)', () => {
+  test('viewCount starts at 0 and increments after recordPostView', async ({ page }) => {
+    const { token } = await registerUser(page, `cl_vc_${Date.now()}`);
+    const post = await createCheckedListPost(page, token, 'Analytics Test', ['Item 1', 'Item 2']);
+
+    // Before any views: viewCount should be 0
+    const before = await gql(
+      page,
+      `{ checkedListPosts { id viewCount } }`,
+    );
+    const beforePost = before.data.checkedListPosts.find((p: any) => p.id === post.id);
+    expect(beforePost?.viewCount).toBe(0);
+
+    // Record a view (no auth required)
+    await gql(page, `mutation { recordPostView(postId: "${post.id}") }`);
+
+    // After recording: viewCount should be 1
+    const after = await gql(page, `{ checkedListPosts { id viewCount } }`);
+    const afterPost = after.data.checkedListPosts.find((p: any) => p.id === post.id);
+    expect(afterPost?.viewCount).toBe(1);
+  });
+
+  test('readTimeMinutes returns a positive number', async ({ page }) => {
+    const { token } = await registerUser(page, `cl_rt_${Date.now()}`);
+    const post = await createCheckedListPost(
+      page,
+      token,
+      'Read Time Test',
+      ['First item with some words', 'Second item with more words'],
+    );
+
+    const body = await gql(page, `{ checkedListPosts { id readTimeMinutes } }`);
+    const found = body.data.checkedListPosts.find((p: any) => p.id === post.id);
+    expect(found).toBeTruthy();
+    expect(typeof found.readTimeMinutes).toBe('number');
+    expect(found.readTimeMinutes).toBeGreaterThan(0);
+  });
+
+  test('CheckedListPost appears in trending after receiving a view', async ({ page }) => {
+    const { token } = await registerUser(page, `cl_trend_${Date.now()}`);
+    const title = `Trending Checklist ${Date.now()}`;
+    const post = await createCheckedListPost(page, token, title, ['Buy milk']);
+
+    // Record multiple views so it ranks highly in trending
+    await gql(page, `mutation { recordPostView(postId: "${post.id}") }`);
+    await gql(page, `mutation { recordPostView(postId: "${post.id}") }`);
+    await gql(page, `mutation { recordPostView(postId: "${post.id}") }`);
+
+    const body = await gql(
+      page,
+      `{ trending(limit: 50) { id __typename ... on CheckedListPost { title } ... on BlogPost { title } } }`,
+    );
+    const found = body.data.trending.find((p: any) => p.id === post.id);
+    expect(found).toBeTruthy();
+    expect(found.__typename).toBe('CheckedListPost');
+    expect(found.title).toBe(title);
+  });
+});

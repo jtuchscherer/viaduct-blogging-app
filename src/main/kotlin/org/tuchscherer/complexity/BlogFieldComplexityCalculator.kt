@@ -43,8 +43,8 @@ class BlogFieldComplexityCalculator : FieldComplexityCalculator {
     private fun isUnboundedListResolver(parent: String, name: String): Boolean =
         when (parent) {
             "Query" -> name in UNBOUNDED_QUERY_LISTS
-            "BlogPost" -> name in UNBOUNDED_POST_LISTS
-            "CheckedListPost" -> name in UNBOUNDED_POST_LISTS
+            // Concrete post types and the shared Post interface (used when trending returns [Post!]!)
+            "Post", "BlogPost", "CheckedListPost" -> name in UNBOUNDED_POST_LISTS
             "User" -> name == "posts"
             else -> false
         }
