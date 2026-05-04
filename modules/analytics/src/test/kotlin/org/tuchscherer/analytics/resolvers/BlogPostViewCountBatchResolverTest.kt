@@ -12,20 +12,15 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.koin.core.context.GlobalContext
 import org.koin.dsl.module
+import viaduct.api.globalid.GlobalID
 import viaduct.api.grts.BlogPost as ViaductBlogPost
-import viaduct.engine.SchemaFactory
-import viaduct.engine.api.ViaductSchema
-import viaduct.engine.runtime.execution.DefaultCoroutineInterop
-import viaduct.tenant.testing.DefaultAbstractResolverTestBase
 import java.util.UUID
 
-class BlogPostViewCountBatchResolverTest : DefaultAbstractResolverTestBase() {
+class BlogPostViewCountBatchResolverTest {
 
     private lateinit var postViewRepository: PostViewRepository
     private val postId1 = UUID.randomUUID()
     private val postId2 = UUID.randomUUID()
-
-    override fun getSchema(): ViaductSchema = SchemaFactory(DefaultCoroutineInterop).fromResources()
 
     @BeforeEach
     fun setup() {
@@ -40,9 +35,10 @@ class BlogPostViewCountBatchResolverTest : DefaultAbstractResolverTestBase() {
     }
 
     private fun mockContext(postId: UUID): BlogPostResolvers.ViewCount.Context {
+        val globalId = mockk<GlobalID<ViaductBlogPost>>()
+        every { globalId.internalID } returns postId.toString()
         val ctx = mockk<BlogPostResolvers.ViewCount.Context>(relaxed = true)
-        coEvery { ctx.getObjectValue().getId() } returns
-            context.globalIDFor(ViaductBlogPost.Reflection, postId.toString())
+        coEvery { ctx.getObjectValue().getId() } returns globalId
         return ctx
     }
 

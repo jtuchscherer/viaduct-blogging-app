@@ -13,20 +13,16 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.koin.core.context.GlobalContext
 import org.koin.dsl.module
+import viaduct.api.globalid.GlobalID
 import viaduct.api.grts.BlogPost as ViaductBlogPost
 import viaduct.api.grts.CheckedListPost as ViaductCheckedListPost
-import viaduct.engine.SchemaFactory
-import viaduct.engine.api.ViaductSchema
-import viaduct.engine.runtime.execution.DefaultCoroutineInterop
-import viaduct.tenant.testing.DefaultAbstractResolverTestBase
+import viaduct.api.grts.Post as ViaductPost
 import java.util.UUID
 
-class TrendingQueryResolverTest : DefaultAbstractResolverTestBase() {
+class TrendingQueryResolverTest {
 
     private lateinit var postViewRepository: PostViewRepository
     private lateinit var postTypeLookupPort: PostTypeLookupPort
-
-    override fun getSchema(): ViaductSchema = SchemaFactory(DefaultCoroutineInterop).fromResources()
 
     @BeforeEach
     fun setup() {
@@ -42,14 +38,12 @@ class TrendingQueryResolverTest : DefaultAbstractResolverTestBase() {
         }
     }
 
-    // Build a minimal ViaductBlogPost node-ref stub so ctx.nodeRef can return a real GRT.
-    private fun stubBlogPost(id: UUID): ViaductBlogPost = ViaductBlogPost.Builder(context)
-        .id(context.globalIDFor(ViaductBlogPost.Reflection, id.toString()))
-        .title("Stub")
-        .content("Stub content")
-        .createdAt("2025-01-01T00:00:00")
-        .updatedAt("2025-01-01T00:00:00")
-        .build()
+    private fun mockCtx(): QueryResolvers.Trending.Context {
+        val ctx = mockk<QueryResolvers.Trending.Context>(relaxed = true)
+        every { ctx.nodeRef(any<GlobalID<ViaductBlogPost>>()) } returns mockk<ViaductBlogPost>(relaxed = true)
+        every { ctx.nodeRef(any<GlobalID<ViaductCheckedListPost>>()) } returns mockk<ViaductCheckedListPost>(relaxed = true)
+        return ctx
+    }
 
     @Test
     fun `returns one node ref per post returned by repository`() = runBlocking {
@@ -63,15 +57,10 @@ class TrendingQueryResolverTest : DefaultAbstractResolverTestBase() {
             post3 to PostKind.CHECKLIST_POST,
         )
 
-        val resolver = TrendingQueryResolver()
-        val ctx = mockk<QueryResolvers.Trending.Context>(relaxed = true)
+        val ctx = mockCtx()
         every { ctx.arguments.limit } returns 10
-        val stubPost = stubBlogPost(post1)
-        val stubChecklist = mockk<ViaductCheckedListPost>(relaxed = true)
-        every { ctx.nodeRef(any<viaduct.api.globalid.GlobalID<ViaductBlogPost>>()) } returns stubPost
-        every { ctx.nodeRef(any<viaduct.api.globalid.GlobalID<ViaductCheckedListPost>>()) } returns stubChecklist
 
-        val results = resolver.resolve(ctx)
+        val results = TrendingQueryResolver().resolve(ctx)
 
         // One node ref is produced per post ID returned by the repository
         assertEquals(3, results.size)
@@ -81,11 +70,10 @@ class TrendingQueryResolverTest : DefaultAbstractResolverTestBase() {
     fun `returns empty list when no posts have been viewed`() = runBlocking {
         every { postViewRepository.getMostViewed(10) } returns emptyList()
 
-        val resolver = TrendingQueryResolver()
-        val ctx = mockk<QueryResolvers.Trending.Context>(relaxed = true)
+        val ctx = mockCtx()
         every { ctx.arguments.limit } returns 10
 
-        val results = resolver.resolve(ctx)
+        val results = TrendingQueryResolver().resolve(ctx)
 
         assertTrue(results.isEmpty())
     }
@@ -96,11 +84,10 @@ class TrendingQueryResolverTest : DefaultAbstractResolverTestBase() {
         // which proves the resolver used the correct limit from context.arguments.
         every { postViewRepository.getMostViewed(5) } returns emptyList()
 
-        val resolver = TrendingQueryResolver()
-        val ctx = mockk<QueryResolvers.Trending.Context>(relaxed = true)
+        val ctx = mockCtx()
         every { ctx.arguments.limit } returns 5
 
-        val results = resolver.resolve(ctx)
+        val results = TrendingQueryResolver().resolve(ctx)
 
         assertTrue(results.isEmpty())
     }
@@ -113,15 +100,10 @@ class TrendingQueryResolverTest : DefaultAbstractResolverTestBase() {
         every { postViewRepository.getMostViewed(10) } returns listOf(postId)
         every { postTypeLookupPort.getPostTypes(any()) } returns emptyMap()
 
-        val resolver = TrendingQueryResolver()
-        val ctx = mockk<QueryResolvers.Trending.Context>(relaxed = true)
+        val ctx = mockCtx()
         every { ctx.arguments.limit } returns 10
-        val stubPost = stubBlogPost(postId)
-        every { ctx.nodeRef(any<viaduct.api.globalid.GlobalID<ViaductBlogPost>>()) } returns stubPost
-        every { ctx.globalIDFor(ViaductBlogPost.Reflection, any()) } returns
-            context.globalIDFor(ViaductBlogPost.Reflection, postId.toString())
 
-        val results = resolver.resolve(ctx)
+        val results = TrendingQueryResolver().resolve(ctx)
 
         // The unknown post is treated as BlogPost rather than dropped
         assertEquals(1, results.size)
@@ -137,19 +119,10 @@ class TrendingQueryResolverTest : DefaultAbstractResolverTestBase() {
             checklistId to PostKind.CHECKLIST_POST,
         )
 
-        val resolver = TrendingQueryResolver()
-        val ctx = mockk<QueryResolvers.Trending.Context>(relaxed = true)
+        val ctx = mockCtx()
         every { ctx.arguments.limit } returns 10
-        val stubBlog = stubBlogPost(blogId)
-        val stubChecklist = mockk<ViaductCheckedListPost>(relaxed = true)
-        every { ctx.nodeRef(any<viaduct.api.globalid.GlobalID<ViaductBlogPost>>()) } returns stubBlog
-        every { ctx.nodeRef(any<viaduct.api.globalid.GlobalID<ViaductCheckedListPost>>()) } returns stubChecklist
-        every { ctx.globalIDFor(ViaductBlogPost.Reflection, any()) } returns
-            context.globalIDFor(ViaductBlogPost.Reflection, blogId.toString())
-        every { ctx.globalIDFor(ViaductCheckedListPost.Reflection, any()) } returns
-            context.globalIDFor(ViaductCheckedListPost.Reflection, checklistId.toString())
 
-        val results = resolver.resolve(ctx)
+        val results = TrendingQueryResolver().resolve(ctx)
 
         assertEquals(2, results.size)
     }

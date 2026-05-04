@@ -8,14 +8,8 @@ import org.tuchscherer.viadapp.analytics.resolvers.BlogPostReadTimeMinutesBatchR
 import org.tuchscherer.viadapp.analytics.resolverbases.BlogPostResolvers
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
-import viaduct.engine.SchemaFactory
-import viaduct.engine.api.ViaductSchema
-import viaduct.engine.runtime.execution.DefaultCoroutineInterop
-import viaduct.tenant.testing.DefaultAbstractResolverTestBase
 
-class BlogPostReadTimeMinutesBatchResolverTest : DefaultAbstractResolverTestBase() {
-
-    override fun getSchema(): ViaductSchema = SchemaFactory(DefaultCoroutineInterop).fromResources()
+class BlogPostReadTimeMinutesBatchResolverTest {
 
     private fun mockContext(content: String): BlogPostResolvers.ReadTimeMinutes.Context {
         val ctx = mockk<BlogPostResolvers.ReadTimeMinutes.Context>(relaxed = true)

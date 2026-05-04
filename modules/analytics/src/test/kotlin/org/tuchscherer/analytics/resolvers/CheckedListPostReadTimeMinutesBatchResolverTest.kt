@@ -9,14 +9,8 @@ import org.tuchscherer.viadapp.analytics.resolverbases.CheckedListPostResolvers
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import viaduct.api.grts.CheckedListItem as ViaductCheckedListItem
-import viaduct.engine.SchemaFactory
-import viaduct.engine.api.ViaductSchema
-import viaduct.engine.runtime.execution.DefaultCoroutineInterop
-import viaduct.tenant.testing.DefaultAbstractResolverTestBase
 
-class CheckedListPostReadTimeMinutesBatchResolverTest : DefaultAbstractResolverTestBase() {
-
-    override fun getSchema(): ViaductSchema = SchemaFactory(DefaultCoroutineInterop).fromResources()
+class CheckedListPostReadTimeMinutesBatchResolverTest {
 
     private fun makeItem(text: String): ViaductCheckedListItem {
         val item = mockk<ViaductCheckedListItem>(relaxed = true)
@@ -27,7 +21,7 @@ class CheckedListPostReadTimeMinutesBatchResolverTest : DefaultAbstractResolverT
     private fun mockContext(itemTexts: List<String>): CheckedListPostResolvers.ReadTimeMinutes.Context {
         val ctx = mockk<CheckedListPostResolvers.ReadTimeMinutes.Context>(relaxed = true)
         val items = itemTexts.map { makeItem(it) }
-        coEvery { ctx.objectValue.getItems() } returns items
+        coEvery { ctx.getObjectValue().getItems() } returns items
         return ctx
     }
 
