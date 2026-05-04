@@ -2,7 +2,7 @@
 
 **Status**: 🚀 In Progress — Core complete; Analytics (Phases 20–23) + Flyway migrations + test refactor remaining
 
-**Last Updated**: 2026-05-03
+**Last Updated**: 2026-05-04
 
 ## Test Statistics
 
@@ -36,7 +36,6 @@
 ## Next Steps
 
 - **Phase 16**: Flyway migrations — write `V1__create_tables.sql`, replace `SchemaUtils.create` in `DatabaseFactory`, test against H2 `MODE=PostgreSQL`
-- **Tech Debt**: Drop `DefaultAbstractResolverTestBase` from root-project resolver tests (see section below)
 
 ---
 
@@ -53,33 +52,6 @@
 - [ ] Document RDS SSL config (`DATABASE_SSL_MODE`, default `require` in prod)
 
 **Success Criteria**: `APP_ENV=PROD` boots against a real PostgreSQL instance via Flyway; dev still works with `blog.db`; all H2 tests pass.
-
----
-
-## Tech Debt: Drop `DefaultAbstractResolverTestBase` from root-project resolver tests
-
-**Goal**: Remove `viaduct-tenant-runtime`, `viaduct-engine-runtime`, and `viaduct-engine-wiring` as test dependencies from the root `build.gradle.kts`, and delete lines 33–35 from `gradle/libs.versions.toml`.
-
-**Why**: The analytics and checkedlist modules already had this refactor applied. These three deps exist solely because every test extends `DefaultAbstractResolverTestBase` and implements:
-
-```kotlin
-override fun getSchema(): ViaductSchema = SchemaFactory(DefaultCoroutineInterop).fromResources()
-```
-
-**Approach**: Same pattern applied to analytics and checkedlist modules:
-- Replace `DefaultAbstractResolverTestBase` with plain JUnit classes
-- Mock `GlobalID` directly: `mockk<GlobalID<ViaductBlogPost>>()` with `every { id.internalID } returns "..."`
-- For batch resolvers that call `ctx.nodeRef(...)`, explicitly stub `ctx.nodeRef(any<GlobalID<T>>())` to return `mockk<T>(relaxed = true)`
-- For mutation resolvers that return GRT objects via builders, keep error/auth tests and leave success-path coverage to `query-tests.sh`
-
-**Affected test files** (all in `src/test/kotlin/org/tuchscherer/resolvers/`):
-`AdminMutationResolversTest.kt`, `AdminQueryResolversTest.kt`, `CommentFieldResolversTest.kt`, `CreateCommentResolverTest.kt`, `CreatePostResolverTest.kt`, `DeleteCommentResolverTest.kt`, `DeletePostResolverTest.kt`, `LikeFieldResolversTest.kt`, `LikeObjectFieldResolversTest.kt`, `LikePostResolverTest.kt`, `MyPostsResolverTest.kt`, `NodeResolversTest.kt`, `PostCommentsResolverTest.kt`, `PostFieldResolversTest.kt`, `PostResolverTest.kt`, `PostsResolverTest.kt`, `UnlikePostResolverTest.kt`, `UpdatePostResolverTest.kt`, `UserResolversTest.kt`
-
-**What stays**: `testFixtures(libs.viaduct.tenant.api)` must remain — `MockConnectionFieldExecutionContext` used in `PostsResolverTest` lives there.
-
-**Definition of done**: Lines 33–35 removed from `gradle/libs.versions.toml`; matching `testImplementation` lines removed from root `build.gradle.kts`; `./gradlew test` passes.
-
----
 
 ---
 
