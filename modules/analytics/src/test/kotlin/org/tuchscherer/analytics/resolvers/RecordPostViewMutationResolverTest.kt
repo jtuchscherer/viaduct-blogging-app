@@ -13,19 +13,13 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.koin.core.context.GlobalContext
 import org.koin.dsl.module
-import viaduct.engine.SchemaFactory
-import viaduct.engine.api.ViaductSchema
-import viaduct.engine.runtime.execution.DefaultCoroutineInterop
-import viaduct.tenant.testing.DefaultAbstractResolverTestBase
 import java.util.Base64
 import java.util.UUID
 
-class RecordPostViewMutationResolverTest : DefaultAbstractResolverTestBase() {
+class RecordPostViewMutationResolverTest {
 
     private lateinit var postViewRepository: PostViewRepository
     private val postId = UUID.randomUUID()
-
-    override fun getSchema(): ViaductSchema = SchemaFactory(DefaultCoroutineInterop).fromResources()
 
     @BeforeEach
     fun setup() {

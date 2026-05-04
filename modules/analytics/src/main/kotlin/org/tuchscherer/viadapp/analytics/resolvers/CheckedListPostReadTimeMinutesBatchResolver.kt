@@ -19,7 +19,7 @@ class CheckedListPostReadTimeMinutesBatchResolver : CheckedListPostResolvers.Rea
 
     override suspend fun batchResolve(contexts: List<Context>): List<FieldValue<Double>> =
         contexts.map { ctx ->
-            val combinedText = ctx.objectValue.getItems().map { it.getText() }.joinToString(" ")
+            val combinedText = ctx.getObjectValue().getItems().map { it.getText() }.joinToString(" ")
             FieldValue.ofValue(estimateReadTime(combinedText))
         }
 }

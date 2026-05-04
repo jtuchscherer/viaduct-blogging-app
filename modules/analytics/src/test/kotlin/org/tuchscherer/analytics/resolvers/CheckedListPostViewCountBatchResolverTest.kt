@@ -12,20 +12,15 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.koin.core.context.GlobalContext
 import org.koin.dsl.module
+import viaduct.api.globalid.GlobalID
 import viaduct.api.grts.CheckedListPost as ViaductCheckedListPost
-import viaduct.engine.SchemaFactory
-import viaduct.engine.api.ViaductSchema
-import viaduct.engine.runtime.execution.DefaultCoroutineInterop
-import viaduct.tenant.testing.DefaultAbstractResolverTestBase
 import java.util.UUID
 
-class CheckedListPostViewCountBatchResolverTest : DefaultAbstractResolverTestBase() {
+class CheckedListPostViewCountBatchResolverTest {
 
     private lateinit var postViewRepository: PostViewRepository
     private val postId1 = UUID.randomUUID()
     private val postId2 = UUID.randomUUID()
-
-    override fun getSchema(): ViaductSchema = SchemaFactory(DefaultCoroutineInterop).fromResources()
 
     @BeforeEach
     fun setup() {
@@ -40,9 +35,10 @@ class CheckedListPostViewCountBatchResolverTest : DefaultAbstractResolverTestBas
     }
 
     private fun mockContext(postId: UUID): CheckedListPostResolvers.ViewCount.Context {
+        val globalId = mockk<GlobalID<ViaductCheckedListPost>>()
+        every { globalId.internalID } returns postId.toString()
         val ctx = mockk<CheckedListPostResolvers.ViewCount.Context>(relaxed = true)
-        coEvery { ctx.objectValue.getId() } returns
-            context.globalIDFor(ViaductCheckedListPost.Reflection, postId.toString())
+        coEvery { ctx.getObjectValue().getId() } returns globalId
         return ctx
     }
 
