@@ -30,7 +30,6 @@ dependencies {
     testImplementation(testFixtures(libs.viaduct.tenant.api))
     testImplementation(libs.viaduct.engine.wiring)
     testImplementation(libs.viaduct.engine.runtime)
-    testImplementation(libs.viaduct.engine.api)
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.junit.jupiter.engine)
     testImplementation(libs.junit.platform.launcher)

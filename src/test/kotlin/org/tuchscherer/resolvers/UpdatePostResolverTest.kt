@@ -12,23 +12,24 @@ import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.koin.core.context.GlobalContext
 import org.koin.dsl.module
-import viaduct.api.grts.Mutation
 import viaduct.api.grts.Mutation_UpdatePost_Arguments
 import viaduct.api.grts.BlogPost as ViaductBlogPost
 import viaduct.api.grts.Query
 import viaduct.api.grts.UpdatePostInput
-import viaduct.api.testing.MutationResolverTester
+import viaduct.engine.SchemaFactory
+import viaduct.engine.api.ViaductSchema
+import viaduct.engine.runtime.execution.DefaultCoroutineInterop
+import viaduct.tenant.testing.DefaultAbstractResolverTestBase
 import java.time.LocalDateTime
 import java.util.UUID
 
-class UpdatePostResolverTest {
+class UpdatePostResolverTest : DefaultAbstractResolverTestBase() {
 
     private lateinit var postRepository: PostRepository
     private lateinit var mockUser: User
@@ -36,7 +37,9 @@ class UpdatePostResolverTest {
     private val userId = UUID.randomUUID()
     private val postId = UUID.randomUUID()
 
-    private val tester = MutationResolverTester.create<Query, Mutation, Mutation_UpdatePost_Arguments, ViaductBlogPost>(ViaductTestConfig.testerConfig)
+    override fun getSchema(): ViaductSchema = SchemaFactory(DefaultCoroutineInterop).fromResources()
+
+    private fun queryObj() = Query.Builder(context).build()
 
     @BeforeEach
     fun setup() {
@@ -63,12 +66,12 @@ class UpdatePostResolverTest {
     @Test
     fun `UpdatePostResolver updates post and returns updated title and content`() = runBlocking {
         val resolver = UpdatePostResolver(postRepository)
-        val input = UpdatePostInput.Builder(tester.context)
-            .id(tester.context.globalIDFor(ViaductBlogPost.Reflection, postId.toString()))
+        val input = UpdatePostInput.Builder(context)
+            .id(context.globalIDFor(ViaductBlogPost.Reflection, postId.toString()))
             .title("Updated Title")
             .content("Updated content")
             .build()
-        val args = Mutation_UpdatePost_Arguments.Builder(tester.context).input(input).build()
+        val args = Mutation_UpdatePost_Arguments.Builder(context).input(input).build()
 
         every { postRepository.findById(postId) } returns mockPost
         every { mockPost.authorId } returns mockUser.id
@@ -81,10 +84,12 @@ class UpdatePostResolverTest {
         every { updatedPost.updatedAt } returns LocalDateTime.of(2025, 1, 1, 12, 0)
         every { postRepository.updateById(postId, "Updated Title", "Updated content") } returns updatedPost
 
-        val result = tester.test(resolver) {
-            arguments = args
+        val result = runMutationFieldResolver(
+            resolver = resolver,
+            queryValue = queryObj(),
+            arguments = args,
             requestContext = RequestContext(user = mockUser)
-        }
+        )
 
         assertNotNull(result)
         assertEquals("Updated Title", result.getTitle())
@@ -92,110 +97,103 @@ class UpdatePostResolverTest {
     }
 
     @Test
-    fun `UpdatePostResolver throws NotFoundException when post does not exist`() {
+    fun `UpdatePostResolver throws NotFoundException when post does not exist`() = runBlocking {
         val resolver = UpdatePostResolver(postRepository)
-        val input = UpdatePostInput.Builder(tester.context).id(tester.context.globalIDFor(ViaductBlogPost.Reflection, postId.toString())).title("Updated Title").build()
-        val args = Mutation_UpdatePost_Arguments.Builder(tester.context).input(input).build()
+        val input = UpdatePostInput.Builder(context).id(context.globalIDFor(ViaductBlogPost.Reflection, postId.toString())).title("Updated Title").build()
+        val args = Mutation_UpdatePost_Arguments.Builder(context).input(input).build()
 
         every { postRepository.findById(postId) } returns null
 
-        // MutationResolverTester wraps exceptions in InvocationTargetException
-        val e1 = assertThrows<Exception> {
-            runBlocking {
-                tester.test(resolver) {
-                    arguments = args
-                    requestContext = RequestContext(user = mockUser)
-                }
-            }
+        assertThrows<NotFoundException> {
+            runMutationFieldResolver(
+                resolver = resolver,
+                queryValue = queryObj(),
+                arguments = args,
+                requestContext = RequestContext(user = mockUser)
+            )
         }
-        assertInstanceOf(NotFoundException::class.java, e1.cause)
     }
 
     @Test
-    fun `UpdatePostResolver throws AuthorizationException when user is not author`() {
+    fun `UpdatePostResolver throws AuthorizationException when user is not author`() = runBlocking {
         val resolver = UpdatePostResolver(postRepository)
-        val input = UpdatePostInput.Builder(tester.context).id(tester.context.globalIDFor(ViaductBlogPost.Reflection, postId.toString())).title("Updated Title").build()
-        val args = Mutation_UpdatePost_Arguments.Builder(tester.context).input(input).build()
+        val input = UpdatePostInput.Builder(context).id(context.globalIDFor(ViaductBlogPost.Reflection, postId.toString())).title("Updated Title").build()
+        val args = Mutation_UpdatePost_Arguments.Builder(context).input(input).build()
 
         every { postRepository.findById(postId) } returns mockPost
         every { mockPost.authorId } returns EntityID(UUID.randomUUID(), mockk())
 
-        val e = assertThrows<Exception> {
-            runBlocking {
-                tester.test(resolver) {
-                    arguments = args
-                    requestContext = RequestContext(user = mockUser)
-                }
-            }
+        assertThrows<AuthorizationException> {
+            runMutationFieldResolver(
+                resolver = resolver,
+                queryValue = queryObj(),
+                arguments = args,
+                requestContext = RequestContext(user = mockUser)
+            )
         }
-        assertInstanceOf(AuthorizationException::class.java, e.cause)
     }
 
     @Test
-    fun `UpdatePostResolver throws IllegalArgumentException for blank title`() {
+    fun `UpdatePostResolver throws IllegalArgumentException for blank title`() = runBlocking {
         val resolver = UpdatePostResolver(postRepository)
-        val input = UpdatePostInput.Builder(tester.context).id(tester.context.globalIDFor(ViaductBlogPost.Reflection, postId.toString())).title("   ").build()
-        val args = Mutation_UpdatePost_Arguments.Builder(tester.context).input(input).build()
+        val input = UpdatePostInput.Builder(context).id(context.globalIDFor(ViaductBlogPost.Reflection, postId.toString())).title("   ").build()
+        val args = Mutation_UpdatePost_Arguments.Builder(context).input(input).build()
 
-        val e = assertThrows<Exception> {
-            runBlocking {
-                tester.test(resolver) {
-                    arguments = args
-                    requestContext = RequestContext(user = mockUser)
-                }
-            }
+        assertThrows<IllegalArgumentException> {
+            runMutationFieldResolver(
+                resolver = resolver,
+                queryValue = queryObj(),
+                arguments = args,
+                requestContext = RequestContext(user = mockUser)
+            )
         }
-        assertInstanceOf(IllegalArgumentException::class.java, e.cause)
     }
 
     @Test
-    fun `UpdatePostResolver throws IllegalArgumentException for title exceeding 500 characters`() {
+    fun `UpdatePostResolver throws IllegalArgumentException for title exceeding 500 characters`() = runBlocking {
         val resolver = UpdatePostResolver(postRepository)
-        val input = UpdatePostInput.Builder(tester.context).id(tester.context.globalIDFor(ViaductBlogPost.Reflection, postId.toString())).title("a".repeat(501)).build()
-        val args = Mutation_UpdatePost_Arguments.Builder(tester.context).input(input).build()
+        val input = UpdatePostInput.Builder(context).id(context.globalIDFor(ViaductBlogPost.Reflection, postId.toString())).title("a".repeat(501)).build()
+        val args = Mutation_UpdatePost_Arguments.Builder(context).input(input).build()
 
-        val e = assertThrows<Exception> {
-            runBlocking {
-                tester.test(resolver) {
-                    arguments = args
-                    requestContext = RequestContext(user = mockUser)
-                }
-            }
+        assertThrows<IllegalArgumentException> {
+            runMutationFieldResolver(
+                resolver = resolver,
+                queryValue = queryObj(),
+                arguments = args,
+                requestContext = RequestContext(user = mockUser)
+            )
         }
-        assertInstanceOf(IllegalArgumentException::class.java, e.cause)
     }
 
     @Test
-    fun `UpdatePostResolver throws IllegalArgumentException for blank content`() {
+    fun `UpdatePostResolver throws IllegalArgumentException for blank content`() = runBlocking {
         val resolver = UpdatePostResolver(postRepository)
-        val input = UpdatePostInput.Builder(tester.context).id(tester.context.globalIDFor(ViaductBlogPost.Reflection, postId.toString())).content("   ").build()
-        val args = Mutation_UpdatePost_Arguments.Builder(tester.context).input(input).build()
+        val input = UpdatePostInput.Builder(context).id(context.globalIDFor(ViaductBlogPost.Reflection, postId.toString())).content("   ").build()
+        val args = Mutation_UpdatePost_Arguments.Builder(context).input(input).build()
 
-        val e = assertThrows<Exception> {
-            runBlocking {
-                tester.test(resolver) {
-                    arguments = args
-                    requestContext = RequestContext(user = mockUser)
-                }
-            }
+        assertThrows<IllegalArgumentException> {
+            runMutationFieldResolver(
+                resolver = resolver,
+                queryValue = queryObj(),
+                arguments = args,
+                requestContext = RequestContext(user = mockUser)
+            )
         }
-        assertInstanceOf(IllegalArgumentException::class.java, e.cause)
     }
 
     @Test
-    fun `UpdatePostResolver throws IllegalArgumentException for content exceeding 100000 characters`() {
+    fun `UpdatePostResolver throws IllegalArgumentException for content exceeding 100000 characters`() = runBlocking {
         val resolver = UpdatePostResolver(postRepository)
-        val input = UpdatePostInput.Builder(tester.context).id(tester.context.globalIDFor(ViaductBlogPost.Reflection, postId.toString())).content("a".repeat(100_001)).build()
-        val args = Mutation_UpdatePost_Arguments.Builder(tester.context).input(input).build()
+        val input = UpdatePostInput.Builder(context).id(context.globalIDFor(ViaductBlogPost.Reflection, postId.toString())).content("a".repeat(100_001)).build()
+        val args = Mutation_UpdatePost_Arguments.Builder(context).input(input).build()
 
-        val e = assertThrows<Exception> {
-            runBlocking {
-                tester.test(resolver) {
-                    arguments = args
-                    requestContext = RequestContext(user = mockUser)
-                }
-            }
+        assertThrows<IllegalArgumentException> {
+            runMutationFieldResolver(
+                resolver = resolver,
+                queryValue = queryObj(),
+                arguments = args,
+                requestContext = RequestContext(user = mockUser)
+            )
         }
-        assertInstanceOf(IllegalArgumentException::class.java, e.cause)
     }
 }

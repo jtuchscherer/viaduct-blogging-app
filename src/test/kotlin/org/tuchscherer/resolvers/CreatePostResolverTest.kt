@@ -10,7 +10,6 @@ import io.mockk.*
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -18,15 +17,17 @@ import org.junit.jupiter.api.assertThrows
 import org.koin.core.context.GlobalContext
 import org.koin.dsl.module
 import viaduct.api.grts.CreatePostInput
-import viaduct.api.grts.Mutation
 import viaduct.api.grts.Mutation_CreatePost_Arguments
 import viaduct.api.grts.BlogPost as ViaductBlogPost
 import viaduct.api.grts.Query
-import viaduct.api.testing.MutationResolverTester
+import viaduct.engine.SchemaFactory
+import viaduct.engine.api.ViaductSchema
+import viaduct.engine.runtime.execution.DefaultCoroutineInterop
+import viaduct.tenant.testing.DefaultAbstractResolverTestBase
 import java.time.LocalDateTime
 import java.util.UUID
 
-class CreatePostResolverTest {
+class CreatePostResolverTest : DefaultAbstractResolverTestBase() {
 
     private lateinit var postRepository: PostRepository
     private lateinit var mockUser: User
@@ -34,7 +35,9 @@ class CreatePostResolverTest {
     private val userId = UUID.randomUUID()
     private val postId = UUID.randomUUID()
 
-    private val tester = MutationResolverTester.create<Query, Mutation, Mutation_CreatePost_Arguments, ViaductBlogPost>(ViaductTestConfig.testerConfig)
+    override fun getSchema(): ViaductSchema = SchemaFactory(DefaultCoroutineInterop).fromResources()
+
+    private fun queryObj() = Query.Builder(context).build()
 
     @BeforeEach
     fun setup() {
@@ -61,8 +64,8 @@ class CreatePostResolverTest {
     @Test
     fun `CreatePostResolver creates post and returns id, title, content`() = runBlocking {
         val resolver = CreatePostResolver(postRepository)
-        val input = CreatePostInput.Builder(tester.context).title("New Post").content("New content").build()
-        val args = Mutation_CreatePost_Arguments.Builder(tester.context).input(input).build()
+        val input = CreatePostInput.Builder(context).title("New Post").content("New content").build()
+        val args = Mutation_CreatePost_Arguments.Builder(context).input(input).build()
 
         every {
             postRepository.create(
@@ -74,10 +77,12 @@ class CreatePostResolverTest {
             )
         } returns mockPost
 
-        val result = tester.test(resolver) {
-            arguments = args
+        val result = runMutationFieldResolver(
+            resolver = resolver,
+            queryValue = queryObj(),
+            arguments = args,
             requestContext = RequestContext(user = mockUser)
-        }
+        )
 
         assertNotNull(result)
         assertEquals(postId.toString(), result.getId().internalID)
@@ -86,88 +91,82 @@ class CreatePostResolverTest {
     }
 
     @Test
-    fun `CreatePostResolver throws AuthenticationException when not authenticated`() {
+    fun `CreatePostResolver throws AuthenticationException when not authenticated`() = runBlocking {
         val resolver = CreatePostResolver(postRepository)
-        val input = CreatePostInput.Builder(tester.context).title("New Post").content("New content").build()
-        val args = Mutation_CreatePost_Arguments.Builder(tester.context).input(input).build()
+        val input = CreatePostInput.Builder(context).title("New Post").content("New content").build()
+        val args = Mutation_CreatePost_Arguments.Builder(context).input(input).build()
 
-        // MutationResolverTester wraps exceptions in InvocationTargetException
-        val e = assertThrows<Exception> {
-            runBlocking {
-                tester.test(resolver) {
-                    arguments = args
-                    requestContext = RequestContext()
-                }
-            }
+        assertThrows<AuthenticationException> {
+            runMutationFieldResolver(
+                resolver = resolver,
+                queryValue = queryObj(),
+                arguments = args,
+                requestContext = RequestContext()
+            )
         }
-        assertInstanceOf(AuthenticationException::class.java, e.cause)
     }
 
     @Test
-    fun `CreatePostResolver throws IllegalArgumentException for blank title`() {
+    fun `CreatePostResolver throws IllegalArgumentException for blank title`() = runBlocking {
         val resolver = CreatePostResolver(postRepository)
-        val input = CreatePostInput.Builder(tester.context).title("   ").content("Some content").build()
-        val args = Mutation_CreatePost_Arguments.Builder(tester.context).input(input).build()
+        val input = CreatePostInput.Builder(context).title("   ").content("Some content").build()
+        val args = Mutation_CreatePost_Arguments.Builder(context).input(input).build()
 
-        val e = assertThrows<Exception> {
-            runBlocking {
-                tester.test(resolver) {
-                    arguments = args
-                    requestContext = RequestContext(user = mockUser)
-                }
-            }
+        assertThrows<IllegalArgumentException> {
+            runMutationFieldResolver(
+                resolver = resolver,
+                queryValue = queryObj(),
+                arguments = args,
+                requestContext = RequestContext(user = mockUser)
+            )
         }
-        assertInstanceOf(IllegalArgumentException::class.java, e.cause)
     }
 
     @Test
-    fun `CreatePostResolver throws IllegalArgumentException for blank content`() {
+    fun `CreatePostResolver throws IllegalArgumentException for blank content`() = runBlocking {
         val resolver = CreatePostResolver(postRepository)
-        val input = CreatePostInput.Builder(tester.context).title("Valid title").content("   ").build()
-        val args = Mutation_CreatePost_Arguments.Builder(tester.context).input(input).build()
+        val input = CreatePostInput.Builder(context).title("Valid title").content("   ").build()
+        val args = Mutation_CreatePost_Arguments.Builder(context).input(input).build()
 
-        val e = assertThrows<Exception> {
-            runBlocking {
-                tester.test(resolver) {
-                    arguments = args
-                    requestContext = RequestContext(user = mockUser)
-                }
-            }
+        assertThrows<IllegalArgumentException> {
+            runMutationFieldResolver(
+                resolver = resolver,
+                queryValue = queryObj(),
+                arguments = args,
+                requestContext = RequestContext(user = mockUser)
+            )
         }
-        assertInstanceOf(IllegalArgumentException::class.java, e.cause)
     }
 
     @Test
-    fun `CreatePostResolver throws IllegalArgumentException for title exceeding 500 characters`() {
+    fun `CreatePostResolver throws IllegalArgumentException for title exceeding 500 characters`() = runBlocking {
         val resolver = CreatePostResolver(postRepository)
-        val input = CreatePostInput.Builder(tester.context).title("a".repeat(501)).content("Some content").build()
-        val args = Mutation_CreatePost_Arguments.Builder(tester.context).input(input).build()
+        val input = CreatePostInput.Builder(context).title("a".repeat(501)).content("Some content").build()
+        val args = Mutation_CreatePost_Arguments.Builder(context).input(input).build()
 
-        val e = assertThrows<Exception> {
-            runBlocking {
-                tester.test(resolver) {
-                    arguments = args
-                    requestContext = RequestContext(user = mockUser)
-                }
-            }
+        assertThrows<IllegalArgumentException> {
+            runMutationFieldResolver(
+                resolver = resolver,
+                queryValue = queryObj(),
+                arguments = args,
+                requestContext = RequestContext(user = mockUser)
+            )
         }
-        assertInstanceOf(IllegalArgumentException::class.java, e.cause)
     }
 
     @Test
-    fun `CreatePostResolver throws IllegalArgumentException for content exceeding 100000 characters`() {
+    fun `CreatePostResolver throws IllegalArgumentException for content exceeding 100000 characters`() = runBlocking {
         val resolver = CreatePostResolver(postRepository)
-        val input = CreatePostInput.Builder(tester.context).title("Valid title").content("a".repeat(100_001)).build()
-        val args = Mutation_CreatePost_Arguments.Builder(tester.context).input(input).build()
+        val input = CreatePostInput.Builder(context).title("Valid title").content("a".repeat(100_001)).build()
+        val args = Mutation_CreatePost_Arguments.Builder(context).input(input).build()
 
-        val e = assertThrows<Exception> {
-            runBlocking {
-                tester.test(resolver) {
-                    arguments = args
-                    requestContext = RequestContext(user = mockUser)
-                }
-            }
+        assertThrows<IllegalArgumentException> {
+            runMutationFieldResolver(
+                resolver = resolver,
+                queryValue = queryObj(),
+                arguments = args,
+                requestContext = RequestContext(user = mockUser)
+            )
         }
-        assertInstanceOf(IllegalArgumentException::class.java, e.cause)
     }
 }

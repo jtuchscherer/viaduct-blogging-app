@@ -11,7 +11,6 @@ import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -19,15 +18,16 @@ import org.koin.core.context.GlobalContext
 import org.koin.dsl.module
 import viaduct.api.grts.BlogPost as ViaductBlogPost
 import viaduct.api.grts.Comment as ViaductComment
-import viaduct.api.grts.Post as ViaductPost
 import viaduct.api.grts.Query
-import viaduct.api.grts.User as ViaductUser
-import viaduct.api.testing.FieldResolverTester
 import viaduct.api.types.Arguments.NoArguments
+import viaduct.engine.SchemaFactory
+import viaduct.engine.api.ViaductSchema
+import viaduct.engine.runtime.execution.DefaultCoroutineInterop
+import viaduct.tenant.testing.DefaultAbstractResolverTestBase
 import java.time.LocalDateTime
 import java.util.UUID
 
-class CommentFieldResolversTest {
+class CommentFieldResolversTest : DefaultAbstractResolverTestBase() {
 
     private lateinit var commentRepository: CommentRepository
     private lateinit var mockUser: User
@@ -36,11 +36,12 @@ class CommentFieldResolversTest {
     private val postId = UUID.randomUUID()
     private val commentId = UUID.randomUUID()
 
-    private val authorTester = FieldResolverTester.create<ViaductComment, Query, NoArguments, ViaductUser>(ViaductTestConfig.testerConfig)
-    private val postTester = FieldResolverTester.create<ViaductComment, Query, NoArguments, ViaductPost>(ViaductTestConfig.testerConfig)
+    override fun getSchema(): ViaductSchema = SchemaFactory(DefaultCoroutineInterop).fromResources()
 
-    private fun commentObj(id: UUID = commentId) = ViaductComment.Builder(authorTester.context)
-        .id(authorTester.context.globalIDFor(ViaductComment.Reflection, id.toString()))
+    private fun queryObj() = Query.Builder(context).build()
+
+    private fun commentObj(id: UUID = commentId) = ViaductComment.Builder(context)
+        .id(context.globalIDFor(ViaductComment.Reflection, id.toString()))
         .content("Test comment")
         .createdAt("2025-01-01T10:00:00")
         .build()
@@ -76,10 +77,12 @@ class CommentFieldResolversTest {
         val resolver = CommentAuthorResolver()
         every { commentRepository.getAuthorForComment(commentId) } returns mockUser
 
-        val result = authorTester.test(resolver) {
-            objectValue = commentObj()
+        val result = runFieldResolver(
+            resolver = resolver,
+            objectValue = commentObj(),
+            queryValue = queryObj(),
             arguments = NoArguments
-        }
+        )
 
         assertEquals(userId.toString(), result.getId().internalID)
         assertEquals("testuser", result.getUsername())
@@ -87,20 +90,18 @@ class CommentFieldResolversTest {
     }
 
     @Test
-    fun `CommentAuthorResolver throws when comment not found`() {
+    fun `CommentAuthorResolver throws when comment not found`() = runBlocking {
         val resolver = CommentAuthorResolver()
         every { commentRepository.getAuthorForComment(commentId) } returns null
 
-        // FieldResolverTester wraps exceptions in InvocationTargetException
-        val e1 = assertThrows<Exception> {
-            runBlocking {
-                authorTester.test(resolver) {
-                    objectValue = commentObj()
-                    arguments = NoArguments
-                }
-            }
+        assertThrows<NotFoundException> {
+            runFieldResolver(
+                resolver = resolver,
+                objectValue = commentObj(),
+                queryValue = queryObj(),
+                arguments = NoArguments
+            )
         }
-        assertInstanceOf(NotFoundException::class.java, e1.cause)
     }
 
     // ── CommentPostResolver ─────────────────────────────────────────────
@@ -110,10 +111,12 @@ class CommentFieldResolversTest {
         val resolver = CommentPostResolver()
         every { commentRepository.getPostForComment(commentId) } returns mockPost
 
-        val result = postTester.test(resolver) {
-            objectValue = commentObj()
+        val result = runFieldResolver(
+            resolver = resolver,
+            objectValue = commentObj(),
+            queryValue = queryObj(),
             arguments = NoArguments
-        }
+        )
 
         val blogPost = result as ViaductBlogPost
         assertEquals(postId.toString(), blogPost.getId().internalID)
@@ -122,18 +125,17 @@ class CommentFieldResolversTest {
     }
 
     @Test
-    fun `CommentPostResolver throws when comment not found`() {
+    fun `CommentPostResolver throws when comment not found`() = runBlocking {
         val resolver = CommentPostResolver()
         every { commentRepository.getPostForComment(commentId) } returns null
 
-        val e = assertThrows<Exception> {
-            runBlocking {
-                postTester.test(resolver) {
-                    objectValue = commentObj()
-                    arguments = NoArguments
-                }
-            }
+        assertThrows<NotFoundException> {
+            runFieldResolver(
+                resolver = resolver,
+                objectValue = commentObj(),
+                queryValue = queryObj(),
+                arguments = NoArguments
+            )
         }
-        assertInstanceOf(NotFoundException::class.java, e.cause)
     }
 }
