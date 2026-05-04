@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test
 
 class QueryComplexityGuardTest {
 
-    private val guard = QueryComplexityGuard(BlogFieldComplexityCalculator())
+    private val guard = QueryComplexityGuard(QueryFieldComplexityCalculator())
 
     @Test
     fun `simple healthy query passes the guard`() {

@@ -14,7 +14,7 @@ import graphql.analysis.FieldComplexityEnvironment
  *   - Everything else (scalars, single-object resolvers, wrapper fields like
  *     AdminUsersPage.users or PostEdge.node) costs 1 + child.
  */
-class BlogFieldComplexityCalculator : FieldComplexityCalculator {
+class QueryFieldComplexityCalculator : FieldComplexityCalculator {
 
     override fun calculate(env: FieldComplexityEnvironment, childComplexity: Int): Int {
         val name = env.field.name

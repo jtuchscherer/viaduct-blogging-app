@@ -37,7 +37,7 @@ class QueryComplexityIntegrationTest {
         QueryComplexityCalculator.newCalculator()
             .schema(schema)
             .document(Parser.parse(query))
-            .fieldComplexityCalculator(BlogFieldComplexityCalculator())
+            .fieldComplexityCalculator(QueryFieldComplexityCalculator())
             .variables(CoercedVariables.emptyVariables())
             .build()
             .calculate()

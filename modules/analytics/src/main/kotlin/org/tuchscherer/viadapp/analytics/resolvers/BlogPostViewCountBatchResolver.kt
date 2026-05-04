@@ -1,6 +1,7 @@
 package org.tuchscherer.viadapp.analytics.resolvers
 
 import org.tuchscherer.analytics.repositories.PostViewRepository
+import org.tuchscherer.analytics.resolveViewCounts
 import org.tuchscherer.viadapp.analytics.resolverbases.BlogPostResolvers
 import org.koin.java.KoinJavaComponent.inject
 import viaduct.api.FieldValue
@@ -18,9 +19,6 @@ class BlogPostViewCountBatchResolver : BlogPostResolvers.ViewCount() {
 
     override suspend fun batchResolve(contexts: List<Context>): List<FieldValue<Int>> {
         val postIds = contexts.map { UUID.fromString(it.objectValue.getId().internalID) }
-        val viewCounts = postViewRepository.bulkGetViewCounts(postIds)
-        return postIds.map { postId ->
-            FieldValue.ofValue((viewCounts[postId] ?: 0L).toInt())
-        }
+        return resolveViewCounts(postIds, postViewRepository)
     }
 }

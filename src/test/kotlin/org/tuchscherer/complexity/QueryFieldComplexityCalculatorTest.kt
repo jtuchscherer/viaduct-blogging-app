@@ -8,9 +8,9 @@ import io.mockk.mockk
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
-class BlogFieldComplexityCalculatorTest {
+class QueryFieldComplexityCalculatorTest {
 
-    private val calculator = BlogFieldComplexityCalculator()
+    private val calculator = QueryFieldComplexityCalculator()
 
     @Test
     fun `scalar fields cost 1 plus child`() {
@@ -70,7 +70,7 @@ class BlogFieldComplexityCalculatorTest {
 
     @Test
     fun `trending applies DEFAULT_LIST_MULTIPLIER to child cost`() {
-        // trending returns [BlogPost!]! — same unbounded multiplier as posts/myPosts
+        // trending returns [Post!]! — same unbounded multiplier as posts/myPosts
         assertEquals(31, calculate(parent = "Query", name = "trending", child = 3))
         assertEquals(21, calculate(parent = "Query", name = "trending", child = 2))
     }

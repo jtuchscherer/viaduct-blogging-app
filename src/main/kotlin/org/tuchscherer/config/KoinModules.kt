@@ -16,7 +16,7 @@ import org.tuchscherer.checkedlist.port.PostCreationPort
 import org.tuchscherer.checkedlist.port.PostSocialPort
 import org.tuchscherer.auth.JwtService
 import org.tuchscherer.auth.PasswordService
-import org.tuchscherer.complexity.BlogFieldComplexityCalculator
+import org.tuchscherer.complexity.QueryFieldComplexityCalculator
 import org.tuchscherer.complexity.GuardedViaduct
 import org.tuchscherer.complexity.QueryComplexityGuard
 import org.tuchscherer.database.DatabaseFactory
@@ -80,7 +80,7 @@ val metricsModule = module {
  * queries above Viaduct entirely — no graphql-java types appear in Viaduct's API.
  */
 val viaductModule = module {
-    singleOf(::BlogFieldComplexityCalculator)
+    singleOf(::QueryFieldComplexityCalculator)
     single { QueryComplexityGuard(get()) }
     single<Viaduct> {
         val underlying = BasicViaductFactory.create(

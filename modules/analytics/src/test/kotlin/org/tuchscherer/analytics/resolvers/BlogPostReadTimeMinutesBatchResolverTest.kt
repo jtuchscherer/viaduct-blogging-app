@@ -3,6 +3,7 @@ package org.tuchscherer.analytics.resolvers
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
+import org.tuchscherer.analytics.estimateReadTime
 import org.tuchscherer.viadapp.analytics.resolvers.BlogPostReadTimeMinutesBatchResolver
 import org.tuchscherer.viadapp.analytics.resolverbases.BlogPostResolvers
 import org.junit.jupiter.api.Assertions.*
@@ -79,16 +80,16 @@ class BlogPostReadTimeMinutesBatchResolverTest : DefaultAbstractResolverTestBase
         assertEquals(1.0, results[1].get())
     }
 
-    // ── Unit test for the companion helper (no Viaduct wiring needed) ──
+    // ── Unit tests for the shared estimateReadTime helper ────────────────────
 
     @Test
     fun `estimateReadTime returns minimum for empty string`() {
-        assertEquals(0.5, BlogPostReadTimeMinutesBatchResolver.estimateReadTime(""))
+        assertEquals(0.5, estimateReadTime(""))
     }
 
     @Test
     fun `estimateReadTime computes correctly for 400 words`() {
         val content = List(400) { "word" }.joinToString(" ")
-        assertEquals(2.0, BlogPostReadTimeMinutesBatchResolver.estimateReadTime(content))
+        assertEquals(2.0, estimateReadTime(content))
     }
 }

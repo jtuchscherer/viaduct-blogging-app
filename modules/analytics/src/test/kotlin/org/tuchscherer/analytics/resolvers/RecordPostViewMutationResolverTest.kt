@@ -4,6 +4,7 @@ import io.mockk.every
 import io.mockk.justRun
 import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
+import org.tuchscherer.analytics.decodeGlobalId
 import org.tuchscherer.analytics.repositories.PostViewRepository
 import org.tuchscherer.viadapp.analytics.resolvers.RecordPostViewMutationResolver
 import org.tuchscherer.viadapp.analytics.resolverbases.MutationResolvers
@@ -88,32 +89,32 @@ class RecordPostViewMutationResolverTest : DefaultAbstractResolverTestBase() {
         assertTrue(resolver.resolve(ctx))
     }
 
-    // ── decodeInternalId unit tests ───────────────────────────────────────────
+    // ── decodeGlobalId unit tests ─────────────────────────────────────────────
 
     @Test
-    fun `decodeInternalId extracts UUID from BlogPost global ID`() {
+    fun `decodeGlobalId extracts UUID from BlogPost global ID`() {
         val encoded = encodeGlobalId("BlogPost", postId.toString())
-        assertEquals(postId, RecordPostViewMutationResolver.decodeInternalId(encoded))
+        assertEquals(postId, decodeGlobalId(encoded))
     }
 
     @Test
-    fun `decodeInternalId extracts UUID from CheckedListPost global ID`() {
+    fun `decodeGlobalId extracts UUID from CheckedListPost global ID`() {
         val encoded = encodeGlobalId("CheckedListPost", postId.toString())
-        assertEquals(postId, RecordPostViewMutationResolver.decodeInternalId(encoded))
+        assertEquals(postId, decodeGlobalId(encoded))
     }
 
     @Test
-    fun `decodeInternalId throws for non-base64 input`() {
+    fun `decodeGlobalId throws for non-base64 input`() {
         assertThrows(IllegalArgumentException::class.java) {
-            RecordPostViewMutationResolver.decodeInternalId("not-valid-base64!!!")
+            decodeGlobalId("not-valid-base64!!!")
         }
     }
 
     @Test
-    fun `decodeInternalId throws when decoded value has no colon`() {
+    fun `decodeGlobalId throws when decoded value has no colon`() {
         val noColon = Base64.getEncoder().encodeToString("nouuidhere".toByteArray())
         assertThrows(IllegalArgumentException::class.java) {
-            RecordPostViewMutationResolver.decodeInternalId(noColon)
+            decodeGlobalId(noColon)
         }
     }
 }
