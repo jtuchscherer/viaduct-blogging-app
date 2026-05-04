@@ -103,6 +103,12 @@ application {
     mainClass.set("org.tuchscherer.viadapp.ViaductApplicationKt")
 }
 
+// viaduct.api appears on the runtime classpath twice: once as a direct dep and once
+// transitively through viaduct.runtime (which re-exports it via its POM). Gradle 8.14+
+// fails distTar/distZip when duplicate archive entries have no strategy set.
+tasks.withType<Tar> { duplicatesStrategy = DuplicatesStrategy.EXCLUDE }
+tasks.withType<Zip> { duplicatesStrategy = DuplicatesStrategy.EXCLUDE }
+
 // Force Netty to a patched version to address CVEs (CRLF injection, HTTP request smuggling).
 // Also force the four internal Viaduct artifacts that tenant-api:0.29.0's testFixturesApiElements
 // variant incorrectly declares as version "INCLUDED" (published module metadata bug). These four
