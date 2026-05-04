@@ -3,7 +3,7 @@ package org.tuchscherer.analytics.resolvers
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
-import org.tuchscherer.viadapp.analytics.resolvers.BlogPostReadTimeMinutesBatchResolver
+import org.tuchscherer.analytics.estimateReadTime
 import org.tuchscherer.viadapp.analytics.resolvers.CheckedListPostReadTimeMinutesBatchResolver
 import org.tuchscherer.viadapp.analytics.resolverbases.CheckedListPostResolvers
 import org.junit.jupiter.api.Assertions.*
@@ -81,7 +81,7 @@ class CheckedListPostReadTimeMinutesBatchResolverTest : DefaultAbstractResolverT
         val fourHundredWordItems = List(20) { List(20) { "word" }.joinToString(" ") }
         val results = resolver.batchResolve(listOf(mockContext(fourHundredWordItems)))
 
-        // 400 words → same result as BlogPost with 400 words
-        assertEquals(BlogPostReadTimeMinutesBatchResolver.estimateReadTime("word ".repeat(400).trim()), results[0].get())
+        // 400 words → same result regardless of post type
+        assertEquals(estimateReadTime("word ".repeat(400).trim()), results[0].get())
     }
 }

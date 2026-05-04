@@ -19,13 +19,13 @@ import viaduct.service.api.GraphQLError
 import java.io.File
 
 /**
- * Pre-execution check that scores incoming GraphQL queries with [BlogFieldComplexityCalculator]
+ * Pre-execution check that scores incoming GraphQL queries with [QueryFieldComplexityCalculator]
  * and rejects those exceeding [maxComplexity] or [maxDepth]. Sits *above* Viaduct so we never
  * touch graphql-java types in Viaduct's stable API surface — the guard is our own concern,
  * implemented with graphql-java directly.
  */
 class QueryComplexityGuard(
-    private val calculator: BlogFieldComplexityCalculator,
+    private val calculator: QueryFieldComplexityCalculator,
     private val maxComplexity: Int = MAX_COMPLEXITY,
     private val maxDepth: Int = MAX_DEPTH,
 ) {
