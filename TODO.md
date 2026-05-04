@@ -234,6 +234,140 @@ override fun getSchema(): ViaductSchema = SchemaFactory(DefaultCoroutineInterop)
 
 ---
 
+## Phase 23: CheckedList Frontend ⏳ TODO
+
+**Goal**: Full frontend support for CheckedList posts — creating, viewing, editing items, and rendering alongside BlogPosts in all feeds.
+
+**Depends on**: Phases 20–22 complete (analytics fields `viewCount` and `readTimeMinutes` available on `CheckedListPost`).
+
+**Backend state going in**: The checkedlist module is substantially built. The schema has `CheckedListPost`, `CheckedListItem`, `createCheckedListPost`, `addCheckedListItem`, `toggleCheckedListItem`, `deleteCheckedListItem`, and `checkedListPosts`. Three gaps need closing before the frontend can rely on it:
+
+### Backend gaps to close first
+
+#### 1. Add `description` field to `CheckedListPost`
+- Add `description: String!` to `CheckedListItems` table (nullable at DB level, empty string default)
+- Add `description: String!` field to `CheckedListPost` in `CheckedList.graphqls` — no `@resolver` needed, resolved inline like `title`
+- Add `description` to `CreateCheckedListPostInput` and `PostData`
+- Add `updateCheckedListItem` mutation to `CheckedList.graphqls` for editing item text:
+  ```graphql
+  input UpdateCheckedListItemInput {
+    id: ID! @idOf(type: "CheckedListItem")
+    text: String!
+  }
+  extend type Mutation {
+    updateCheckedListItem(input: UpdateCheckedListItemInput!): CheckedListItem! @resolver
+  }
+  ```
+- Implement `UpdateCheckedListItemResolver` and register in Koin
+- Update `ViaductPostCreationPort.createCheckedListPost` to accept and persist `description`
+- Add repository + resolver unit tests for the new mutation
+
+#### 2. Expose CheckedListPosts in the unified feed and `trending`
+- The homepage currently queries `postsConnection` which only returns `BlogPost` rows. The `Posts` table already has `post_type`, so `postsConnection` needs to return both types via the `Post` interface.
+- Update `PostRepository.findPage` / `findAll` to return all post types (currently filters to `BLOG_POST` only — verify)
+- The `trending` resolver (Phase 20) should also pull from `PostViews` regardless of post type — confirm `topByViews` returns both
+- GraphQL clients querying the feed need to use inline fragments: `... on BlogPost { content }` / `... on CheckedListPost { items { text checked position } description }`
+
+#### 3. Add `recordPostView` support for `CheckedListPost`
+- The Phase 20 `recordPostView` mutation uses `@idOf(type: "BlogPost")` — add an overload or change the arg type to accept the `Post` interface ID so checklist views are also counted
+
+---
+
+### Frontend tasks
+
+#### 4. Unified post feed (HomePage)
+- Update the `postsConnection` Apollo query to fetch both post types via inline fragments:
+  ```graphql
+  ... on BlogPost { content readTimeMinutes viewCount }
+  ... on CheckedListPost { description items { id text checked position } readTimeMinutes viewCount }
+  ```
+- Update `PostCard` / list item component to render differently based on type:
+  - **BlogPost**: existing preview (HTML stripped, truncated)
+  - **CheckedListPost**: show `description` preview + a compact summary line, e.g. `3 / 7 items checked`
+- Add a visual indicator on CheckedListPost cards (e.g. a small checklist icon or a `Checklist` badge) so users can distinguish the two types at a glance
+- The sort control from Phase 22 (New / Trending) should work identically for both types
+
+#### 5. New Post page — post type selector
+- When the user navigates to `/posts/new`, show a radio button at the top: **Blog Post** (default) | **Checklist**
+- Switching radio reveals the appropriate form below; the other form is hidden but its state is preserved in `localStorage`
+  - `localStorage` key `draft:blogpost` stores `{ title, content }` (existing behaviour, just make it explicit)
+  - `localStorage` key `draft:checkedlist` stores `{ title, description, items: string[] }`
+- Each form reads from its own localStorage key on mount and writes on every change
+- Switching the radio does NOT clear the other form's localStorage slot
+- On successful submission, clear only the submitted form's localStorage key
+
+**Blog Post form** (unchanged from today): title + Lexical rich text editor
+
+**CheckedList form**:
+- Title field (text input, max 500 chars, same validation as BlogPost)
+- Description field (plain textarea or smaller Lexical instance, max ~2000 chars)
+- Items list: each item is a text input row with a drag handle (or up/down arrows) for reordering and a delete (×) button
+- "Add item" button appends a new empty row and focuses it
+- Items are submitted in the order shown; `position` is derived from array index on submit
+- Minimum 1 item required to submit
+
+#### 6. CheckedList detail page (`/posts/:id` for CheckedListPost)
+- Reuse the same route as BlogPost detail — detect type from the GraphQL response and render accordingly
+- Layout mirrors BlogPost detail: title, author, date, `viewCount · readTimeMinutes`, then the body
+- Body for CheckedListPost: `description` paragraph (if non-empty), then the items list
+- Each item renders as a checkbox + text label
+- Checking/unchecking calls `toggleCheckedListItem` — only enabled if the viewer is the post author; otherwise rendered as read-only
+- Author also sees **Add item** (inline text input + confirm), **Edit** (click text to edit inline), and **Delete** (× button) on each item
+- After toggling/adding/editing/deleting, refetch or optimistically update the items list
+- Comments and likes section identical to BlogPost detail
+
+#### 7. Edit page for CheckedListPost
+- On the CheckedList detail page, the author sees an **Edit** button (same position as on BlogPost detail)
+- Edit page at `/posts/:id/edit` detects post type and shows the CheckedList form pre-populated with current title, description, and items
+- Saving calls a new `updateCheckedListPost(input: UpdateCheckedListPostInput!)` mutation (add to schema):
+  ```graphql
+  input UpdateCheckedListPostInput {
+    id: ID! @idOf(type: "CheckedListPost")
+    title: String
+    description: String
+  }
+  ```
+- Item-level edits (add/edit/delete individual items) are done via the existing item mutations, not bundled into the post update
+
+#### 8. Playwright E2E tests
+- Create a checklist post via the New Post page: select Checklist radio, fill title + description + 3 items, submit — verify post appears in homepage feed with checklist badge and `0 / 3 items checked`
+- Draft persistence: fill checklist form fields, switch to Blog Post radio, switch back — verify checklist fields restored from localStorage
+- Checklist detail: open the post, toggle an item as the author — verify checkbox state updates; reload — verify state persists
+- Non-author view: open the post as a different user — verify checkboxes are read-only
+- Edit checklist post: change title and description, add a new item — verify changes reflected on detail page
+- Trending/homepage sort: view a checklist post several times, verify it appears in trending results alongside blog posts
+
+#### 9. Vitest unit tests
+- `PostCard` renders checklist badge and `N / M items checked` summary for a `CheckedListPost`
+- `NewPostPage` sort control: selecting Checklist radio shows checklist form; switching back to Blog Post shows blog form
+- localStorage draft: simulate typing in checklist form, switch radio, switch back — assert field values restored
+- `CreateCheckedListForm` disables submit when items list is empty
+
+**Key files**:
+- `modules/checkedlist/src/main/viaduct/schema/CheckedList.graphqls` — add `description`, `updateCheckedListItem`, `updateCheckedListPost`
+- `modules/checkedlist/src/main/kotlin/org/tuchscherer/checkedlist/database/CheckedListTables.kt` — add `description` column
+- `modules/checkedlist/src/main/kotlin/org/tuchscherer/viadapp/checkedlist/resolvers/CheckedListMutationResolvers.kt` — add `UpdateCheckedListItem`, `UpdateCheckedListPost` resolvers
+- `src/main/kotlin/org/tuchscherer/checkedlist/ViaductPostCreationPort.kt` — accept `description` in `createCheckedListPost`
+- `frontend/src/pages/NewPostPage.tsx` (rename from `CreatePostPage.tsx`) — radio selector + dual form
+- `frontend/src/components/CreateBlogPostForm.tsx` — extracted from current create page
+- `frontend/src/components/CreateCheckedListForm.tsx` — new
+- `frontend/src/pages/PostDetailPage.tsx` — branch on post type for body rendering
+- `frontend/src/pages/EditPostPage.tsx` — branch on post type
+- `frontend/src/components/PostCard.tsx` — checklist card variant
+- `frontend/src/hooks/usePostDraft.ts` — localStorage read/write abstraction, one slot per post type
+- `frontend/e2e/checkedlist.spec.ts` — new E2E spec file
+- `frontend/test/components/PostCard.test.tsx` — checklist card unit tests
+- `frontend/test/pages/NewPostPage.test.tsx` — radio selector + draft persistence unit tests
+
+**Success Criteria**:
+- A user can create a CheckedList post and a Blog Post from the same New Post page without losing draft content when switching types
+- CheckedList posts appear in the homepage feed (New and Trending) alongside Blog Posts with a visual distinction
+- The author can toggle, add, edit, and delete items on the detail page; non-authors see a read-only view
+- `viewCount` and `readTimeMinutes` are shown on CheckedList detail pages (same as BlogPost)
+- All Phase 23 Playwright and Vitest tests pass; `./gradlew test` remains green
+
+---
+
 ## Testing Strategy
 
 ```
