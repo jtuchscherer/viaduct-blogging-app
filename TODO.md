@@ -2,7 +2,7 @@
 
 **Status**: 🚀 In Progress — Phases 1–9 + 11–15 + 17–19 + 10 + 16 (partial) Complete, Flyway migrations remaining
 
-**Last Updated**: 2026-04-21
+**Last Updated**: 2026-05-03
 
 ## Test Statistics
 
@@ -46,10 +46,61 @@
 ## Next Steps
 
 - **Phase 16**: Production database support — ~~PostgreSQL driver~~ ✅, ~~HikariCP connection pooling~~ ✅, ~~Hikari Micrometer metrics~~ ✅, Flyway migrations still outstanding
+- **Tech Debt**: Drop `DefaultAbstractResolverTestBase` from root-project resolver tests (see section below)
 - **UI Bug Fixes**: See section below
 - **Tech Debt**: ~~Investigate Viaduct connection resolver testing API~~ ✅ DONE (see below)
 - ~~**Dependency upgrade**: logstash-logback-encoder 8.1 → 9.0~~ ✅ DONE — bumped to 9.0; Jackson 3 (`tools.jackson`) coexists with Jackson 2 (`com.fasterxml.jackson`) since they are separate namespaces; no code migration needed (Ktor 3.4.2 itself stays on Jackson 2.x)
 - ~~**Phase 19**: Frontend unit test suite with Vitest~~ ✅ DONE
+
+---
+
+---
+
+## Tech Debt: Drop `DefaultAbstractResolverTestBase` from root-project resolver tests
+
+**Goal**: Remove `viaduct-tenant-runtime`, `viaduct-engine-runtime`, and `viaduct-engine-wiring` as test dependencies from the root `build.gradle.kts`, and delete lines 33–35 from `gradle/libs.versions.toml`.
+
+**Why**: The analytics and checkedlist modules already had this refactor applied. The root-project resolver tests are the last holdout. These three deps exist solely because every test extends `DefaultAbstractResolverTestBase` and implements:
+
+```kotlin
+override fun getSchema(): ViaductSchema = SchemaFactory(DefaultCoroutineInterop).fromResources()
+```
+
+`SchemaFactory` comes from `viaduct-engine-wiring`; `DefaultCoroutineInterop` from `viaduct-engine-runtime`; `DefaultAbstractResolverTestBase` itself from `viaduct-tenant-runtime` test-fixtures.
+
+**Approach**: Same pattern applied to the analytics and checkedlist modules:
+- Replace `DefaultAbstractResolverTestBase` with plain JUnit classes
+- Mock `GlobalID` directly: `mockk<GlobalID<ViaductBlogPost>>()` with `every { id.internalID } returns "..."`
+- For batch resolvers that call `ctx.nodeRef(...)`, explicitly stub `ctx.nodeRef(any<GlobalID<T>>())` to return `mockk<T>(relaxed = true)`
+- For mutation resolvers that return GRT objects via builders (e.g. `BlogPost.of(ctx) { ... }`), the success path requires a real `InternalContext` — keep error/validation/auth tests and leave success-path coverage to `query-tests.sh`
+
+**Affected test files** (all in `src/test/kotlin/org/tuchscherer/resolvers/`):
+- `AdminMutationResolversTest.kt`
+- `AdminQueryResolversTest.kt`
+- `CommentFieldResolversTest.kt`
+- `CreateCommentResolverTest.kt`
+- `CreatePostResolverTest.kt`
+- `DeleteCommentResolverTest.kt`
+- `DeletePostResolverTest.kt`
+- `LikeFieldResolversTest.kt`
+- `LikeObjectFieldResolversTest.kt`
+- `LikePostResolverTest.kt`
+- `MyPostsResolverTest.kt`
+- `NodeResolversTest.kt`
+- `PostCommentsResolverTest.kt`
+- `PostFieldResolversTest.kt`
+- `PostResolverTest.kt`
+- `PostsResolverTest.kt` (already uses `MockConnectionFieldExecutionContext` — may not need changes)
+- `UnlikePostResolverTest.kt`
+- `UpdatePostResolverTest.kt`
+- `UserResolversTest.kt`
+
+**What stays**: `viaduct-tenant-api` test-fixtures (`testFixtures(libs.viaduct.tenant.api)`) must remain — it provides `MockConnectionFieldExecutionContext` used by `PostsResolverTest`. The root-project `testImplementation(testFixtures(libs.viaduct.tenant.runtime))` line can also be removed once the tests no longer extend the base class.
+
+**Definition of done**:
+- All three library aliases removed from lines 33–35 of `gradle/libs.versions.toml`
+- The four matching `testImplementation` lines removed from the root `build.gradle.kts`
+- `./gradlew test` passes with `BUILD SUCCESSFUL`
 
 ---
 

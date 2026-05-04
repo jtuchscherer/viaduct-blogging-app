@@ -1,12 +1,15 @@
 # Simple Blogging App Development Plan
 
-**Last Updated**: 2026-04-03
+**Last Updated**: 2026-05-03
 
 A web-based blogging application using React frontend and Viaduct/Kotlin GraphQL backend.
 
 ## Features
-- **Authors**: Username/password authentication, write/edit/delete posts
+- **Authors**: Username/password authentication, write/edit/delete posts (rich text via Lexical)
 - **Readers**: Username/password authentication, like posts, comment on posts, delete own comments
+- **Admins**: Full CRUD over all users, posts, and comments; dashboard with stats
+- **CheckedList Posts**: A second post type — ordered checklists with toggleable items
+- **Analytics**: View counts, read-time estimates, and trending posts query
 - **Tech Stack**: React frontend, Kotlin/Viaduct GraphQL backend, SQLite database, REST auth endpoints
 
 ## Database Schema
@@ -18,13 +21,15 @@ A web-based blogging application using React frontend and Viaduct/Kotlin GraphQL
 - name (String)
 - passwordHash (String)
 - salt (String)
+- isAdmin (Boolean, default false)
 - createdAt (Timestamp)
 
-### Posts Table
+### Posts Table (BlogPost in GraphQL)
 - id (UUID, primary key)
 - authorId (UUID, foreign key to Users)
 - title (String)
-- content (Text)
+- content (Text) — HTML from Lexical rich-text editor
+- postType (String) — `BLOG_POST` or `CHECKED_LIST`
 - createdAt (Timestamp)
 - updatedAt (Timestamp)
 
@@ -42,83 +47,88 @@ A web-based blogging application using React frontend and Viaduct/Kotlin GraphQL
 - createdAt (Timestamp)
 - Unique constraint on (postId, userId)
 
+### CheckedListItems Table (checkedlist module)
+- id (UUID, primary key)
+- postId (UUID, foreign key to Posts)
+- text (String)
+- checked (Boolean)
+- position (Int)
+- createdAt (Timestamp)
+
+### PostViews Table (analytics module)
+- id (UUID, primary key)
+- postId (UUID)
+- viewedAt (Timestamp)
+
 ## GraphQL Schema
 
-### Types
+### Types (abridged — see schema.graphqls for full definition)
 ```graphql
-type User {
-  id: ID!
-  username: String!
-  email: String!
-  name: String!
-  posts: [Post!]!
-  createdAt: String!
+interface Post { id: ID!  title: String!  createdAt: String!  updatedAt: String! }
+
+type BlogPost implements Post {
+  id: ID!  title: String!  content: String!
+  author: User!  comments: [Comment!]!  likes: [Like!]!
+  likeCount: Int!  commentCount: Int!  isLikedByMe: Boolean!
+  viewCount: Int!  readTimeMinutes: Float!
+  createdAt: String!  updatedAt: String!
 }
 
-type Post {
-  id: ID!
-  title: String!
-  content: String!
-  author: User!
-  comments: [Comment!]!
-  likes: [Like!]!
-  likeCount: Int!
-  isLikedByMe: Boolean!
-  createdAt: String!
-  updatedAt: String!
+type CheckedListPost implements Post {
+  id: ID!  title: String!
+  items: [CheckedListItem!]!  author: User!
+  comments: [Comment!]!  likes: [Like!]!
+  likeCount: Int!  commentCount: Int!  isLikedByMe: Boolean!
+  viewCount: Int!  readTimeMinutes: Float!
+  createdAt: String!  updatedAt: String!
 }
 
-type Comment {
-  id: ID!
-  content: String!
-  author: User!
-  post: Post!
-  createdAt: String!
-}
+type CheckedListItem { id: ID!  text: String!  checked: Boolean!  position: Int!  createdAt: String! }
 
-type Like {
-  id: ID!
-  user: User!
-  post: Post!
-  createdAt: String!
-}
+type User { id: ID!  username: String!  email: String!  name: String!  isAdmin: Boolean!  createdAt: String! }
+type Comment { id: ID!  content: String!  author: User!  createdAt: String! }
+type Like { id: ID!  user: User!  createdAt: String! }
 ```
 
 ### Queries
 ```graphql
 type Query {
-  posts: [Post!]!
-  post(id: ID!): Post
-  myPosts: [Post!]!
+  posts: [BlogPost!]!
+  post(id: ID!): BlogPost
+  myPosts: [BlogPost!]!
   me: User
   postComments(postId: ID!): [Comment!]!
   postsConnection(first: Int, after: String): PostsConnection
-}
-
-type PostsConnection {
-  edges: [PostEdge]
-  pageInfo: PageInfo!
-  totalCount: Int
-}
-
-type PostEdge {
-  node: Post
-  cursor: String!
+  trending(limit: Int): [Post!]!
+  checkedListPosts: [CheckedListPost!]!
+  adminStats: AdminStats!
+  adminUsers: [User!]!  adminUser(id: ID!): User
+  adminPosts: [BlogPost!]!  adminPost(id: ID!): BlogPost
+  adminComments: [Comment!]!  adminPostComments(postId: ID!): [Comment!]!
+  adminUserContentCounts(userId: ID!): UserContentCounts!
 }
 ```
 
 ### Mutations
 ```graphql
 type Mutation {
-  createPost(title: String!, content: String!): Post!
-  updatePost(id: ID!, title: String, content: String): Post!
+  createPost(title: String!, content: String!): BlogPost!
+  updatePost(id: ID!, title: String, content: String): BlogPost!
   deletePost(id: ID!): Boolean!
-
   createComment(postId: ID!, content: String!): Comment!
   deleteComment(id: ID!): Boolean!
-
   likePost(postId: ID!): Like!
   unlikePost(postId: ID!): Boolean!
+  recordPostView(postId: ID!): Boolean!
+  createCheckedListPost(input: CreateCheckedListPostInput!): CheckedListPost!
+  addCheckedListItem(input: AddCheckedListItemInput!): CheckedListItem!
+  toggleCheckedListItem(id: ID!): CheckedListItem!
+  deleteCheckedListItem(id: ID!): Boolean!
+  adminUpdateUser(input: AdminUpdateUserInput!): User!
+  adminDeleteUser(id: ID!): AdminDeleteUserResult!
+  adminUpdatePost(input: AdminUpdatePostInput!): BlogPost!
+  adminDeletePost(id: ID!): Boolean!
+  adminDeleteComment(id: ID!): Boolean!
 }
 ```
 
@@ -130,13 +140,17 @@ type Mutation {
 - `AuthContext.tsx` - React context for authentication state management
 
 ### Pages
-- `/` - Home page (HomePage.tsx) - Display all posts with like counts
+- `/` - Home page (HomePage.tsx) - Display all posts with like counts, "Load More" pagination
 - `/login` - Login page (LoginPage.tsx) - Username/password authentication
 - `/register` - Registration page (RegisterPage.tsx) - New user signup
-- `/create` - Create post page (CreatePostPage.tsx) - Protected route
+- `/create` - Create post page (CreatePostPage.tsx) - Protected route, Lexical rich-text editor
 - `/edit/:id` - Edit post page (EditPostPage.tsx) - Protected route, author only
 - `/post/:id` - Post detail page (PostDetailPage.tsx) - View post with comments and likes
 - `/my-posts` - My posts page (MyPostsPage.tsx) - Protected route, user's posts
+- `/admin` - Admin dashboard (AdminDashboard.tsx) - Stats cards, admin-only
+- `/admin/users` - User management (AdminUsersPage.tsx)
+- `/admin/posts` - Post management (AdminPostsPage.tsx)
+- `/admin/comments` - Comment management (AdminCommentsPage.tsx)
 
 ### Key Libraries
 - **React Router** - Client-side routing with protected routes
@@ -230,15 +244,18 @@ type Mutation {
 - ✅ Username/password authentication with salted hashing
 - ✅ REST API for auth endpoints with JWT tokens
 - ✅ GraphQL schema fully defined and implemented
-- ✅ Viaduct 0.25.0 with proper request context authentication
+- ✅ Viaduct 0.31.0 with proper request context authentication
 - ✅ All GraphQL post queries and mutations
 - ✅ Comment functionality with authorization
 - ✅ Like/unlike operations with idempotency
 - ✅ Authorization checks (users can only edit/delete their own content)
-- ✅ Complete e2e test suite (38/38 API tests + 81/81 Playwright browser tests passing)
+- ✅ Complete e2e test suite (API tests + Playwright browser tests passing)
 - ✅ Relay-style cursor pagination (`postsConnection` with `first`/`after`)
 - ✅ Batch author resolver (`batchResolve`) eliminates N+1 queries on post lists
-- ✅ 182 unit + integration tests (all passing)
+- ✅ Admin section: full CRUD over users, posts, and comments; dashboard stats
+- ✅ CheckedList post type with toggleable ordered items
+- ✅ Analytics: view counts, read-time estimates, trending posts query
+- ✅ 394 unit + integration tests (all passing)
 
 ### Frontend (Complete)
 - ✅ React 19 + TypeScript + Vite
@@ -259,16 +276,16 @@ type Mutation {
 - `GET /auth/me` - Get current user info (requires JWT)
 
 ### GraphQL API (Port 8080)
-- Queries: `posts`, `post(id)`, `myPosts`, `postComments(postId)`, `postsConnection(first, after)`
-- Mutations: All post, comment, and like operations
+- Queries: `posts`, `post(id)`, `myPosts`, `postComments(postId)`, `postsConnection(first, after)`, `trending(limit)`, `checkedListPosts`, admin queries
+- Mutations: All post, comment, like, checkedlist, and admin operations
 - Authentication: JWT token via Authorization header
 - Context: Authenticated user passed through `ExecutionInput.requestContext`
 
 ### Frontend (Port 5173)
 - React application with TypeScript
 - Apollo Client for GraphQL communication
-- Pages: Home, Login, Register, Create Post, Edit Post, Post Detail, My Posts
-- Features: Authentication, post CRUD, comments, likes
+- Pages: Home, Login, Register, Create Post, Edit Post, Post Detail, My Posts, Admin dashboard + users/posts/comments
+- Features: Authentication, post CRUD, comments, likes, checkedlist posts, admin panel
 - Automatic JWT token inclusion in GraphQL requests
 
 ## Getting Started
@@ -301,10 +318,7 @@ The core blogging application is fully implemented and tested. See `TODO.md` for
 
 ### Pending Enhancements
 - **Phase 10**: Docker deployment (multi-stage Dockerfile, env-var configuration)
-- **Phase 12**: Frontend pagination UI ("Load More" button consuming `postsConnection`)
-- **Phase 15a/15**: DB-level cursor pagination for `postsConnection`
 - **Phase 16**: Production database support (PostgreSQL/RDS, connection pooling, Flyway migrations)
-- **Phase 17**: Production telemetry (structured logging, request tracing, metrics)
 - Search functionality
 - User profiles with avatars
 - Post categories/tags
@@ -314,7 +328,7 @@ See `CODE_QUALITY_PLAN.md` for tech debt and code quality items identified in co
 ### Architecture Notes
 - Single Ktor server on port 8080: REST auth routes + Viaduct GraphQL colocated
 - JWT tokens for stateless authentication; stored in `localStorage` as `authToken`/`authUser`
-- Viaduct 0.25.0 request context for auth propagation into resolvers
+- Viaduct 0.31.0 request context for auth propagation into resolvers
 - Schema-first development: `schema.graphqls` is the source of truth
 - SQLite via Exposed ORM; repository pattern abstracts all DB access
 - Koin DI wires everything; `KoinTenantCodeInjector` bridges Viaduct ↔ Koin
