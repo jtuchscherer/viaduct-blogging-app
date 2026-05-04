@@ -5,8 +5,6 @@ import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
 import org.tuchscherer.checkedlist.port.CheckedListCurrentUserProvider
 import org.tuchscherer.checkedlist.port.PostCreationPort
-import org.tuchscherer.checkedlist.port.PostData
-import org.tuchscherer.checkedlist.repositories.CheckedListItemData
 import org.tuchscherer.checkedlist.repositories.CheckedListItemRepository
 import org.tuchscherer.viadapp.checkedlist.resolvers.AddCheckedListItemMutationResolver
 import org.tuchscherer.viadapp.checkedlist.resolvers.CreateCheckedListPostMutationResolver
@@ -18,15 +16,12 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.koin.core.context.GlobalContext
 import org.koin.dsl.module
+import viaduct.api.globalid.GlobalID
 import viaduct.api.grts.CheckedListItem as ViaductCheckedListItem
 import viaduct.api.grts.CheckedListPost as ViaductCheckedListPost
-import viaduct.engine.SchemaFactory
-import viaduct.engine.api.ViaductSchema
-import viaduct.engine.runtime.execution.DefaultCoroutineInterop
-import viaduct.tenant.testing.DefaultAbstractResolverTestBase
 import java.util.UUID
 
-class CheckedListMutationResolverTest : DefaultAbstractResolverTestBase() {
+class CheckedListMutationResolverTest {
 
     private lateinit var currentUserProvider: CheckedListCurrentUserProvider
     private lateinit var postCreationPort: PostCreationPort
@@ -35,8 +30,6 @@ class CheckedListMutationResolverTest : DefaultAbstractResolverTestBase() {
     private val userId = UUID.randomUUID()
     private val postId = UUID.randomUUID()
     private val itemId = UUID.randomUUID()
-
-    override fun getSchema(): ViaductSchema = SchemaFactory(DefaultCoroutineInterop).fromResources()
 
     @BeforeEach
     fun setup() {
@@ -56,40 +49,19 @@ class CheckedListMutationResolverTest : DefaultAbstractResolverTestBase() {
         }
     }
 
-    private fun stubPostData() = PostData(
-        id = postId,
-        title = "My Checklist",
-        authorId = userId,
-        createdAt = "2025-01-01T10:00:00",
-        updatedAt = "2025-01-01T10:00:00",
-    )
+    private fun postGlobalId(): GlobalID<ViaductCheckedListPost> {
+        val id = mockk<GlobalID<ViaductCheckedListPost>>()
+        every { id.internalID } returns postId.toString()
+        return id
+    }
 
-    private fun stubItemData(id: UUID = itemId, checked: Boolean = false) = CheckedListItemData(
-        id = id,
-        postId = postId,
-        text = "Buy milk",
-        checked = checked,
-        position = 0,
-        createdAt = "2025-01-01T10:00:00",
-    )
+    private fun itemGlobalId(): GlobalID<ViaductCheckedListItem> {
+        val id = mockk<GlobalID<ViaductCheckedListItem>>()
+        every { id.internalID } returns itemId.toString()
+        return id
+    }
 
     // ── CreateCheckedListPost ─────────────────────────────────────────────────
-
-    @Test
-    fun `createCheckedListPost does not throw when inputs are valid`() = runBlocking {
-        val ctx = mockk<MutationResolvers.CreateCheckedListPost.Context>(relaxed = true)
-        every { ctx.arguments.input.title } returns "My Checklist"
-        every { ctx.arguments.input.items } returns listOf("Buy milk", "Buy bread")
-        every { postCreationPort.createCheckedListPost("My Checklist", userId) } returns stubPostData()
-        every { itemRepository.addItem(postId, any()) } returns stubItemData()
-        every { ctx.globalIDFor(ViaductCheckedListPost.Reflection, any()) } returns
-            context.globalIDFor(ViaductCheckedListPost.Reflection, postId.toString())
-
-        // Building ViaductCheckedListPost requires a real InternalContext — success-path
-        // return value is verified in query-tests.sh.
-        val result = runCatching { CreateCheckedListPostMutationResolver().resolve(ctx) }
-        assertTrue(result.isSuccess || result.exceptionOrNull()?.message?.contains("not found") == false)
-    }
 
     @Test
     fun `createCheckedListPost throws for blank title`() {
@@ -163,28 +135,9 @@ class CheckedListMutationResolverTest : DefaultAbstractResolverTestBase() {
     // ── AddCheckedListItem ────────────────────────────────────────────────────
 
     @Test
-    fun `addCheckedListItem does not throw when post and item exist`() = runBlocking {
-        val ctx = mockk<MutationResolvers.AddCheckedListItem.Context>(relaxed = true)
-        every { ctx.arguments.input.postId } returns
-            context.globalIDFor(ViaductCheckedListPost.Reflection, postId.toString())
-        every { ctx.arguments.input.text } returns "Buy milk"
-
-        every { postCreationPort.getPostData(postId) } returns stubPostData()
-        every { itemRepository.addItem(postId, "Buy milk") } returns stubItemData()
-        every { ctx.globalIDFor(ViaductCheckedListItem.Reflection, any()) } returns
-            context.globalIDFor(ViaductCheckedListItem.Reflection, itemId.toString())
-
-        // Building ViaductCheckedListItem requires a real InternalContext — success-path
-        // return value is verified in query-tests.sh.
-        val result = runCatching { AddCheckedListItemMutationResolver().resolve(ctx) }
-        assertTrue(result.isSuccess || result.exceptionOrNull()?.message?.contains("not found") == false)
-    }
-
-    @Test
     fun `addCheckedListItem throws when post not found`() = runBlocking {
         val ctx = mockk<MutationResolvers.AddCheckedListItem.Context>(relaxed = true)
-        every { ctx.arguments.input.postId } returns
-            context.globalIDFor(ViaductCheckedListPost.Reflection, postId.toString())
+        every { ctx.arguments.input.postId } returns postGlobalId()
         every { ctx.arguments.input.text } returns "Some text"
         every { postCreationPort.getPostData(any()) } returns null
 
@@ -196,8 +149,7 @@ class CheckedListMutationResolverTest : DefaultAbstractResolverTestBase() {
     @Test
     fun `addCheckedListItem throws for blank text`() = runBlocking {
         val ctx = mockk<MutationResolvers.AddCheckedListItem.Context>(relaxed = true)
-        every { ctx.arguments.input.postId } returns
-            context.globalIDFor(ViaductCheckedListPost.Reflection, postId.toString())
+        every { ctx.arguments.input.postId } returns postGlobalId()
         every { ctx.arguments.input.text } returns "  "
 
         assertThrows(IllegalArgumentException::class.java) {
@@ -208,25 +160,9 @@ class CheckedListMutationResolverTest : DefaultAbstractResolverTestBase() {
     // ── ToggleCheckedListItem ─────────────────────────────────────────────────
 
     @Test
-    fun `toggleCheckedListItem does not throw when item exists`() = runBlocking {
-        val ctx = mockk<MutationResolvers.ToggleCheckedListItem.Context>(relaxed = true)
-        every { ctx.arguments.id } returns
-            context.globalIDFor(ViaductCheckedListItem.Reflection, itemId.toString())
-        every { itemRepository.toggleItem(itemId) } returns stubItemData(checked = true)
-        every { ctx.globalIDFor(ViaductCheckedListItem.Reflection, any()) } returns
-            context.globalIDFor(ViaductCheckedListItem.Reflection, itemId.toString())
-
-        // Building ViaductCheckedListItem requires a real InternalContext — success-path
-        // return value is verified in query-tests.sh.
-        val result = runCatching { ToggleCheckedListItemMutationResolver().resolve(ctx) }
-        assertTrue(result.isSuccess || result.exceptionOrNull()?.message?.contains("not found") == false)
-    }
-
-    @Test
     fun `toggleCheckedListItem throws when item not found`() {
         val ctx = mockk<MutationResolvers.ToggleCheckedListItem.Context>(relaxed = true)
-        every { ctx.arguments.id } returns
-            context.globalIDFor(ViaductCheckedListItem.Reflection, itemId.toString())
+        every { ctx.arguments.id } returns itemGlobalId()
         every { itemRepository.toggleItem(any()) } returns null
 
         assertThrows(IllegalStateException::class.java) {
@@ -239,8 +175,7 @@ class CheckedListMutationResolverTest : DefaultAbstractResolverTestBase() {
     @Test
     fun `deleteCheckedListItem returns true when item was deleted`() = runBlocking {
         val ctx = mockk<MutationResolvers.DeleteCheckedListItem.Context>(relaxed = true)
-        every { ctx.arguments.id } returns
-            context.globalIDFor(ViaductCheckedListItem.Reflection, itemId.toString())
+        every { ctx.arguments.id } returns itemGlobalId()
         every { itemRepository.deleteItem(itemId) } returns true
 
         assertTrue(DeleteCheckedListItemMutationResolver().resolve(ctx))
@@ -249,8 +184,7 @@ class CheckedListMutationResolverTest : DefaultAbstractResolverTestBase() {
     @Test
     fun `deleteCheckedListItem returns false when item does not exist`() = runBlocking {
         val ctx = mockk<MutationResolvers.DeleteCheckedListItem.Context>(relaxed = true)
-        every { ctx.arguments.id } returns
-            context.globalIDFor(ViaductCheckedListItem.Reflection, itemId.toString())
+        every { ctx.arguments.id } returns itemGlobalId()
         every { itemRepository.deleteItem(any()) } returns false
 
         assertFalse(DeleteCheckedListItemMutationResolver().resolve(ctx))
@@ -262,8 +196,7 @@ class CheckedListMutationResolverTest : DefaultAbstractResolverTestBase() {
             RuntimeException("Authentication required")
 
         val toggleCtx = mockk<MutationResolvers.ToggleCheckedListItem.Context>(relaxed = true)
-        every { toggleCtx.arguments.id } returns
-            context.globalIDFor(ViaductCheckedListItem.Reflection, itemId.toString())
+        every { toggleCtx.arguments.id } returns itemGlobalId()
 
         assertThrows(RuntimeException::class.java) {
             runBlocking { ToggleCheckedListItemMutationResolver().resolve(toggleCtx) }

@@ -22,7 +22,7 @@ class CheckedListPostItemsResolver : CheckedListPostResolvers.Items() {
     private val itemRepository: CheckedListItemRepository by inject(CheckedListItemRepository::class.java)
 
     override suspend fun resolve(ctx: Context): List<ViaductCheckedListItem> {
-        val postId = UUID.fromString(ctx.objectValue.getId().internalID)
+        val postId = UUID.fromString(ctx.getObjectValue().getId().internalID)
         return itemRepository.getItemsForPost(postId).map { it.toViaductItem(ctx) }
     }
 }
@@ -36,7 +36,7 @@ class CheckedListPostAuthorBatchResolver : CheckedListPostResolvers.Author() {
     private val postCreationPort: PostCreationPort by inject(PostCreationPort::class.java)
 
     override suspend fun batchResolve(contexts: List<Context>): List<FieldValue<ViaductUser>> {
-        val postIds = contexts.map { UUID.fromString(it.objectValue.getId().internalID) }
+        val postIds = contexts.map { UUID.fromString(it.getObjectValue().getId().internalID) }
         val authorIdByPostId = postCreationPort.getAuthorIdsForPosts(postIds)
 
         return contexts.zip(postIds).map { (ctx, postId) ->
@@ -59,7 +59,7 @@ class CheckedListPostCommentsResolver : CheckedListPostResolvers.Comments() {
     private val socialPort: PostSocialPort by inject(PostSocialPort::class.java)
 
     override suspend fun resolve(ctx: Context): List<ViaductComment> {
-        val postId = UUID.fromString(ctx.objectValue.getId().internalID)
+        val postId = UUID.fromString(ctx.getObjectValue().getId().internalID)
         return socialPort.getCommentsForPost(postId).map { comment ->
             ViaductComment.of(ctx) {
                 id(ctx.globalIDFor(ViaductComment.Reflection, comment.id.toString()))
@@ -78,7 +78,7 @@ class CheckedListPostCommentCountResolver : CheckedListPostResolvers.CommentCoun
     private val socialPort: PostSocialPort by inject(PostSocialPort::class.java)
 
     override suspend fun resolve(ctx: Context): Int {
-        val postId = UUID.fromString(ctx.objectValue.getId().internalID)
+        val postId = UUID.fromString(ctx.getObjectValue().getId().internalID)
         return socialPort.getCommentCountForPost(postId).toCountInt()
     }
 }
@@ -91,7 +91,7 @@ class CheckedListPostLikesResolver : CheckedListPostResolvers.Likes() {
     private val socialPort: PostSocialPort by inject(PostSocialPort::class.java)
 
     override suspend fun resolve(ctx: Context): List<ViaductLike> {
-        val postId = UUID.fromString(ctx.objectValue.getId().internalID)
+        val postId = UUID.fromString(ctx.getObjectValue().getId().internalID)
         return socialPort.getLikesForPost(postId).map { like ->
             ViaductLike.of(ctx) {
                 id(ctx.globalIDFor(ViaductLike.Reflection, like.id.toString()))
@@ -109,7 +109,7 @@ class CheckedListPostLikeCountResolver : CheckedListPostResolvers.LikeCount() {
     private val socialPort: PostSocialPort by inject(PostSocialPort::class.java)
 
     override suspend fun resolve(ctx: Context): Int {
-        val postId = UUID.fromString(ctx.objectValue.getId().internalID)
+        val postId = UUID.fromString(ctx.getObjectValue().getId().internalID)
         return socialPort.getLikeCountForPost(postId).toCountInt()
     }
 }
@@ -124,7 +124,7 @@ class CheckedListPostIsLikedByMeResolver : CheckedListPostResolvers.IsLikedByMe(
         by inject(CheckedListCurrentUserProvider::class.java)
 
     override suspend fun resolve(ctx: Context): Boolean {
-        val postId = UUID.fromString(ctx.objectValue.getId().internalID)
+        val postId = UUID.fromString(ctx.getObjectValue().getId().internalID)
         val userId = runCatching { currentUserProvider.getCurrentUserId(ctx.requestContext) }
             .getOrNull() ?: return false
         return socialPort.isLikedByUser(postId, userId)

@@ -12,20 +12,13 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.koin.core.context.GlobalContext
 import org.koin.dsl.module
-import viaduct.api.grts.CheckedListItem as ViaductCheckedListItem
-import viaduct.engine.SchemaFactory
-import viaduct.engine.api.ViaductSchema
-import viaduct.engine.runtime.execution.DefaultCoroutineInterop
-import viaduct.tenant.testing.DefaultAbstractResolverTestBase
 import java.util.UUID
 
-class CheckedListItemBatchResolverTest : DefaultAbstractResolverTestBase() {
+class CheckedListItemBatchResolverTest {
 
     private lateinit var itemRepository: CheckedListItemRepository
     private val itemId = UUID.randomUUID()
     private val postId = UUID.randomUUID()
-
-    override fun getSchema(): ViaductSchema = SchemaFactory(DefaultCoroutineInterop).fromResources()
 
     @BeforeEach
     fun setup() {
@@ -39,10 +32,10 @@ class CheckedListItemBatchResolverTest : DefaultAbstractResolverTestBase() {
         }
     }
 
-    private fun stubItemData(id: UUID = itemId, text: String = "Buy milk") = CheckedListItemData(
+    private fun stubItemData(id: UUID = itemId) = CheckedListItemData(
         id = id,
         postId = postId,
-        text = text,
+        text = "Buy milk",
         checked = false,
         position = 0,
         createdAt = "2025-01-01T10:00:00",
@@ -51,31 +44,27 @@ class CheckedListItemBatchResolverTest : DefaultAbstractResolverTestBase() {
     private fun mockContext(id: UUID): NodeResolvers.CheckedListItem.Context {
         val ctx = mockk<NodeResolvers.CheckedListItem.Context>(relaxed = true)
         every { ctx.id.internalID } returns id.toString()
-        every { ctx.globalIDFor(ViaductCheckedListItem.Reflection, any()) } returns
-            context.globalIDFor(ViaductCheckedListItem.Reflection, id.toString())
         return ctx
-    }
-
-    @Test
-    fun `returns one result per context in the success path`() = runBlocking {
-        every { itemRepository.getItem(any()) } returns stubItemData()
-
-        // Building ViaductCheckedListItem requires a real InternalContext, not a mock.
-        // We verify the resolver does not throw a "not found" error from the port layer.
-        val result = runCatching {
-            CheckedListItemBatchResolver().batchResolve(listOf(mockContext(itemId)))
-        }
-        assertTrue(result.isSuccess || result.exceptionOrNull()?.message?.contains("not found") == false)
     }
 
     @Test
     fun `returns error FieldValue when item not found`() = runBlocking {
         every { itemRepository.getItem(any()) } returns null
 
-        val resolver = CheckedListItemBatchResolver()
-        val results = resolver.batchResolve(listOf(mockContext(itemId)))
+        val results = CheckedListItemBatchResolver().batchResolve(listOf(mockContext(itemId)))
 
         assertEquals(1, results.size)
         assertTrue(results[0].isError)
+    }
+
+    @Test
+    fun `returns error for each missing ID in a batch`() = runBlocking {
+        every { itemRepository.getItem(any()) } returns null
+
+        val ids = List(3) { UUID.randomUUID() }
+        val results = CheckedListItemBatchResolver().batchResolve(ids.map(::mockContext))
+
+        assertEquals(3, results.size)
+        assertTrue(results.all { it.isError })
     }
 }
