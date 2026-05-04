@@ -26,10 +26,6 @@ dependencies {
     implementation(libs.exposed.java.time)
     implementation(libs.koin.core)
 
-    testImplementation(testFixtures(libs.viaduct.tenant.runtime))
-    testImplementation(testFixtures(libs.viaduct.tenant.api))
-    testImplementation(libs.viaduct.engine.wiring)
-    testImplementation(libs.viaduct.engine.runtime)
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.junit.jupiter.engine)
     testImplementation(libs.junit.platform.launcher)
