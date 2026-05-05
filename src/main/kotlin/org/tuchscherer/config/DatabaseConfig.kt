@@ -9,5 +9,6 @@ data class DatabaseConfig(
     val user: String = "",
     val password: String = "",
     val poolSize: Int = 10,
-    val usePool: Boolean = false
+    val usePool: Boolean = false,
+    val useFlyway: Boolean = false,
 )

@@ -81,6 +81,10 @@ dependencies {
     // Logback conditional config support
     implementation(libs.janino)
 
+    // Flyway for production schema migrations
+    implementation(libs.flyway.core)
+    implementation(libs.flyway.database.postgresql)
+
     // Koin for Dependency Injection
     implementation(libs.koin.core)
     implementation(libs.koin.ktor)

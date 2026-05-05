@@ -19,7 +19,7 @@ object TestConfig {
             expirationHours = 1
         ),
         database = DatabaseConfig(
-            url = "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1;MODE=MySQL",
+            url = "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1;MODE=PostgreSQL",
             driver = "org.h2.Driver"
         ),
         server = ServerConfig(

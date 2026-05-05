@@ -4,6 +4,7 @@ import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import com.zaxxer.hikari.metrics.micrometer.MicrometerMetricsTrackerFactory
 import io.micrometer.core.instrument.MeterRegistry
+import org.flywaydb.core.Flyway
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.SchemaUtils
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
@@ -14,6 +15,14 @@ class DatabaseFactory(
 ) {
 
     fun initialize() {
+        if (config.useFlyway) {
+            Flyway.configure()
+                .dataSource(config.url, config.user, config.password)
+                .locations("classpath:db/migration")
+                .load()
+                .migrate()
+        }
+
         if (config.usePool) {
             val hikari = HikariConfig().apply {
                 jdbcUrl = config.url
@@ -36,8 +45,10 @@ class DatabaseFactory(
             Database.connect(config.url, driver = config.driver)
         }
 
-        transaction {
-            SchemaUtils.createMissingTablesAndColumns(Users, Posts, Comments, Likes)
+        if (!config.useFlyway) {
+            transaction {
+                SchemaUtils.createMissingTablesAndColumns(Users, Posts, Comments, Likes)
+            }
         }
     }
 
