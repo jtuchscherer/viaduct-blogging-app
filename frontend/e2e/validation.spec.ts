@@ -1,9 +1,6 @@
 import { test, expect } from '@playwright/test';
-import { registerAndLogin } from './fixtures/auth';
+import { registerAndLogin, GRAPHQL_URL } from './fixtures/auth';
 import { createPostViaAPI } from './fixtures/posts';
-import { API_URL } from './fixtures/auth';
-
-const GRAPHQL_URL = `${API_URL}/graphql`;
 
 test.describe('Input validation', () => {
   test.describe('Registration', () => {

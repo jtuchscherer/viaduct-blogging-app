@@ -10,16 +10,30 @@ const ADMIN_STATS = gql`
         postCount
         commentCount
         likeCount
+        totalViews
+        topPosts {
+          id
+          title
+          viewCount
+        }
       }
     }
   }
 `;
+
+interface TopPost {
+  id: string;
+  title: string;
+  viewCount: number;
+}
 
 interface AdminStats {
   userCount: number;
   postCount: number;
   commentCount: number;
   likeCount: number;
+  totalViews: number;
+  topPosts: TopPost[];
 }
 
 interface AdminStatsData {
@@ -57,6 +71,38 @@ export default function AdminDashboard() {
           <h3>Likes</h3>
           <div className="stat-value">{stats?.likeCount ?? 0}</div>
         </div>
+        <div className="admin-stat-card">
+          <h3>Total Views</h3>
+          <div className="stat-value">{stats?.totalViews ?? 0}</div>
+        </div>
+      </div>
+
+      <div className="admin-section">
+        <h2>Most Viewed Posts</h2>
+        {(!stats?.topPosts || stats.topPosts.length === 0) ? (
+          <p className="empty-state">No views recorded yet.</p>
+        ) : (
+          <table className="admin-table" data-testid="top-posts-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Title</th>
+                <th>Views</th>
+              </tr>
+            </thead>
+            <tbody>
+              {stats.topPosts.map((post, index) => (
+                <tr key={post.id}>
+                  <td>{index + 1}</td>
+                  <td>
+                    <Link to={`/post/${post.id}`}>{post.title}</Link>
+                  </td>
+                  <td>{post.viewCount}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );

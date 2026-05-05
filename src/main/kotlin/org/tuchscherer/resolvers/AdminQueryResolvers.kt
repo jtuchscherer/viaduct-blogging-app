@@ -1,11 +1,15 @@
 package org.tuchscherer.viadapp.resolvers
 
+import org.tuchscherer.analytics.port.PostTypeLookupPort
+import org.tuchscherer.analytics.port.PostTypeLookupPort.PostKind
+import org.tuchscherer.analytics.repositories.PostViewRepository
 import org.tuchscherer.auth.requireAdmin
 import org.tuchscherer.database.repositories.CommentRepository
 import org.tuchscherer.database.repositories.LikeRepository
 import org.tuchscherer.database.repositories.PostRepository
 import org.tuchscherer.database.repositories.UserRepository
 import org.tuchscherer.viadapp.resolvers.resolverbases.AdminQueriesResolvers
+import org.tuchscherer.viadapp.resolvers.resolverbases.AdminStatsResolvers
 import viaduct.api.Resolver
 import viaduct.api.grts.AdminCommentsPage
 import viaduct.api.grts.AdminPostsPage
@@ -125,6 +129,34 @@ class AdminCommentsResolver(
         return AdminCommentsPage.of(ctx) {
             comments(comments)
             totalCount(commentRepository.count().toCountInt())
+        }
+    }
+}
+
+@Resolver
+class AdminStatsTotalViewsResolver(
+    private val postViewRepository: PostViewRepository
+) : AdminStatsResolvers.TotalViews() {
+    override suspend fun resolve(ctx: Context): Int =
+        postViewRepository.getTotalViews().toCountInt()
+}
+
+private const val TOP_POSTS_LIMIT = 5
+
+@Resolver
+class AdminStatsTopPostsResolver(
+    private val postViewRepository: PostViewRepository,
+    private val postTypeLookupPort: PostTypeLookupPort,
+) : AdminStatsResolvers.TopPosts() {
+    override suspend fun resolve(ctx: Context): List<ViaductBlogPost> {
+        val topIds = postViewRepository.getMostViewed(TOP_POSTS_LIMIT)
+        if (topIds.isEmpty()) return emptyList()
+
+        val typeByPostId = postTypeLookupPort.getPostTypes(topIds)
+        return topIds.mapNotNull { postId ->
+            if (typeByPostId[postId] != PostKind.CHECKLIST_POST) {
+                ctx.nodeRef(ctx.globalIDFor(ViaductBlogPost.Reflection, postId.toString()))
+            } else null
         }
     }
 }

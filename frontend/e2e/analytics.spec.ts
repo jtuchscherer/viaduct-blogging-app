@@ -13,10 +13,8 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { API_URL, registerUser } from './fixtures/auth';
+import { GRAPHQL_URL, registerUser } from './fixtures/auth';
 import { createPostViaAPI } from './fixtures/posts';
-
-const GRAPHQL_URL = `${API_URL}/graphql`;
 
 /** Fire recordPostView mutation and return the boolean result. */
 async function recordViewViaAPI(

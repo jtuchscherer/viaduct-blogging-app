@@ -26,3 +26,7 @@ export function getHtmlPreview(html: string, maxElements = 3): string {
   const previewHtml = preview.map((el) => el.outerHTML).join('');
   return DOMPurify.sanitize(previewHtml);
 }
+
+export function formatReadTime(minutes: number): string {
+  return `${Math.max(1, Math.round(minutes))} min read`;
+}

@@ -23,4 +23,9 @@ interface PostViewRepository {
      * Return up to [limit] post IDs sorted by view count descending.
      */
     fun getMostViewed(limit: Int): List<UUID>
+
+    /**
+     * Return the total number of views recorded across all posts.
+     */
+    fun getTotalViews(): Long
 }

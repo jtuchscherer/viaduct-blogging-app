@@ -22,4 +22,6 @@ export interface Post {
   commentCount: number;
   isLikedByMe?: boolean;
   comments?: Comment[];
+  viewCount?: number;
+  readTimeMinutes?: number;
 }

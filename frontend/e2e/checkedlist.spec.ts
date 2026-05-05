@@ -14,9 +14,7 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { API_URL, registerUser } from './fixtures/auth';
-
-const GRAPHQL_URL = `${API_URL}/graphql`;
+import { GRAPHQL_URL, registerUser } from './fixtures/auth';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

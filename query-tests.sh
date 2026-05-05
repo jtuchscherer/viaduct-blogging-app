@@ -702,6 +702,26 @@ else
     print_error "Skipping second page test — no cursor returned from first page"
 fi
 
+# postsConnection — analytics fields (viewCount, readTimeMinutes) on edges
+print_info "Checking postsConnection edges expose viewCount and readTimeMinutes..."
+CONN_ANALYTICS_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -d '{"query": "{ postsConnection { edges { node { id viewCount readTimeMinutes } } } }"}')
+
+if echo $CONN_ANALYTICS_RESPONSE | grep -q '"viewCount"' && ! echo $CONN_ANALYTICS_RESPONSE | grep -q '"errors"'; then
+    print_success "postsConnection edges include viewCount"
+else
+    print_error "postsConnection edges missing viewCount"
+    echo "Response: $CONN_ANALYTICS_RESPONSE"
+fi
+
+if echo $CONN_ANALYTICS_RESPONSE | grep -qE '"readTimeMinutes":[0-9]'; then
+    print_success "postsConnection edges include readTimeMinutes with numeric value"
+else
+    print_error "postsConnection edges missing or non-numeric readTimeMinutes"
+    echo "Response: $CONN_ANALYTICS_RESPONSE"
+fi
+
 # Step 11: Test Health and Metrics endpoints
 print_header "Step 11: Test Health and Metrics Endpoints"
 
@@ -781,6 +801,42 @@ if [ -n "$STATS_POST_COUNT" ] && [ "$STATS_POST_COUNT" -ge 1 ]; then
     print_success "admin.stats returns postCount=$STATS_POST_COUNT (>= 1)"
 else
     print_error "admin.stats postCount unexpected: '$STATS_POST_COUNT'"
+fi
+
+# admin.stats — analytics fields (totalViews, topPosts)
+print_info "Checking admin.stats analytics fields (totalViews, topPosts)..."
+ADMIN_ANALYTICS_STATS_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $ADMIN_TOKEN" \
+    -H "X-Schema: admin" \
+    -d '{"query": "{ admin { stats { totalViews topPosts { id title viewCount } } } }"}')
+
+if echo $ADMIN_ANALYTICS_STATS_RESPONSE | grep -q '"totalViews"' && ! echo $ADMIN_ANALYTICS_STATS_RESPONSE | grep -q '"errors"'; then
+    print_success "admin.stats totalViews field is present"
+else
+    print_error "admin.stats totalViews field missing or errored"
+    echo "Response: $ADMIN_ANALYTICS_STATS_RESPONSE"
+fi
+
+if echo $ADMIN_ANALYTICS_STATS_RESPONSE | grep -qE '"totalViews":[1-9]'; then
+    print_success "admin.stats totalViews is non-zero (views have been recorded)"
+else
+    print_error "admin.stats totalViews is 0 or missing — expected at least 1 view recorded by this point"
+    echo "Response: $ADMIN_ANALYTICS_STATS_RESPONSE"
+fi
+
+if echo $ADMIN_ANALYTICS_STATS_RESPONSE | grep -q '"topPosts"' && ! echo $ADMIN_ANALYTICS_STATS_RESPONSE | grep -q '"topPosts":\[\]'; then
+    print_success "admin.stats topPosts is non-empty"
+else
+    print_error "admin.stats topPosts is empty or missing"
+    echo "Response: $ADMIN_ANALYTICS_STATS_RESPONSE"
+fi
+
+if echo $ADMIN_ANALYTICS_STATS_RESPONSE | grep -q '"topPosts"' && echo $ADMIN_ANALYTICS_STATS_RESPONSE | grep -q '"viewCount"'; then
+    print_success "admin.stats topPosts entries include viewCount"
+else
+    print_error "admin.stats topPosts entries missing viewCount"
+    echo "Response: $ADMIN_ANALYTICS_STATS_RESPONSE"
 fi
 
 print_info "Querying admin users list..."
@@ -1034,6 +1090,26 @@ else
     print_error "trending: order incorrect — post1 should appear before post3"
     echo "POST1_POS=$POST1_POS POST3_POS=$POST3_POS"
     echo "Response: $TRENDING_RESPONSE"
+fi
+
+# trending — readTimeMinutes available via inline fragment on BlogPost
+print_info "Checking trending returns readTimeMinutes via BlogPost inline fragment..."
+TRENDING_RT_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -d '{"query": "{ trending(limit: 5) { id ... on BlogPost { readTimeMinutes } } }"}')
+
+if echo $TRENDING_RT_RESPONSE | grep -q '"trending"' && ! echo $TRENDING_RT_RESPONSE | grep -q '"errors"'; then
+    print_success "trending query with inline fragment executed without errors"
+else
+    print_error "trending query with inline fragment failed"
+    echo "Response: $TRENDING_RT_RESPONSE"
+fi
+
+if echo $TRENDING_RT_RESPONSE | grep -qE '"readTimeMinutes":[0-9]'; then
+    print_success "trending results include readTimeMinutes via BlogPost inline fragment"
+else
+    print_error "trending results missing readTimeMinutes on BlogPost fragment"
+    echo "Response: $TRENDING_RT_RESPONSE"
 fi
 
 # trending — anonymous user (no auth) should also work
