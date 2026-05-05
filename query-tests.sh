@@ -803,6 +803,14 @@ else
     print_error "admin.stats postCount unexpected: '$STATS_POST_COUNT'"
 fi
 
+# Record a view so totalViews > 0 before checking admin analytics stats.
+# The full analytics test suite runs after Step 12; we just need at least one
+# view in the DB here to verify the resolver returns a non-zero count.
+curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $USER1_TOKEN" \
+    -d "{\"query\": \"mutation { recordPostView(postId: \\\"$POST1_ID\\\") }\"}" > /dev/null
+
 # admin.stats — analytics fields (totalViews, topPosts)
 print_info "Checking admin.stats analytics fields (totalViews, topPosts)..."
 ADMIN_ANALYTICS_STATS_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
