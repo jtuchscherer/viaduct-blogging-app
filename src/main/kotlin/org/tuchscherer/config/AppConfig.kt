@@ -34,7 +34,7 @@ data class AppConfig(
                 expirationHours = 24
             ),
             database = DatabaseConfig(
-                url = "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1;MODE=MySQL",
+                url = "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1;MODE=PostgreSQL",
                 driver = "org.h2.Driver"
             ),
             server = ServerConfig(
@@ -78,7 +78,8 @@ data class AppConfig(
                 user = System.getenv("DATABASE_USER") ?: "",
                 password = System.getenv("DATABASE_PASSWORD") ?: "",
                 poolSize = System.getenv("DATABASE_POOL_SIZE")?.toIntOrNull() ?: 10,
-                usePool = System.getenv("DATABASE_DRIVER")?.contains("postgresql", ignoreCase = true) == true
+                usePool = System.getenv("DATABASE_DRIVER")?.contains("postgresql", ignoreCase = true) == true,
+                useFlyway = System.getenv("DATABASE_DRIVER")?.contains("postgresql", ignoreCase = true) == true,
             ),
             server = ServerConfig(
                 graphqlPort = System.getenv("GRAPHQL_PORT")?.toIntOrNull() ?: 8080,

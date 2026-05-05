@@ -24,7 +24,7 @@ class CreatePostResolver(
         val post = postRepository.create(
             title = input.title,
             content = input.content,
-            authorId = user.id,
+            authorId = user.id.value,
             createdAt = LocalDateTime.now(),
             updatedAt = LocalDateTime.now()
         )

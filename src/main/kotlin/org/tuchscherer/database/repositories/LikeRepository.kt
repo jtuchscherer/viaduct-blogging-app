@@ -1,7 +1,6 @@
 package org.tuchscherer.database.repositories
 
 import org.tuchscherer.database.Like
-import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import java.time.LocalDateTime
 import java.util.*
 
@@ -27,24 +26,19 @@ interface LikeRepository {
     /**
      * Find all likes by a specific user.
      */
-    fun findByUserId(userId: EntityID<UUID>): List<Like>
+    fun findByUserId(userId: UUID): List<Like>
 
     /**
      * Find a like for a specific post and user combination.
      */
-    fun findByPostAndUser(postId: EntityID<UUID>, userId: EntityID<UUID>): Like?
-
-    /**
-     * Check if a user has liked a specific post.
-     */
-    fun existsByPostAndUser(postId: EntityID<UUID>, userId: EntityID<UUID>): Boolean
+    fun findByPostAndUser(postId: UUID, userId: UUID): Like?
 
     /**
      * Create a new like.
      */
     fun create(
-        postId: EntityID<UUID>,
-        userId: EntityID<UUID>,
+        postId: UUID,
+        userId: UUID,
         createdAt: LocalDateTime = LocalDateTime.now()
     ): Like
 
@@ -56,17 +50,17 @@ interface LikeRepository {
     /**
      * Delete a like by post and user.
      */
-    fun deleteByPostAndUser(postId: EntityID<UUID>, userId: EntityID<UUID>): Boolean
+    fun deleteByPostAndUser(postId: UUID, userId: UUID): Boolean
+
+    /**
+     * Check if a user has liked a specific post.
+     */
+    fun existsByPostAndUser(postId: UUID, userId: UUID): Boolean
 
     /**
      * Count likes for a post.
      */
     fun countByPostId(postId: UUID): Long
-
-    /**
-     * Check if a user has liked a specific post by UUIDs.
-     */
-    fun existsByPostAndUser(postId: UUID, userId: UUID): Boolean
 
     /**
      * Get the user who created a like by like ID.

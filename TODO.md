@@ -1,6 +1,6 @@
 # TODO: Viaduct Blogging App — Implementation Plan
 
-**Status**: 🚀 In Progress — Core complete; Analytics (Phases 20–23) + Flyway migrations + test refactor remaining
+**Status**: 🚀 In Progress — Core complete; Analytics (Phases 20–23) remaining
 
 **Last Updated**: 2026-05-04
 
@@ -8,9 +8,10 @@
 
 | Suite | Count | Status |
 |---|---|---|
-| Unit + Integration tests (`./gradlew test`) | 394 | ✅ All passing |
-| API E2E tests (`./query-tests.sh`) | 38 | ✅ All passing |
-| Browser E2E tests (Playwright, 40 tests × 3 browsers) | 120 runs | ✅ All passing |
+| Unit + Integration tests (`./gradlew test`) | 281 | ✅ All passing |
+| API E2E tests (`./query-tests.sh`) | 91 | ✅ All passing |
+| Browser E2E tests (Playwright, 88 tests × 3 browsers) | 264 runs | ✅ All passing |
+| Frontend unit tests (`npm test`) | 35 | ✅ All passing |
 
 ## Completed Phases
 
@@ -24,7 +25,7 @@
 | 13 | Resolver test migration to `FieldResolverTester`/`MutationResolverTester` API |
 | 14 | Batch author resolver: `batchResolve` eliminates N+1 on post lists |
 | 15 | DB-level cursor pagination: `findPage(limit, offset)` replaces full table scan in `PostsConnectionResolver` |
-| 16 (partial) | PostgreSQL + HikariCP: driver, connection pooling, Micrometer pool metrics; Flyway migrations outstanding |
+| 16 | PostgreSQL + HikariCP: driver, connection pooling, Micrometer pool metrics; Flyway migrations with `V1__create_tables.sql`; H2 tests on `MODE=PostgreSQL` |
 | 17 | Production telemetry: structured JSON logging, `CallId`/`CallLogging`, Micrometer + Prometheus `/metrics`, enhanced `/health` |
 | 18 | Rich text editor: Lexical on Create/Edit pages; DOMPurify rendering in PostDetailPage |
 | 19 | Frontend unit tests: Vitest + jsdom + Testing Library (26 tests, `npm test`) |
@@ -35,23 +36,7 @@
 
 ## Next Steps
 
-- **Phase 16**: Flyway migrations — write `V1__create_tables.sql`, replace `SchemaUtils.create` in `DatabaseFactory`, test against H2 `MODE=PostgreSQL`
-
----
-
-## Phase 16: Remaining — Flyway Migrations
-
-**Goal**: Replace `SchemaUtils.create` (dev-only, no schema evolution) with Flyway so the prod database schema can be evolved safely.
-
-#### Tasks:
-- [ ] Add Flyway dependency to `build.gradle.kts`
-- [ ] Write `src/main/resources/db/migration/V1__create_tables.sql` matching current schema (Users, Posts, Comments, Likes, CheckedListItems, PostViews)
-- [ ] `DatabaseFactory.initialize()` runs `Flyway.migrate()` before any queries in prod; keep `SchemaUtils.create` for H2 test config
-- [ ] Change H2 test mode from `MODE=MySQL` to `MODE=PostgreSQL` to catch dialect bugs early
-- [ ] Add `DATABASE_USERNAME` / `DATABASE_PASSWORD` env vars to `prodConfig()` for RDS (currently embedded in URL)
-- [ ] Document RDS SSL config (`DATABASE_SSL_MODE`, default `require` in prod)
-
-**Success Criteria**: `APP_ENV=PROD` boots against a real PostgreSQL instance via Flyway; dev still works with `blog.db`; all H2 tests pass.
+- **Phase 20**: Analytics backend — `PostViews` table, `viewCount`/`readTimeMinutes` field resolvers, `recordPostView` mutation, `trending` query
 
 ---
 

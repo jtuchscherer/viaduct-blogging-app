@@ -71,7 +71,7 @@ class UnlikePostResolverTest : DefaultAbstractResolverTestBase() {
             .build()
 
         every { postRepository.findById(postId) } returns mockPost
-        every { likeRepository.deleteByPostAndUser(mockPost.id, mockUser.id) } returns true
+        every { likeRepository.deleteByPostAndUser(mockPost.id.value, mockUser.id.value) } returns true
 
         val result = runMutationFieldResolver(
             resolver = resolver,
@@ -91,7 +91,7 @@ class UnlikePostResolverTest : DefaultAbstractResolverTestBase() {
             .build()
 
         every { postRepository.findById(postId) } returns mockPost
-        every { likeRepository.deleteByPostAndUser(mockPost.id, mockUser.id) } returns false
+        every { likeRepository.deleteByPostAndUser(mockPost.id.value, mockUser.id.value) } returns false
 
         val result = runMutationFieldResolver(
             resolver = resolver,

@@ -14,7 +14,7 @@ object CheckedListDatabaseTestHelper {
 
     fun setupDatabase() {
         Database.connect(
-            url = "jdbc:h2:mem:checkedlist_test;DB_CLOSE_DELAY=-1;MODE=MySQL",
+            url = "jdbc:h2:mem:checkedlist_test;DB_CLOSE_DELAY=-1;MODE=PostgreSQL",
             driver = "org.h2.Driver"
         )
         transaction {

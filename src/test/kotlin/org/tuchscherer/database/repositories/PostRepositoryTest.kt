@@ -1,7 +1,6 @@
 package org.tuchscherer.database.repositories
 
 import org.tuchscherer.database.User
-import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.Assertions
@@ -52,7 +51,7 @@ class PostRepositoryTest {
         val post = postRepository.create(
             title = "Test Post",
             content = "This is test content",
-            authorId = testUser.id
+            authorId = testUser.id.value
         )
 
         Assertions.assertNotNull(post)
@@ -66,7 +65,7 @@ class PostRepositoryTest {
         val created = postRepository.create(
             title = "Test Post",
             content = "Content",
-            authorId = testUser.id
+            authorId = testUser.id.value
         )
 
         val found = postRepository.findById(created.id.value)
@@ -86,8 +85,8 @@ class PostRepositoryTest {
 
     @Test
     fun `findByIds returns map of matching posts and omits missing ids`() {
-        val post1 = postRepository.create(title = "P1", content = "c", authorId = testUser.id)
-        val post2 = postRepository.create(title = "P2", content = "c", authorId = testUser.id)
+        val post1 = postRepository.create(title = "P1", content = "c", authorId = testUser.id.value)
+        val post2 = postRepository.create(title = "P2", content = "c", authorId = testUser.id.value)
         val missingId = UUID.randomUUID()
 
         val result = postRepository.findByIds(listOf(post1.id.value, post2.id.value, missingId))
@@ -108,22 +107,22 @@ class PostRepositoryTest {
         postRepository.create(
             title = "Post 1",
             content = "Content 1",
-            authorId = testUser.id
+            authorId = testUser.id.value
         )
         postRepository.create(
             title = "Post 2",
             content = "Content 2",
-            authorId = testUser.id
+            authorId = testUser.id.value
         )
 
-        val posts = postRepository.findByAuthorId(testUser.id)
+        val posts = postRepository.findByAuthorId(testUser.id.value)
 
         assertEquals(2, posts.size)
     }
 
     @Test
     fun `findByAuthorId returns empty list when author has no posts`() {
-        val posts = postRepository.findByAuthorId(testUser.id)
+        val posts = postRepository.findByAuthorId(testUser.id.value)
 
         assertTrue(posts.isEmpty())
     }
@@ -133,12 +132,12 @@ class PostRepositoryTest {
         postRepository.create(
             title = "Post 1",
             content = "Content 1",
-            authorId = testUser.id
+            authorId = testUser.id.value
         )
         postRepository.create(
             title = "Post 2",
             content = "Content 2",
-            authorId = testUser.id
+            authorId = testUser.id.value
         )
 
         val allPosts = postRepository.findAll()
@@ -151,7 +150,7 @@ class PostRepositoryTest {
         val post = postRepository.create(
             title = "Original Title",
             content = "Original Content",
-            authorId = testUser.id
+            authorId = testUser.id.value
         )
 
         val postId = post.id.value
@@ -178,7 +177,7 @@ class PostRepositoryTest {
         val post = postRepository.create(
             title = "Original Title",
             content = "Original Content",
-            authorId = testUser.id
+            authorId = testUser.id.value
         )
 
         val postId = post.id.value
@@ -211,7 +210,7 @@ class PostRepositoryTest {
         val post = postRepository.create(
             title = "Test Post",
             content = "Content",
-            authorId = testUser.id
+            authorId = testUser.id.value
         )
 
         val deleted = postRepository.delete(post.id.value)
@@ -233,14 +232,14 @@ class PostRepositoryTest {
         val commentRepository = ExposedCommentRepository()
         val likeRepository = ExposedLikeRepository()
 
-        val post = postRepository.create(title = "Post", content = "Content", authorId = testUser.id)
+        val post = postRepository.create(title = "Post", content = "Content", authorId = testUser.id.value)
         commentRepository.create(
             content = "A comment",
-            postId = post.id,
-            authorId = testUser.id,
+            postId = post.id.value,
+            authorId = testUser.id.value,
             createdAt = LocalDateTime.now()
         )
-        likeRepository.create(postId = post.id, userId = testUser.id, createdAt = LocalDateTime.now())
+        likeRepository.create(postId = post.id.value, userId = testUser.id.value, createdAt = LocalDateTime.now())
 
         val deleted = postRepository.delete(post.id.value)
 
@@ -255,12 +254,12 @@ class PostRepositoryTest {
         postRepository.create(
             title = "Post 1",
             content = "Content 1",
-            authorId = testUser.id
+            authorId = testUser.id.value
         )
         postRepository.create(
             title = "Post 2",
             content = "Content 2",
-            authorId = testUser.id
+            authorId = testUser.id.value
         )
 
         val count = postRepository.count()
@@ -270,11 +269,11 @@ class PostRepositoryTest {
 
     @Test
     fun `findPage returns limited slice ordered by createdAt desc`() {
-        postRepository.create(title = "Oldest", content = "c", authorId = testUser.id)
+        postRepository.create(title = "Oldest", content = "c", authorId = testUser.id.value)
         Thread.sleep(10)
-        postRepository.create(title = "Middle", content = "c", authorId = testUser.id)
+        postRepository.create(title = "Middle", content = "c", authorId = testUser.id.value)
         Thread.sleep(10)
-        postRepository.create(title = "Newest", content = "c", authorId = testUser.id)
+        postRepository.create(title = "Newest", content = "c", authorId = testUser.id.value)
 
         val page = postRepository.findPage(limit = 2, offset = 0)
 
@@ -285,11 +284,11 @@ class PostRepositoryTest {
 
     @Test
     fun `findPage with offset skips earlier results`() {
-        postRepository.create(title = "Oldest", content = "c", authorId = testUser.id)
+        postRepository.create(title = "Oldest", content = "c", authorId = testUser.id.value)
         Thread.sleep(10)
-        postRepository.create(title = "Middle", content = "c", authorId = testUser.id)
+        postRepository.create(title = "Middle", content = "c", authorId = testUser.id.value)
         Thread.sleep(10)
-        postRepository.create(title = "Newest", content = "c", authorId = testUser.id)
+        postRepository.create(title = "Newest", content = "c", authorId = testUser.id.value)
 
         val page = postRepository.findPage(limit = 2, offset = 1)
 
@@ -300,7 +299,7 @@ class PostRepositoryTest {
 
     @Test
     fun `findPage returns empty list when offset exceeds total`() {
-        postRepository.create(title = "Only Post", content = "c", authorId = testUser.id)
+        postRepository.create(title = "Only Post", content = "c", authorId = testUser.id.value)
 
         val page = postRepository.findPage(limit = 10, offset = 5)
 
@@ -308,27 +307,27 @@ class PostRepositoryTest {
     }
 
     @Test
-    fun `countByAuthor returns posts count for specific author`() {
+    fun `countByAuthorId returns posts count for specific author`() {
         postRepository.create(
             title = "Post 1",
             content = "Content 1",
-            authorId = testUser.id
+            authorId = testUser.id.value
         )
         postRepository.create(
             title = "Post 2",
             content = "Content 2",
-            authorId = testUser.id
+            authorId = testUser.id.value
         )
 
-        val count = postRepository.countByAuthor(testUser.id)
+        val count = postRepository.countByAuthorId(testUser.id.value)
 
         assertEquals(2, count)
     }
 
     @Test
     fun `getAuthorIdsByPostIds returns map of post ID to author ID`() {
-        val post1 = postRepository.create(title = "Post 1", content = "c", authorId = testUser.id)
-        val post2 = postRepository.create(title = "Post 2", content = "c", authorId = testUser.id)
+        val post1 = postRepository.create(title = "Post 1", content = "c", authorId = testUser.id.value)
+        val post2 = postRepository.create(title = "Post 2", content = "c", authorId = testUser.id.value)
 
         val result = postRepository.getAuthorIdsByPostIds(listOf(post1.id.value, post2.id.value))
 
@@ -349,7 +348,7 @@ class PostRepositoryTest {
         val post = postRepository.create(
             title = "Original Title",
             content = "Original Content",
-            authorId = testUser.id
+            authorId = testUser.id.value
         )
 
         org.jetbrains.exposed.v1.jdbc.transactions.transaction {
@@ -366,8 +365,8 @@ class PostRepositoryTest {
 
     @Test
     fun `countByAuthorId returns post count for author`() {
-        postRepository.create(title = "Post 1", content = "c", authorId = testUser.id)
-        postRepository.create(title = "Post 2", content = "c", authorId = testUser.id)
+        postRepository.create(title = "Post 1", content = "c", authorId = testUser.id.value)
+        postRepository.create(title = "Post 2", content = "c", authorId = testUser.id.value)
 
         val count = postRepository.countByAuthorId(testUser.id.value)
 
@@ -386,11 +385,11 @@ class PostRepositoryTest {
         val commentRepository = ExposedCommentRepository()
         val likeRepository = ExposedLikeRepository()
 
-        val post1 = postRepository.create(title = "Post 1", content = "c", authorId = testUser.id)
-        val post2 = postRepository.create(title = "Post 2", content = "c", authorId = testUser.id)
+        val post1 = postRepository.create(title = "Post 1", content = "c", authorId = testUser.id.value)
+        val post2 = postRepository.create(title = "Post 2", content = "c", authorId = testUser.id.value)
 
-        commentRepository.create(content = "comment", postId = post1.id, authorId = testUser.id)
-        likeRepository.create(postId = post2.id, userId = testUser.id)
+        commentRepository.create(content = "comment", postId = post1.id.value, authorId = testUser.id.value)
+        likeRepository.create(postId = post2.id.value, userId = testUser.id.value)
 
         val deleted = postRepository.deleteByAuthorId(testUser.id.value)
 
@@ -413,7 +412,7 @@ class PostRepositoryTest {
         val post = postRepository.create(
             title = "Original Title",
             content = "Original Content",
-            authorId = testUser.id
+            authorId = testUser.id.value
         )
 
         val updated = postRepository.updateById(id = post.id.value, title = null, content = null)

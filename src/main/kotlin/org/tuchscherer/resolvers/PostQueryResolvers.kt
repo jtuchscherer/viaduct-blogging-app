@@ -59,6 +59,6 @@ class MyPostsResolver(
 ) : QueryResolvers.MyPosts() {
     override suspend fun resolve(ctx: Context): List<ViaductBlogPost> {
         val user = requireAuth(ctx.requestContext)
-        return postRepository.findByAuthorId(user.id).map { it.toViaductBlogPost(ctx) }
+        return postRepository.findByAuthorId(user.id.value).map { it.toViaductBlogPost(ctx) }
     }
 }
