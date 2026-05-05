@@ -92,6 +92,8 @@ type AdminStats @scope(to: ["admin"]) {
   postCount: Int!
   commentCount: Int!
   likeCount: Int!
+  totalViews: Int! @resolver
+  topPosts: [BlogPost!]! @resolver
 }
 
 type AdminUsersPage @scope(to: ["admin"]) {

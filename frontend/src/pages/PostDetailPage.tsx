@@ -4,6 +4,7 @@ import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useState, useEffect, type FormEvent } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import DOMPurify from 'dompurify';
+import { formatReadTime } from '../utils/content';
 import type { Post } from '../types';
 
 const GET_POST = gql`
@@ -20,6 +21,8 @@ const GET_POST = gql`
       createdAt
       likeCount
       isLikedByMe
+      viewCount
+      readTimeMinutes
       comments {
         id
         content
@@ -31,6 +34,12 @@ const GET_POST = gql`
         createdAt
       }
     }
+  }
+`;
+
+const RECORD_POST_VIEW = gql`
+  mutation RecordPostView($postId: ID!) {
+    recordPostView(postId: $postId)
   }
 `;
 
@@ -106,6 +115,18 @@ export default function PostDetailPage() {
   const { loading, error, data, refetch } = useQuery<PostData>(GET_POST, {
     variables: { id },
   });
+
+  const [recordPostView] = useMutation(RECORD_POST_VIEW);
+
+  // Fire-and-forget view tracking on mount
+  useEffect(() => {
+    if (id) {
+      recordPostView({ variables: { postId: id } }).catch(() => {
+        console.error('Failed to record post view');
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
   // Scroll to hash anchor after content loads
   useEffect(() => {
@@ -191,6 +212,13 @@ export default function PostDetailPage() {
           <div className="post-meta">
             <span>by {post.author.name}</span>
             <span>{new Date(post.createdAt).toLocaleDateString()}</span>
+            {post.viewCount !== undefined && post.readTimeMinutes !== undefined && (
+              <span className="post-analytics">
+                👁 {post.viewCount} {post.viewCount === 1 ? 'view' : 'views'}
+                {' · '}
+                ⏱ {formatReadTime(post.readTimeMinutes)}
+              </span>
+            )}
           </div>
         </div>
 

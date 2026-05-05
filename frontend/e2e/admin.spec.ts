@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { registerUser } from './fixtures/auth';
+import { registerUser, GRAPHQL_URL } from './fixtures/auth';
 import { createPostViaAPI } from './fixtures/posts';
 import { gotoAdminPage, createCommentViaAPI } from './fixtures/admin';
 
@@ -186,5 +186,32 @@ test.describe('Admin Comments pagination', () => {
       await expect(page.locator('[data-testid="admin-table-row"]').first()).toBeVisible();
     }
     await expect(nextBtn).toBeDisabled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Admin Dashboard analytics
+// ---------------------------------------------------------------------------
+
+test.describe('Admin Dashboard analytics', () => {
+  test('shows Most Viewed Posts table after a post is viewed', async ({ page }) => {
+    const suffix = `adash_${Date.now()}`;
+    const user = await registerUser(page, suffix);
+    const post = await createPostViaAPI(page, user.token, `Admin Analytics Post ${suffix}`);
+
+    // Record several views so this post rises to the top
+    for (let i = 0; i < 5; i++) {
+      await page.request.post(GRAPHQL_URL, {
+        headers: { Authorization: `Bearer ${user.token}` },
+        data: { query: `mutation { recordPostView(postId: "${post.id}") }` },
+      });
+    }
+
+    await gotoAdminPage(page, '/admin');
+
+    // Analytics section must be visible with the table
+    await expect(page.locator('[data-testid="top-posts-table"]')).toBeVisible();
+    // Total views stat card must be present
+    await expect(page.locator('.admin-stats-grid')).toContainText('Total Views');
   });
 });

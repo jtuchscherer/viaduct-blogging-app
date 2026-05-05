@@ -1,17 +1,17 @@
 # TODO: Viaduct Blogging App — Implementation Plan
 
-**Status**: 🚀 In Progress — Core complete; Analytics (Phases 20–23) remaining
+**Status**: 🚀 In Progress — Core complete; Analytics UI + CheckedList frontend (Phases 21–23) remaining
 
-**Last Updated**: 2026-05-04
+**Last Updated**: 2026-05-05
 
 ## Test Statistics
 
 | Suite | Count | Status |
 |---|---|---|
-| Unit + Integration tests (`./gradlew test`) | 281 | ✅ All passing |
-| API E2E tests (`./query-tests.sh`) | 91 | ✅ All passing |
-| Browser E2E tests (Playwright, 88 tests × 3 browsers) | 264 runs | ✅ All passing |
-| Frontend unit tests (`npm test`) | 35 | ✅ All passing |
+| Unit + Integration tests (`./gradlew test`) | 400 | ✅ All passing |
+| API E2E tests (`./query-tests.sh`) | 101 | ✅ All passing |
+| Browser E2E tests (Playwright, 95 tests × 3 browsers) | 285 runs | ✅ All passing |
+| Frontend unit tests (`npm test`) | 44 | ✅ All passing |
 
 ## Completed Phases
 
@@ -31,16 +31,20 @@
 | 19 | Frontend unit tests: Vitest + jsdom + Testing Library (26 tests, `npm test`) |
 | Admin | Full CRUD over users/posts/comments; dashboard stats; `requireAdmin()` guard; cascading user delete |
 | CheckedList | `CheckedListPost` type with toggleable ordered items; full resolver/repo/test/frontend coverage |
-| Analytics | View counts, read-time estimates, `trending(limit)` query; `recordPostView` mutation |
+| Analytics (Phase 20) | `PostViews` table, `viewCount`/`readTimeMinutes` batch resolvers, `recordPostView` mutation, `trending` query; analytics module with full unit + integration + E2E tests |
 | Code quality | Domain exceptions, `requireAuth()` helper, input validation, structured logging, env-var config |
 
 ## Next Steps
 
-- **Phase 20**: Analytics backend — `PostViews` table, `viewCount`/`readTimeMinutes` field resolvers, `recordPostView` mutation, `trending` query
+- **Phase 23**: CheckedList frontend — full create/view/edit/toggle UI for CheckedListPost; unified feed with type-aware post cards
 
 ---
 
-## Phase 20: Analytics Backend — Schema, Storage, and Resolvers ⏳ TODO
+## Phase 20: Analytics Backend — Schema, Storage, and Resolvers ✅ DONE
+
+## Phase 21: Analytics Frontend — View Tracking and Post Detail Page ✅ DONE
+
+## Phase 22: Analytics Frontend — Admin Stats and Homepage Sorting ✅ DONE
 
 **Goal**: Implement the analytics tenant module on the backend: track post views, expose `viewCount`, `readTimeMinutes`, and `trending` via GraphQL.
 

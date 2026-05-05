@@ -154,6 +154,8 @@ val resolverModule = module {
 
     // Admin query resolvers
     singleOf(::AdminStatsResolver)
+    singleOf(::AdminStatsTotalViewsResolver)
+    singleOf(::AdminStatsTopPostsResolver)
     singleOf(::AdminUsersResolver)
     singleOf(::AdminUserResolver)
     singleOf(::AdminUserContentCountsResolver)

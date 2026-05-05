@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { registerAndLogin, registerUser } from './fixtures/auth';
+import { registerAndLogin, registerUser, GRAPHQL_URL } from './fixtures/auth';
 import { createPostViaAPI } from './fixtures/posts';
 
 test.describe('Blog Posts', () => {
@@ -184,5 +184,73 @@ test.describe('Blog Posts', () => {
     const text = await preview.textContent();
     expect(text).not.toContain('<strong>');
     expect(text).not.toContain('<p>');
+  });
+
+  test('post detail page shows viewCount and readTimeMinutes', async ({ page }) => {
+    const creds = await registerAndLogin(page, `analytics_${Date.now()}`);
+    const post = await createPostViaAPI(
+      page,
+      creds.token,
+      'Analytics Display Post',
+      Array(50).fill('word').join(' '),
+    );
+
+    await page.goto(`/post/${post.id}`);
+
+    // Analytics metadata rendered in the .post-analytics span
+    await expect(page.locator('.post-analytics')).toBeVisible();
+    await expect(page.locator('.post-analytics')).toContainText('view');
+    await expect(page.locator('.post-analytics')).toContainText('min read');
+  });
+
+  test('home page post cards show readTimeMinutes', async ({ page }) => {
+    const creds = await registerAndLogin(page, `rt_card_${Date.now()}`);
+    // ~300-word post → read time > 1 min
+    const title = `ReadTime Card Post ${Date.now()}`;
+    await createPostViaAPI(
+      page,
+      creds.token,
+      title,
+      Array(300).fill('word').join(' '),
+    );
+
+    await page.goto('/');
+
+    // Find the card for our post and check that the read-time span is visible
+    const card = page.locator('.post-card', { hasText: title });
+    await expect(card).toBeVisible();
+    await expect(card.locator('.read-time')).toBeVisible();
+    await expect(card.locator('.read-time')).toContainText('min read');
+  });
+
+  test('homepage sort control shows New and Trending buttons, New active by default', async ({ page }) => {
+    await page.goto('/');
+
+    const newBtn = page.getByRole('button', { name: 'New' });
+    const trendingBtn = page.getByRole('button', { name: 'Trending' });
+    await expect(newBtn).toBeVisible();
+    await expect(trendingBtn).toBeVisible();
+    await expect(newBtn).toHaveAttribute('aria-pressed', 'true');
+    await expect(trendingBtn).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  test('switching to Trending shows trending posts', async ({ page }) => {
+    const suffix = `trend_${Date.now()}`;
+    const creds = await registerAndLogin(page, suffix);
+    const hotPost = await createPostViaAPI(page, creds.token, `Hot Post ${suffix}`);
+
+    // Give the hot post 20 views to make it reliably trending
+    for (let i = 0; i < 20; i++) {
+      await page.request.post(GRAPHQL_URL, {
+        headers: { Authorization: `Bearer ${creds.token}` },
+        data: { query: `mutation { recordPostView(postId: "${hotPost.id}") }` },
+      });
+    }
+
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Trending' }).click();
+
+    // Trending feed should show the hot post among results
+    await expect(page.locator('.posts-list')).toContainText(hotPost.title);
   });
 });
