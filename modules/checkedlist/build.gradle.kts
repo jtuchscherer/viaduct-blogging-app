@@ -19,13 +19,17 @@ afterEvaluate {
 }
 
 dependencies {
-    api(libs.viaduct.tenant.api)
+    compileOnly(libs.viaduct.tenant.api)
+    testCompileOnly(libs.viaduct.tenant.api)
     implementation(libs.exposed.core)
     implementation(libs.exposed.dao)
     implementation(libs.exposed.jdbc)
     implementation(libs.exposed.java.time)
     implementation(libs.koin.core)
 
+    testImplementation("com.airbnb.viaduct.service:wiring:${libs.versions.viaduct.get()}")
+    testImplementation("com.airbnb.viaduct.engine:wiring:${libs.versions.viaduct.get()}")
+    testImplementation("com.airbnb.viaduct.tenant:wiring:${libs.versions.viaduct.get()}")
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.junit.jupiter.engine)
     testImplementation(libs.junit.platform.launcher)

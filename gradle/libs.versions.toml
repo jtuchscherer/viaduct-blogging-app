@@ -1,5 +1,5 @@
 [versions]
-viaduct = "0.31.0"
+viaduct = "1.0.0-rc.2pfc-SNAPSHOT"
 kotlin = "2.3.20"
 ktor = "3.4.2"
 koin = "4.2.1"

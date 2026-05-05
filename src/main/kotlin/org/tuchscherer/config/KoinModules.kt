@@ -150,6 +150,7 @@ val resolverModule = module {
 
     // User resolvers
     singleOf(::MeResolver)
+    singleOf(::UserPostsFieldResolver)
     singleOf(::UserIsAdminResolver)
 
     // Admin query resolvers

@@ -84,7 +84,7 @@ class QueryFieldComplexityCalculatorTest {
         parent: String,
         name: String,
         child: Int,
-        args: Map<String, Any?> = emptyMap(),
+        args: Map<String, Any> = emptyMap(),
     ): Int {
         val field = mockk<Field>(relaxed = true) {
             every { this@mockk.name } returns name

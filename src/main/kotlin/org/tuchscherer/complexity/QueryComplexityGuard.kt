@@ -70,7 +70,7 @@ class QueryComplexityGuard(
                 .schema(schema)
                 .document(doc)
                 .fieldComplexityCalculator(calculator)
-                .variables(CoercedVariables.of(variables))
+                .variables(CoercedVariables.of(@Suppress("UNCHECKED_CAST") (variables as Map<String, Any>)))
                 .build()
                 .calculate()
         } catch (e: Exception) {

@@ -38,12 +38,24 @@ viaductModule {
     modulePackageSuffix.set("resolvers")
 }
 
+val viaductVersion: String = libs.versions.viaduct.get()
+val nettyVersion: String = libs.versions.netty.get()
+val jacksonCore3Version: String = libs.versions.jackson3.get()
+
 dependencies {
     implementation(project(":modules:analytics"))
     implementation(project(":modules:checkedlist"))
 
-    implementation(libs.viaduct.api)
-    implementation(libs.viaduct.runtime)
+    // Fat jars for compile-time type-checking and code generation only.
+    compileOnly(libs.viaduct.api)
+    compileOnly(libs.viaduct.runtime)
+    testCompileOnly(libs.viaduct.api)
+    testCompileOnly(libs.viaduct.runtime)
+    testCompileOnly("javax.inject:javax.inject:1")
+    // Thin wiring jars for runtime (fat jars above cover compile-time).
+    implementation("com.airbnb.viaduct.service:wiring:$viaductVersion")
+    implementation("com.airbnb.viaduct.engine:wiring:$viaductVersion")
+    implementation("com.airbnb.viaduct.tenant:wiring:$viaductVersion")
     implementation(libs.graphql.java)
     implementation("javax.inject:javax.inject:1")
     implementation(libs.logback.classic)
@@ -115,12 +127,6 @@ tasks.withType<Zip> { duplicatesStrategy = DuplicatesStrategy.EXCLUDE }
 tasks.withType<Sync> { duplicatesStrategy = DuplicatesStrategy.EXCLUDE }
 
 // Force Netty to a patched version to address CVEs (CRLF injection, HTTP request smuggling).
-// Also force the four internal Viaduct artifacts that tenant-api:0.29.0's testFixturesApiElements
-// variant incorrectly declares as version "INCLUDED" (published module metadata bug). These four
-// lines can be removed once Viaduct ships a fix.
-val viaductVersion: String = libs.versions.viaduct.get()
-val nettyVersion: String = libs.versions.netty.get()
-val jacksonCore3Version: String = libs.versions.jackson3.get()
 configurations.all {
     resolutionStrategy.force(
         "tools.jackson.core:jackson-core:$jacksonCore3Version",
@@ -153,12 +159,6 @@ afterEvaluate {
 tasks.test {
     useJUnitPlatform()
     finalizedBy(tasks.jacocoTestReport)
-    // viaduct:runtime is a fat jar that embeds JUnit 5.11 without relocation. Moving it to the
-    // end of the classpath ensures our declared JUnit 5.12.2 jars are loaded first.
-    doFirst {
-        val runtimeJar = classpath.filter { "runtime-0.31" in it.name }
-        classpath = classpath.minus(runtimeJar).plus(runtimeJar)
-    }
 }
 
 tasks.jacocoTestReport {
