@@ -2,6 +2,8 @@ package org.tuchscherer.database.repositories
 
 import org.tuchscherer.database.Comment
 import org.tuchscherer.database.Comments
+import org.tuchscherer.database.Posts
+import org.tuchscherer.database.Users
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.inList
@@ -28,20 +30,20 @@ class ExposedCommentRepository : CommentRepository {
         Comment.find { Comments.postId eq postId }.toList()
     }
 
-    override fun findByAuthorId(authorId: EntityID<UUID>): List<Comment> = transaction {
+    override fun findByAuthorId(authorId: UUID): List<Comment> = transaction {
         Comment.find { Comments.authorId eq authorId }.toList()
     }
 
     override fun create(
         content: String,
-        postId: EntityID<UUID>,
-        authorId: EntityID<UUID>,
+        postId: UUID,
+        authorId: UUID,
         createdAt: LocalDateTime
     ): Comment = transaction {
         Comment.new {
             this.content = content
-            this.postId = postId
-            this.authorId = authorId
+            this.postId = EntityID(postId, Posts)
+            this.authorId = EntityID(authorId, Users)
             this.createdAt = createdAt
         }
     }

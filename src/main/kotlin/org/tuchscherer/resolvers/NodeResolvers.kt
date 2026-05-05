@@ -15,58 +15,73 @@ import viaduct.api.grts.User as ViaductUser
 
 import java.util.UUID
 
+private fun <C, E, G> batchNodeResolve(
+    contexts: List<C>,
+    extractId: (C) -> UUID,
+    findByIds: (List<UUID>) -> Map<UUID, E>,
+    transform: (E, C) -> G,
+    entityName: String,
+): List<FieldValue<G>> {
+    val ids = contexts.map(extractId)
+    val byId = findByIds(ids)
+    return contexts.zip(ids).map { (ctx, id) ->
+        byId[id]?.let { FieldValue.ofValue(transform(it, ctx)) }
+            ?: FieldValue.ofError(NotFoundException("$entityName not found: $id"))
+    }
+}
+
 @Resolver
 class UserNodeResolver(
     private val userRepository: UserRepository
 ) : NodeResolvers.User() {
-    override suspend fun batchResolve(contexts: List<Context>): List<FieldValue<ViaductUser>> {
-        val ids = contexts.map { UUID.fromString(it.id.internalID) }
-        val byId = userRepository.findByIds(ids)
-        return contexts.zip(ids).map { (ctx, id) ->
-            byId[id]?.let { FieldValue.ofValue(it.toViaductUser(ctx)) }
-                ?: FieldValue.ofError(NotFoundException("User not found: $id"))
-        }
-    }
+    override suspend fun batchResolve(contexts: List<Context>): List<FieldValue<ViaductUser>> =
+        batchNodeResolve(
+            contexts = contexts,
+            extractId = { UUID.fromString(it.id.internalID) },
+            findByIds = userRepository::findByIds,
+            transform = { user, ctx -> user.toViaductUser(ctx) },
+            entityName = "User",
+        )
 }
 
 @Resolver
 class BlogPostNodeResolver(
     private val postRepository: PostRepository
 ) : NodeResolvers.BlogPost() {
-    override suspend fun batchResolve(contexts: List<Context>): List<FieldValue<ViaductBlogPost>> {
-        val ids = contexts.map { UUID.fromString(it.id.internalID) }
-        val byId = postRepository.findByIds(ids)
-        return contexts.zip(ids).map { (ctx, id) ->
-            byId[id]?.let { FieldValue.ofValue(it.toViaductBlogPost(ctx)) }
-                ?: FieldValue.ofError(NotFoundException("Post not found: $id"))
-        }
-    }
+    override suspend fun batchResolve(contexts: List<Context>): List<FieldValue<ViaductBlogPost>> =
+        batchNodeResolve(
+            contexts = contexts,
+            extractId = { UUID.fromString(it.id.internalID) },
+            findByIds = postRepository::findByIds,
+            transform = { post, ctx -> post.toViaductBlogPost(ctx) },
+            entityName = "Post",
+        )
 }
 
 @Resolver
 class CommentNodeResolver(
     private val commentRepository: CommentRepository
 ) : NodeResolvers.Comment() {
-    override suspend fun batchResolve(contexts: List<Context>): List<FieldValue<ViaductComment>> {
-        val ids = contexts.map { UUID.fromString(it.id.internalID) }
-        val byId = commentRepository.findByIds(ids)
-        return contexts.zip(ids).map { (ctx, id) ->
-            byId[id]?.let { FieldValue.ofValue(it.toViaductComment(ctx)) }
-                ?: FieldValue.ofError(NotFoundException("Comment not found: $id"))
-        }
-    }
+    override suspend fun batchResolve(contexts: List<Context>): List<FieldValue<ViaductComment>> =
+        batchNodeResolve(
+            contexts = contexts,
+            extractId = { UUID.fromString(it.id.internalID) },
+            findByIds = commentRepository::findByIds,
+            transform = { comment, ctx -> comment.toViaductComment(ctx) },
+            entityName = "Comment",
+        )
 }
 
 @Resolver
 class LikeNodeResolver(
     private val likeRepository: LikeRepository
 ) : NodeResolvers.Like() {
-    override suspend fun batchResolve(contexts: List<Context>): List<FieldValue<ViaductLike>> {
-        val ids = contexts.map { UUID.fromString(it.id.internalID) }
-        val byId = likeRepository.findByIds(ids)
-        return contexts.zip(ids).map { (ctx, id) ->
-            byId[id]?.let { FieldValue.ofValue(it.toViaductLike(ctx)) }
-                ?: FieldValue.ofError(NotFoundException("Like not found: $id"))
-        }
-    }
+    override suspend fun batchResolve(contexts: List<Context>): List<FieldValue<ViaductLike>> =
+        batchNodeResolve(
+            contexts = contexts,
+            extractId = { UUID.fromString(it.id.internalID) },
+            findByIds = likeRepository::findByIds,
+            transform = { like, ctx -> like.toViaductLike(ctx) },
+            entityName = "Like",
+        )
 }

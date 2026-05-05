@@ -30,8 +30,8 @@ class CreateCommentResolver(
 
         val comment = commentRepository.create(
             content = input.content,
-            postId = post.id,
-            authorId = user.id,
+            postId = post.id.value,
+            authorId = user.id.value,
             createdAt = LocalDateTime.now()
         )
 

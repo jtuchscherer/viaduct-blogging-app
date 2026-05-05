@@ -52,14 +52,10 @@ class DatabaseFactory(
         }
     }
 
-    fun healthCheck(): Boolean {
-        return try {
-            transaction {
-                exec("SELECT 1") { true } ?: true
-            }
-            true
-        } catch (e: Exception) {
-            false
-        }
+    fun healthCheck(): Boolean = try {
+        transaction { exec("SELECT 1") { true } ?: true }
+        true
+    } catch (e: Exception) {
+        false
     }
 }

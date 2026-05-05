@@ -1,7 +1,6 @@
 package org.tuchscherer.database.repositories
 
 import org.tuchscherer.database.Comment
-import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import java.time.LocalDateTime
 import java.util.*
 
@@ -27,15 +26,15 @@ interface CommentRepository {
     /**
      * Find all comments by a specific author.
      */
-    fun findByAuthorId(authorId: EntityID<UUID>): List<Comment>
+    fun findByAuthorId(authorId: UUID): List<Comment>
 
     /**
      * Create a new comment.
      */
     fun create(
         content: String,
-        postId: EntityID<UUID>,
-        authorId: EntityID<UUID>,
+        postId: UUID,
+        authorId: UUID,
         createdAt: LocalDateTime = LocalDateTime.now()
     ): Comment
 

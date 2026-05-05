@@ -71,7 +71,7 @@ class CreatePostResolverTest : DefaultAbstractResolverTestBase() {
             postRepository.create(
                 title = "New Post",
                 content = "New content",
-                authorId = mockUser.id,
+                authorId = mockUser.id.value,
                 createdAt = any(),
                 updatedAt = any()
             )

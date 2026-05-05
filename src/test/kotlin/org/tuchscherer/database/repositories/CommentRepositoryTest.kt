@@ -40,7 +40,7 @@ class CommentRepositoryTest {
         testPost = postRepository.create(
             title = "Test Post",
             content = "Test Content",
-            authorId = testUser.id
+            authorId = testUser.id.value
         )
     }
 
@@ -58,8 +58,8 @@ class CommentRepositoryTest {
     fun `create comment successfully`() {
         val comment = commentRepository.create(
             content = "This is a test comment",
-            postId = testPost.id,
-            authorId = testUser.id
+            postId = testPost.id.value,
+            authorId = testUser.id.value
         )
 
         Assertions.assertNotNull(comment)
@@ -72,8 +72,8 @@ class CommentRepositoryTest {
     fun `findById returns comment when exists`() {
         val created = commentRepository.create(
             content = "Test comment",
-            postId = testPost.id,
-            authorId = testUser.id
+            postId = testPost.id.value,
+            authorId = testUser.id.value
         )
 
         val found = commentRepository.findById(created.id.value)
@@ -93,8 +93,8 @@ class CommentRepositoryTest {
 
     @Test
     fun `findByIds returns map of matching comments and omits missing ids`() {
-        val c1 = commentRepository.create(content = "one", postId = testPost.id, authorId = testUser.id)
-        val c2 = commentRepository.create(content = "two", postId = testPost.id, authorId = testUser.id)
+        val c1 = commentRepository.create(content = "one", postId = testPost.id.value, authorId = testUser.id.value)
+        val c2 = commentRepository.create(content = "two", postId = testPost.id.value, authorId = testUser.id.value)
         val missingId = UUID.randomUUID()
 
         val result = commentRepository.findByIds(listOf(c1.id.value, c2.id.value, missingId))
@@ -114,13 +114,13 @@ class CommentRepositoryTest {
     fun `findByPostId returns all comments for post`() {
         commentRepository.create(
             content = "Comment 1",
-            postId = testPost.id,
-            authorId = testUser.id
+            postId = testPost.id.value,
+            authorId = testUser.id.value
         )
         commentRepository.create(
             content = "Comment 2",
-            postId = testPost.id,
-            authorId = testUser.id
+            postId = testPost.id.value,
+            authorId = testUser.id.value
         )
 
         val comments = commentRepository.findByPostId(testPost.id.value)
@@ -132,16 +132,16 @@ class CommentRepositoryTest {
     fun `findByAuthorId returns all comments by author`() {
         commentRepository.create(
             content = "Comment 1",
-            postId = testPost.id,
-            authorId = testUser.id
+            postId = testPost.id.value,
+            authorId = testUser.id.value
         )
         commentRepository.create(
             content = "Comment 2",
-            postId = testPost.id,
-            authorId = testUser.id
+            postId = testPost.id.value,
+            authorId = testUser.id.value
         )
 
-        val comments = commentRepository.findByAuthorId(testUser.id)
+        val comments = commentRepository.findByAuthorId(testUser.id.value)
 
         assertEquals(2, comments.size)
     }
@@ -150,8 +150,8 @@ class CommentRepositoryTest {
     fun `delete comment removes from database`() {
         val comment = commentRepository.create(
             content = "Test comment",
-            postId = testPost.id,
-            authorId = testUser.id
+            postId = testPost.id.value,
+            authorId = testUser.id.value
         )
 
         val deleted = commentRepository.delete(comment.id.value)
@@ -172,13 +172,13 @@ class CommentRepositoryTest {
     fun `countByPostId returns correct count`() {
         commentRepository.create(
             content = "Comment 1",
-            postId = testPost.id,
-            authorId = testUser.id
+            postId = testPost.id.value,
+            authorId = testUser.id.value
         )
         commentRepository.create(
             content = "Comment 2",
-            postId = testPost.id,
-            authorId = testUser.id
+            postId = testPost.id.value,
+            authorId = testUser.id.value
         )
 
         val count = commentRepository.countByPostId(testPost.id.value)
@@ -191,8 +191,8 @@ class CommentRepositoryTest {
         for (i in 1..5) {
             commentRepository.create(
                 content = "Page comment $i",
-                postId = testPost.id,
-                authorId = testUser.id
+                postId = testPost.id.value,
+                authorId = testUser.id.value
             )
         }
 
@@ -206,8 +206,8 @@ class CommentRepositoryTest {
         for (i in 1..5) {
             commentRepository.create(
                 content = "Offset comment $i",
-                postId = testPost.id,
-                authorId = testUser.id
+                postId = testPost.id.value,
+                authorId = testUser.id.value
             )
         }
 
@@ -224,8 +224,8 @@ class CommentRepositoryTest {
     fun `findPage beyond end returns empty list`() {
         commentRepository.create(
             content = "Only comment",
-            postId = testPost.id,
-            authorId = testUser.id
+            postId = testPost.id.value,
+            authorId = testUser.id.value
         )
 
         val page = commentRepository.findPage(limit = 10, offset = 100)
@@ -235,8 +235,8 @@ class CommentRepositoryTest {
 
     @Test
     fun `findByPostId by UUID returns comments for post`() {
-        commentRepository.create(content = "Comment 1", postId = testPost.id, authorId = testUser.id)
-        commentRepository.create(content = "Comment 2", postId = testPost.id, authorId = testUser.id)
+        commentRepository.create(content = "Comment 1", postId = testPost.id.value, authorId = testUser.id.value)
+        commentRepository.create(content = "Comment 2", postId = testPost.id.value, authorId = testUser.id.value)
 
         val comments = commentRepository.findByPostId(testPost.id.value)
 
@@ -254,8 +254,8 @@ class CommentRepositoryTest {
     fun `update persists comment content changes`() {
         val comment = commentRepository.create(
             content = "Original content",
-            postId = testPost.id,
-            authorId = testUser.id
+            postId = testPost.id.value,
+            authorId = testUser.id.value
         )
 
         transaction { comment.content = "Updated content" }
@@ -268,8 +268,8 @@ class CommentRepositoryTest {
 
     @Test
     fun `countByPostId by UUID returns correct count`() {
-        commentRepository.create(content = "Comment 1", postId = testPost.id, authorId = testUser.id)
-        commentRepository.create(content = "Comment 2", postId = testPost.id, authorId = testUser.id)
+        commentRepository.create(content = "Comment 1", postId = testPost.id.value, authorId = testUser.id.value)
+        commentRepository.create(content = "Comment 2", postId = testPost.id.value, authorId = testUser.id.value)
 
         val count = commentRepository.countByPostId(testPost.id.value)
 
@@ -278,8 +278,8 @@ class CommentRepositoryTest {
 
     @Test
     fun `count returns total number of comments`() {
-        commentRepository.create(content = "Comment 1", postId = testPost.id, authorId = testUser.id)
-        commentRepository.create(content = "Comment 2", postId = testPost.id, authorId = testUser.id)
+        commentRepository.create(content = "Comment 1", postId = testPost.id.value, authorId = testUser.id.value)
+        commentRepository.create(content = "Comment 2", postId = testPost.id.value, authorId = testUser.id.value)
 
         val count = commentRepository.count()
 
@@ -288,8 +288,8 @@ class CommentRepositoryTest {
 
     @Test
     fun `findAll returns all comments`() {
-        commentRepository.create(content = "Comment 1", postId = testPost.id, authorId = testUser.id)
-        commentRepository.create(content = "Comment 2", postId = testPost.id, authorId = testUser.id)
+        commentRepository.create(content = "Comment 1", postId = testPost.id.value, authorId = testUser.id.value)
+        commentRepository.create(content = "Comment 2", postId = testPost.id.value, authorId = testUser.id.value)
 
         val all = commentRepository.findAll()
 
@@ -298,8 +298,8 @@ class CommentRepositoryTest {
 
     @Test
     fun `countByUserId returns comment count for user`() {
-        commentRepository.create(content = "Comment 1", postId = testPost.id, authorId = testUser.id)
-        commentRepository.create(content = "Comment 2", postId = testPost.id, authorId = testUser.id)
+        commentRepository.create(content = "Comment 1", postId = testPost.id.value, authorId = testUser.id.value)
+        commentRepository.create(content = "Comment 2", postId = testPost.id.value, authorId = testUser.id.value)
 
         val count = commentRepository.countByUserId(testUser.id.value)
 
@@ -315,8 +315,8 @@ class CommentRepositoryTest {
 
     @Test
     fun `deleteByUserId removes all comments by user`() {
-        commentRepository.create(content = "Comment 1", postId = testPost.id, authorId = testUser.id)
-        commentRepository.create(content = "Comment 2", postId = testPost.id, authorId = testUser.id)
+        commentRepository.create(content = "Comment 1", postId = testPost.id.value, authorId = testUser.id.value)
+        commentRepository.create(content = "Comment 2", postId = testPost.id.value, authorId = testUser.id.value)
 
         val deleted = commentRepository.deleteByUserId(testUser.id.value)
 
@@ -335,8 +335,8 @@ class CommentRepositoryTest {
     fun `getAuthorForComment returns author when comment exists`() {
         val comment = commentRepository.create(
             content = "Test comment",
-            postId = testPost.id,
-            authorId = testUser.id
+            postId = testPost.id.value,
+            authorId = testUser.id.value
         )
 
         val author = commentRepository.getAuthorForComment(comment.id.value)
@@ -349,8 +349,8 @@ class CommentRepositoryTest {
     fun `getPostForComment returns post when comment exists`() {
         val comment = commentRepository.create(
             content = "Test comment",
-            postId = testPost.id,
-            authorId = testUser.id
+            postId = testPost.id.value,
+            authorId = testUser.id.value
         )
 
         val post = commentRepository.getPostForComment(comment.id.value)

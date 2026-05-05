@@ -80,9 +80,9 @@ class LikePostResolverTest : DefaultAbstractResolverTestBase() {
         val args = Mutation_LikePost_Arguments.Builder(context).postId(context.globalIDFor(ViaductBlogPost.Reflection, postId.toString())).build()
 
         every { postRepository.findById(postId) } returns mockPost
-        every { likeRepository.findByPostAndUser(mockPost.id, mockUser.id) } returns null
+        every { likeRepository.findByPostAndUser(mockPost.id.value, mockUser.id.value) } returns null
         every {
-            likeRepository.create(postId = mockPost.id, userId = mockUser.id, createdAt = any())
+            likeRepository.create(postId = mockPost.id.value, userId = mockUser.id.value, createdAt = any())
         } returns mockLike
 
         val result = runMutationFieldResolver(
@@ -102,7 +102,7 @@ class LikePostResolverTest : DefaultAbstractResolverTestBase() {
         val args = Mutation_LikePost_Arguments.Builder(context).postId(context.globalIDFor(ViaductBlogPost.Reflection, postId.toString())).build()
 
         every { postRepository.findById(postId) } returns mockPost
-        every { likeRepository.findByPostAndUser(mockPost.id, mockUser.id) } returns mockLike
+        every { likeRepository.findByPostAndUser(mockPost.id.value, mockUser.id.value) } returns mockLike
 
         val result = runMutationFieldResolver(
             resolver = resolver,

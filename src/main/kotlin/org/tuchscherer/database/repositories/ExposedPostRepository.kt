@@ -6,6 +6,7 @@ import org.tuchscherer.database.Like
 import org.tuchscherer.database.Likes
 import org.tuchscherer.database.Post
 import org.tuchscherer.database.Posts
+import org.tuchscherer.database.Users
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.inList
@@ -28,7 +29,7 @@ class ExposedPostRepository : PostRepository {
             .associateBy { it.id.value }
     }
 
-    override fun findByAuthorId(authorId: EntityID<UUID>): List<Post> = transaction {
+    override fun findByAuthorId(authorId: UUID): List<Post> = transaction {
         Post.find { Posts.authorId eq authorId }.toList()
     }
 
@@ -39,14 +40,14 @@ class ExposedPostRepository : PostRepository {
     override fun create(
         title: String,
         content: String,
-        authorId: EntityID<UUID>,
+        authorId: UUID,
         createdAt: LocalDateTime,
         updatedAt: LocalDateTime
     ): Post = transaction {
         Post.new {
             this.title = title
             this.content = content
-            this.authorId = authorId
+            this.authorId = EntityID(authorId, Users)
             this.createdAt = createdAt
             this.updatedAt = updatedAt
         }
@@ -88,10 +89,6 @@ class ExposedPostRepository : PostRepository {
 
     override fun count(): Long = transaction {
         Post.all().count()
-    }
-
-    override fun countByAuthor(authorId: EntityID<UUID>): Long = transaction {
-        Post.find { Posts.authorId eq authorId }.count()
     }
 
     override fun getAuthorIdsByPostIds(postIds: List<UUID>): Map<UUID, UUID> = transaction {

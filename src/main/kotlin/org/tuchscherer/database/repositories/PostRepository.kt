@@ -1,7 +1,6 @@
 package org.tuchscherer.database.repositories
 
 import org.tuchscherer.database.Post
-import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import java.time.LocalDateTime
 import java.util.*
 
@@ -22,7 +21,7 @@ interface PostRepository {
     /**
      * Find all posts by a specific author.
      */
-    fun findByAuthorId(authorId: EntityID<UUID>): List<Post>
+    fun findByAuthorId(authorId: UUID): List<Post>
 
     /**
      * Get all posts.
@@ -35,7 +34,7 @@ interface PostRepository {
     fun create(
         title: String,
         content: String,
-        authorId: EntityID<UUID>,
+        authorId: UUID,
         createdAt: LocalDateTime = LocalDateTime.now(),
         updatedAt: LocalDateTime = LocalDateTime.now()
     ): Post
@@ -69,11 +68,6 @@ interface PostRepository {
      * Count total posts.
      */
     fun count(): Long
-
-    /**
-     * Count posts by author.
-     */
-    fun countByAuthor(authorId: EntityID<UUID>): Long
 
     /**
      * Get author IDs for multiple posts in a single query.

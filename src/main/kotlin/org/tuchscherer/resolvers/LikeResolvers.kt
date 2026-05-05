@@ -22,7 +22,7 @@ class LikePostMutationResolver(
         val post = postRepository.findById(postId)
             ?: throw NotFoundException("Post not found")
 
-        val existingLike = likeRepository.findByPostAndUser(post.id, user.id)
+        val existingLike = likeRepository.findByPostAndUser(post.id.value, user.id.value)
 
         if (existingLike != null) {
             return ViaductLike.of(ctx) {
@@ -31,8 +31,8 @@ class LikePostMutationResolver(
             }
         } else {
             val like = likeRepository.create(
-                postId = post.id,
-                userId = user.id,
+                postId = post.id.value,
+                userId = user.id.value,
                 createdAt = LocalDateTime.now()
             )
 
@@ -56,6 +56,6 @@ class UnlikePostResolver(
         val post = postRepository.findById(postId)
             ?: throw NotFoundException("Post not found")
 
-        return likeRepository.deleteByPostAndUser(post.id, user.id)
+        return likeRepository.deleteByPostAndUser(post.id.value, user.id.value)
     }
 }

@@ -86,8 +86,8 @@ class CreateCommentResolverTest : DefaultAbstractResolverTestBase() {
         every {
             commentRepository.create(
                 content = "New comment",
-                postId = mockPost.id,
-                authorId = mockUser.id,
+                postId = mockPost.id.value,
+                authorId = mockUser.id.value,
                 createdAt = any()
             )
         } returns mockComment

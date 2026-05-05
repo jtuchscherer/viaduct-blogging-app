@@ -66,7 +66,7 @@ class MyPostsResolverTest : DefaultAbstractResolverTestBase() {
     fun `MyPostsResolver returns posts for authenticated user`() = runBlocking {
         val resolver = MyPostsResolver(postRepository)
 
-        every { postRepository.findByAuthorId(mockUser.id) } returns listOf(mockPost)
+        every { postRepository.findByAuthorId(mockUser.id.value) } returns listOf(mockPost)
 
         val result = runFieldResolver(
             resolver = resolver,

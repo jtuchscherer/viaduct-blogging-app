@@ -2,6 +2,8 @@ package org.tuchscherer.database.repositories
 
 import org.tuchscherer.database.Like
 import org.tuchscherer.database.Likes
+import org.tuchscherer.database.Posts
+import org.tuchscherer.database.Users
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
@@ -29,26 +31,22 @@ class ExposedLikeRepository : LikeRepository {
         Like.find { Likes.postId eq postId }.toList()
     }
 
-    override fun findByUserId(userId: EntityID<UUID>): List<Like> = transaction {
+    override fun findByUserId(userId: UUID): List<Like> = transaction {
         Like.find { Likes.userId eq userId }.toList()
     }
 
-    override fun findByPostAndUser(postId: EntityID<UUID>, userId: EntityID<UUID>): Like? = transaction {
+    override fun findByPostAndUser(postId: UUID, userId: UUID): Like? = transaction {
         Like.find { (Likes.postId eq postId) and (Likes.userId eq userId) }.firstOrNull()
     }
 
-    override fun existsByPostAndUser(postId: EntityID<UUID>, userId: EntityID<UUID>): Boolean = transaction {
-        !Like.find { (Likes.postId eq postId) and (Likes.userId eq userId) }.empty()
-    }
-
     override fun create(
-        postId: EntityID<UUID>,
-        userId: EntityID<UUID>,
+        postId: UUID,
+        userId: UUID,
         createdAt: LocalDateTime
     ): Like = transaction {
         Like.new {
-            this.postId = postId
-            this.userId = userId
+            this.postId = EntityID(postId, Posts)
+            this.userId = EntityID(userId, Users)
             this.createdAt = createdAt
         }
     }
@@ -63,7 +61,7 @@ class ExposedLikeRepository : LikeRepository {
         }
     }
 
-    override fun deleteByPostAndUser(postId: EntityID<UUID>, userId: EntityID<UUID>): Boolean = transaction {
+    override fun deleteByPostAndUser(postId: UUID, userId: UUID): Boolean = transaction {
         val like = findByPostAndUser(postId, userId)
         if (like != null) {
             like.delete()
