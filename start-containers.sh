@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Viaduct Blogging App — Docker Startup Script
-# Builds the Gradle distribution and starts both backend and frontend via Docker Compose.
+# Viaduct Blogging App — Podman Startup Script
+# Builds the Gradle distribution and starts both backend and frontend via Podman Compose.
 
 set -e
 
@@ -15,7 +15,7 @@ cleanup() {
     trap - SIGINT SIGTERM EXIT
     echo ""
     echo -e "${YELLOW}Shutting down...${NC}"
-    docker compose down 2>/dev/null || true
+    podman compose down 2>/dev/null || true
     echo -e "${GREEN}All services stopped.${NC}"
     exit 0
 }
@@ -60,7 +60,7 @@ echo ""
 # --- Start all containers ---
 
 echo -e "${BLUE}Starting containers...${NC}"
-podman compose up --build > docker-compose.log 2>&1 &
+podman compose up --build > podman-compose.log 2>&1 &
 COMPOSE_PID=$!
 echo -e "${GREEN}Containers started (PID: $COMPOSE_PID)${NC}"
 echo ""
@@ -75,7 +75,7 @@ for i in $(seq 1 20); do
     fi
     if [ "$i" -eq 20 ]; then
         echo -e "${RED}Backend did not become healthy after 40s. Check logs:${NC}"
-        echo "  docker compose logs app"
+        echo "  podman compose logs app"
         exit 1
     fi
     sleep 2
@@ -103,7 +103,7 @@ for i in $(seq 1 15); do
     fi
     if [ "$i" -eq 15 ]; then
         echo -e "${RED}Frontend did not become ready after 30s. Check logs:${NC}"
-        echo "  docker compose logs frontend"
+        echo "  podman compose logs frontend"
         exit 1
     fi
     sleep 2
@@ -120,14 +120,14 @@ echo ""
 echo -e "${BLUE}Services:${NC}"
 echo "  Frontend:          http://localhost:5173"
 echo "  Backend:           http://localhost:8080"
-echo "    GraphQL:         http://localhost:8080/graphql"
+echo "    GraphiQL:        http://localhost:8080/graphiql"
 echo "    Health:          http://localhost:8080/health"
 echo "    Metrics:         http://localhost:8080/metrics"
 echo ""
 echo -e "${BLUE}Useful commands:${NC}"
-echo "  tail -f docker-compose.log       # all container logs"
-echo "  docker compose logs -f app       # backend logs only"
-echo "  docker compose logs -f frontend  # frontend logs only"
+echo "  tail -f podman-compose.log       # all container logs"
+echo "  podman compose logs -f app       # backend logs only"
+echo "  podman compose logs -f frontend  # frontend logs only"
 echo ""
 echo -e "${YELLOW}Press Ctrl+C to stop all services${NC}"
 echo ""
