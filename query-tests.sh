@@ -811,6 +811,7 @@ curl -s -X POST $GRAPHQL_URL \
     -H "Authorization: Bearer $USER1_TOKEN" \
     -d "{\"query\": \"mutation { recordPostView(postId: \\\"$POST1_ID\\\") }\"}" > /dev/null
 
+
 # admin.stats — analytics fields (totalViews, topPosts)
 print_info "Checking admin.stats analytics fields (totalViews, topPosts)..."
 ADMIN_ANALYTICS_STATS_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
