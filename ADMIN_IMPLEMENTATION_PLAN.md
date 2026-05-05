@@ -69,7 +69,7 @@ sqlite3 blog.db "UPDATE users SET is_admin = 1 WHERE username = 'admin';"
 sqlite3 blog.db "SELECT username, is_admin FROM users;"
 ```
 
-**Note**: The column will be added automatically by `SchemaUtils.create()` on next startup (SQLite allows adding columns with defaults). For production, this should use a proper migration (Phase 16 work).
+**Note**: The column will be added automatically by `SchemaUtils.createMissingTablesAndColumns()` on next startup for SQLite/dev. For production PostgreSQL, `V1__create_tables.sql` includes the `is_admin` column.
 
 ---
 

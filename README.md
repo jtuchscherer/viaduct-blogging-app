@@ -167,33 +167,12 @@ cd frontend && npm run test:e2e   # Playwright only (servers must already be run
 
 Project overview, requirements, script reference, and links to other docs.
 
-### `DEVELOPMENT_PLAN.md` — architecture and design
-
-High-level design document covering:
-- Database schema (Users, Posts, Comments, Likes tables)
-- Full GraphQL schema (types, queries, mutations)
-- React frontend structure (pages, components, routing)
-- Authentication system design (JWT, REST auth endpoints, Apollo middleware)
-- Implementation roadmap (phases 1–6, all complete)
-- Current status summary for backend and frontend
-
-This is the reference document for understanding the overall architecture.
-
 ### `TODO.md` — feature phases and roadmap
 
-Tracks every implementation phase with task checklists, technical approaches, and success criteria. Phases 1–15, 17–19, and 10 are complete. Currently tracks:
+Tracks every implementation phase with task checklists, technical approaches, and success criteria. Phases 1–19 are complete. Currently tracks:
 
-- **Phase 16** (next): PostgreSQL/RDS support, HikariCP connection pooling, Flyway migrations
-- UI bug fix status
-- Tech debt items
-
-### `CODE_QUALITY_PLAN.md` — tech debt and code quality
-
-Findings from a Clean Code / SOLID / security review of the codebase, organised by priority:
-- **Bugs** (all resolved): duplicate username check, crash on deleted user, raw HTML in post excerpts
-- **SOLID & Clean Code** (all resolved): SRP auth route extraction, DRY auth helper, domain exceptions, shared TypeScript interfaces
-- **Test quality** (all resolved): behavior-based assertions, removed relaxed mocks, edge case coverage
-- **Security**: input validation and length limits done; rate limiting on auth endpoints still open
+- **Phase 20** (next): Analytics frontend — view tracking UI, trending sort, admin analytics dashboard
+- **Phases 21–23**: CheckedList frontend
 
 ### `CLAUDE.md` — AI assistant instructions
 
