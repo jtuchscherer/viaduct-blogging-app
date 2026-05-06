@@ -5,8 +5,10 @@ import org.tuchscherer.database.Comments
 import org.tuchscherer.database.Like
 import org.tuchscherer.database.Likes
 import org.tuchscherer.database.Post
+import org.tuchscherer.database.PostType
 import org.tuchscherer.database.Posts
 import org.tuchscherer.database.Users
+import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.inList
@@ -30,11 +32,11 @@ class ExposedPostRepository : PostRepository {
     }
 
     override fun findByAuthorId(authorId: UUID): List<Post> = transaction {
-        Post.find { Posts.authorId eq authorId }.toList()
+        Post.find { (Posts.authorId eq authorId) and (Posts.postType eq PostType.BLOG_POST) }.toList()
     }
 
     override fun findAll(): List<Post> = transaction {
-        Post.all().toList()
+        Post.find { Posts.postType eq PostType.BLOG_POST }.toList()
     }
 
     override fun create(
@@ -80,7 +82,7 @@ class ExposedPostRepository : PostRepository {
     }
 
     override fun findPage(limit: Int, offset: Int): List<Post> = transaction {
-        Post.all()
+        Post.find { Posts.postType eq PostType.BLOG_POST }
             .orderBy(Posts.createdAt to org.jetbrains.exposed.v1.core.SortOrder.DESC)
             .limit(limit)
             .offset(offset.toLong())
@@ -88,7 +90,7 @@ class ExposedPostRepository : PostRepository {
     }
 
     override fun count(): Long = transaction {
-        Post.all().count()
+        Post.find { Posts.postType eq PostType.BLOG_POST }.count()
     }
 
     override fun getAuthorIdsByPostIds(postIds: List<UUID>): Map<UUID, UUID> = transaction {

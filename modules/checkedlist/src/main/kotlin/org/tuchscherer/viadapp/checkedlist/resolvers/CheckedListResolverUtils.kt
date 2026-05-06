@@ -27,6 +27,7 @@ internal fun PostData.toViaductPost(ctx: ExecutionContext): ViaductCheckedListPo
     return ViaductCheckedListPost.of(ctx) {
         id(ctx.globalIDFor(ViaductCheckedListPost.Reflection, d.id.toString()))
         title(d.title)
+        description(d.description)
         createdAt(d.createdAt)
         updatedAt(d.updatedAt)
     }

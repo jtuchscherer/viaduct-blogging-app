@@ -107,7 +107,7 @@ test.describe('CheckedList — checkedListPosts query', () => {
     await createCheckedListPost(page, token, title, ['Task A', 'Task B']);
 
     const body = await gql(page, '{ checkedListPosts { id title items { text checked position } } }');
-    const myPost = body.data.checkedListPosts.find((p: any) => p.title === title);
+    const myPost = body.data.checkedListPosts.find((p: { title: string }) => p.title === title);
     expect(myPost).toBeTruthy();
     expect(myPost.items).toHaveLength(2);
     expect(myPost.items[0].text).toBe('Task A');
@@ -281,7 +281,7 @@ test.describe('CheckedList — analytics (viewCount & readTimeMinutes)', () => {
       page,
       `{ checkedListPosts { id viewCount } }`,
     );
-    const beforePost = before.data.checkedListPosts.find((p: any) => p.id === post.id);
+    const beforePost = before.data.checkedListPosts.find((p: { id: string }) => p.id === post.id);
     expect(beforePost?.viewCount).toBe(0);
 
     // Record a view (no auth required)
@@ -289,7 +289,7 @@ test.describe('CheckedList — analytics (viewCount & readTimeMinutes)', () => {
 
     // After recording: viewCount should be 1
     const after = await gql(page, `{ checkedListPosts { id viewCount } }`);
-    const afterPost = after.data.checkedListPosts.find((p: any) => p.id === post.id);
+    const afterPost = after.data.checkedListPosts.find((p: { id: string }) => p.id === post.id);
     expect(afterPost?.viewCount).toBe(1);
   });
 
@@ -303,7 +303,7 @@ test.describe('CheckedList — analytics (viewCount & readTimeMinutes)', () => {
     );
 
     const body = await gql(page, `{ checkedListPosts { id readTimeMinutes } }`);
-    const found = body.data.checkedListPosts.find((p: any) => p.id === post.id);
+    const found = body.data.checkedListPosts.find((p: { id: string }) => p.id === post.id);
     expect(found).toBeTruthy();
     expect(typeof found.readTimeMinutes).toBe('number');
     expect(found.readTimeMinutes).toBeGreaterThan(0);
@@ -323,7 +323,7 @@ test.describe('CheckedList — analytics (viewCount & readTimeMinutes)', () => {
       page,
       `{ trending(limit: 50) { id __typename ... on CheckedListPost { title } ... on BlogPost { title } } }`,
     );
-    const found = body.data.trending.find((p: any) => p.id === post.id);
+    const found = body.data.trending.find((p: { id: string }) => p.id === post.id);
     expect(found).toBeTruthy();
     expect(found.__typename).toBe('CheckedListPost');
     expect(found.title).toBe(title);
