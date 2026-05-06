@@ -11,18 +11,23 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
+# Override via env vars to run alongside other test suites in parallel:
+#   GRAPHQL_PORT=8082 FRONTEND_PORT=5174 DB_FILE=blog-e2e.db ./e2e.sh
+GRAPHQL_PORT=${GRAPHQL_PORT:-8082}
+FRONTEND_PORT=${FRONTEND_PORT:-5174}
+DB_FILE=${DB_FILE:-blog-e2e.db}
+
 SERVER_PID=""
 FRONTEND_PID=""
-SERVER_LOG="/tmp/viaduct-server-e2e.log"
-FRONTEND_LOG="/tmp/viaduct-frontend-e2e.log"
+SERVER_LOG="/tmp/viaduct-server-e2e-${GRAPHQL_PORT}.log"
+FRONTEND_LOG="/tmp/viaduct-frontend-e2e-${FRONTEND_PORT}.log"
 
 cleanup() {
     echo ""
     echo -e "${YELLOW}Shutting down services...${NC}"
     [ -n "$FRONTEND_PID" ] && kill "$FRONTEND_PID" 2>/dev/null || true
     [ -n "$SERVER_PID" ]   && kill "$SERVER_PID"   2>/dev/null || true
-    pkill -f "gradle run"  2>/dev/null || true
-    rm -f blog.db
+    rm -f "${DB_FILE}"
     echo -e "${GREEN}Cleanup complete${NC}"
 }
 
@@ -51,9 +56,9 @@ echo -e "${BLUE}======================================${NC}"
 echo ""
 
 # --- Clean slate ---
-rm -f blog.db
-lsof -ti:8080 | xargs kill -9 2>/dev/null || true
-lsof -ti:5173 | xargs kill -9 2>/dev/null || true
+rm -f "${DB_FILE}"
+lsof -ti:"${GRAPHQL_PORT}" | xargs kill -9 2>/dev/null || true
+lsof -ti:"${FRONTEND_PORT}" | xargs kill -9 2>/dev/null || true
 sleep 1
 
 # --- Build backend ---
@@ -75,23 +80,26 @@ fi
 
 # --- Start backend ---
 echo -e "${BLUE}Starting backend server...${NC}"
-./gradlew run > "$SERVER_LOG" 2>&1 &
+GRAPHQL_PORT="${GRAPHQL_PORT}" \
+  CORS_ORIGIN="localhost:${FRONTEND_PORT}" \
+  DATABASE_URL="jdbc:sqlite:${PWD}/${DB_FILE}" \
+  ./gradlew run > "$SERVER_LOG" 2>&1 &
 SERVER_PID=$!
-wait_for_url "http://localhost:8080/health" "Backend (port 8080)"
+wait_for_url "http://localhost:${GRAPHQL_PORT}/health" "Backend (port ${GRAPHQL_PORT})"
 
 # --- Seed E2E admin user ---
 echo -e "${BLUE}Seeding E2E admin user...${NC}"
-curl -s -X POST http://localhost:8080/auth/register \
+curl -s -X POST "http://localhost:${GRAPHQL_PORT}/auth/register" \
   -H 'Content-Type: application/json' \
   -d '{"username":"e2e_admin","email":"e2e_admin@test.com","name":"E2E Admin","password":"e2eAdminPass1"}' > /dev/null
-sqlite3 blog.db "UPDATE users SET is_admin = 1 WHERE username = 'e2e_admin';"
+sqlite3 "${DB_FILE}" "UPDATE users SET is_admin = 1 WHERE username = 'e2e_admin';"
 echo -e "${GREEN}✓ Admin user seeded${NC}"
 
 # --- Start frontend ---
 echo -e "${BLUE}Starting frontend dev server...${NC}"
-cd frontend && npm run dev > "$FRONTEND_LOG" 2>&1 &
+cd frontend && VITE_API_URL="http://localhost:${GRAPHQL_PORT}" npm run dev -- --port "${FRONTEND_PORT}" > "$FRONTEND_LOG" 2>&1 &
 FRONTEND_PID=$!
-wait_for_url "http://localhost:5173" "Frontend (port 5173)"
+wait_for_url "http://localhost:${FRONTEND_PORT}" "Frontend (port ${FRONTEND_PORT})"
 
 echo ""
 echo -e "${BLUE}Running Playwright tests...${NC}"
@@ -100,7 +108,7 @@ echo ""
 # Run tests; capture exit code without triggering set -e
 cd frontend
 set +e
-npx playwright test "$@"
+FRONTEND_URL="http://localhost:${FRONTEND_PORT}" npx playwright test "$@"
 TEST_EXIT=$?
 set -e
 cd ..

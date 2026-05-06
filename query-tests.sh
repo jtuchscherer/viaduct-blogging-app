@@ -11,10 +11,14 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# Configuration
-AUTH_URL="http://localhost:8080"
-GRAPHQL_URL="http://localhost:8080/graphql"
-SERVER_LOG="/tmp/viaduct-server.log"
+# Configuration — override via env vars to run multiple suites in parallel:
+#   GRAPHQL_PORT=8081 DB_FILE=blog-query.db ./query-tests.sh
+GRAPHQL_PORT=${GRAPHQL_PORT:-8081}
+DB_FILE=${DB_FILE:-blog-query.db}
+
+AUTH_URL="http://localhost:${GRAPHQL_PORT}"
+GRAPHQL_URL="http://localhost:${GRAPHQL_PORT}/graphql"
+SERVER_LOG="/tmp/viaduct-server-${GRAPHQL_PORT}.log"
 
 # Test results
 TESTS_PASSED=0
@@ -52,11 +56,8 @@ cleanup() {
         wait $SERVER_PID 2>/dev/null || true
     fi
 
-    # Kill any remaining gradle processes
-    pkill -f "gradle run" 2>/dev/null || true
-
     # Remove database
-    rm -f blog.db
+    rm -f "${DB_FILE}"
 
     print_info "Cleanup complete"
 }
@@ -69,7 +70,7 @@ print_header "Viaduct Blogging App - End-to-End Test"
 
 # Step 1: Clean database
 print_header "Step 1: Clean Database"
-rm -f blog.db
+rm -f "${DB_FILE}"
 print_success "Database cleaned"
 
 # Step 2: Build the application
@@ -86,12 +87,11 @@ fi
 print_header "Step 3: Start Server"
 
 # Kill any existing servers on the port
-print_info "Checking for existing servers on port 8080..."
-lsof -ti:8080 | xargs kill -9 2>/dev/null || true
-pkill -f "gradle run" 2>/dev/null || true
+print_info "Checking for existing servers on port ${GRAPHQL_PORT}..."
+lsof -ti:"${GRAPHQL_PORT}" | xargs kill -9 2>/dev/null || true
 sleep 2
 
-./gradlew run > $SERVER_LOG 2>&1 &
+GRAPHQL_PORT="${GRAPHQL_PORT}" DATABASE_URL="jdbc:sqlite:${PWD}/${DB_FILE}" ./gradlew run > $SERVER_LOG 2>&1 &
 SERVER_PID=$!
 print_info "Server starting (PID: $SERVER_PID)..."
 
@@ -750,7 +750,7 @@ print_header "Step 12: Test Admin API"
 
 # Promote alice to admin in the database
 print_info "Promoting alice to admin..."
-sqlite3 blog.db "UPDATE users SET is_admin = 1 WHERE username = 'alice';"
+sqlite3 "${DB_FILE}" "UPDATE users SET is_admin = 1 WHERE username = 'alice';"
 print_success "Alice promoted to admin"
 
 # Re-login to get a token that carries the updated admin flag
