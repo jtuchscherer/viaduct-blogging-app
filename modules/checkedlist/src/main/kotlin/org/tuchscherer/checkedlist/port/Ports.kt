@@ -2,6 +2,28 @@ package org.tuchscherer.checkedlist.port
 
 import java.util.UUID
 
+/**
+ * # Ports and Adapters (Hexagonal Architecture)
+ *
+ * The `checkedlist` module is compiled in isolation — it has no compile-time dependency on the
+ * root project and cannot import `Post`, `Posts`, `PostType`, Exposed DAO types, or any other
+ * root-project class.
+ *
+ * The interfaces in this file are **ports**: contracts expressed entirely in the module's own
+ * terms (plain data classes and `UUID`s). They define *what* the module needs from the outside
+ * world without coupling it to any particular implementation.
+ *
+ * The **adapters** — concrete classes that implement these ports using the root project's
+ * database layer — live in `src/main/kotlin/org/tuchscherer/checkedlist/` in the root project
+ * (e.g. `ViaductPostCreationPort`, `ViaductPostSocialPort`). They are registered via Koin so
+ * the module never knows which concrete class it's talking to.
+ *
+ * This boundary means:
+ * - The checkedlist module can be compiled, tested, and reasoned about independently.
+ * - The root project can change its persistence layer without touching module code.
+ * - Module unit tests can stub any port with a simple mock.
+ */
+
 // ── Data views ────────────────────────────────────────────────────────────────
 
 /**

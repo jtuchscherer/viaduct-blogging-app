@@ -19,9 +19,15 @@ import java.time.LocalDateTime
 import java.util.UUID
 
 /**
- * Root-project implementation of [PostCreationPort]. Uses the Posts table (Exposed DAO)
- * directly — the checkedlist module cannot import root-project types, so this bridge lives
- * in the root project and is registered via Koin.
+ * **Adapter** for [PostCreationPort] (Ports and Adapters / Hexagonal Architecture).
+ *
+ * The `checkedlist` module owns the [PostCreationPort] interface but cannot import
+ * root-project types. This class is the adapter that bridges the port to the actual
+ * persistence layer: it lives in the root project, imports Exposed DAO types freely,
+ * and is registered in Koin so the module receives it at runtime without a compile-time
+ * dependency.
+ *
+ * See `modules/checkedlist/.../port/Ports.kt` for a full explanation of the pattern.
  */
 class ViaductPostCreationPort : PostCreationPort {
 
