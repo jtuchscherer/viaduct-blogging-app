@@ -1,6 +1,6 @@
 # TODO: Viaduct Blogging App — Implementation Plan
 
-**Status**: 🚀 In Progress — Core complete; CheckedList frontend (Phase 23) + AI features (Phases 24–27) remaining
+**Status**: 🚀 In Progress — Phases 1–23 complete; AI features (Phases 24–27) remaining
 
 **Last Updated**: 2026-05-06
 
@@ -8,10 +8,10 @@
 
 | Suite | Count | Status |
 |---|---|---|
-| Unit + Integration tests (`./gradlew test`) | 400 | ✅ All passing |
-| API E2E tests (`./query-tests.sh`) | 101 | ✅ All passing |
-| Browser E2E tests (Playwright, 95 tests × 3 browsers) | 285 runs | ✅ All passing |
-| Frontend unit tests (`npm test`) | 44 | ✅ All passing |
+| Unit + Integration tests (`./gradlew test`) | 483 | ✅ All passing |
+| API E2E tests (`./query-tests.sh`) | 114 | ✅ All passing |
+| Browser E2E tests (Playwright, 109 tests × 3 browsers) | 327 runs | ✅ All passing |
+| Frontend unit tests (`npm test`) | 69 | ✅ All passing |
 
 ## Completed Phases
 
@@ -28,15 +28,15 @@
 | 16 | PostgreSQL + HikariCP: driver, connection pooling, Micrometer pool metrics; Flyway migrations with `V1__create_tables.sql`; H2 tests on `MODE=PostgreSQL` |
 | 17 | Production telemetry: structured JSON logging, `CallId`/`CallLogging`, Micrometer + Prometheus `/metrics`, enhanced `/health` |
 | 18 | Rich text editor: Lexical on Create/Edit pages; DOMPurify rendering in PostDetailPage |
-| 19 | Frontend unit tests: Vitest + jsdom + Testing Library (26 tests, `npm test`) |
+| 19 | Frontend unit tests: Vitest + jsdom + Testing Library (`npm test`) |
 | Admin | Full CRUD over users/posts/comments; dashboard stats; `requireAdmin()` guard; cascading user delete |
-| CheckedList | `CheckedListPost` type with toggleable ordered items; full resolver/repo/test/frontend coverage |
-| Analytics (Phase 20) | `PostViews` table, `viewCount`/`readTimeMinutes` batch resolvers, `recordPostView` mutation, `trending` query; analytics module with full unit + integration + E2E tests |
-| Code quality | Domain exceptions, `requireAuth()` helper, input validation, structured logging, env-var config |
+| Analytics (Phase 20–22) | `PostViews` table, `viewCount`/`readTimeMinutes` batch resolvers, `recordPostView` mutation, `trending` query; admin stats analytics; homepage New/Trending sort |
+| CheckedList (Phase 23) | `CheckedListPost` type with toggleable ordered items; full resolver/repo/test/frontend coverage; unified feed with type-aware post cards; create/edit/detail UI |
+| Bug fixes | Dark mode post type toggle; CheckedList like button; author-only item toggle enforcement (backend + frontend) |
+| Code quality | Domain exceptions, `requireAuth()`/`optionalAuth()` helpers, `useLikeToggle` hook, `PaginationControls` component, `UserRepository.updateFields()`, `.btn-secondary` CSS class, Ports and Adapters documentation |
 
 ## Next Steps
 
-- **Phase 23**: CheckedList frontend — full create/view/edit/toggle UI for CheckedListPost; unified feed with type-aware post cards
 - **Phase 24**: AI foundation — `:modules:ai` module, LangChain4j + Ollama, Tracy observability, `AIService` abstraction, `/health/ai` endpoint
 - **Phase 25**: Rephrase blog post content — AI button in the editor with tone selector (Professional / Casual / Concise)
 - **Phase 26**: Checklist item auto-suggestion — "Suggest next item" button when ≥ 3 items exist (backend parallel with Phase 23; frontend after Phase 23)
@@ -117,7 +117,7 @@
 
 ---
 
-## Phase 21: Analytics Frontend — View Tracking and Post Detail Page ⏳ TODO
+## Phase 21: Analytics Frontend — View Tracking and Post Detail Page ✅ DONE
 
 **Goal**: Wire `recordPostView` into the post detail page so views are tracked automatically on open, and display `viewCount` and `readTimeMinutes` on the post detail page.
 
@@ -159,7 +159,7 @@
 
 ---
 
-## Phase 22: Analytics Frontend — Admin Stats and Homepage Sorting ⏳ TODO
+## Phase 22: Analytics Frontend — Admin Stats and Homepage Sorting ✅ DONE
 
 **Goal**: Surface analytics data in the admin dashboard and let users sort the homepage post list by trending or creation date.
 
@@ -201,7 +201,7 @@
 
 ---
 
-## Phase 23: CheckedList Frontend ⏳ TODO
+## Phase 23: CheckedList Frontend ✅ DONE
 
 **Goal**: Full frontend support for CheckedList posts — creating, viewing, editing items, and rendering alongside BlogPosts in all feeds.
 
