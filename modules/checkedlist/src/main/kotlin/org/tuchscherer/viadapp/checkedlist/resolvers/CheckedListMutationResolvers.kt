@@ -69,18 +69,30 @@ class AddCheckedListItemMutationResolver : MutationResolvers.AddCheckedListItem(
 
 /**
  * Toggles the checked state of a [CheckedListItem].
- * Requires authentication.
+ * Requires authentication AND that the caller is the post's author.
  */
 @Resolver
 class ToggleCheckedListItemMutationResolver : MutationResolvers.ToggleCheckedListItem() {
     private val currentUserProvider: CheckedListCurrentUserProvider
         by inject(CheckedListCurrentUserProvider::class.java)
     private val itemRepository: CheckedListItemRepository by inject(CheckedListItemRepository::class.java)
+    private val postCreationPort: PostCreationPort by inject(PostCreationPort::class.java)
 
     override suspend fun resolve(ctx: Context): ViaductCheckedListItem {
-        currentUserProvider.getCurrentUserId(ctx.requestContext) // ensure authenticated
+        val userId = currentUserProvider.getCurrentUserId(ctx.requestContext)
 
         val itemId = UUID.fromString(ctx.arguments.id.internalID)
+
+        val postId = itemRepository.getPostIdForItem(itemId)
+            ?: error("CheckedListItem not found: $itemId")
+
+        val postData = postCreationPort.getPostData(postId)
+            ?: error("CheckedListPost not found: $postId")
+
+        check(postData.authorId == userId) {
+            "Not authorized: only the post author can toggle checklist items"
+        }
+
         val item = itemRepository.toggleItem(itemId)
             ?: error("CheckedListItem not found: $itemId")
 

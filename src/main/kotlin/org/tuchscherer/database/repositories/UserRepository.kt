@@ -53,6 +53,13 @@ interface UserRepository {
     fun update(user: User): User
 
     /**
+     * Partially update mutable fields on an existing user.
+     * Each nullable argument is applied only when non-null.
+     * Returns the updated user, or null if no user with [id] exists.
+     */
+    fun updateFields(id: UUID, name: String? = null, email: String? = null, isAdmin: Boolean? = null): User?
+
+    /**
      * Delete a user by ID.
      */
     fun delete(id: UUID): Boolean

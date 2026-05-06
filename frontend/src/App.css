@@ -328,6 +328,7 @@ button[type="submit"]:disabled {
   font-size: 0.95rem;
   transition: border-color 0.15s, background 0.15s;
   background: #fff;
+  color: #333;
   user-select: none;
 }
 

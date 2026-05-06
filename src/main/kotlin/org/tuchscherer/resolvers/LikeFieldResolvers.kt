@@ -1,6 +1,6 @@
 package org.tuchscherer.viadapp.resolvers
 
-import org.tuchscherer.auth.RequestContext
+import org.tuchscherer.auth.optionalAuth
 import org.tuchscherer.database.repositories.CommentRepository
 import org.tuchscherer.database.repositories.LikeRepository
 import org.tuchscherer.viadapp.resolvers.resolverbases.BlogPostResolvers
@@ -42,14 +42,7 @@ class PostIsLikedByMeResolver : BlogPostResolvers.IsLikedByMe() {
 
     override suspend fun resolve(ctx: Context): Boolean {
         val postId = UUID.fromString(ctx.getObjectValue().getId().internalID)
-
-        // Get authenticated user (optional for this field)
-        val user = (ctx.requestContext as? RequestContext)?.user
-
-        if (user == null) {
-            return false
-        }
-
+        val user = optionalAuth(ctx.requestContext) ?: return false
         return likeRepository.existsByPostAndUser(postId, user.id.value)
     }
 }

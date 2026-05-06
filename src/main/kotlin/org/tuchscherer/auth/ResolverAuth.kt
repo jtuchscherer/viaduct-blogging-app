@@ -14,6 +14,14 @@ fun requireAuth(requestContext: Any?): User {
 }
 
 /**
+ * Returns the authenticated user if one is present, or null for anonymous requests.
+ * Use this for fields that are readable without authentication but may show personalised
+ * data (e.g. "is this post liked by me?").
+ */
+fun optionalAuth(requestContext: Any?): User? =
+    (requestContext as? RequestContext)?.user
+
+/**
  * Extracts and validates an admin user from a resolver context's requestContext.
  * Throws [AuthenticationException] if not authenticated, [AuthorizationException] if not admin.
  */

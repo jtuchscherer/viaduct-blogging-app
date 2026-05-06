@@ -1287,6 +1287,20 @@ else
     echo "Response: $TOGGLE_BACK_RESPONSE"
 fi
 
+# Non-author toggle — user2 must NOT be able to toggle user1's checklist item.
+print_info "Testing authorization: user2 cannot toggle user1's checklist item..."
+TOGGLE_NON_AUTHOR_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $USER2_TOKEN" \
+    -d "{\"query\": \"mutation { toggleCheckedListItem(id: \\\"$CHECKLIST_ITEM_ID\\\") { id checked } }\"}")
+
+if echo $TOGGLE_NON_AUTHOR_RESPONSE | grep -q 'errors'; then
+    print_success "Authorization check works (user2 cannot toggle user1's checklist item)"
+else
+    print_error "Authorization check failed: user2 was able to toggle user1's checklist item"
+    echo "Response: $TOGGLE_NON_AUTHOR_RESPONSE"
+fi
+
 # Delete item — should return true.
 print_info "Deleting checklist item..."
 DELETE_ITEM_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
@@ -1329,6 +1343,145 @@ else
     echo "Response: $NODE_CHECKLIST_RESPONSE"
 fi
 
+# updateCheckedListPost — update title.
+print_info "Updating checklist post title..."
+UPDATE_CL_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $USER1_TOKEN" \
+    -d "{\"query\": \"mutation { updateCheckedListPost(input: { id: \\\"$CHECKLIST_POST_ID\\\", title: \\\"Updated Checklist\\\" }) { id title } }\"}")
+
+if echo $UPDATE_CL_RESPONSE | grep -q '"Updated Checklist"'; then
+    print_success "updateCheckedListPost updated the title"
+else
+    print_error "updateCheckedListPost failed to update title"
+    echo "Response: $UPDATE_CL_RESPONSE"
+fi
+
+# updateCheckedListPost — reject blank title.
+print_info "Testing updateCheckedListPost rejects blank title..."
+UPDATE_CL_BLANK=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $USER1_TOKEN" \
+    -d "{\"query\": \"mutation { updateCheckedListPost(input: { id: \\\"$CHECKLIST_POST_ID\\\", title: \\\"   \\\" }) { id } }\"}")
+
+if echo $UPDATE_CL_BLANK | grep -q '"errors"'; then
+    print_success "updateCheckedListPost rejected blank title"
+else
+    print_error "updateCheckedListPost accepted blank title"
+    echo "Response: $UPDATE_CL_BLANK"
+fi
+
+# updateCheckedListPost — reject unauthenticated request.
+print_info "Testing auth: updateCheckedListPost requires authentication..."
+UPDATE_CL_UNAUTH=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -d "{\"query\": \"mutation { updateCheckedListPost(input: { id: \\\"$CHECKLIST_POST_ID\\\", title: \\\"Hacked\\\" }) { id } }\"}")
+
+if echo $UPDATE_CL_UNAUTH | grep -q '"errors"'; then
+    print_success "updateCheckedListPost requires authentication"
+else
+    print_error "updateCheckedListPost did not reject unauthenticated request"
+    echo "Response: $UPDATE_CL_UNAUTH"
+fi
+
+# updateCheckedListItem — update item text.
+print_info "Adding and then updating a checklist item text..."
+ADD_FOR_UPDATE=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $USER1_TOKEN" \
+    -d "{\"query\": \"mutation { addCheckedListItem(input: { postId: \\\"$CHECKLIST_POST_ID\\\", text: \\\"Original text\\\" }) { id text } }\"}")
+ITEM_FOR_UPDATE_ID=$(echo $ADD_FOR_UPDATE | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data']['addCheckedListItem']['id'])" 2>/dev/null || echo "")
+
+if [ ! -z "$ITEM_FOR_UPDATE_ID" ]; then
+    UPDATE_ITEM_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
+        -H "Content-Type: application/json" \
+        -H "Authorization: Bearer $USER1_TOKEN" \
+        -d "{\"query\": \"mutation { updateCheckedListItem(input: { id: \\\"$ITEM_FOR_UPDATE_ID\\\", text: \\\"Updated text\\\" }) { id text } }\"}")
+
+    if echo $UPDATE_ITEM_RESPONSE | grep -q '"Updated text"'; then
+        print_success "updateCheckedListItem updated the item text"
+    else
+        print_error "updateCheckedListItem failed to update item text"
+        echo "Response: $UPDATE_ITEM_RESPONSE"
+    fi
+
+    # updateCheckedListItem — reject blank text.
+    UPDATE_ITEM_BLANK=$(curl -s -X POST $GRAPHQL_URL \
+        -H "Content-Type: application/json" \
+        -H "Authorization: Bearer $USER1_TOKEN" \
+        -d "{\"query\": \"mutation { updateCheckedListItem(input: { id: \\\"$ITEM_FOR_UPDATE_ID\\\", text: \\\"   \\\" }) { id } }\"}")
+
+    if echo $UPDATE_ITEM_BLANK | grep -q '"errors"'; then
+        print_success "updateCheckedListItem rejected blank text"
+    else
+        print_error "updateCheckedListItem accepted blank text"
+        echo "Response: $UPDATE_ITEM_BLANK"
+    fi
+else
+    print_error "Could not create item for updateCheckedListItem test"
+fi
+
+# deleteCheckedListPost — create a throwaway post and delete it.
+print_info "Creating throwaway checklist post for deleteCheckedListPost test..."
+THROWAWAY_CL_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $USER1_TOKEN" \
+    -d '{"query": "mutation { createCheckedListPost(input: { title: \"Throwaway Checklist\", items: [\"item\"] }) { id } }"}')
+THROWAWAY_CL_ID=$(echo $THROWAWAY_CL_RESPONSE | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data']['createCheckedListPost']['id'])" 2>/dev/null || echo "")
+
+if [ ! -z "$THROWAWAY_CL_ID" ]; then
+    DELETE_CL_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
+        -H "Content-Type: application/json" \
+        -H "Authorization: Bearer $USER1_TOKEN" \
+        -d "{\"query\": \"mutation { deleteCheckedListPost(id: \\\"$THROWAWAY_CL_ID\\\") }\"}")
+
+    if echo $DELETE_CL_RESPONSE | grep -q '"deleteCheckedListPost":true'; then
+        print_success "deleteCheckedListPost deleted the post and returned true"
+    else
+        print_error "deleteCheckedListPost failed"
+        echo "Response: $DELETE_CL_RESPONSE"
+    fi
+
+    # Verify the post is gone from checkedListPosts.
+    CL_LIST_AFTER=$(curl -s -X POST $GRAPHQL_URL \
+        -H "Content-Type: application/json" \
+        -d '{"query": "{ checkedListPosts { id } }"}')
+
+    if echo $CL_LIST_AFTER | grep -q "$THROWAWAY_CL_ID"; then
+        print_error "deleteCheckedListPost: post still appears in checkedListPosts after deletion"
+    else
+        print_success "deleteCheckedListPost: post no longer appears in checkedListPosts"
+    fi
+
+    # deleteCheckedListPost — second call should return false (already deleted).
+    DELETE_CL_AGAIN=$(curl -s -X POST $GRAPHQL_URL \
+        -H "Content-Type: application/json" \
+        -H "Authorization: Bearer $USER1_TOKEN" \
+        -d "{\"query\": \"mutation { deleteCheckedListPost(id: \\\"$THROWAWAY_CL_ID\\\") }\"}")
+
+    if echo $DELETE_CL_AGAIN | grep -q '"deleteCheckedListPost":false'; then
+        print_success "deleteCheckedListPost returns false for already-deleted post"
+    else
+        print_error "deleteCheckedListPost did not return false for already-deleted post"
+        echo "Response: $DELETE_CL_AGAIN"
+    fi
+else
+    print_error "Could not create throwaway checklist for deleteCheckedListPost test"
+fi
+
+# deleteCheckedListPost — unauthenticated request should fail.
+print_info "Testing auth: deleteCheckedListPost requires authentication..."
+DELETE_CL_UNAUTH=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -d "{\"query\": \"mutation { deleteCheckedListPost(id: \\\"$CHECKLIST_POST_ID\\\") }\"}")
+
+if echo $DELETE_CL_UNAUTH | grep -q '"errors"'; then
+    print_success "deleteCheckedListPost requires authentication"
+else
+    print_error "deleteCheckedListPost did not reject unauthenticated request"
+    echo "Response: $DELETE_CL_UNAUTH"
+fi
+
 # Auth enforcement: createCheckedListPost without token should fail.
 print_info "Testing auth: createCheckedListPost requires authentication..."
 UNAUTH_CREATE=$(curl -s -X POST $GRAPHQL_URL \
@@ -1354,6 +1507,94 @@ if echo $BLANK_TITLE_RESPONSE | grep -q '"errors"'; then
 else
     print_error "createCheckedListPost accepted blank title"
     echo "Response: $BLANK_TITLE_RESPONSE"
+fi
+
+# --- CheckedList likePost / unlikePost ---
+
+print_info "Testing likePost on a CheckedListPost..."
+CL_LIKE_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $USER2_TOKEN" \
+    -d "{\"query\": \"mutation { likePost(postId: \\\"$CHECKLIST_POST_ID\\\") { id } }\"}")
+
+if echo $CL_LIKE_RESPONSE | grep -q '"id"'; then
+    print_success "likePost succeeded on a CheckedListPost"
+else
+    print_error "likePost failed on a CheckedListPost"
+    echo "Response: $CL_LIKE_RESPONSE"
+fi
+
+# Query the CheckedListPost to confirm likeCount and isLikedByMe.
+print_info "Verifying likeCount and isLikedByMe on CheckedListPost..."
+CL_LIKE_CHECK=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $USER2_TOKEN" \
+    -d "{\"query\": \"{ node(id: \\\"$CHECKLIST_POST_ID\\\") { ... on CheckedListPost { likeCount isLikedByMe } } }\"}")
+
+if echo $CL_LIKE_CHECK | grep -q '"likeCount":1' && echo $CL_LIKE_CHECK | grep -q '"isLikedByMe":true'; then
+    print_success "CheckedListPost likeCount=1 and isLikedByMe=true for user2"
+else
+    print_error "likeCount or isLikedByMe incorrect on CheckedListPost"
+    echo "Response: $CL_LIKE_CHECK"
+fi
+
+# Duplicate likePost should not add a second like.
+print_info "Testing duplicate likePost is idempotent..."
+CL_LIKE_DUP=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $USER2_TOKEN" \
+    -d "{\"query\": \"mutation { likePost(postId: \\\"$CHECKLIST_POST_ID\\\") { id } }\"}")
+
+CL_LIKE_CHECK2=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -d "{\"query\": \"{ node(id: \\\"$CHECKLIST_POST_ID\\\") { ... on CheckedListPost { likeCount } } }\"}")
+
+if echo $CL_LIKE_CHECK2 | grep -q '"likeCount":1'; then
+    print_success "Duplicate likePost on CheckedListPost did not inflate likeCount"
+else
+    print_error "likeCount was not 1 after duplicate likePost"
+    echo "Response: $CL_LIKE_CHECK2"
+fi
+
+# unlikePost on a CheckedListPost.
+print_info "Testing unlikePost on a CheckedListPost..."
+CL_UNLIKE_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $USER2_TOKEN" \
+    -d "{\"query\": \"mutation { unlikePost(postId: \\\"$CHECKLIST_POST_ID\\\") }\"}")
+
+if echo $CL_UNLIKE_RESPONSE | grep -q '"unlikePost":true'; then
+    print_success "unlikePost succeeded on a CheckedListPost"
+else
+    print_error "unlikePost failed on a CheckedListPost"
+    echo "Response: $CL_UNLIKE_RESPONSE"
+fi
+
+# Verify likeCount is 0 and isLikedByMe is false after unliking.
+print_info "Verifying likeCount after unlikePost on CheckedListPost..."
+CL_AFTER_UNLIKE=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $USER2_TOKEN" \
+    -d "{\"query\": \"{ node(id: \\\"$CHECKLIST_POST_ID\\\") { ... on CheckedListPost { likeCount isLikedByMe } } }\"}")
+
+if echo $CL_AFTER_UNLIKE | grep -q '"likeCount":0' && echo $CL_AFTER_UNLIKE | grep -q '"isLikedByMe":false'; then
+    print_success "CheckedListPost likeCount=0 and isLikedByMe=false after unlikePost"
+else
+    print_error "likeCount or isLikedByMe incorrect after unlikePost on CheckedListPost"
+    echo "Response: $CL_AFTER_UNLIKE"
+fi
+
+# likePost on CheckedListPost requires authentication.
+print_info "Testing auth: likePost on CheckedListPost requires authentication..."
+CL_LIKE_UNAUTH=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -d "{\"query\": \"mutation { likePost(postId: \\\"$CHECKLIST_POST_ID\\\") { id } }\"}")
+
+if echo $CL_LIKE_UNAUTH | grep -q '"errors"'; then
+    print_success "likePost on CheckedListPost requires authentication"
+else
+    print_error "likePost on CheckedListPost did not reject unauthenticated request"
+    echo "Response: $CL_LIKE_UNAUTH"
 fi
 
 # --- CheckedList Analytics (viewCount & readTimeMinutes) ---

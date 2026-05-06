@@ -93,9 +93,10 @@ class TrendingQueryResolverTest {
     }
 
     @Test
-    fun `uses BLOG_POST kind for posts not found in lookup`() = runBlocking {
-        // If a post ID is missing from the type map (e.g. stale view data), the resolver
-        // should treat it as BLOG_POST rather than silently dropping it.
+    fun `drops posts not found in lookup (deleted posts with orphaned view records)`() = runBlocking {
+        // If a post ID is missing from the type map the post was deleted but its view
+        // records remain.  The resolver must skip it rather than creating a dead node-ref
+        // that the BlogPost resolver would fail to resolve with NotFoundException.
         val postId = UUID.randomUUID()
         every { postViewRepository.getMostViewed(10) } returns listOf(postId)
         every { postTypeLookupPort.getPostTypes(any()) } returns emptyMap()
@@ -105,8 +106,8 @@ class TrendingQueryResolverTest {
 
         val results = TrendingQueryResolver().resolve(ctx)
 
-        // The unknown post is treated as BlogPost rather than dropped
-        assertEquals(1, results.size)
+        // The deleted post must be silently dropped, not included as a broken node-ref
+        assertEquals(0, results.size)
     }
 
     @Test

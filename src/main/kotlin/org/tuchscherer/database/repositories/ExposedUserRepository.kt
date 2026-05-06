@@ -62,6 +62,15 @@ class ExposedUserRepository : UserRepository {
         }
     }
 
+    override fun updateFields(id: UUID, name: String?, email: String?, isAdmin: Boolean?): User? = transaction {
+        val user = User.findById(id) ?: return@transaction null
+        name?.let { user.name = it }
+        email?.let { user.email = it }
+        isAdmin?.let { user.isAdmin = it }
+        user.flush()
+        user
+    }
+
     override fun delete(id: UUID): Boolean = transaction {
         val user = User.findById(id)
         if (user != null) {

@@ -284,8 +284,7 @@ class AdminMutationResolversTest : DefaultAbstractResolverTestBase() {
             .build()
         val args = AdminMutations_UpdateUser_Arguments.Builder(context).input(input).build()
 
-        every { userRepository.findById(targetUserId) } returns mockDbUser
-        every { mockDbUser.name = "Updated Name" } just Runs
+        every { userRepository.updateFields(targetUserId, name = "Updated Name", email = null, isAdmin = null) } returns mockDbUser
         every { mockDbUser.name } returns "Updated Name"
 
         val result = runOnAdminMutations(resolver, args, RequestContext(user = mockAdminUser))
@@ -304,7 +303,7 @@ class AdminMutationResolversTest : DefaultAbstractResolverTestBase() {
             .build()
         val args = AdminMutations_UpdateUser_Arguments.Builder(context).input(input).build()
 
-        every { userRepository.findById(targetUserId) } returns null
+        every { userRepository.updateFields(any(), any(), any(), any()) } returns null
 
         assertThrows<NotFoundException> {
             runOnAdminMutations(resolver, args, RequestContext(user = mockAdminUser))
@@ -328,7 +327,6 @@ class AdminMutationResolversTest : DefaultAbstractResolverTestBase() {
     @Test
     fun `AdminUpdateUserResolver throws IllegalArgumentException when name exceeds 255 characters`() = runBlocking {
         val resolver = AdminUpdateUserResolver(userRepository)
-        every { userRepository.findById(targetUserId) } returns mockDbUser
         val input = AdminUpdateUserInput.Builder(context)
             .id(context.globalIDFor(ViaductUser.Reflection, targetUserId.toString()))
             .name("a".repeat(256))

@@ -215,6 +215,31 @@ interface NodeQueryResult {
   node: NodeData | null;
 }
 
+// ── Hooks ─────────────────────────────────────────────────────────────────────
+
+/** Shared like/unlike logic for any post type. */
+function useLikeToggle(
+  postId: string,
+  isLikedByMe: boolean,
+  isAuthenticated: boolean,
+  refetch: () => void,
+) {
+  const navigate = useNavigate();
+  const [likePost] = useMutation(LIKE_POST, { onCompleted: refetch });
+  const [unlikePost] = useMutation(UNLIKE_POST, { onCompleted: refetch });
+
+  const handleLikeToggle = async () => {
+    if (!isAuthenticated) { navigate('/login'); return; }
+    if (isLikedByMe) {
+      await unlikePost({ variables: { postId } });
+    } else {
+      await likePost({ variables: { postId } });
+    }
+  };
+
+  return { handleLikeToggle };
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 /** Safely render post content — handles both legacy plain-text and rich-text HTML. */
@@ -313,18 +338,8 @@ function BlogPostDetail({ post, refetch }: { post: BlogPostData; refetch: () => 
   const navigate = useNavigate();
   const isAuthor = user?.username === post.author.username;
 
-  const [likePost] = useMutation(LIKE_POST, { onCompleted: refetch });
-  const [unlikePost] = useMutation(UNLIKE_POST, { onCompleted: refetch });
+  const { handleLikeToggle } = useLikeToggle(post.id, post.isLikedByMe, isAuthenticated, refetch);
   const [deletePost] = useMutation(DELETE_POST, { onCompleted: () => navigate('/') });
-
-  const handleLikeToggle = async () => {
-    if (!isAuthenticated) { navigate('/login'); return; }
-    if (post.isLikedByMe) {
-      await unlikePost({ variables: { postId: post.id } });
-    } else {
-      await likePost({ variables: { postId: post.id } });
-    }
-  };
 
   const handleDelete = async () => {
     if (window.confirm('Are you sure you want to delete this post?')) {
@@ -388,6 +403,7 @@ function CheckedListDetail({ post, refetch }: { post: CheckedListPostData; refet
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editingItemText, setEditingItemText] = useState('');
 
+  const { handleLikeToggle } = useLikeToggle(post.id, post.isLikedByMe, isAuthenticated, refetch);
   const [toggleItem] = useMutation(TOGGLE_ITEM, { onCompleted: refetch });
   const [addItem] = useMutation(ADD_ITEM, {
     onCompleted: () => { setNewItemText(''); setAddItemError(''); refetch(); },
@@ -479,7 +495,7 @@ function CheckedListDetail({ post, refetch }: { post: CheckedListPostData; refet
                 </div>
               ) : (
                 <div className="checklist-item-row">
-                  {isAuthenticated ? (
+                  {isAuthor ? (
                     <input
                       type="checkbox"
                       checked={item.checked}
@@ -534,7 +550,9 @@ function CheckedListDetail({ post, refetch }: { post: CheckedListPostData; refet
       </div>
 
       <div className="post-actions">
-        <span className="like-count">❤️ {post.likeCount}</span>
+        <button onClick={handleLikeToggle} className={post.isLikedByMe ? 'liked' : ''}>
+          ❤️ {post.likeCount}
+        </button>
         {isAuthor && (
           <>
             <Link to={`/edit/${post.id}`} className="btn-edit">Edit</Link>

@@ -138,7 +138,7 @@ function EditBlogPostForm({ post }: { post: BlogPostNode }) {
               type="button"
               onClick={() => navigate(`/post/${post.id}`)}
               disabled={loading}
-              style={{ padding: '0.85rem 1.5rem', backgroundColor: '#6c757d', color: 'white', border: 'none' }}
+              className="btn-secondary"
             >
               Cancel
             </button>
@@ -228,7 +228,7 @@ function EditChecklistForm({ post }: { post: CheckedListPostNode }) {
               type="button"
               onClick={() => navigate(`/post/${post.id}`)}
               disabled={loading}
-              style={{ padding: '0.85rem 1.5rem', backgroundColor: '#6c757d', color: 'white', border: 'none' }}
+              className="btn-secondary"
             >
               Cancel
             </button>

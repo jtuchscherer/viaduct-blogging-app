@@ -58,10 +58,10 @@ function BlogPostForm() {
       {error && <div className="error-message">{error}</div>}
 
       <div className="form-group">
-        <label htmlFor="blog-title">Title</label>
+        <label htmlFor="title">Title</label>
         <input
           type="text"
-          id="blog-title"
+          id="title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Enter post title..."
@@ -88,7 +88,7 @@ function BlogPostForm() {
           type="button"
           onClick={() => navigate('/')}
           disabled={loading}
-          style={{ padding: '0.85rem 1.5rem', backgroundColor: '#6c757d', color: 'white', border: 'none' }}
+          className="btn-secondary"
         >
           Cancel
         </button>
@@ -217,7 +217,7 @@ function ChecklistForm() {
           type="button"
           onClick={() => navigate('/')}
           disabled={loading}
-          style={{ padding: '0.85rem 1.5rem', backgroundColor: '#6c757d', color: 'white', border: 'none' }}
+          className="btn-secondary"
         >
           Cancel
         </button>
