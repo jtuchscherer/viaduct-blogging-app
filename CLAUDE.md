@@ -29,9 +29,10 @@ npm run lint             # ESLint
 
 ### Tests
 ```bash
-./gradlew test           # backend unit + integration tests (182 tests)
-./query-tests.sh         # curl-based GraphQL API tests (requires server running)
-./e2e.sh                 # start servers + run Playwright browser tests
+./gradlew test           # backend unit + integration tests
+./query-tests.sh         # curl-based GraphQL API tests (starts its own server automatically)
+./e2e.sh                 # Playwright browser tests (starts its own servers automatically)
+cd frontend && npm run test -- --run   # frontend Vitest unit tests
 cd frontend && npm run test:e2e        # Playwright tests only (servers must already be running)
 cd frontend && npm run test:e2e:ui     # Playwright interactive UI mode
 ```
@@ -147,13 +148,63 @@ frontend/e2e/
 ### Connection resolver testing
 `PostsConnectionResolver` uses `ConnectionFieldExecutionContext`, which the standard `runFieldResolver` helper doesn't accept. Build the context directly with `MockConnectionFieldExecutionContext` (Viaduct test fixtures) and call `resolver.resolve(ctx)` — see `PostsResolverTest`. Mock `arguments.toOffsetLimit(any<Int>())` because `ConnectionBuilder.fromSlice` calls it internally with Viaduct's default page size in addition to the resolver's call.
 
-## Definition of Done
+## Standard Procedure — Definition of Done
 
-Before declaring any task complete, always run the full test suite and confirm it passes:
+Every task follows this mandatory sequence before being declared complete.
+Do not skip any step, even for "small" changes.
+
+### Step 1 — Test audit
+
+After implementing the feature or fix, ask: *what tests are missing?*
+Check all four layers:
+
+| Layer | What to look for |
+|---|---|
+| **Backend unit** (`src/test/.../resolvers/`, `auth/`) | New resolver methods, validation rules, auth checks, helper functions |
+| **Backend integration** (`src/test/.../database/repositories/`, `integration/`) | New repository methods, cross-layer workflows |
+| **Frontend unit** (`frontend/test/`) | New React components, pages with user interactions, utility functions |
+| **E2E** (`frontend/e2e/`) | New user-visible features, mutations, full happy-path + auth flows |
+| **Query tests** (`query-tests.sh`) | New GraphQL mutations/queries, validation rejection cases, auth rejection cases |
+
+Add tests for every uncovered case found. Follow the test quality principles in the Testing section.
+
+### Step 2 — Run all test suites
+
+Run all four suites in this order. Each must be fully green before proceeding:
+
 ```bash
-./gradlew test   # must show BUILD SUCCESSFUL with 0 failures
+# 1. Backend unit + integration
+./gradlew test
+
+# 2. Frontend unit
+cd frontend && npm run test -- --run && cd ..
+
+# 3. GraphQL query tests (self-contained — starts its own server)
+./query-tests.sh
+
+# 4. Playwright e2e tests (self-contained — starts its own servers)
+./e2e.sh
 ```
-Do not mark work as done until this passes locally.
+
+Fix every failure before moving to the next step. Do not declare done with a red suite.
+
+### Step 3 — Refactoring audit (Clean Code)
+
+Once the tests are green, review the code you touched and the surrounding area for
+violations of Clean Code principles (Robert C. Martin). Look specifically for:
+
+- **Duplication** — identical or near-identical blocks in multiple places; extract a shared function, class, or component
+- **Long functions / components** — split anything that does more than one thing
+- **Misplaced responsibilities** — e.g. business logic in a resolver instead of a service/repository, raw `transaction {}` blocks outside the repository layer, inline styles that belong in a CSS class
+- **Unclear names** — rename anything where the intent is not immediately obvious
+- **Abstraction gaps** — repeated low-level patterns that deserve a named helper (e.g. copy-pasted auth casts instead of `requireAuth()`)
+- **Dead code** — unused imports, variables, stubs, commented-out blocks
+
+Apply every refactoring you identify. Prefer many small, focused commits over large sweeping changes.
+
+### Step 4 — Re-run all test suites after refactoring
+
+Repeat Step 2 in full. Refactoring must not break anything. Fix any regressions before declaring the task complete.
 
 ## Maintaining TODO.md, DEVELOPMENT_PLAN.md, and CODE_QUALITY_PLAN.md
 

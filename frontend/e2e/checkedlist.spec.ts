@@ -107,7 +107,7 @@ test.describe('CheckedList — checkedListPosts query', () => {
     await createCheckedListPost(page, token, title, ['Task A', 'Task B']);
 
     const body = await gql(page, '{ checkedListPosts { id title items { text checked position } } }');
-    const myPost = body.data.checkedListPosts.find((p: any) => p.title === title);
+    const myPost = body.data.checkedListPosts.find((p: { title: string }) => p.title === title);
     expect(myPost).toBeTruthy();
     expect(myPost.items).toHaveLength(2);
     expect(myPost.items[0].text).toBe('Task A');
@@ -205,6 +205,21 @@ test.describe('CheckedList — toggleCheckedListItem', () => {
     );
     expect(body.errors).toBeTruthy();
   });
+
+  test('non-author cannot toggle item', async ({ page }) => {
+    const suffix = Date.now();
+    const { token: authorToken } = await registerUser(page, `cl_toggle_owner_${suffix}`);
+    const { token: otherToken } = await registerUser(page, `cl_toggle_other_${suffix}`);
+    const post = await createCheckedListPost(page, authorToken, 'Owner Test', []);
+    const item = await addItem(page, authorToken, post.id, 'Protected Item');
+
+    const body = await gql(
+      page,
+      `mutation { toggleCheckedListItem(id: "${item.id}") { checked } }`,
+      otherToken,
+    );
+    expect(body.errors).toBeTruthy();
+  });
 });
 
 // ── deleteCheckedListItem ─────────────────────────────────────────────────────
@@ -269,6 +284,235 @@ test.describe('CheckedList — node(id) resolution', () => {
   });
 });
 
+// ── updateCheckedListPost ─────────────────────────────────────────────────────
+
+test.describe('CheckedList — updateCheckedListPost', () => {
+  test('updates the title of a post', async ({ page }) => {
+    const { token } = await registerUser(page, `cl_upd_title_${Date.now()}`);
+    const post = await createCheckedListPost(page, token, 'Original Title', []);
+
+    const body = await gql(
+      page,
+      `mutation { updateCheckedListPost(input: { id: "${post.id}", title: "Updated Title" }) { id title } }`,
+      token,
+    );
+    expect(body.errors).toBeUndefined();
+    expect(body.data.updateCheckedListPost.title).toBe('Updated Title');
+    expect(body.data.updateCheckedListPost.id).toBe(post.id);
+  });
+
+  test('updates the description of a post', async ({ page }) => {
+    const { token } = await registerUser(page, `cl_upd_desc_${Date.now()}`);
+    const post = await createCheckedListPost(page, token, 'My List', []);
+
+    const body = await gql(
+      page,
+      `mutation { updateCheckedListPost(input: { id: "${post.id}", description: "New description" }) { id description } }`,
+      token,
+    );
+    expect(body.errors).toBeUndefined();
+    expect(body.data.updateCheckedListPost.description).toBe('New description');
+  });
+
+  test('rejects blank title', async ({ page }) => {
+    const { token } = await registerUser(page, `cl_upd_blank_${Date.now()}`);
+    const post = await createCheckedListPost(page, token, 'Valid Title', []);
+
+    const body = await gql(
+      page,
+      `mutation { updateCheckedListPost(input: { id: "${post.id}", title: "   " }) { id } }`,
+      token,
+    );
+    expect(body.errors).toBeTruthy();
+  });
+
+  test('rejects description exceeding 10000 characters', async ({ page }) => {
+    const { token } = await registerUser(page, `cl_upd_longdesc_${Date.now()}`);
+    const post = await createCheckedListPost(page, token, 'List', []);
+    const longDesc = 'a'.repeat(10_001);
+
+    const body = await gql(
+      page,
+      `mutation { updateCheckedListPost(input: { id: "${post.id}", description: "${longDesc}" }) { id } }`,
+      token,
+    );
+    expect(body.errors).toBeTruthy();
+  });
+
+  test('requires authentication', async ({ page }) => {
+    const { token } = await registerUser(page, `cl_upd_auth_${Date.now()}`);
+    const post = await createCheckedListPost(page, token, 'My List', []);
+
+    const body = await gql(
+      page,
+      `mutation { updateCheckedListPost(input: { id: "${post.id}", title: "Hacked" }) { id } }`,
+    );
+    expect(body.errors).toBeTruthy();
+  });
+
+  test('returns error for a non-existent post ID', async ({ page }) => {
+    const { token } = await registerUser(page, `cl_upd_ne_${Date.now()}`);
+    // Use the post ID format but with a UUID that doesn't exist
+    const fakePost = await createCheckedListPost(page, token, 'Temp', []);
+    // Delete the post then try to update it
+    await gql(page, `mutation { deleteCheckedListPost(id: "${fakePost.id}") }`, token);
+
+    const body = await gql(
+      page,
+      `mutation { updateCheckedListPost(input: { id: "${fakePost.id}", title: "Ghost" }) { id } }`,
+      token,
+    );
+    expect(body.errors).toBeTruthy();
+  });
+});
+
+// ── deleteCheckedListPost ─────────────────────────────────────────────────────
+
+test.describe('CheckedList — deleteCheckedListPost', () => {
+  test('deletes a post and returns true', async ({ page }) => {
+    const { token } = await registerUser(page, `cl_del_post_${Date.now()}`);
+    const post = await createCheckedListPost(page, token, 'To Delete', []);
+
+    const body = await gql(
+      page,
+      `mutation { deleteCheckedListPost(id: "${post.id}") }`,
+      token,
+    );
+    expect(body.errors).toBeUndefined();
+    expect(body.data.deleteCheckedListPost).toBe(true);
+  });
+
+  test('post no longer appears in checkedListPosts after deletion', async ({ page }) => {
+    const { token } = await registerUser(page, `cl_del_verify_${Date.now()}`);
+    const title = `Delete Verify ${Date.now()}`;
+    const post = await createCheckedListPost(page, token, title, ['Item 1']);
+
+    await gql(page, `mutation { deleteCheckedListPost(id: "${post.id}") }`, token);
+
+    const listBody = await gql(page, '{ checkedListPosts { id title } }');
+    const found = listBody.data.checkedListPosts.find((p: { id: string }) => p.id === post.id);
+    expect(found).toBeUndefined();
+  });
+
+  test('requires authentication', async ({ page }) => {
+    const { token } = await registerUser(page, `cl_del_post_auth_${Date.now()}`);
+    const post = await createCheckedListPost(page, token, 'Protected', []);
+
+    const body = await gql(
+      page,
+      `mutation { deleteCheckedListPost(id: "${post.id}") }`,
+    );
+    expect(body.errors).toBeTruthy();
+  });
+});
+
+// ── updateCheckedListItem ─────────────────────────────────────────────────────
+
+test.describe('CheckedList — updateCheckedListItem', () => {
+  test('updates the text of an item', async ({ page }) => {
+    const { token } = await registerUser(page, `cl_upd_item_${Date.now()}`);
+    const post = await createCheckedListPost(page, token, 'Update Item List', []);
+    const item = await addItem(page, token, post.id, 'Original text');
+
+    const body = await gql(
+      page,
+      `mutation { updateCheckedListItem(input: { id: "${item.id}", text: "Updated text" }) { id text } }`,
+      token,
+    );
+    expect(body.errors).toBeUndefined();
+    expect(body.data.updateCheckedListItem.text).toBe('Updated text');
+  });
+
+  test('rejects blank text', async ({ page }) => {
+    const { token } = await registerUser(page, `cl_upd_item_blank_${Date.now()}`);
+    const post = await createCheckedListPost(page, token, 'Item Blank', []);
+    const item = await addItem(page, token, post.id, 'Valid text');
+
+    const body = await gql(
+      page,
+      `mutation { updateCheckedListItem(input: { id: "${item.id}", text: "  " }) { id } }`,
+      token,
+    );
+    expect(body.errors).toBeTruthy();
+  });
+
+  test('requires authentication', async ({ page }) => {
+    const { token } = await registerUser(page, `cl_upd_item_auth_${Date.now()}`);
+    const post = await createCheckedListPost(page, token, 'Auth Item', []);
+    const item = await addItem(page, token, post.id, 'Protected');
+
+    const body = await gql(
+      page,
+      `mutation { updateCheckedListItem(input: { id: "${item.id}", text: "Hacked" }) { id } }`,
+    );
+    expect(body.errors).toBeTruthy();
+  });
+});
+
+// ── likePost / unlikePost on CheckedListPost ─────────────────────────────────
+
+test.describe('CheckedList — likePost and unlikePost', () => {
+  test('authenticated user can like a CheckedListPost and likeCount increments', async ({ page }) => {
+    const suffix = Date.now();
+    const { token: authorToken } = await registerUser(page, `cl_like_author_${suffix}`);
+    const { token: likerToken } = await registerUser(page, `cl_liker_${suffix}`);
+    const post = await createCheckedListPost(page, authorToken, 'Likable List', []);
+
+    // Initial state: no likes
+    const before = await gql(
+      page,
+      `{ node(id: "${post.id}") { ... on CheckedListPost { likeCount isLikedByMe } } }`,
+      likerToken,
+    );
+    expect(before.data.node.likeCount).toBe(0);
+    expect(before.data.node.isLikedByMe).toBe(false);
+
+    // Like the post
+    const likeBody = await gql(
+      page,
+      `mutation { likePost(postId: "${post.id}") { id } }`,
+      likerToken,
+    );
+    expect(likeBody.errors).toBeUndefined();
+    expect(likeBody.data.likePost.id).toBeTruthy();
+
+    // After like: count=1, isLikedByMe=true
+    const after = await gql(
+      page,
+      `{ node(id: "${post.id}") { ... on CheckedListPost { likeCount isLikedByMe } } }`,
+      likerToken,
+    );
+    expect(after.data.node.likeCount).toBe(1);
+    expect(after.data.node.isLikedByMe).toBe(true);
+  });
+
+  test('unlikePost decrements likeCount on a CheckedListPost', async ({ page }) => {
+    const suffix = Date.now();
+    const { token: authorToken } = await registerUser(page, `cl_unlike_author_${suffix}`);
+    const { token: likerToken } = await registerUser(page, `cl_unlike_liker_${suffix}`);
+    const post = await createCheckedListPost(page, authorToken, 'Unlike Test', []);
+
+    await gql(page, `mutation { likePost(postId: "${post.id}") { id } }`, likerToken);
+    await gql(page, `mutation { unlikePost(postId: "${post.id}") }`, likerToken);
+
+    const after = await gql(
+      page,
+      `{ node(id: "${post.id}") { ... on CheckedListPost { likeCount isLikedByMe } } }`,
+      likerToken,
+    );
+    expect(after.data.node.likeCount).toBe(0);
+    expect(after.data.node.isLikedByMe).toBe(false);
+  });
+
+  test('likePost requires authentication', async ({ page }) => {
+    const { token: authorToken } = await registerUser(page, `cl_like_auth_${Date.now()}`);
+    const post = await createCheckedListPost(page, authorToken, 'Auth Like Test', []);
+
+    const body = await gql(page, `mutation { likePost(postId: "${post.id}") { id } }`);
+    expect(body.errors).toBeTruthy();
+  });
+});
+
 // ── analytics: viewCount & readTimeMinutes ────────────────────────────────────
 
 test.describe('CheckedList — analytics (viewCount & readTimeMinutes)', () => {
@@ -281,7 +525,7 @@ test.describe('CheckedList — analytics (viewCount & readTimeMinutes)', () => {
       page,
       `{ checkedListPosts { id viewCount } }`,
     );
-    const beforePost = before.data.checkedListPosts.find((p: any) => p.id === post.id);
+    const beforePost = before.data.checkedListPosts.find((p: { id: string }) => p.id === post.id);
     expect(beforePost?.viewCount).toBe(0);
 
     // Record a view (no auth required)
@@ -289,7 +533,7 @@ test.describe('CheckedList — analytics (viewCount & readTimeMinutes)', () => {
 
     // After recording: viewCount should be 1
     const after = await gql(page, `{ checkedListPosts { id viewCount } }`);
-    const afterPost = after.data.checkedListPosts.find((p: any) => p.id === post.id);
+    const afterPost = after.data.checkedListPosts.find((p: { id: string }) => p.id === post.id);
     expect(afterPost?.viewCount).toBe(1);
   });
 
@@ -303,7 +547,7 @@ test.describe('CheckedList — analytics (viewCount & readTimeMinutes)', () => {
     );
 
     const body = await gql(page, `{ checkedListPosts { id readTimeMinutes } }`);
-    const found = body.data.checkedListPosts.find((p: any) => p.id === post.id);
+    const found = body.data.checkedListPosts.find((p: { id: string }) => p.id === post.id);
     expect(found).toBeTruthy();
     expect(typeof found.readTimeMinutes).toBe('number');
     expect(found.readTimeMinutes).toBeGreaterThan(0);
@@ -323,7 +567,7 @@ test.describe('CheckedList — analytics (viewCount & readTimeMinutes)', () => {
       page,
       `{ trending(limit: 50) { id __typename ... on CheckedListPost { title } ... on BlogPost { title } } }`,
     );
-    const found = body.data.trending.find((p: any) => p.id === post.id);
+    const found = body.data.trending.find((p: { id: string }) => p.id === post.id);
     expect(found).toBeTruthy();
     expect(found.__typename).toBe('CheckedListPost');
     expect(found.title).toBe(title);

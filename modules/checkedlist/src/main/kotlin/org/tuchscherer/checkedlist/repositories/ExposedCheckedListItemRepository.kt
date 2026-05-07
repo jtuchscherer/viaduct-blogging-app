@@ -90,6 +90,19 @@ class ExposedCheckedListItemRepository : CheckedListItemRepository {
         }
     }
 
+    override fun updateItem(id: UUID, text: String): CheckedListItemData? = transaction {
+        val existing = CheckedListItems
+            .selectAll()
+            .where { CheckedListItems.id eq id.toString() }
+            .firstOrNull() ?: return@transaction null
+
+        CheckedListItems.update({ CheckedListItems.id eq id.toString() }) {
+            it[CheckedListItems.text] = text
+        }
+
+        existing.toData().copy(text = text)
+    }
+
     override fun toggleItem(id: UUID): CheckedListItemData? = transaction {
         val existing = CheckedListItems
             .selectAll()

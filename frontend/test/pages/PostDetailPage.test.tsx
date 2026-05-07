@@ -8,24 +8,13 @@ import { AuthProvider } from '../../src/contexts/AuthContext'
 
 // Queries must match the component's gql documents exactly for MockedProvider matching.
 
-const GET_POST = gql`
-  query GetPost($id: ID!) {
-    post(id: $id) {
-      id
-      title
-      content
-      author {
+const GET_NODE = gql`
+  query GetNode($id: ID!) {
+    node(id: $id) {
+      __typename
+      ... on BlogPost {
         id
-        name
-        username
-      }
-      createdAt
-      likeCount
-      isLikedByMe
-      viewCount
-      readTimeMinutes
-      comments {
-        id
+        title
         content
         author {
           id
@@ -33,6 +22,52 @@ const GET_POST = gql`
           username
         }
         createdAt
+        likeCount
+        isLikedByMe
+        viewCount
+        readTimeMinutes
+        comments {
+          id
+          content
+          author {
+            id
+            name
+            username
+          }
+          createdAt
+        }
+      }
+      ... on CheckedListPost {
+        id
+        title
+        description
+        author {
+          id
+          name
+          username
+        }
+        createdAt
+        likeCount
+        isLikedByMe
+        viewCount
+        readTimeMinutes
+        items {
+          id
+          text
+          checked
+          position
+          createdAt
+        }
+        comments {
+          id
+          content
+          author {
+            id
+            name
+            username
+          }
+          createdAt
+        }
       }
     }
   }
@@ -48,11 +83,11 @@ const RECORD_POST_VIEW = gql`
 const POST_ID = btoa('BlogPost:00000000-0000-0000-0000-000000000001')
 
 const makePostMock = (viewCount = 7, readTimeMinutes = 2.0) => ({
-  request: { query: GET_POST, variables: { id: POST_ID } },
+  request: { query: GET_NODE, variables: { id: POST_ID } },
   maxUsageCount: 10,
   result: {
     data: {
-      post: {
+      node: {
         __typename: 'BlogPost',
         id: POST_ID,
         title: 'Hello World',

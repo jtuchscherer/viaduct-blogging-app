@@ -78,7 +78,7 @@ USER3_ID=$(generate_uuid)
 ADMIN_ID=$(generate_uuid)
 E2E_ADMIN_ID=$(generate_uuid)
 
-# Generate post UUIDs (12 posts: 4 per user)
+# Generate post UUIDs (12 blog posts: 4 per user)
 POST1_ID=$(generate_uuid)
 POST2_ID=$(generate_uuid)
 POST3_ID=$(generate_uuid)
@@ -91,6 +91,28 @@ POST9_ID=$(generate_uuid)
 POST10_ID=$(generate_uuid)
 POST11_ID=$(generate_uuid)
 POST12_ID=$(generate_uuid)
+
+# Generate checklist post UUIDs (3 checklist posts: one per regular user)
+CL1_ID=$(generate_uuid)   # Alice's checklist
+CL2_ID=$(generate_uuid)   # Bob's checklist
+CL3_ID=$(generate_uuid)   # Charlie's checklist
+
+# Generate checked_list_items UUIDs
+CLI1_ID=$(generate_uuid)
+CLI2_ID=$(generate_uuid)
+CLI3_ID=$(generate_uuid)
+CLI4_ID=$(generate_uuid)
+CLI5_ID=$(generate_uuid)
+CLI6_ID=$(generate_uuid)
+CLI7_ID=$(generate_uuid)
+CLI8_ID=$(generate_uuid)
+CLI9_ID=$(generate_uuid)
+CLI10_ID=$(generate_uuid)
+CLI11_ID=$(generate_uuid)
+CLI12_ID=$(generate_uuid)
+CLI13_ID=$(generate_uuid)
+CLI14_ID=$(generate_uuid)
+CLI15_ID=$(generate_uuid)
 
 # Generate comment UUIDs
 COMMENT1_ID=$(generate_uuid)
@@ -209,6 +231,38 @@ INSERT INTO likes (id, post_id, user_id, created_at) VALUES
     ('${LIKE18_ID}', '${POST11_ID}', '${USER2_ID}', '${NOW}'),
     ('${LIKE19_ID}', '${POST12_ID}', '${USER1_ID}', '${NOW}'),
     ('${LIKE20_ID}', '${POST12_ID}', '${USER2_ID}', '${NOW}');
+
+-- ── CheckedList posts ─────────────────────────────────────────────────────────
+-- post_type = 'CHECKED_LIST'; description is stored in the content column.
+
+INSERT INTO posts (id, title, content, author_id, post_type, created_at, updated_at) VALUES
+    ('${CL1_ID}', 'Weekly Grocery Run', 'Everything we need for the week — restock the fridge and pantry.', '${USER1_ID}', 'CHECKED_LIST', '${NOW}', '${NOW}'),
+    ('${CL2_ID}', 'Home Office Upgrade Wishlist', 'Gear to buy before the next big project kicks off.', '${USER2_ID}', 'CHECKED_LIST', '${NOW}', '${NOW}'),
+    ('${CL3_ID}', 'Marathon Race-Day Checklist', 'Everything to pack the night before and double-check at the start line.', '${USER3_ID}', 'CHECKED_LIST', '${NOW}', '${NOW}');
+
+-- Items for Alice's grocery list (CL1)
+INSERT INTO checked_list_items (id, post_id, text, checked, position, created_at) VALUES
+    ('${CLI1_ID}',  '${CL1_ID}', 'Whole milk (2L)',           true,  0, '${NOW}'),
+    ('${CLI2_ID}',  '${CL1_ID}', 'Eggs (12-pack)',             true,  1, '${NOW}'),
+    ('${CLI3_ID}',  '${CL1_ID}', 'Sourdough bread',            false, 2, '${NOW}'),
+    ('${CLI4_ID}',  '${CL1_ID}', 'Greek yoghurt',              false, 3, '${NOW}'),
+    ('${CLI5_ID}',  '${CL1_ID}', 'Chicken breast (1 kg)',      false, 4, '${NOW}');
+
+-- Items for Bob's home-office wishlist (CL2)
+INSERT INTO checked_list_items (id, post_id, text, checked, position, created_at) VALUES
+    ('${CLI6_ID}',  '${CL2_ID}', 'Ultrawide monitor (34")',    true,  0, '${NOW}'),
+    ('${CLI7_ID}',  '${CL2_ID}', 'Mechanical keyboard',        true,  1, '${NOW}'),
+    ('${CLI8_ID}',  '${CL2_ID}', 'Ergonomic chair',            false, 2, '${NOW}'),
+    ('${CLI9_ID}',  '${CL2_ID}', 'USB-C hub',                  false, 3, '${NOW}'),
+    ('${CLI10_ID}', '${CL2_ID}', 'Desk lamp with USB charging', false, 4, '${NOW}');
+
+-- Items for Charlie's marathon checklist (CL3)
+INSERT INTO checked_list_items (id, post_id, text, checked, position, created_at) VALUES
+    ('${CLI11_ID}', '${CL3_ID}', 'Race bib pinned to shirt',   true,  0, '${NOW}'),
+    ('${CLI12_ID}', '${CL3_ID}', 'Running shoes (laced tight)', true,  1, '${NOW}'),
+    ('${CLI13_ID}', '${CL3_ID}', 'GPS watch charged',          true,  2, '${NOW}'),
+    ('${CLI14_ID}', '${CL3_ID}', 'Gels & chews packed',        false, 3, '${NOW}'),
+    ('${CLI15_ID}', '${CL3_ID}', 'Post-race recovery snack',   false, 4, '${NOW}');
 EOF
 
 echo ""
@@ -216,7 +270,8 @@ echo "Database seeded successfully!"
 echo ""
 echo "=== Summary ==="
 echo "Users created: 5 (alice, bob, charlie, admin, e2e_admin)"
-echo "Posts created: 12"
+echo "Blog posts created: 12"
+echo "Checklist posts created: 3 (one per regular user, 5 items each)"
 echo "Comments created: 15"
 echo "Likes created: 20"
 echo ""

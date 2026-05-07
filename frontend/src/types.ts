@@ -25,3 +25,44 @@ export interface Post {
   viewCount?: number;
   readTimeMinutes?: number;
 }
+
+export interface CheckedListItem {
+  id: string;
+  text: string;
+  checked: boolean;
+  position: number;
+  createdAt: string;
+}
+
+export interface CheckedListPost {
+  __typename: 'CheckedListPost';
+  id: string;
+  title: string;
+  description: string;
+  author: Author;
+  createdAt: string;
+  updatedAt: string;
+  likeCount: number;
+  commentCount: number;
+  isLikedByMe?: boolean;
+  items?: CheckedListItem[];
+  comments?: Comment[];
+  viewCount?: number;
+  readTimeMinutes?: number;
+}
+
+/** A card-level view of a BlogPost — only the fields needed for list rendering. */
+export interface BlogPostCard {
+  __typename: 'BlogPost';
+  id: string;
+  title: string;
+  content: string;
+  author: Author;
+  createdAt: string;
+  likeCount: number;
+  commentCount: number;
+  readTimeMinutes?: number;
+}
+
+/** Union of all post types that can appear in the homepage feed. */
+export type FeedPost = BlogPostCard | CheckedListPost;

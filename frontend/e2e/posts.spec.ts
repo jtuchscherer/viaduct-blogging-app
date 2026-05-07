@@ -5,7 +5,7 @@ import { createPostViaAPI } from './fixtures/posts';
 test.describe('Blog Posts', () => {
   test('home page shows posts list', async ({ page }) => {
     await page.goto('/');
-    await expect(page.locator('main h1')).toContainText('Blog Posts');
+    await expect(page.locator('main h1')).toContainText('Posts');
   });
 
   test('unauthenticated user sees login/register in header, not New Post', async ({ page }) => {

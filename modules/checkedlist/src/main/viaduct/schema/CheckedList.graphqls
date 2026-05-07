@@ -15,6 +15,7 @@ type CheckedListItem implements Node @resolver(isBatching: true) @scope(to: ["pu
 type CheckedListPost implements Post & Node @resolver(isBatching: true) @scope(to: ["public", "admin"]) {
   id: ID!
   title: String!
+  description: String!
   items: [CheckedListItem!]! @resolver
   author: User! @resolver(isBatching: true)
   comments: [Comment!]! @resolver
@@ -29,12 +30,26 @@ type CheckedListPost implements Post & Node @resolver(isBatching: true) @scope(t
 # Input type for creating a new checklist post with initial items.
 input CreateCheckedListPostInput @scope(to: ["public", "admin"]) {
   title: String!
+  description: String
   items: [String!]!
 }
 
 # Input type for adding an item to an existing checklist post.
 input AddCheckedListItemInput @scope(to: ["public", "admin"]) {
   postId: ID! @idOf(type: "CheckedListPost")
+  text: String!
+}
+
+# Input type for updating an existing checklist post's title and/or description.
+input UpdateCheckedListPostInput @scope(to: ["public", "admin"]) {
+  id: ID! @idOf(type: "CheckedListPost")
+  title: String
+  description: String
+}
+
+# Input type for updating the text of a checklist item.
+input UpdateCheckedListItemInput @scope(to: ["public", "admin"]) {
+  id: ID! @idOf(type: "CheckedListItem")
   text: String!
 }
 
@@ -47,8 +62,17 @@ extend type Mutation @scope(to: ["public", "admin"]) {
   # Creates a new checklist post with optional initial items. Requires authentication.
   createCheckedListPost(input: CreateCheckedListPostInput!): CheckedListPost! @resolver
 
+  # Updates the title and/or description of a checklist post. Requires authentication and ownership.
+  updateCheckedListPost(input: UpdateCheckedListPostInput!): CheckedListPost! @resolver
+
+  # Deletes a checklist post and all its items. Requires authentication and ownership.
+  deleteCheckedListPost(id: ID! @idOf(type: "CheckedListPost")): Boolean! @resolver
+
   # Adds an item to an existing checklist post. Requires authentication and ownership.
   addCheckedListItem(input: AddCheckedListItemInput!): CheckedListItem! @resolver
+
+  # Updates the text of a checklist item. Requires authentication and post ownership.
+  updateCheckedListItem(input: UpdateCheckedListItemInput!): CheckedListItem! @resolver
 
   # Toggles the checked state of a checklist item. Requires authentication and post ownership.
   toggleCheckedListItem(id: ID! @idOf(type: "CheckedListItem")): CheckedListItem! @resolver

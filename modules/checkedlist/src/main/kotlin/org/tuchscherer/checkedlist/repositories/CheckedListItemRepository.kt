@@ -42,6 +42,11 @@ interface CheckedListItemRepository {
     fun getItemsForPosts(postIds: List<UUID>): Map<UUID, List<CheckedListItemData>>
 
     /**
+     * Updates the text of an item. Returns the updated item, or null if not found.
+     */
+    fun updateItem(id: UUID, text: String): CheckedListItemData?
+
+    /**
      * Flips the checked state of the item. Returns the updated item, or null if not found.
      */
     fun toggleItem(id: UUID): CheckedListItemData?

@@ -7,7 +7,6 @@ import org.tuchscherer.database.repositories.LikeRepository
 import org.tuchscherer.database.repositories.PostRepository
 import org.tuchscherer.database.repositories.UserRepository
 import org.tuchscherer.viadapp.resolvers.resolverbases.AdminMutationsResolvers
-import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import viaduct.api.Resolver
 import viaduct.api.grts.AdminDeleteUserResult
 import viaduct.api.grts.BlogPost as ViaductBlogPost
@@ -27,18 +26,15 @@ class AdminUpdateUserResolver(
         val input = ctx.arguments.input
         val userId = UUID.fromString(input.id.internalID)
 
-        val user = userRepository.findById(userId)
-            ?: throw NotFoundException("User not found")
-
         input.name?.let { require(it.length <= 255) { "Name cannot exceed 255 characters" } }
         input.email?.let { require(it.length <= 255) { "Email cannot exceed 255 characters" } }
 
-        transaction {
-            input.name?.let { user.name = it }
-            input.email?.let { user.email = it }
-            input.isAdmin?.let { user.isAdmin = it }
-            user.flush()
-        }
+        val user = userRepository.updateFields(
+            id = userId,
+            name = input.name,
+            email = input.email,
+            isAdmin = input.isAdmin,
+        ) ?: throw NotFoundException("User not found")
 
         return user.toViaductUser(ctx)
     }

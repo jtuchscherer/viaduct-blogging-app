@@ -37,8 +37,9 @@ class TrendingQueryResolver : QueryResolvers.Trending() {
             when (typeByPostId[postId]) {
                 PostKind.CHECKLIST_POST ->
                     ctx.nodeRef(ctx.globalIDFor(ViaductCheckedListPost.Reflection, postId.toString()))
-                PostKind.BLOG_POST, null ->
+                PostKind.BLOG_POST ->
                     ctx.nodeRef(ctx.globalIDFor(ViaductBlogPost.Reflection, postId.toString()))
+                null -> null // post was deleted; view records are orphaned — skip it
             }
         }
     }

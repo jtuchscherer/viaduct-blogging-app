@@ -2,6 +2,7 @@ import { gql } from '@apollo/client';
 import { useQuery, useMutation } from '@apollo/client/react';
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
+import PaginationControls from '../../components/admin/PaginationControls';
 
 const PAGE_SIZE = 10;
 
@@ -128,10 +129,6 @@ export default function AdminUsers() {
 
   const users: User[] = data?.admin?.users.users ?? [];
   const totalCount = data?.admin?.users.totalCount ?? 0;
-  const currentPage = Math.floor(offset / PAGE_SIZE) + 1;
-  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
-  const rangeStart = totalCount === 0 ? 0 : offset + 1;
-  const rangeEnd = Math.min(offset + PAGE_SIZE, totalCount);
 
   return (
     <div>
@@ -179,30 +176,14 @@ export default function AdminUsers() {
         </table>
       </div>
 
-      <div className="admin-pagination">
-        <span data-testid="admin-page-info">
-          {totalCount === 0 ? 'No users' : `Showing ${rangeStart}–${rangeEnd} of ${totalCount}`}
-        </span>
-        <div className="admin-pagination-controls">
-          <button
-            data-testid="btn-prev-page"
-            className="btn-page"
-            onClick={() => { setOffset(offset - PAGE_SIZE); refetch(); }}
-            disabled={offset === 0}
-          >
-            Previous
-          </button>
-          <span className="admin-page-number">Page {currentPage} of {totalPages || 1}</span>
-          <button
-            data-testid="btn-next-page"
-            className="btn-page"
-            onClick={() => { setOffset(offset + PAGE_SIZE); refetch(); }}
-            disabled={offset + PAGE_SIZE >= totalCount}
-          >
-            Next
-          </button>
-        </div>
-      </div>
+      <PaginationControls
+        offset={offset}
+        pageSize={PAGE_SIZE}
+        totalCount={totalCount}
+        entityName="users"
+        onPrev={() => { setOffset(offset - PAGE_SIZE); refetch(); }}
+        onNext={() => { setOffset(offset + PAGE_SIZE); refetch(); }}
+      />
 
       {userToDelete && (
         <div className="confirm-modal">
