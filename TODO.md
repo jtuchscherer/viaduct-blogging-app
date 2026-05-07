@@ -1,8 +1,8 @@
 # TODO: Viaduct Blogging App — Implementation Plan
 
-**Status**: 🚀 In Progress — Core complete; Analytics UI + CheckedList frontend (Phases 21–23) remaining
+**Status**: 🚀 In Progress — Core complete; CheckedList frontend (Phase 23) + AI features (Phases 24–27) remaining
 
-**Last Updated**: 2026-05-05
+**Last Updated**: 2026-05-06
 
 ## Test Statistics
 
@@ -37,6 +37,12 @@
 ## Next Steps
 
 - **Phase 23**: CheckedList frontend — full create/view/edit/toggle UI for CheckedListPost; unified feed with type-aware post cards
+- **Phase 24**: AI foundation — `:modules:ai` module, LangChain4j + Ollama, Tracy observability, `AIService` abstraction, `/health/ai` endpoint
+- **Phase 25**: Rephrase blog post content — AI button in the editor with tone selector (Professional / Casual / Concise)
+- **Phase 26**: Checklist item auto-suggestion — "Suggest next item" button when ≥ 3 items exist (backend parallel with Phase 23; frontend after Phase 23)
+- **Phase 27**: Post recommendation engine — embedding-based "You might like" panel using `nomic-embed-text`; falls back to trending
+
+> See `AI-PLAN.md` for full design, technology choices, and file-by-file breakdown.
 
 ---
 
@@ -351,3 +357,91 @@
 - `./query-tests.sh` — API e2e tests (backend must be running)
 - `./e2e.sh` — starts servers + runs Playwright browser tests
 - `cd frontend && npm test` — frontend Vitest unit tests
+
+---
+
+## Phase 24: AI Foundation & Infrastructure ⏳ TODO
+
+**Goal**: shared AI plumbing — module, LangChain4j + Ollama client, Tracy observability, `AIService` abstraction, health endpoint.
+
+**Depends on**: nothing — can start immediately after Phase 23.
+
+### Tasks
+
+1. Create `:modules:ai` Gradle module; add `langchain4j-ollama`, `langchain4j` core, and Tracy dependencies
+2. `OllamaConfig` data class reading `OLLAMA_BASE_URL`, `OLLAMA_CHAT_MODEL`, `OLLAMA_EMBEDDING_MODEL` from env / `application.conf`
+3. `AIService` interface with `rephrase`, `suggestNextItem`, `generateEmbedding`, `isReachable`
+4. `OllamaAIService` implementation via LangChain4j, wrapped with Tracy instrumentation
+5. `NoOpAIService` stub for tests (no Ollama daemon required in CI)
+6. Koin `aiModule` wired into `AppConfig`
+7. `/health/ai` endpoint returning `{ ollamaReachable, chatModel, embeddingModel }`
+8. `useAIHealth` frontend hook that fetches `/health/ai` once on load
+
+**Key files**: `modules/ai/`, `KoinModules.kt`, `GraphQLServer.kt`, `frontend/src/hooks/useAIHealth.ts`
+
+**Success criteria**: `/health/ai` returns correct JSON; `NoOpAIService` tests pass; `./gradlew test` green.
+
+---
+
+## Phase 25: Rephrase Blog Post Content ⏳ TODO
+
+**Goal**: "Rephrase with AI ✨" button in the blog post editor with tone selector.
+
+**Depends on**: Phase 24.
+
+### Tasks
+
+1. Schema: add `RephraseTone` enum, `RephraseResult` type, `rephraseContent(content, tone)` mutation
+2. `RephraseContentMutationResolver` — auth-required; validates non-blank + ≤ 50 000 chars; calls `AIService.rephrase`
+3. Prompt template as resource file (not hardcoded): supports `{{content}}` and `{{tone}}` placeholders
+4. Register in Koin `aiModule`; unit tests with `NoOpAIService`
+5. Frontend (`EditPostPage.tsx`): button + tone dropdown; spinner during call; update Lexical editor on success; hide when Ollama offline (via `useAIHealth`)
+6. Playwright test: button appears, spinner shows, editor content updates after mock response
+
+**Key files**: `modules/ai/src/main/viaduct/schema/ai.graphqls`, new resolver, `EditPostPage.tsx`
+
+**Success criteria**: mutation returns rephrased content; blank/too-long inputs rejected; button hidden when Ollama down.
+
+---
+
+## Phase 26: Checklist Item Auto-suggestion ⏳ TODO
+
+**Goal**: "Suggest next item" button in the checklist editor when ≥ 3 items exist.
+
+**Depends on**: Phase 24 (backend); Phase 23 + Phase 24 (frontend).
+
+### Tasks
+
+1. Schema (checkedlist module): add `SuggestedChecklistItem` type, `suggestChecklistItem(existingItems)` mutation
+2. `SuggestChecklistItemMutationResolver` — auth-required; validates `existingItems.size >= 3`; calls `AIService.suggestNextItem`
+3. Prompt template resource file
+4. Register in Koin; unit tests covering < 3 items error and ≥ 3 items success
+5. Frontend (Phase 23 checklist edit UI): "+ Suggest item" button; enabled only at ≥ 3 items; appends suggestion as editable row
+
+**Key files**: `CheckedList.graphqls`, new resolver in checkedlist module, checklist edit component
+
+**Success criteria**: mutation enforces 3-item minimum; returned suggestion appended to list; button tooltip shown when < 3 items.
+
+---
+
+## Phase 27: Post Recommendation Engine ⏳ TODO
+
+**Goal**: personalised "You might like" panel on the home feed using semantic embeddings.
+
+**Depends on**: Phase 24, Phase 25 (for end-to-end AI stack validation), Phase 23 (checklist posts in unified feed).
+
+### Tasks
+
+1. Flyway migration `V_ai_1__post_embeddings.sql` — `post_embeddings` table (post_id PK, embedding as JSON float array, model_name, timestamps)
+2. `PostEmbeddingRepository` — upsert and fetch embeddings
+3. `EmbeddingService` — wraps LangChain4j `EmbeddingModel` (nomic-embed-text), Tracy-instrumented
+4. Async embedding generation hook in `createPost` / `updatePost` resolvers (Kotlin coroutine, non-blocking)
+5. `RecommendationService` — centroid of user-interacted-post embeddings → cosine-similarity rank → top-N post IDs; fallback to trending
+6. Schema: `recommendedPosts(limit: Int): [Post!]!` query
+7. `RecommendedPostsQueryResolver` — auth-required; delegates to `RecommendationService`
+8. Frontend: `RecommendationsPanel` component with skeleton loader; falls back to "Trending" section when no history or Ollama offline
+9. Unit tests: cosine-similarity ranking, fallback behaviour, embedding round-trip; Playwright test: view posts → panel shows related content
+
+**Key files**: migration SQL, `PostEmbeddingRepository`, `EmbeddingService`, `RecommendationService`, resolver, `RecommendationsPanel.tsx`
+
+**Success criteria**: recommendations panel shows ≥ 1 relevant post after a user views several posts; unauthenticated / no-history users see trending posts instead; `./gradlew test` green.
