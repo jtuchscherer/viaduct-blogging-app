@@ -13,6 +13,10 @@ import org.junit.jupiter.api.Test
 import org.koin.core.context.GlobalContext
 import org.koin.dsl.module
 import java.util.UUID
+import viaduct.api.context.NodeExecutionContext
+import viaduct.api.globalid.GlobalID
+import viaduct.api.grts.CheckedListItem as ViaductCheckedListItem
+import viaduct.api.internal.InternalContext
 
 class CheckedListItemBatchResolverTest {
 
@@ -42,9 +46,15 @@ class CheckedListItemBatchResolverTest {
     )
 
     private fun mockContext(id: UUID): NodeResolvers.CheckedListItem.Context {
-        val ctx = mockk<NodeResolvers.CheckedListItem.Context>(relaxed = true)
-        every { ctx.id.internalID } returns id.toString()
-        return ctx
+        val globalId = mockk<GlobalID<ViaductCheckedListItem>>()
+        every { globalId.internalID } returns id.toString()
+
+        val inner = mockk<NodeExecutionContext<ViaductCheckedListItem>>(
+            relaxed = true,
+            moreInterfaces = arrayOf(InternalContext::class),
+        )
+        every { inner.id } returns globalId
+        return NodeResolvers.CheckedListItem.Context(inner)
     }
 
     @Test
