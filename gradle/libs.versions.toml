@@ -34,8 +34,6 @@ ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 viaduct-api = { module = "com.airbnb.viaduct:api", version.ref = "viaduct" }
 viaduct-runtime = { module = "com.airbnb.viaduct:runtime", version.ref = "viaduct" }
 viaduct-test-fixtures = { module = "com.airbnb.viaduct:test-fixtures", version.ref = "viaduct" }
-graphql-java = { module = "com.graphql-java:graphql-java", version = "26.0" }
-graphql-java-scalars = { module = "com.graphql-java:graphql-java-extended-scalars", version = "24.0" }
 
 ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
 ktor-server-netty = { module = "io.ktor:ktor-server-netty", version.ref = "ktor" }

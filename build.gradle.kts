@@ -45,8 +45,6 @@ dependencies {
 
     implementation(libs.viaduct.api)
     implementation(libs.viaduct.runtime)
-    implementation(libs.graphql.java)
-    implementation(libs.graphql.java.scalars)
     implementation("javax.inject:javax.inject:1")
     implementation(libs.logback.classic)
     implementation(libs.kotlinx.coroutines.core)
