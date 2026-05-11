@@ -5,7 +5,7 @@ import org.tuchscherer.auth.requireAuth
 import org.tuchscherer.database.repositories.LikeRepository
 import org.tuchscherer.database.repositories.PostRepository
 import org.tuchscherer.viadapp.resolvers.resolverbases.MutationResolvers
-import viaduct.api.Resolver
+import viaduct.api.resolver.Resolver
 import viaduct.api.grts.Like as ViaductLike
 import java.time.LocalDateTime
 import java.util.*

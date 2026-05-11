@@ -15,26 +15,21 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.koin.core.context.GlobalContext
 import org.koin.dsl.module
-import viaduct.api.connection.OffsetLimit
+import viaduct.api.types.OffsetLimit
 import viaduct.api.grts.*
 import viaduct.api.internal.InternalContext
 import viaduct.api.mocks.MockConnectionFieldExecutionContext
 import viaduct.api.types.Arguments.NoArguments
-import viaduct.engine.SchemaFactory
-import viaduct.engine.api.ViaductSchema
-import viaduct.engine.runtime.execution.DefaultCoroutineInterop
-import viaduct.tenant.testing.DefaultAbstractResolverTestBase
+import viaduct.api.testing.ResolverTestBase
 import java.time.LocalDateTime
 import java.util.*
 
-class PostsResolverTest : DefaultAbstractResolverTestBase() {
+class PostsResolverTest : ResolverTestBase() {
 
     private lateinit var postRepository: PostRepository
     private lateinit var mockPost: Post
     private val userId = UUID.randomUUID()
     private val postId = UUID.randomUUID()
-
-    override fun getSchema(): ViaductSchema = SchemaFactory(DefaultCoroutineInterop).fromResources()
 
     private fun queryObj() = Query.Builder(context).build()
 
@@ -64,12 +59,11 @@ class PostsResolverTest : DefaultAbstractResolverTestBase() {
 
         every { postRepository.findAll() } returns listOf(mockPost)
 
-        val result = runFieldResolver(
-            resolver = resolver,
-            objectValue = queryObj(),
-            queryValue = queryObj(),
+        val result = runFieldResolver(resolver) {
+            objectValue = queryObj()
+            queryValue = queryObj()
             arguments = NoArguments
-        )
+            }
 
         assertEquals(1, result.size)
         assertEquals(postId.toString(), result[0].getId().internalID)
@@ -82,12 +76,11 @@ class PostsResolverTest : DefaultAbstractResolverTestBase() {
 
         every { postRepository.findAll() } returns emptyList()
 
-        val result = runFieldResolver(
-            resolver = resolver,
-            objectValue = queryObj(),
-            queryValue = queryObj(),
+        val result = runFieldResolver(resolver) {
+            objectValue = queryObj()
+            queryValue = queryObj()
             arguments = NoArguments
-        )
+            }
 
         assertEquals(0, result.size)
     }
@@ -105,7 +98,7 @@ class PostsResolverTest : DefaultAbstractResolverTestBase() {
         // 0.30 ConnectionBuilder.fromSlice internally calls arguments.toOffsetLimit(maxLimit)
         // with Viaduct's own default to derive the offset for cursor encoding, so match any int.
         every { args.toOffsetLimit(any<Int>()) } returns OffsetLimit(offset, first)
-        val selections = ossSelectionSetFactory.selectionsOn(PostsConnection.Reflection, "postsConnection", emptyMap())
+        val selections = mkSelectionSetFactory().selectionsOn(PostsConnection.Reflection, "postsConnection", emptyMap())
         val mockConnCtx = MockConnectionFieldExecutionContext<Query, Query, Query_PostsConnection_Arguments, PostsConnection>(
             objectValue = Query.Builder(context).build(),
             queryValue = Query.Builder(context).build(),
@@ -114,7 +107,7 @@ class PostsResolverTest : DefaultAbstractResolverTestBase() {
             selectionsValue = selections,
             internalContext = context as InternalContext,
             queryResults = buildContextQueryMap(emptyList()),
-            selectionSetFactory = ossSelectionSetFactory
+            selectionSetFactory = mkSelectionSetFactory()
         )
         return QueryResolvers.PostsConnection.Context(mockConnCtx)
     }

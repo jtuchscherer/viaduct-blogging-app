@@ -28,10 +28,7 @@ import viaduct.api.grts.BlogPost as ViaductBlogPost
 import viaduct.api.grts.Comment as ViaductComment
 import viaduct.api.grts.Like as ViaductLike
 import viaduct.api.grts.User as ViaductUser
-import viaduct.engine.SchemaFactory
-import viaduct.engine.api.ViaductSchema
-import viaduct.engine.runtime.execution.DefaultCoroutineInterop
-import viaduct.tenant.testing.DefaultAbstractResolverTestBase
+import viaduct.api.testing.ResolverTestBase
 import java.util.UUID
 
 /**
@@ -48,9 +45,7 @@ import java.util.UUID
  *   - the batch repository method is called exactly once per request
  *   - missing ids surface a NotFoundException FieldValue (not a RuntimeException)
  */
-class NodeResolversTest : DefaultAbstractResolverTestBase() {
-
-    override fun getSchema(): ViaductSchema = SchemaFactory(DefaultCoroutineInterop).fromResources()
+class NodeResolversTest : ResolverTestBase() {
 
     // ── UserNodeResolver ───────────────────────────────────────────────────────
 
@@ -168,25 +163,25 @@ class NodeResolversTest : DefaultAbstractResolverTestBase() {
 
     private fun userNodeCtx(id: UUID): NodeResolvers.User.Context {
         val ctx = mockk<NodeResolvers.User.Context>(relaxed = true)
-        coEvery { ctx.id } returns context.globalIDFor(ViaductUser.Reflection, id.toString())
+        coEvery { ctx.id } returns globalIDFor(ViaductUser.Reflection, id.toString())
         return ctx
     }
 
     private fun postNodeCtx(id: UUID): NodeResolvers.BlogPost.Context {
         val ctx = mockk<NodeResolvers.BlogPost.Context>(relaxed = true)
-        coEvery { ctx.id } returns context.globalIDFor(ViaductBlogPost.Reflection, id.toString())
+        coEvery { ctx.id } returns globalIDFor(ViaductBlogPost.Reflection, id.toString())
         return ctx
     }
 
     private fun commentNodeCtx(id: UUID): NodeResolvers.Comment.Context {
         val ctx = mockk<NodeResolvers.Comment.Context>(relaxed = true)
-        coEvery { ctx.id } returns context.globalIDFor(ViaductComment.Reflection, id.toString())
+        coEvery { ctx.id } returns globalIDFor(ViaductComment.Reflection, id.toString())
         return ctx
     }
 
     private fun likeNodeCtx(id: UUID): NodeResolvers.Like.Context {
         val ctx = mockk<NodeResolvers.Like.Context>(relaxed = true)
-        coEvery { ctx.id } returns context.globalIDFor(ViaductLike.Reflection, id.toString())
+        coEvery { ctx.id } returns globalIDFor(ViaductLike.Reflection, id.toString())
         return ctx
     }
 }

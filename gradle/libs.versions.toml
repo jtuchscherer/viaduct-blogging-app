@@ -1,6 +1,7 @@
 [versions]
-viaduct = "0.31.0"
-kotlin = "2.3.20"
+viaduct = "1.0.0-rc.1"
+kotlin = "2.2.21"
+ksp = "2.2.21-2.0.5"
 ktor = "3.4.2"
 koin = "4.2.1"
 micrometer = "1.16.5"
@@ -26,6 +27,7 @@ netty = "4.2.12.Final"
 viaduct-application = { id = "com.airbnb.viaduct.application-gradle-plugin", version.ref = "viaduct" }
 viaduct-module = { id = "com.airbnb.viaduct.module-gradle-plugin", version.ref = "viaduct" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 
 [libraries]
 viaduct-api = { module = "com.airbnb.viaduct:api", version.ref = "viaduct" }

@@ -19,22 +19,17 @@ import org.koin.core.context.GlobalContext
 import org.koin.dsl.module
 import viaduct.api.grts.*
 import viaduct.api.types.Arguments.NoArguments
-import viaduct.engine.SchemaFactory
-import viaduct.engine.api.ViaductSchema
-import viaduct.engine.runtime.execution.DefaultCoroutineInterop
-import viaduct.tenant.testing.DefaultAbstractResolverTestBase
+import viaduct.api.testing.ResolverTestBase
 import java.time.LocalDateTime
 import java.util.*
 
-class MyPostsResolverTest : DefaultAbstractResolverTestBase() {
+class MyPostsResolverTest : ResolverTestBase() {
 
     private lateinit var postRepository: PostRepository
     private lateinit var mockUser: User
     private lateinit var mockPost: Post
     private val userId = UUID.randomUUID()
     private val postId = UUID.randomUUID()
-
-    override fun getSchema(): ViaductSchema = SchemaFactory(DefaultCoroutineInterop).fromResources()
 
     private fun queryObj() = Query.Builder(context).build()
 
@@ -68,13 +63,12 @@ class MyPostsResolverTest : DefaultAbstractResolverTestBase() {
 
         every { postRepository.findByAuthorId(mockUser.id.value) } returns listOf(mockPost)
 
-        val result = runFieldResolver(
-            resolver = resolver,
-            objectValue = queryObj(),
-            queryValue = queryObj(),
-            arguments = NoArguments,
+        val result = runFieldResolver(resolver) {
+            objectValue = queryObj()
+            queryValue = queryObj()
+            arguments = NoArguments
             requestContext = RequestContext(user = mockUser)
-        )
+            }
 
         assertEquals(1, result.size)
         assertEquals(postId.toString(), result[0].getId().internalID)
@@ -85,13 +79,12 @@ class MyPostsResolverTest : DefaultAbstractResolverTestBase() {
         val resolver = MyPostsResolver(postRepository)
 
         assertThrows<AuthenticationException> {
-            runFieldResolver(
-                resolver = resolver,
-                objectValue = queryObj(),
-                queryValue = queryObj(),
-                arguments = NoArguments,
+            runFieldResolver(resolver) {
+                objectValue = queryObj()
+                queryValue = queryObj()
+                arguments = NoArguments
                 requestContext = RequestContext()
-            )
+                }
         }
 
         verify(exactly = 0) { postRepository.findByAuthorId(any()) }

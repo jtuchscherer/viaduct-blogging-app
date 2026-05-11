@@ -3,7 +3,11 @@ package org.tuchscherer.checkedlist
 import org.tuchscherer.database.repositories.DatabaseTestHelper
 import org.tuchscherer.database.repositories.ExposedUserRepository
 import org.junit.jupiter.api.*
-import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import java.util.UUID
 
 /**

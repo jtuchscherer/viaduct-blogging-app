@@ -3,7 +3,7 @@ package org.tuchscherer.viadapp.checkedlist.resolvers
 import org.tuchscherer.checkedlist.port.PostCreationPort
 import org.tuchscherer.viadapp.checkedlist.resolverbases.QueryResolvers
 import org.koin.java.KoinJavaComponent.inject
-import viaduct.api.Resolver
+import viaduct.api.resolver.Resolver
 import viaduct.api.grts.CheckedListPost as ViaductCheckedListPost
 
 /**

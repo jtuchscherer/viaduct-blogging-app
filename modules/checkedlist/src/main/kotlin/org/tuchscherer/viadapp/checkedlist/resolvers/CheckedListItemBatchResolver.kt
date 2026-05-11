@@ -4,7 +4,7 @@ import org.tuchscherer.checkedlist.repositories.CheckedListItemRepository
 import org.tuchscherer.viadapp.checkedlist.resolverbases.NodeResolvers
 import org.koin.java.KoinJavaComponent.inject
 import viaduct.api.FieldValue
-import viaduct.api.Resolver
+import viaduct.api.resolver.Resolver
 import viaduct.api.grts.CheckedListItem as ViaductCheckedListItem
 import java.util.UUID
 

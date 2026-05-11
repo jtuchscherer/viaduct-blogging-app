@@ -5,7 +5,7 @@ import org.tuchscherer.analytics.port.PostTypeLookupPort.PostKind
 import org.tuchscherer.analytics.repositories.PostViewRepository
 import org.tuchscherer.viadapp.analytics.resolverbases.QueryResolvers
 import org.koin.java.KoinJavaComponent.inject
-import viaduct.api.Resolver
+import viaduct.api.resolver.Resolver
 import viaduct.api.grts.BlogPost as ViaductBlogPost
 import viaduct.api.grts.CheckedListPost as ViaductCheckedListPost
 import viaduct.api.grts.Post as ViaductPost

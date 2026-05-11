@@ -21,14 +21,11 @@ import viaduct.api.grts.BlogPost as ViaductBlogPost
 import viaduct.api.grts.Like as ViaductLike
 import viaduct.api.grts.Query
 import viaduct.api.types.Arguments.NoArguments
-import viaduct.engine.SchemaFactory
-import viaduct.engine.api.ViaductSchema
-import viaduct.engine.runtime.execution.DefaultCoroutineInterop
-import viaduct.tenant.testing.DefaultAbstractResolverTestBase
+import viaduct.api.testing.ResolverTestBase
 import java.time.LocalDateTime
 import java.util.UUID
 
-class LikeObjectFieldResolversTest : DefaultAbstractResolverTestBase() {
+class LikeObjectFieldResolversTest : ResolverTestBase() {
 
     private lateinit var likeRepository: LikeRepository
     private lateinit var mockUser: User
@@ -37,12 +34,10 @@ class LikeObjectFieldResolversTest : DefaultAbstractResolverTestBase() {
     private val postId = UUID.randomUUID()
     private val likeId = UUID.randomUUID()
 
-    override fun getSchema(): ViaductSchema = SchemaFactory(DefaultCoroutineInterop).fromResources()
-
     private fun queryObj() = Query.Builder(context).build()
 
     private fun likeObj(id: UUID = likeId) = ViaductLike.Builder(context)
-        .id(context.globalIDFor(ViaductLike.Reflection, id.toString()))
+        .id(globalIDFor(ViaductLike.Reflection, id.toString()))
         .createdAt("2025-01-01T10:00:00")
         .build()
 
@@ -78,12 +73,11 @@ class LikeObjectFieldResolversTest : DefaultAbstractResolverTestBase() {
         val resolver = LikeUserResolver()
         every { likeRepository.getUserForLike(likeId) } returns mockUser
 
-        val result = runFieldResolver(
-            resolver = resolver,
-            objectValue = likeObj(),
-            queryValue = queryObj(),
+        val result = runFieldResolver(resolver) {
+            objectValue = likeObj()
+            queryValue = queryObj()
             arguments = NoArguments
-        )
+            }
 
         assertEquals(userId.toString(), result.getId().internalID)
         assertEquals("testuser", result.getUsername())
@@ -96,12 +90,11 @@ class LikeObjectFieldResolversTest : DefaultAbstractResolverTestBase() {
         every { likeRepository.getUserForLike(likeId) } returns null
 
         assertThrows<NotFoundException> {
-            runFieldResolver(
-                resolver = resolver,
-                objectValue = likeObj(),
-                queryValue = queryObj(),
+            runFieldResolver(resolver) {
+                objectValue = likeObj()
+                queryValue = queryObj()
                 arguments = NoArguments
-            )
+                }
         }
     }
 
@@ -112,12 +105,11 @@ class LikeObjectFieldResolversTest : DefaultAbstractResolverTestBase() {
         val resolver = LikePostResolver()
         every { likeRepository.getPostForLike(likeId) } returns mockPost
 
-        val result = runFieldResolver(
-            resolver = resolver,
-            objectValue = likeObj(),
-            queryValue = queryObj(),
+        val result = runFieldResolver(resolver) {
+            objectValue = likeObj()
+            queryValue = queryObj()
             arguments = NoArguments
-        )
+            }
 
         val blogPost = result as ViaductBlogPost
         assertEquals(postId.toString(), blogPost.getId().internalID)
@@ -131,12 +123,11 @@ class LikeObjectFieldResolversTest : DefaultAbstractResolverTestBase() {
         every { likeRepository.getPostForLike(likeId) } returns null
 
         assertThrows<NotFoundException> {
-            runFieldResolver(
-                resolver = resolver,
-                objectValue = likeObj(),
-                queryValue = queryObj(),
+            runFieldResolver(resolver) {
+                objectValue = likeObj()
+                queryValue = queryObj()
                 arguments = NoArguments
-            )
+                }
         }
     }
 }

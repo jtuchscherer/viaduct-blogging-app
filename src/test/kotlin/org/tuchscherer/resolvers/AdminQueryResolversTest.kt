@@ -29,14 +29,11 @@ import org.koin.core.context.GlobalContext
 import org.koin.dsl.module
 import viaduct.api.grts.*
 import viaduct.api.grts.BlogPost as ViaductBlogPost
-import viaduct.engine.SchemaFactory
-import viaduct.engine.api.ViaductSchema
-import viaduct.engine.runtime.execution.DefaultCoroutineInterop
-import viaduct.tenant.testing.DefaultAbstractResolverTestBase
+import viaduct.api.testing.ResolverTestBase
 import java.time.LocalDateTime
 import java.util.*
 
-class AdminQueryResolversTest : DefaultAbstractResolverTestBase() {
+class AdminQueryResolversTest : ResolverTestBase() {
 
     private lateinit var userRepository: UserRepository
     private lateinit var postRepository: PostRepository
@@ -54,8 +51,6 @@ class AdminQueryResolversTest : DefaultAbstractResolverTestBase() {
     private val dbUserId = UUID.randomUUID()
     private val postId = UUID.randomUUID()
     private val commentId = UUID.randomUUID()
-
-    override fun getSchema(): ViaductSchema = SchemaFactory(DefaultCoroutineInterop).fromResources()
 
     private fun queryObj() = Query.Builder(context).build()
     private fun adminQueriesObj() = AdminQueries.Builder(context).build()
@@ -116,13 +111,12 @@ class AdminQueryResolversTest : DefaultAbstractResolverTestBase() {
         every { userRepository.findPage(10, 0) } returns listOf(mockDbUser)
         every { userRepository.count() } returns 1L
 
-        val result = runFieldResolver(
-            resolver = resolver,
-            objectValue = adminQueriesObj(),
-            queryValue = queryObj(),
-            arguments = args,
+        val result = runFieldResolver(resolver) {
+            objectValue = adminQueriesObj()
+            queryValue = queryObj()
+            arguments = args
             requestContext = RequestContext(user = mockAdminUser)
-        )
+            }
 
         assertEquals(1, result.getTotalCount())
         assertEquals(1, result.getUsers().size)
@@ -137,13 +131,12 @@ class AdminQueryResolversTest : DefaultAbstractResolverTestBase() {
         every { userRepository.findPage(5, 10) } returns listOf(mockDbUser)
         every { userRepository.count() } returns 11L
 
-        val result = runFieldResolver(
-            resolver = resolver,
-            objectValue = adminQueriesObj(),
-            queryValue = queryObj(),
-            arguments = args,
+        val result = runFieldResolver(resolver) {
+            objectValue = adminQueriesObj()
+            queryValue = queryObj()
+            arguments = args
             requestContext = RequestContext(user = mockAdminUser)
-        )
+            }
 
         assertEquals(11, result.getTotalCount())
         assertEquals(1, result.getUsers().size)
@@ -155,13 +148,12 @@ class AdminQueryResolversTest : DefaultAbstractResolverTestBase() {
         val args = AdminQueries_Users_Arguments.Builder(context).limit(10).offset(0).build()
 
         assertThrows<AuthorizationException> {
-            runFieldResolver(
-                resolver = resolver,
-                objectValue = adminQueriesObj(),
-                queryValue = queryObj(),
-                arguments = args,
+            runFieldResolver(resolver) {
+                objectValue = adminQueriesObj()
+                queryValue = queryObj()
+                arguments = args
                 requestContext = RequestContext(user = mockRegularUser)
-            )
+                }
         }
     }
 
@@ -173,13 +165,12 @@ class AdminQueryResolversTest : DefaultAbstractResolverTestBase() {
         every { userRepository.count() } returns Int.MAX_VALUE.toLong() + 1L
 
         assertThrows<IllegalArgumentException> {
-            runFieldResolver(
-                resolver = resolver,
-                objectValue = adminQueriesObj(),
-                queryValue = queryObj(),
-                arguments = args,
+            runFieldResolver(resolver) {
+                objectValue = adminQueriesObj()
+                queryValue = queryObj()
+                arguments = args
                 requestContext = RequestContext(user = mockAdminUser)
-            )
+                }
         }
     }
 
@@ -193,13 +184,12 @@ class AdminQueryResolversTest : DefaultAbstractResolverTestBase() {
         every { postRepository.findPage(10, 0) } returns listOf(mockPost)
         every { postRepository.count() } returns 1L
 
-        val result = runFieldResolver(
-            resolver = resolver,
-            objectValue = adminQueriesObj(),
-            queryValue = queryObj(),
-            arguments = args,
+        val result = runFieldResolver(resolver) {
+            objectValue = adminQueriesObj()
+            queryValue = queryObj()
+            arguments = args
             requestContext = RequestContext(user = mockAdminUser)
-        )
+            }
 
         assertEquals(1, result.getTotalCount())
         assertEquals(1, result.getPosts().size)
@@ -214,13 +204,12 @@ class AdminQueryResolversTest : DefaultAbstractResolverTestBase() {
         every { postRepository.findPage(5, 10) } returns listOf(mockPost)
         every { postRepository.count() } returns 15L
 
-        val result = runFieldResolver(
-            resolver = resolver,
-            objectValue = adminQueriesObj(),
-            queryValue = queryObj(),
-            arguments = args,
+        val result = runFieldResolver(resolver) {
+            objectValue = adminQueriesObj()
+            queryValue = queryObj()
+            arguments = args
             requestContext = RequestContext(user = mockAdminUser)
-        )
+            }
 
         assertEquals(15, result.getTotalCount())
         assertEquals(1, result.getPosts().size)
@@ -232,13 +221,12 @@ class AdminQueryResolversTest : DefaultAbstractResolverTestBase() {
         val args = AdminQueries_Posts_Arguments.Builder(context).limit(10).offset(0).build()
 
         assertThrows<AuthorizationException> {
-            runFieldResolver(
-                resolver = resolver,
-                objectValue = adminQueriesObj(),
-                queryValue = queryObj(),
-                arguments = args,
+            runFieldResolver(resolver) {
+                objectValue = adminQueriesObj()
+                queryValue = queryObj()
+                arguments = args
                 requestContext = RequestContext(user = mockRegularUser)
-            )
+                }
         }
     }
 
@@ -250,13 +238,12 @@ class AdminQueryResolversTest : DefaultAbstractResolverTestBase() {
         every { postRepository.count() } returns Int.MAX_VALUE.toLong() + 1L
 
         assertThrows<IllegalArgumentException> {
-            runFieldResolver(
-                resolver = resolver,
-                objectValue = adminQueriesObj(),
-                queryValue = queryObj(),
-                arguments = args,
+            runFieldResolver(resolver) {
+                objectValue = adminQueriesObj()
+                queryValue = queryObj()
+                arguments = args
                 requestContext = RequestContext(user = mockAdminUser)
-            )
+                }
         }
     }
 
@@ -270,13 +257,12 @@ class AdminQueryResolversTest : DefaultAbstractResolverTestBase() {
         every { commentRepository.findPage(10, 0) } returns listOf(mockComment)
         every { commentRepository.count() } returns 1L
 
-        val result = runFieldResolver(
-            resolver = resolver,
-            objectValue = adminQueriesObj(),
-            queryValue = queryObj(),
-            arguments = args,
+        val result = runFieldResolver(resolver) {
+            objectValue = adminQueriesObj()
+            queryValue = queryObj()
+            arguments = args
             requestContext = RequestContext(user = mockAdminUser)
-        )
+            }
 
         assertEquals(1, result.getTotalCount())
         assertEquals(1, result.getComments().size)
@@ -291,13 +277,12 @@ class AdminQueryResolversTest : DefaultAbstractResolverTestBase() {
         every { commentRepository.findPage(5, 10) } returns listOf(mockComment)
         every { commentRepository.count() } returns 20L
 
-        val result = runFieldResolver(
-            resolver = resolver,
-            objectValue = adminQueriesObj(),
-            queryValue = queryObj(),
-            arguments = args,
+        val result = runFieldResolver(resolver) {
+            objectValue = adminQueriesObj()
+            queryValue = queryObj()
+            arguments = args
             requestContext = RequestContext(user = mockAdminUser)
-        )
+            }
 
         assertEquals(20, result.getTotalCount())
         assertEquals(1, result.getComments().size)
@@ -309,13 +294,12 @@ class AdminQueryResolversTest : DefaultAbstractResolverTestBase() {
         val args = AdminQueries_Comments_Arguments.Builder(context).limit(10).offset(0).build()
 
         assertThrows<AuthorizationException> {
-            runFieldResolver(
-                resolver = resolver,
-                objectValue = adminQueriesObj(),
-                queryValue = queryObj(),
-                arguments = args,
+            runFieldResolver(resolver) {
+                objectValue = adminQueriesObj()
+                queryValue = queryObj()
+                arguments = args
                 requestContext = RequestContext(user = mockRegularUser)
-            )
+                }
         }
     }
 
@@ -327,13 +311,12 @@ class AdminQueryResolversTest : DefaultAbstractResolverTestBase() {
         every { commentRepository.count() } returns Int.MAX_VALUE.toLong() + 1L
 
         assertThrows<IllegalArgumentException> {
-            runFieldResolver(
-                resolver = resolver,
-                objectValue = adminQueriesObj(),
-                queryValue = queryObj(),
-                arguments = args,
+            runFieldResolver(resolver) {
+                objectValue = adminQueriesObj()
+                queryValue = queryObj()
+                arguments = args
                 requestContext = RequestContext(user = mockAdminUser)
-            )
+                }
         }
     }
 
@@ -348,13 +331,12 @@ class AdminQueryResolversTest : DefaultAbstractResolverTestBase() {
         every { commentRepository.count() } returns 20L
         every { likeRepository.count() } returns 30L
 
-        val result = runFieldResolver(
-            resolver = resolver,
-            objectValue = adminQueriesObj(),
-            queryValue = queryObj(),
-            arguments = viaduct.api.types.Arguments.NoArguments,
+        val result = runFieldResolver(resolver) {
+            objectValue = adminQueriesObj()
+            queryValue = queryObj()
+            arguments = viaduct.api.types.Arguments.NoArguments
             requestContext = RequestContext(user = mockAdminUser)
-        )
+            }
 
         assertEquals(5, result.getUserCount())
         assertEquals(10, result.getPostCount())
@@ -374,13 +356,12 @@ class AdminQueryResolversTest : DefaultAbstractResolverTestBase() {
         every { likeRepository.count() } returns 0L
 
         assertThrows<IllegalArgumentException> {
-            runFieldResolver(
-                resolver = resolver,
-                objectValue = adminQueriesObj(),
-                queryValue = queryObj(),
-                arguments = viaduct.api.types.Arguments.NoArguments,
+            runFieldResolver(resolver) {
+                objectValue = adminQueriesObj()
+                queryValue = queryObj()
+                arguments = viaduct.api.types.Arguments.NoArguments
                 requestContext = RequestContext(user = mockAdminUser)
-            )
+                }
         }
     }
 
@@ -393,13 +374,12 @@ class AdminQueryResolversTest : DefaultAbstractResolverTestBase() {
         every { likeRepository.count() } returns 0L
 
         assertThrows<IllegalArgumentException> {
-            runFieldResolver(
-                resolver = resolver,
-                objectValue = adminQueriesObj(),
-                queryValue = queryObj(),
-                arguments = viaduct.api.types.Arguments.NoArguments,
+            runFieldResolver(resolver) {
+                objectValue = adminQueriesObj()
+                queryValue = queryObj()
+                arguments = viaduct.api.types.Arguments.NoArguments
                 requestContext = RequestContext(user = mockAdminUser)
-            )
+                }
         }
     }
 
@@ -412,13 +392,12 @@ class AdminQueryResolversTest : DefaultAbstractResolverTestBase() {
         every { likeRepository.count() } returns 0L
 
         assertThrows<IllegalArgumentException> {
-            runFieldResolver(
-                resolver = resolver,
-                objectValue = adminQueriesObj(),
-                queryValue = queryObj(),
-                arguments = viaduct.api.types.Arguments.NoArguments,
+            runFieldResolver(resolver) {
+                objectValue = adminQueriesObj()
+                queryValue = queryObj()
+                arguments = viaduct.api.types.Arguments.NoArguments
                 requestContext = RequestContext(user = mockAdminUser)
-            )
+                }
         }
     }
 
@@ -431,13 +410,12 @@ class AdminQueryResolversTest : DefaultAbstractResolverTestBase() {
         every { likeRepository.count() } returns Int.MAX_VALUE.toLong() + 1L
 
         assertThrows<IllegalArgumentException> {
-            runFieldResolver(
-                resolver = resolver,
-                objectValue = adminQueriesObj(),
-                queryValue = queryObj(),
-                arguments = viaduct.api.types.Arguments.NoArguments,
+            runFieldResolver(resolver) {
+                objectValue = adminQueriesObj()
+                queryValue = queryObj()
+                arguments = viaduct.api.types.Arguments.NoArguments
                 requestContext = RequestContext(user = mockAdminUser)
-            )
+                }
         }
     }
 
@@ -446,13 +424,12 @@ class AdminQueryResolversTest : DefaultAbstractResolverTestBase() {
         val resolver = AdminStatsResolver(userRepository, postRepository, commentRepository, likeRepository)
 
         assertThrows<AuthorizationException> {
-            runFieldResolver(
-                resolver = resolver,
-                objectValue = adminQueriesObj(),
-                queryValue = queryObj(),
-                arguments = viaduct.api.types.Arguments.NoArguments,
+            runFieldResolver(resolver) {
+                objectValue = adminQueriesObj()
+                queryValue = queryObj()
+                arguments = viaduct.api.types.Arguments.NoArguments
                 requestContext = RequestContext(user = mockRegularUser)
-            )
+                }
         }
     }
 
@@ -462,18 +439,17 @@ class AdminQueryResolversTest : DefaultAbstractResolverTestBase() {
     fun `AdminUserResolver returns user when found`() = runBlocking {
         val resolver = AdminUserResolver(userRepository)
         val args = AdminQueries_User_Arguments.Builder(context)
-            .id(context.globalIDFor(viaduct.api.grts.User.Reflection, dbUserId.toString()))
+            .id(globalIDFor(viaduct.api.grts.User.Reflection, dbUserId.toString()))
             .build()
 
         every { userRepository.findById(dbUserId) } returns mockDbUser
 
-        val result = runFieldResolver(
-            resolver = resolver,
-            objectValue = adminQueriesObj(),
-            queryValue = queryObj(),
-            arguments = args,
+        val result = runFieldResolver(resolver) {
+            objectValue = adminQueriesObj()
+            queryValue = queryObj()
+            arguments = args
             requestContext = RequestContext(user = mockAdminUser)
-        )
+            }
 
         assertNotNull(result)
         assertEquals(dbUserId.toString(), result!!.getId().internalID)
@@ -484,18 +460,17 @@ class AdminQueryResolversTest : DefaultAbstractResolverTestBase() {
     fun `AdminUserResolver returns null when user not found`() = runBlocking {
         val resolver = AdminUserResolver(userRepository)
         val args = AdminQueries_User_Arguments.Builder(context)
-            .id(context.globalIDFor(viaduct.api.grts.User.Reflection, dbUserId.toString()))
+            .id(globalIDFor(viaduct.api.grts.User.Reflection, dbUserId.toString()))
             .build()
 
         every { userRepository.findById(dbUserId) } returns null
 
-        val result = runFieldResolver(
-            resolver = resolver,
-            objectValue = adminQueriesObj(),
-            queryValue = queryObj(),
-            arguments = args,
+        val result = runFieldResolver(resolver) {
+            objectValue = adminQueriesObj()
+            queryValue = queryObj()
+            arguments = args
             requestContext = RequestContext(user = mockAdminUser)
-        )
+            }
 
         assertNull(result)
     }
@@ -504,17 +479,16 @@ class AdminQueryResolversTest : DefaultAbstractResolverTestBase() {
     fun `AdminUserResolver throws AuthorizationException for non-admin user`() = runBlocking {
         val resolver = AdminUserResolver(userRepository)
         val args = AdminQueries_User_Arguments.Builder(context)
-            .id(context.globalIDFor(viaduct.api.grts.User.Reflection, dbUserId.toString()))
+            .id(globalIDFor(viaduct.api.grts.User.Reflection, dbUserId.toString()))
             .build()
 
         assertThrows<AuthorizationException> {
-            runFieldResolver(
-                resolver = resolver,
-                objectValue = adminQueriesObj(),
-                queryValue = queryObj(),
-                arguments = args,
+            runFieldResolver(resolver) {
+                objectValue = adminQueriesObj()
+                queryValue = queryObj()
+                arguments = args
                 requestContext = RequestContext(user = mockRegularUser)
-            )
+                }
         }
     }
 
@@ -524,20 +498,19 @@ class AdminQueryResolversTest : DefaultAbstractResolverTestBase() {
     fun `AdminUserContentCountsResolver returns content counts for user`() = runBlocking {
         val resolver = AdminUserContentCountsResolver(postRepository, commentRepository, likeRepository)
         val args = AdminQueries_UserContentCounts_Arguments.Builder(context)
-            .userId(context.globalIDFor(viaduct.api.grts.User.Reflection, dbUserId.toString()))
+            .userId(globalIDFor(viaduct.api.grts.User.Reflection, dbUserId.toString()))
             .build()
 
         every { postRepository.countByAuthorId(dbUserId) } returns 3L
         every { commentRepository.countByUserId(dbUserId) } returns 7L
         every { likeRepository.countByUserId(dbUserId) } returns 15L
 
-        val result = runFieldResolver(
-            resolver = resolver,
-            objectValue = adminQueriesObj(),
-            queryValue = queryObj(),
-            arguments = args,
+        val result = runFieldResolver(resolver) {
+            objectValue = adminQueriesObj()
+            queryValue = queryObj()
+            arguments = args
             requestContext = RequestContext(user = mockAdminUser)
-        )
+            }
 
         assertEquals(3, result.getPostCount())
         assertEquals(7, result.getCommentCount())
@@ -548,20 +521,19 @@ class AdminQueryResolversTest : DefaultAbstractResolverTestBase() {
     fun `AdminUserContentCountsResolver throws when postCount exceeds Int MAX_VALUE`() = runBlocking {
         val resolver = AdminUserContentCountsResolver(postRepository, commentRepository, likeRepository)
         val args = AdminQueries_UserContentCounts_Arguments.Builder(context)
-            .userId(context.globalIDFor(viaduct.api.grts.User.Reflection, dbUserId.toString()))
+            .userId(globalIDFor(viaduct.api.grts.User.Reflection, dbUserId.toString()))
             .build()
         every { postRepository.countByAuthorId(dbUserId) } returns Int.MAX_VALUE.toLong() + 1L
         every { commentRepository.countByUserId(dbUserId) } returns 0L
         every { likeRepository.countByUserId(dbUserId) } returns 0L
 
         assertThrows<IllegalArgumentException> {
-            runFieldResolver(
-                resolver = resolver,
-                objectValue = adminQueriesObj(),
-                queryValue = queryObj(),
-                arguments = args,
+            runFieldResolver(resolver) {
+                objectValue = adminQueriesObj()
+                queryValue = queryObj()
+                arguments = args
                 requestContext = RequestContext(user = mockAdminUser)
-            )
+                }
         }
     }
 
@@ -569,20 +541,19 @@ class AdminQueryResolversTest : DefaultAbstractResolverTestBase() {
     fun `AdminUserContentCountsResolver throws when commentCount exceeds Int MAX_VALUE`() = runBlocking {
         val resolver = AdminUserContentCountsResolver(postRepository, commentRepository, likeRepository)
         val args = AdminQueries_UserContentCounts_Arguments.Builder(context)
-            .userId(context.globalIDFor(viaduct.api.grts.User.Reflection, dbUserId.toString()))
+            .userId(globalIDFor(viaduct.api.grts.User.Reflection, dbUserId.toString()))
             .build()
         every { postRepository.countByAuthorId(dbUserId) } returns 0L
         every { commentRepository.countByUserId(dbUserId) } returns Int.MAX_VALUE.toLong() + 1L
         every { likeRepository.countByUserId(dbUserId) } returns 0L
 
         assertThrows<IllegalArgumentException> {
-            runFieldResolver(
-                resolver = resolver,
-                objectValue = adminQueriesObj(),
-                queryValue = queryObj(),
-                arguments = args,
+            runFieldResolver(resolver) {
+                objectValue = adminQueriesObj()
+                queryValue = queryObj()
+                arguments = args
                 requestContext = RequestContext(user = mockAdminUser)
-            )
+                }
         }
     }
 
@@ -590,20 +561,19 @@ class AdminQueryResolversTest : DefaultAbstractResolverTestBase() {
     fun `AdminUserContentCountsResolver throws when likeCount exceeds Int MAX_VALUE`() = runBlocking {
         val resolver = AdminUserContentCountsResolver(postRepository, commentRepository, likeRepository)
         val args = AdminQueries_UserContentCounts_Arguments.Builder(context)
-            .userId(context.globalIDFor(viaduct.api.grts.User.Reflection, dbUserId.toString()))
+            .userId(globalIDFor(viaduct.api.grts.User.Reflection, dbUserId.toString()))
             .build()
         every { postRepository.countByAuthorId(dbUserId) } returns 0L
         every { commentRepository.countByUserId(dbUserId) } returns 0L
         every { likeRepository.countByUserId(dbUserId) } returns Int.MAX_VALUE.toLong() + 1L
 
         assertThrows<IllegalArgumentException> {
-            runFieldResolver(
-                resolver = resolver,
-                objectValue = adminQueriesObj(),
-                queryValue = queryObj(),
-                arguments = args,
+            runFieldResolver(resolver) {
+                objectValue = adminQueriesObj()
+                queryValue = queryObj()
+                arguments = args
                 requestContext = RequestContext(user = mockAdminUser)
-            )
+                }
         }
     }
 
@@ -611,17 +581,16 @@ class AdminQueryResolversTest : DefaultAbstractResolverTestBase() {
     fun `AdminUserContentCountsResolver throws AuthorizationException for non-admin user`() = runBlocking {
         val resolver = AdminUserContentCountsResolver(postRepository, commentRepository, likeRepository)
         val args = AdminQueries_UserContentCounts_Arguments.Builder(context)
-            .userId(context.globalIDFor(viaduct.api.grts.User.Reflection, dbUserId.toString()))
+            .userId(globalIDFor(viaduct.api.grts.User.Reflection, dbUserId.toString()))
             .build()
 
         assertThrows<AuthorizationException> {
-            runFieldResolver(
-                resolver = resolver,
-                objectValue = adminQueriesObj(),
-                queryValue = queryObj(),
-                arguments = args,
+            runFieldResolver(resolver) {
+                objectValue = adminQueriesObj()
+                queryValue = queryObj()
+                arguments = args
                 requestContext = RequestContext(user = mockRegularUser)
-            )
+                }
         }
     }
 
@@ -631,18 +600,17 @@ class AdminQueryResolversTest : DefaultAbstractResolverTestBase() {
     fun `AdminPostResolver returns post when found`() = runBlocking {
         val resolver = AdminPostResolver(postRepository)
         val args = AdminQueries_Post_Arguments.Builder(context)
-            .id(context.globalIDFor(ViaductBlogPost.Reflection, postId.toString()))
+            .id(globalIDFor(ViaductBlogPost.Reflection, postId.toString()))
             .build()
 
         every { postRepository.findById(postId) } returns mockPost
 
-        val result = runFieldResolver(
-            resolver = resolver,
-            objectValue = adminQueriesObj(),
-            queryValue = queryObj(),
-            arguments = args,
+        val result = runFieldResolver(resolver) {
+            objectValue = adminQueriesObj()
+            queryValue = queryObj()
+            arguments = args
             requestContext = RequestContext(user = mockAdminUser)
-        )
+            }
 
         assertNotNull(result)
         assertEquals(postId.toString(), result!!.getId().internalID)
@@ -653,18 +621,17 @@ class AdminQueryResolversTest : DefaultAbstractResolverTestBase() {
     fun `AdminPostResolver returns null when post not found`() = runBlocking {
         val resolver = AdminPostResolver(postRepository)
         val args = AdminQueries_Post_Arguments.Builder(context)
-            .id(context.globalIDFor(ViaductBlogPost.Reflection, postId.toString()))
+            .id(globalIDFor(ViaductBlogPost.Reflection, postId.toString()))
             .build()
 
         every { postRepository.findById(postId) } returns null
 
-        val result = runFieldResolver(
-            resolver = resolver,
-            objectValue = adminQueriesObj(),
-            queryValue = queryObj(),
-            arguments = args,
+        val result = runFieldResolver(resolver) {
+            objectValue = adminQueriesObj()
+            queryValue = queryObj()
+            arguments = args
             requestContext = RequestContext(user = mockAdminUser)
-        )
+            }
 
         assertNull(result)
     }
@@ -673,17 +640,16 @@ class AdminQueryResolversTest : DefaultAbstractResolverTestBase() {
     fun `AdminPostResolver throws AuthorizationException for non-admin user`() = runBlocking {
         val resolver = AdminPostResolver(postRepository)
         val args = AdminQueries_Post_Arguments.Builder(context)
-            .id(context.globalIDFor(ViaductBlogPost.Reflection, postId.toString()))
+            .id(globalIDFor(ViaductBlogPost.Reflection, postId.toString()))
             .build()
 
         assertThrows<AuthorizationException> {
-            runFieldResolver(
-                resolver = resolver,
-                objectValue = adminQueriesObj(),
-                queryValue = queryObj(),
-                arguments = args,
+            runFieldResolver(resolver) {
+                objectValue = adminQueriesObj()
+                queryValue = queryObj()
+                arguments = args
                 requestContext = RequestContext(user = mockRegularUser)
-            )
+                }
         }
     }
 }

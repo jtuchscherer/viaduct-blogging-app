@@ -21,22 +21,17 @@ import org.koin.core.context.GlobalContext
 import org.koin.dsl.module
 import viaduct.api.grts.*
 import viaduct.api.grts.BlogPost as ViaductBlogPost
-import viaduct.engine.SchemaFactory
-import viaduct.engine.api.ViaductSchema
-import viaduct.engine.runtime.execution.DefaultCoroutineInterop
-import viaduct.tenant.testing.DefaultAbstractResolverTestBase
+import viaduct.api.testing.ResolverTestBase
 import java.time.LocalDateTime
 import java.util.*
 
-class DeletePostResolverTest : DefaultAbstractResolverTestBase() {
+class DeletePostResolverTest : ResolverTestBase() {
 
     private lateinit var postRepository: PostRepository
     private lateinit var mockUser: User
     private lateinit var mockPost: Post
     private val userId = UUID.randomUUID()
     private val postId = UUID.randomUUID()
-
-    override fun getSchema(): ViaductSchema = SchemaFactory(DefaultCoroutineInterop).fromResources()
 
     private fun queryObj() = Query.Builder(context).build()
 
@@ -66,19 +61,18 @@ class DeletePostResolverTest : DefaultAbstractResolverTestBase() {
     fun `DeletePostResolver deletes post successfully`() = runBlocking {
         val resolver = DeletePostResolver(postRepository)
         val args = Mutation_DeletePost_Arguments.Builder(context)
-            .id(context.globalIDFor(ViaductBlogPost.Reflection, postId.toString()))
+            .id(globalIDFor(ViaductBlogPost.Reflection, postId.toString()))
             .build()
 
         every { postRepository.findById(postId) } returns mockPost
         every { mockPost.authorId } returns mockUser.id
         every { postRepository.delete(postId) } returns true
 
-        val result = runMutationFieldResolver(
-            resolver = resolver,
-            queryValue = queryObj(),
-            arguments = args,
+        val result = runMutationFieldResolver(resolver) {
+            queryValue = queryObj()
+            arguments = args
             requestContext = RequestContext(user = mockUser)
-        )
+            }
 
         assertTrue(result)
     }
@@ -87,16 +81,15 @@ class DeletePostResolverTest : DefaultAbstractResolverTestBase() {
     fun `DeletePostResolver throws exception when not authenticated`() = runBlocking {
         val resolver = DeletePostResolver(postRepository)
         val args = Mutation_DeletePost_Arguments.Builder(context)
-            .id(context.globalIDFor(ViaductBlogPost.Reflection, postId.toString()))
+            .id(globalIDFor(ViaductBlogPost.Reflection, postId.toString()))
             .build()
 
         assertThrows<AuthenticationException> {
-            runMutationFieldResolver(
-                resolver = resolver,
-                queryValue = queryObj(),
-                arguments = args,
+            runMutationFieldResolver(resolver) {
+                queryValue = queryObj()
+                arguments = args
                 requestContext = RequestContext()
-            )
+                }
         }
 
         verify(exactly = 0) { postRepository.findById(any()) }
@@ -107,18 +100,17 @@ class DeletePostResolverTest : DefaultAbstractResolverTestBase() {
     fun `DeletePostResolver throws exception when post not found`() = runBlocking {
         val resolver = DeletePostResolver(postRepository)
         val args = Mutation_DeletePost_Arguments.Builder(context)
-            .id(context.globalIDFor(ViaductBlogPost.Reflection, postId.toString()))
+            .id(globalIDFor(ViaductBlogPost.Reflection, postId.toString()))
             .build()
 
         every { postRepository.findById(postId) } returns null
 
         assertThrows<NotFoundException> {
-            runMutationFieldResolver(
-                resolver = resolver,
-                queryValue = queryObj(),
-                arguments = args,
+            runMutationFieldResolver(resolver) {
+                queryValue = queryObj()
+                arguments = args
                 requestContext = RequestContext(user = mockUser)
-            )
+                }
         }
 
         verify(exactly = 0) { postRepository.delete(any()) }
@@ -129,19 +121,18 @@ class DeletePostResolverTest : DefaultAbstractResolverTestBase() {
         val resolver = DeletePostResolver(postRepository)
         val differentUserId = UUID.randomUUID()
         val args = Mutation_DeletePost_Arguments.Builder(context)
-            .id(context.globalIDFor(ViaductBlogPost.Reflection, postId.toString()))
+            .id(globalIDFor(ViaductBlogPost.Reflection, postId.toString()))
             .build()
 
         every { postRepository.findById(postId) } returns mockPost
         every { mockPost.authorId } returns EntityID(differentUserId, mockk())
 
         assertThrows<AuthorizationException> {
-            runMutationFieldResolver(
-                resolver = resolver,
-                queryValue = queryObj(),
-                arguments = args,
+            runMutationFieldResolver(resolver) {
+                queryValue = queryObj()
+                arguments = args
                 requestContext = RequestContext(user = mockUser)
-            )
+                }
         }
 
         verify(exactly = 0) { postRepository.delete(any()) }

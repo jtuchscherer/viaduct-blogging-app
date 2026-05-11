@@ -21,25 +21,20 @@ import org.koin.dsl.module
 import viaduct.api.grts.Query
 import viaduct.api.grts.User as ViaductUser
 import viaduct.api.types.Arguments.NoArguments
-import viaduct.engine.SchemaFactory
-import viaduct.engine.api.ViaductSchema
-import viaduct.engine.runtime.execution.DefaultCoroutineInterop
-import viaduct.tenant.testing.DefaultAbstractResolverTestBase
+import viaduct.api.testing.ResolverTestBase
 import java.time.LocalDateTime
 import java.util.*
 
-class UserResolversTest : DefaultAbstractResolverTestBase() {
+class UserResolversTest : ResolverTestBase() {
 
     private lateinit var userRepository: UserRepository
     private lateinit var mockUser: User
     private val userId = UUID.randomUUID()
 
-    override fun getSchema(): ViaductSchema = SchemaFactory(DefaultCoroutineInterop).fromResources()
-
     private fun queryObj() = Query.Builder(context).build()
 
     private fun userObj(id: UUID = userId) = ViaductUser.Builder(context)
-        .id(context.globalIDFor(ViaductUser.Reflection, id.toString()))
+        .id(globalIDFor(ViaductUser.Reflection, id.toString()))
         .username("testuser")
         .email("test@example.com")
         .name("Test User")
@@ -72,13 +67,12 @@ class UserResolversTest : DefaultAbstractResolverTestBase() {
     fun `MeResolver returns authenticated user`() = runBlocking {
         val resolver = MeResolver()
 
-        val result = runFieldResolver(
-            resolver = resolver,
-            objectValue = queryObj(),
-            queryValue = queryObj(),
-            arguments = NoArguments,
+        val result = runFieldResolver(resolver) {
+            objectValue = queryObj()
+            queryValue = queryObj()
+            arguments = NoArguments
             requestContext = RequestContext(user = mockUser)
-        )
+            }
 
         assertNotNull(result)
         assertEquals(userId.toString(), result!!.getId().internalID)
@@ -92,13 +86,12 @@ class UserResolversTest : DefaultAbstractResolverTestBase() {
         val resolver = MeResolver()
 
         assertThrows<AuthenticationException> {
-            runFieldResolver(
-                resolver = resolver,
-                objectValue = queryObj(),
-                queryValue = queryObj(),
-                arguments = NoArguments,
+            runFieldResolver(resolver) {
+                objectValue = queryObj()
+                queryValue = queryObj()
+                arguments = NoArguments
                 requestContext = RequestContext()
-            )
+                }
         }
     }
 
@@ -107,13 +100,12 @@ class UserResolversTest : DefaultAbstractResolverTestBase() {
         val resolver = MeResolver()
 
         assertThrows<AuthenticationException> {
-            runFieldResolver(
-                resolver = resolver,
-                objectValue = queryObj(),
-                queryValue = queryObj(),
-                arguments = NoArguments,
+            runFieldResolver(resolver) {
+                objectValue = queryObj()
+                queryValue = queryObj()
+                arguments = NoArguments
                 requestContext = null
-            )
+                }
         }
     }
 
@@ -121,7 +113,7 @@ class UserResolversTest : DefaultAbstractResolverTestBase() {
 
     private fun batchCtx(id: UUID = userId): UserResolvers.IsAdmin.Context {
         val ctx = mockk<UserResolvers.IsAdmin.Context>(relaxed = true)
-        val globalId = this@UserResolversTest.context.globalIDFor(ViaductUser.Reflection, id.toString())
+        val globalId = this@UserResolversTest.globalIDFor(ViaductUser.Reflection, id.toString())
         coEvery { ctx.getObjectValue().getId() } returns globalId
         return ctx
     }

@@ -24,6 +24,7 @@ buildscript {
 
 plugins {
     alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.ksp)
     alias(libs.plugins.viaduct.application)
     alias(libs.plugins.viaduct.module)
     application
@@ -115,9 +116,6 @@ tasks.withType<Zip> { duplicatesStrategy = DuplicatesStrategy.EXCLUDE }
 tasks.withType<Sync> { duplicatesStrategy = DuplicatesStrategy.EXCLUDE }
 
 // Force Netty to a patched version to address CVEs (CRLF injection, HTTP request smuggling).
-// Also force the four internal Viaduct artifacts that tenant-api:0.29.0's testFixturesApiElements
-// variant incorrectly declares as version "INCLUDED" (published module metadata bug). These four
-// lines can be removed once Viaduct ships a fix.
 val viaductVersion: String = libs.versions.viaduct.get()
 val nettyVersion: String = libs.versions.netty.get()
 val jacksonCore3Version: String = libs.versions.jackson3.get()
@@ -140,23 +138,13 @@ configurations.all {
     )
 }
 
-// The Viaduct plugin unconditionally adds -Xcontext-receivers, which Kotlin 2.3+ rejects.
-// Strip it out after the plugin has configured the task since our code doesn't use that feature.
-afterEvaluate {
-    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-        compilerOptions {
-            freeCompilerArgs.set(freeCompilerArgs.get().filter { it != "-Xcontext-receivers" })
-        }
-    }
-}
-
 tasks.test {
     useJUnitPlatform()
     finalizedBy(tasks.jacocoTestReport)
     // viaduct:runtime is a fat jar that embeds JUnit 5.11 without relocation. Moving it to the
     // end of the classpath ensures our declared JUnit 5.12.2 jars are loaded first.
     doFirst {
-        val runtimeJar = classpath.filter { "runtime-0.31" in it.name }
+        val runtimeJar = classpath.filter { "runtime-1.0.0-rc.1" in it.name }
         classpath = classpath.minus(runtimeJar).plus(runtimeJar)
     }
 }

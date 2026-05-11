@@ -10,7 +10,7 @@ import org.tuchscherer.database.repositories.PostRepository
 import org.tuchscherer.database.repositories.UserRepository
 import org.tuchscherer.viadapp.resolvers.resolverbases.AdminQueriesResolvers
 import org.tuchscherer.viadapp.resolvers.resolverbases.AdminStatsResolvers
-import viaduct.api.Resolver
+import viaduct.api.resolver.Resolver
 import viaduct.api.grts.AdminCommentsPage
 import viaduct.api.grts.AdminPostsPage
 import viaduct.api.grts.AdminStats

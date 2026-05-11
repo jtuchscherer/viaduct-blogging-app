@@ -22,14 +22,11 @@ import org.koin.core.context.GlobalContext
 import org.koin.dsl.module
 import viaduct.api.grts.*
 import viaduct.api.grts.Comment as ViaductComment
-import viaduct.engine.SchemaFactory
-import viaduct.engine.api.ViaductSchema
-import viaduct.engine.runtime.execution.DefaultCoroutineInterop
-import viaduct.tenant.testing.DefaultAbstractResolverTestBase
+import viaduct.api.testing.ResolverTestBase
 import java.time.LocalDateTime
 import java.util.*
 
-class DeleteCommentResolverTest : DefaultAbstractResolverTestBase() {
+class DeleteCommentResolverTest : ResolverTestBase() {
 
     private lateinit var commentRepository: CommentRepository
     private lateinit var mockUser: User
@@ -37,8 +34,6 @@ class DeleteCommentResolverTest : DefaultAbstractResolverTestBase() {
     private val userId = UUID.randomUUID()
     private val postId = UUID.randomUUID()
     private val commentId = UUID.randomUUID()
-
-    override fun getSchema(): ViaductSchema = SchemaFactory(DefaultCoroutineInterop).fromResources()
 
     private fun queryObj() = Query.Builder(context).build()
 
@@ -69,19 +64,18 @@ class DeleteCommentResolverTest : DefaultAbstractResolverTestBase() {
     fun `DeleteCommentResolver deletes comment successfully`() = runBlocking {
         val resolver = DeleteCommentResolver(commentRepository)
         val args = Mutation_DeleteComment_Arguments.Builder(context)
-            .id(context.globalIDFor(ViaductComment.Reflection, commentId.toString()))
+            .id(globalIDFor(ViaductComment.Reflection, commentId.toString()))
             .build()
 
         every { commentRepository.findById(commentId) } returns mockComment
         every { mockComment.authorId } returns mockUser.id
         every { commentRepository.delete(commentId) } returns true
 
-        val result = runMutationFieldResolver(
-            resolver = resolver,
-            queryValue = queryObj(),
-            arguments = args,
+        val result = runMutationFieldResolver(resolver) {
+            queryValue = queryObj()
+            arguments = args
             requestContext = RequestContext(user = mockUser)
-        )
+            }
 
         assertTrue(result)
     }
@@ -90,16 +84,15 @@ class DeleteCommentResolverTest : DefaultAbstractResolverTestBase() {
     fun `DeleteCommentResolver throws exception when not authenticated`() = runBlocking {
         val resolver = DeleteCommentResolver(commentRepository)
         val args = Mutation_DeleteComment_Arguments.Builder(context)
-            .id(context.globalIDFor(ViaductComment.Reflection, commentId.toString()))
+            .id(globalIDFor(ViaductComment.Reflection, commentId.toString()))
             .build()
 
         assertThrows<AuthenticationException> {
-            runMutationFieldResolver(
-                resolver = resolver,
-                queryValue = queryObj(),
-                arguments = args,
+            runMutationFieldResolver(resolver) {
+                queryValue = queryObj()
+                arguments = args
                 requestContext = RequestContext()
-            )
+                }
         }
 
         verify(exactly = 0) { commentRepository.findById(any()) }
@@ -110,18 +103,17 @@ class DeleteCommentResolverTest : DefaultAbstractResolverTestBase() {
     fun `DeleteCommentResolver throws exception when comment not found`() = runBlocking {
         val resolver = DeleteCommentResolver(commentRepository)
         val args = Mutation_DeleteComment_Arguments.Builder(context)
-            .id(context.globalIDFor(ViaductComment.Reflection, commentId.toString()))
+            .id(globalIDFor(ViaductComment.Reflection, commentId.toString()))
             .build()
 
         every { commentRepository.findById(commentId) } returns null
 
         assertThrows<NotFoundException> {
-            runMutationFieldResolver(
-                resolver = resolver,
-                queryValue = queryObj(),
-                arguments = args,
+            runMutationFieldResolver(resolver) {
+                queryValue = queryObj()
+                arguments = args
                 requestContext = RequestContext(user = mockUser)
-            )
+                }
         }
 
         verify(exactly = 0) { commentRepository.delete(any()) }
@@ -132,19 +124,18 @@ class DeleteCommentResolverTest : DefaultAbstractResolverTestBase() {
         val resolver = DeleteCommentResolver(commentRepository)
         val differentUserId = UUID.randomUUID()
         val args = Mutation_DeleteComment_Arguments.Builder(context)
-            .id(context.globalIDFor(ViaductComment.Reflection, commentId.toString()))
+            .id(globalIDFor(ViaductComment.Reflection, commentId.toString()))
             .build()
 
         every { commentRepository.findById(commentId) } returns mockComment
         every { mockComment.authorId } returns EntityID(differentUserId, mockk())
 
         assertThrows<AuthorizationException> {
-            runMutationFieldResolver(
-                resolver = resolver,
-                queryValue = queryObj(),
-                arguments = args,
+            runMutationFieldResolver(resolver) {
+                queryValue = queryObj()
+                arguments = args
                 requestContext = RequestContext(user = mockUser)
-            )
+                }
         }
 
         verify(exactly = 0) { commentRepository.delete(any()) }

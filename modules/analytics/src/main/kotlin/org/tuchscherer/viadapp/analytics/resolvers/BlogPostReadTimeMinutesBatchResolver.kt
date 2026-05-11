@@ -3,7 +3,7 @@ package org.tuchscherer.viadapp.analytics.resolvers
 import org.tuchscherer.analytics.estimateReadTime
 import org.tuchscherer.viadapp.analytics.resolverbases.BlogPostResolvers
 import viaduct.api.FieldValue
-import viaduct.api.Resolver
+import viaduct.api.resolver.Resolver
 
 /**
  * Batch resolver for BlogPost.readTimeMinutes.

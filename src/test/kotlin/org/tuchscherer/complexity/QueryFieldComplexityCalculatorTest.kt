@@ -95,7 +95,7 @@ class QueryFieldComplexityCalculatorTest {
         val env = mockk<FieldComplexityEnvironment>(relaxed = true) {
             every { this@mockk.field } returns field
             every { this@mockk.parentType } returns parentType
-            every { arguments } returns args
+            every { arguments } returns args as Map<String, Any>
         }
         return calculator.calculate(env, child)
     }
