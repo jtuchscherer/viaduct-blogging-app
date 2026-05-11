@@ -128,33 +128,61 @@ distributions {
     }
 }
 
-// Force patched dependency versions to address CVEs.
+// Override patched dependency versions to address CVEs.
+//
+// Bouncy Castle: the Kotlin Gradle plugin hardcodes "org.bouncycastle:bc*:1.80" in its
+// kotlinBouncyCastleConfiguration. Both resolutionStrategy.force() and dependencySubstitution
+// change the *selected* version to 1.84, but GitHub's dependency graph snapshot still records
+// the original requested version (1.80), leaving Dependabot alerts open.
+//
+// The afterEvaluate block below removes the hardcoded 1.80 declarations and re-adds them at
+// 1.84, so 1.80 never enters the dependency graph at all.
+//
+// Netty / Jackson: force() is sufficient for straightforward version upgrades on directly
+// declared dependencies where the requested version already matches the catalog version.
 val viaductVersion: String = libs.versions.viaduct.get()
 val nettyVersion: String = libs.versions.netty.get()
 val jacksonCore3Version: String = libs.versions.jackson3.get()
 val bouncyCastleVersion: String = libs.versions.bouncycastle.get()
+
+// Rewrite BC declarations in kotlinBouncyCastleConfiguration before resolution so that
+// the dependency graph never records the Kotlin-plugin-hardcoded version 1.80.
+afterEvaluate {
+    configurations.findByName("kotlinBouncyCastleConfiguration")?.withDependencies {
+        val bcDeps = filterIsInstance<ExternalDependency>()
+            .filter { it.group == "org.bouncycastle" }
+            .toList()
+        bcDeps.forEach { dep ->
+            remove(dep)
+            add(dependencies.create("org.bouncycastle:${dep.name}:$bouncyCastleVersion"))
+        }
+    }
+}
+
 configurations.all {
-    resolutionStrategy.force(
-        "tools.jackson.core:jackson-core:$jacksonCore3Version",
-        "org.bouncycastle:bcprov-jdk18on:$bouncyCastleVersion",
-        "org.bouncycastle:bcpg-jdk18on:$bouncyCastleVersion",
-        "org.bouncycastle:bcpkix-jdk18on:$bouncyCastleVersion",
-        "org.bouncycastle:bcutil-jdk18on:$bouncyCastleVersion",
-        "io.netty:netty-codec-http:$nettyVersion",
-        "io.netty:netty-codec-http2:$nettyVersion",
-        "io.netty:netty-codec-compression:$nettyVersion",
-        "io.netty:netty-codec-base:$nettyVersion",
-        "io.netty:netty-codec:$nettyVersion",
-        "io.netty:netty-handler:$nettyVersion",
-        "io.netty:netty-common:$nettyVersion",
-        "io.netty:netty-buffer:$nettyVersion",
-        "io.netty:netty-transport:$nettyVersion",
-        "io.netty:netty-resolver:$nettyVersion",
-        "io.netty:netty-transport-classes-epoll:$nettyVersion",
-        "io.netty:netty-transport-classes-kqueue:$nettyVersion",
-        "io.netty:netty-transport-native-epoll:$nettyVersion",
-        "io.netty:netty-transport-native-kqueue:$nettyVersion"
-    )
+    resolutionStrategy {
+        force(
+            "tools.jackson.core:jackson-core:$jacksonCore3Version",
+            "org.bouncycastle:bcprov-jdk18on:$bouncyCastleVersion",
+            "org.bouncycastle:bcpg-jdk18on:$bouncyCastleVersion",
+            "org.bouncycastle:bcpkix-jdk18on:$bouncyCastleVersion",
+            "org.bouncycastle:bcutil-jdk18on:$bouncyCastleVersion",
+            "io.netty:netty-codec-http:$nettyVersion",
+            "io.netty:netty-codec-http2:$nettyVersion",
+            "io.netty:netty-codec-compression:$nettyVersion",
+            "io.netty:netty-codec-base:$nettyVersion",
+            "io.netty:netty-codec:$nettyVersion",
+            "io.netty:netty-handler:$nettyVersion",
+            "io.netty:netty-common:$nettyVersion",
+            "io.netty:netty-buffer:$nettyVersion",
+            "io.netty:netty-transport:$nettyVersion",
+            "io.netty:netty-resolver:$nettyVersion",
+            "io.netty:netty-transport-classes-epoll:$nettyVersion",
+            "io.netty:netty-transport-classes-kqueue:$nettyVersion",
+            "io.netty:netty-transport-native-epoll:$nettyVersion",
+            "io.netty:netty-transport-native-kqueue:$nettyVersion"
+        )
+    }
 }
 
 tasks.test {
