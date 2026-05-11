@@ -34,12 +34,6 @@ dependencies {
 tasks.test {
     useJUnitPlatform()
     finalizedBy(tasks.jacocoTestReport)
-    // viaduct:runtime is a fat jar that embeds JUnit 5.11 without relocation. Moving it to the
-    // end of the classpath ensures our declared JUnit 5.12.2 jars are loaded first.
-    doFirst {
-        val runtimeJar = classpath.filter { "runtime-1.0.0-rc.1" in it.name }
-        classpath = classpath.minus(runtimeJar).plus(runtimeJar)
-    }
 }
 
 tasks.jacocoTestReport {
