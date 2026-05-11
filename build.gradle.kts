@@ -92,8 +92,7 @@ dependencies {
     implementation(libs.koin.ktor)
 
     // Testing
-    testImplementation(testFixtures(libs.viaduct.tenant.api))
-    testImplementation(testFixtures(libs.viaduct.tenant.runtime))
+    testImplementation(libs.viaduct.test.fixtures)
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.junit.jupiter.engine)
     testImplementation(libs.junit.platform.launcher)
@@ -161,6 +160,17 @@ configurations.all {
 tasks.test {
     useJUnitPlatform()
     finalizedBy(tasks.jacocoTestReport)
+
+    // The Viaduct test-fixtures fat jar bundles stale junit-platform-commons classes.
+    // Put explicit junit jars before the fat jar on the classpath so the correct
+    // version is found first. Remove once a fixed fat jar is published.
+    doFirst {
+        val junitJars = configurations.testRuntimeClasspath.get().resolvedConfiguration
+            .resolvedArtifacts
+            .filter { it.moduleVersion.id.group.startsWith("org.junit") }
+            .map { it.file }
+        classpath = files(junitJars) + classpath
+    }
 }
 
 tasks.jacocoTestReport {
