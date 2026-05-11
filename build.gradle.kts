@@ -126,6 +126,7 @@ configurations.all {
         "tools.jackson.core:jackson-core:$jacksonCore3Version",
         "io.netty:netty-codec-http:$nettyVersion",
         "io.netty:netty-codec-http2:$nettyVersion",
+        "io.netty:netty-codec-compression:$nettyVersion",
         "io.netty:netty-codec-base:$nettyVersion",
         "io.netty:netty-codec:$nettyVersion",
         "io.netty:netty-handler:$nettyVersion",
