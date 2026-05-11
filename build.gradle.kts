@@ -46,6 +46,7 @@ dependencies {
     implementation(libs.viaduct.api)
     implementation(libs.viaduct.runtime)
     implementation(libs.graphql.java)
+    implementation(libs.graphql.java.scalars)
     implementation("javax.inject:javax.inject:1")
     implementation(libs.logback.classic)
     implementation(libs.kotlinx.coroutines.core)
@@ -91,7 +92,8 @@ dependencies {
     implementation(libs.koin.ktor)
 
     // Testing
-    testImplementation(libs.viaduct.testfixtures)
+    testImplementation(testFixtures(libs.viaduct.tenant.api))
+    testImplementation(testFixtures(libs.viaduct.tenant.runtime))
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.junit.jupiter.engine)
     testImplementation(libs.junit.platform.launcher)
