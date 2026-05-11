@@ -11,7 +11,8 @@ viaductModule {
 }
 
 dependencies {
-    api(libs.viaduct.tenant.api)
+    api(libs.viaduct.api)
+    implementation(libs.viaduct.runtime)
     implementation(libs.exposed.core)
     implementation(libs.exposed.dao)
     implementation(libs.exposed.jdbc)
