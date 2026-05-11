@@ -1,21 +1,13 @@
 plugins {
     `java-library`
     alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.ksp)
     alias(libs.plugins.viaduct.module)
     jacoco
 }
 
 viaductModule {
     modulePackageSuffix.set("checkedlist")
-}
-
-// The Viaduct plugin unconditionally adds -Xcontext-receivers, which Kotlin 2.3+ rejects.
-afterEvaluate {
-    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-        compilerOptions {
-            freeCompilerArgs.set(freeCompilerArgs.get().filter { it != "-Xcontext-receivers" })
-        }
-    }
 }
 
 dependencies {

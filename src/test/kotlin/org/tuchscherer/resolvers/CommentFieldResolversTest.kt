@@ -20,14 +20,11 @@ import viaduct.api.grts.BlogPost as ViaductBlogPost
 import viaduct.api.grts.Comment as ViaductComment
 import viaduct.api.grts.Query
 import viaduct.api.types.Arguments.NoArguments
-import viaduct.engine.SchemaFactory
-import viaduct.engine.api.ViaductSchema
-import viaduct.engine.runtime.execution.DefaultCoroutineInterop
-import viaduct.tenant.testing.DefaultAbstractResolverTestBase
+import viaduct.api.testing.ResolverTestBase
 import java.time.LocalDateTime
 import java.util.UUID
 
-class CommentFieldResolversTest : DefaultAbstractResolverTestBase() {
+class CommentFieldResolversTest : ResolverTestBase() {
 
     private lateinit var commentRepository: CommentRepository
     private lateinit var mockUser: User
@@ -36,12 +33,10 @@ class CommentFieldResolversTest : DefaultAbstractResolverTestBase() {
     private val postId = UUID.randomUUID()
     private val commentId = UUID.randomUUID()
 
-    override fun getSchema(): ViaductSchema = SchemaFactory(DefaultCoroutineInterop).fromResources()
-
     private fun queryObj() = Query.Builder(context).build()
 
     private fun commentObj(id: UUID = commentId) = ViaductComment.Builder(context)
-        .id(context.globalIDFor(ViaductComment.Reflection, id.toString()))
+        .id(globalIDFor(ViaductComment.Reflection, id.toString()))
         .content("Test comment")
         .createdAt("2025-01-01T10:00:00")
         .build()
@@ -77,12 +72,11 @@ class CommentFieldResolversTest : DefaultAbstractResolverTestBase() {
         val resolver = CommentAuthorResolver()
         every { commentRepository.getAuthorForComment(commentId) } returns mockUser
 
-        val result = runFieldResolver(
-            resolver = resolver,
-            objectValue = commentObj(),
-            queryValue = queryObj(),
+        val result = runFieldResolver(resolver) {
+            objectValue = commentObj()
+            queryValue = queryObj()
             arguments = NoArguments
-        )
+            }
 
         assertEquals(userId.toString(), result.getId().internalID)
         assertEquals("testuser", result.getUsername())
@@ -95,12 +89,11 @@ class CommentFieldResolversTest : DefaultAbstractResolverTestBase() {
         every { commentRepository.getAuthorForComment(commentId) } returns null
 
         assertThrows<NotFoundException> {
-            runFieldResolver(
-                resolver = resolver,
-                objectValue = commentObj(),
-                queryValue = queryObj(),
+            runFieldResolver(resolver) {
+                objectValue = commentObj()
+                queryValue = queryObj()
                 arguments = NoArguments
-            )
+                }
         }
     }
 
@@ -111,12 +104,11 @@ class CommentFieldResolversTest : DefaultAbstractResolverTestBase() {
         val resolver = CommentPostResolver()
         every { commentRepository.getPostForComment(commentId) } returns mockPost
 
-        val result = runFieldResolver(
-            resolver = resolver,
-            objectValue = commentObj(),
-            queryValue = queryObj(),
+        val result = runFieldResolver(resolver) {
+            objectValue = commentObj()
+            queryValue = queryObj()
             arguments = NoArguments
-        )
+            }
 
         val blogPost = result as ViaductBlogPost
         assertEquals(postId.toString(), blogPost.getId().internalID)
@@ -130,12 +122,11 @@ class CommentFieldResolversTest : DefaultAbstractResolverTestBase() {
         every { commentRepository.getPostForComment(commentId) } returns null
 
         assertThrows<NotFoundException> {
-            runFieldResolver(
-                resolver = resolver,
-                objectValue = commentObj(),
-                queryValue = queryObj(),
+            runFieldResolver(resolver) {
+                objectValue = commentObj()
+                queryValue = queryObj()
                 arguments = NoArguments
-            )
+                }
         }
     }
 }

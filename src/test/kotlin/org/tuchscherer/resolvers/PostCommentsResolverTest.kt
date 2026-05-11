@@ -17,22 +17,17 @@ import org.koin.dsl.module
 import viaduct.api.grts.*
 import viaduct.api.grts.BlogPost as ViaductBlogPost
 import viaduct.api.grts.Comment as ViaductComment
-import viaduct.engine.SchemaFactory
-import viaduct.engine.api.ViaductSchema
-import viaduct.engine.runtime.execution.DefaultCoroutineInterop
-import viaduct.tenant.testing.DefaultAbstractResolverTestBase
+import viaduct.api.testing.ResolverTestBase
 import java.time.LocalDateTime
 import java.util.*
 
-class PostCommentsResolverTest : DefaultAbstractResolverTestBase() {
+class PostCommentsResolverTest : ResolverTestBase() {
 
     private lateinit var commentRepository: CommentRepository
     private lateinit var mockComment: Comment
     private val userId = UUID.randomUUID()
     private val postId = UUID.randomUUID()
     private val commentId = UUID.randomUUID()
-
-    override fun getSchema(): ViaductSchema = SchemaFactory(DefaultCoroutineInterop).fromResources()
 
     private fun queryObj() = Query.Builder(context).build()
 
@@ -59,17 +54,16 @@ class PostCommentsResolverTest : DefaultAbstractResolverTestBase() {
     fun `PostCommentsResolver returns comments for post`() = runBlocking {
         val resolver = PostCommentsResolver(commentRepository)
         val args = Query_PostComments_Arguments.Builder(context)
-            .postId(context.globalIDFor(ViaductBlogPost.Reflection, postId.toString()))
+            .postId(globalIDFor(ViaductBlogPost.Reflection, postId.toString()))
             .build()
 
         every { commentRepository.findByPostId(any<UUID>()) } returns listOf(mockComment)
 
-        val result = runFieldResolver(
-            resolver = resolver,
-            objectValue = queryObj(),
-            queryValue = queryObj(),
+        val result = runFieldResolver(resolver) {
+            objectValue = queryObj()
+            queryValue = queryObj()
             arguments = args
-        )
+            }
 
         assertEquals(1, result.size)
         assertEquals(commentId.toString(), result[0].getId().internalID)
@@ -80,17 +74,16 @@ class PostCommentsResolverTest : DefaultAbstractResolverTestBase() {
     fun `PostCommentsResolver returns empty list when no comments exist`() = runBlocking {
         val resolver = PostCommentsResolver(commentRepository)
         val args = Query_PostComments_Arguments.Builder(context)
-            .postId(context.globalIDFor(ViaductBlogPost.Reflection, postId.toString()))
+            .postId(globalIDFor(ViaductBlogPost.Reflection, postId.toString()))
             .build()
 
         every { commentRepository.findByPostId(any<UUID>()) } returns emptyList()
 
-        val result = runFieldResolver(
-            resolver = resolver,
-            objectValue = queryObj(),
-            queryValue = queryObj(),
+        val result = runFieldResolver(resolver) {
+            objectValue = queryObj()
+            queryValue = queryObj()
             arguments = args
-        )
+            }
 
         assertEquals(0, result.size)
     }

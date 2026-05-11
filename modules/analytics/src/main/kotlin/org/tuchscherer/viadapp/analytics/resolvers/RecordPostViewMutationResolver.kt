@@ -4,7 +4,7 @@ import org.tuchscherer.analytics.decodeGlobalId
 import org.tuchscherer.analytics.repositories.PostViewRepository
 import org.tuchscherer.viadapp.analytics.resolverbases.MutationResolvers
 import org.koin.java.KoinJavaComponent.inject
-import viaduct.api.Resolver
+import viaduct.api.resolver.Resolver
 
 /**
  * Resolver for Mutation.recordPostView.

@@ -3,7 +3,7 @@ package org.tuchscherer.viadapp.resolvers
 import org.tuchscherer.auth.requireAuth
 import org.tuchscherer.database.repositories.PostRepository
 import org.tuchscherer.viadapp.resolvers.resolverbases.QueryResolvers
-import viaduct.api.Resolver
+import viaduct.api.resolver.Resolver
 import viaduct.api.grts.BlogPost as ViaductBlogPost
 import viaduct.api.grts.PostsConnection
 import java.util.*

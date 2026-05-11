@@ -5,7 +5,7 @@ import org.tuchscherer.analytics.resolveViewCounts
 import org.tuchscherer.viadapp.analytics.resolverbases.BlogPostResolvers
 import org.koin.java.KoinJavaComponent.inject
 import viaduct.api.FieldValue
-import viaduct.api.Resolver
+import viaduct.api.resolver.Resolver
 import java.util.UUID
 
 /**

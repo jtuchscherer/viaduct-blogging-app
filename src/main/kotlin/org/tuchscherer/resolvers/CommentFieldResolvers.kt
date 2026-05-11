@@ -5,7 +5,7 @@ import org.tuchscherer.database.PostType
 import org.tuchscherer.database.repositories.CommentRepository
 import org.tuchscherer.viadapp.resolvers.resolverbases.CommentResolvers
 import org.koin.java.KoinJavaComponent.inject
-import viaduct.api.Resolver
+import viaduct.api.resolver.Resolver
 import viaduct.api.grts.CheckedListPost as ViaductCheckedListPost
 import viaduct.api.grts.Post as ViaductPost
 import viaduct.api.grts.User as ViaductUser

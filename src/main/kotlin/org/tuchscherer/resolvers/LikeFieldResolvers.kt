@@ -5,7 +5,7 @@ import org.tuchscherer.database.repositories.CommentRepository
 import org.tuchscherer.database.repositories.LikeRepository
 import org.tuchscherer.viadapp.resolvers.resolverbases.BlogPostResolvers
 import org.koin.java.KoinJavaComponent.inject
-import viaduct.api.Resolver
+import viaduct.api.resolver.Resolver
 import viaduct.api.grts.Like as ViaductLike
 import java.util.*
 

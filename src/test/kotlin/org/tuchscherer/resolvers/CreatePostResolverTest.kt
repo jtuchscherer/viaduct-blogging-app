@@ -20,22 +20,17 @@ import viaduct.api.grts.CreatePostInput
 import viaduct.api.grts.Mutation_CreatePost_Arguments
 import viaduct.api.grts.BlogPost as ViaductBlogPost
 import viaduct.api.grts.Query
-import viaduct.engine.SchemaFactory
-import viaduct.engine.api.ViaductSchema
-import viaduct.engine.runtime.execution.DefaultCoroutineInterop
-import viaduct.tenant.testing.DefaultAbstractResolverTestBase
+import viaduct.api.testing.ResolverTestBase
 import java.time.LocalDateTime
 import java.util.UUID
 
-class CreatePostResolverTest : DefaultAbstractResolverTestBase() {
+class CreatePostResolverTest : ResolverTestBase() {
 
     private lateinit var postRepository: PostRepository
     private lateinit var mockUser: User
     private lateinit var mockPost: Post
     private val userId = UUID.randomUUID()
     private val postId = UUID.randomUUID()
-
-    override fun getSchema(): ViaductSchema = SchemaFactory(DefaultCoroutineInterop).fromResources()
 
     private fun queryObj() = Query.Builder(context).build()
 
@@ -77,12 +72,11 @@ class CreatePostResolverTest : DefaultAbstractResolverTestBase() {
             )
         } returns mockPost
 
-        val result = runMutationFieldResolver(
-            resolver = resolver,
-            queryValue = queryObj(),
-            arguments = args,
+        val result = runMutationFieldResolver(resolver) {
+            queryValue = queryObj()
+            arguments = args
             requestContext = RequestContext(user = mockUser)
-        )
+            }
 
         assertNotNull(result)
         assertEquals(postId.toString(), result.getId().internalID)
@@ -97,12 +91,11 @@ class CreatePostResolverTest : DefaultAbstractResolverTestBase() {
         val args = Mutation_CreatePost_Arguments.Builder(context).input(input).build()
 
         assertThrows<AuthenticationException> {
-            runMutationFieldResolver(
-                resolver = resolver,
-                queryValue = queryObj(),
-                arguments = args,
+            runMutationFieldResolver(resolver) {
+                queryValue = queryObj()
+                arguments = args
                 requestContext = RequestContext()
-            )
+                }
         }
     }
 
@@ -113,12 +106,11 @@ class CreatePostResolverTest : DefaultAbstractResolverTestBase() {
         val args = Mutation_CreatePost_Arguments.Builder(context).input(input).build()
 
         assertThrows<IllegalArgumentException> {
-            runMutationFieldResolver(
-                resolver = resolver,
-                queryValue = queryObj(),
-                arguments = args,
+            runMutationFieldResolver(resolver) {
+                queryValue = queryObj()
+                arguments = args
                 requestContext = RequestContext(user = mockUser)
-            )
+                }
         }
     }
 
@@ -129,12 +121,11 @@ class CreatePostResolverTest : DefaultAbstractResolverTestBase() {
         val args = Mutation_CreatePost_Arguments.Builder(context).input(input).build()
 
         assertThrows<IllegalArgumentException> {
-            runMutationFieldResolver(
-                resolver = resolver,
-                queryValue = queryObj(),
-                arguments = args,
+            runMutationFieldResolver(resolver) {
+                queryValue = queryObj()
+                arguments = args
                 requestContext = RequestContext(user = mockUser)
-            )
+                }
         }
     }
 
@@ -145,12 +136,11 @@ class CreatePostResolverTest : DefaultAbstractResolverTestBase() {
         val args = Mutation_CreatePost_Arguments.Builder(context).input(input).build()
 
         assertThrows<IllegalArgumentException> {
-            runMutationFieldResolver(
-                resolver = resolver,
-                queryValue = queryObj(),
-                arguments = args,
+            runMutationFieldResolver(resolver) {
+                queryValue = queryObj()
+                arguments = args
                 requestContext = RequestContext(user = mockUser)
-            )
+                }
         }
     }
 
@@ -161,12 +151,11 @@ class CreatePostResolverTest : DefaultAbstractResolverTestBase() {
         val args = Mutation_CreatePost_Arguments.Builder(context).input(input).build()
 
         assertThrows<IllegalArgumentException> {
-            runMutationFieldResolver(
-                resolver = resolver,
-                queryValue = queryObj(),
-                arguments = args,
+            runMutationFieldResolver(resolver) {
+                queryValue = queryObj()
+                arguments = args
                 requestContext = RequestContext(user = mockUser)
-            )
+                }
         }
     }
 }

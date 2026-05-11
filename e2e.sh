@@ -108,7 +108,7 @@ echo ""
 # Run tests; capture exit code without triggering set -e
 cd frontend
 set +e
-FRONTEND_URL="http://localhost:${FRONTEND_PORT}" npx playwright test "$@"
+API_URL="http://127.0.0.1:${GRAPHQL_PORT}" FRONTEND_URL="http://localhost:${FRONTEND_PORT}" npx playwright test "$@"
 TEST_EXIT=$?
 set -e
 cd ..

@@ -7,7 +7,7 @@ import org.tuchscherer.database.repositories.CommentRepository
 import org.tuchscherer.database.repositories.PostRepository
 import org.tuchscherer.viadapp.resolvers.resolverbases.MutationResolvers
 import org.tuchscherer.viadapp.resolvers.resolverbases.QueryResolvers
-import viaduct.api.Resolver
+import viaduct.api.resolver.Resolver
 import viaduct.api.grts.Comment as ViaductComment
 import java.time.LocalDateTime
 import java.util.*

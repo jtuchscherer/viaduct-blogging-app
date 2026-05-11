@@ -1,21 +1,13 @@
 plugins {
     `java-library`
     alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.ksp)
     alias(libs.plugins.viaduct.module)
     jacoco
 }
 
 viaductModule {
     modulePackageSuffix.set("analytics")
-}
-
-// The Viaduct plugin unconditionally adds -Xcontext-receivers, which Kotlin 2.3+ rejects.
-afterEvaluate {
-    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-        compilerOptions {
-            freeCompilerArgs.set(freeCompilerArgs.get().filter { it != "-Xcontext-receivers" })
-        }
-    }
 }
 
 dependencies {
@@ -45,7 +37,7 @@ tasks.test {
     // viaduct:runtime is a fat jar that embeds JUnit 5.11 without relocation. Moving it to the
     // end of the classpath ensures our declared JUnit 5.12.2 jars are loaded first.
     doFirst {
-        val runtimeJar = classpath.filter { "runtime-0.31" in it.name }
+        val runtimeJar = classpath.filter { "runtime-1.0.0-rc.1" in it.name }
         classpath = classpath.minus(runtimeJar).plus(runtimeJar)
     }
 }

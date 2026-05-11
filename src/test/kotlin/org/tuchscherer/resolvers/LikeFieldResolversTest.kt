@@ -24,14 +24,11 @@ import viaduct.api.grts.*
 import viaduct.api.grts.BlogPost as ViaductBlogPost
 import viaduct.api.grts.Like as ViaductLike
 import viaduct.api.types.Arguments.NoArguments
-import viaduct.engine.SchemaFactory
-import viaduct.engine.api.ViaductSchema
-import viaduct.engine.runtime.execution.DefaultCoroutineInterop
-import viaduct.tenant.testing.DefaultAbstractResolverTestBase
+import viaduct.api.testing.ResolverTestBase
 import java.time.LocalDateTime
 import java.util.*
 
-class LikeFieldResolversTest : DefaultAbstractResolverTestBase() {
+class LikeFieldResolversTest : ResolverTestBase() {
 
     private lateinit var likeRepository: LikeRepository
     private lateinit var commentRepository: CommentRepository
@@ -41,12 +38,10 @@ class LikeFieldResolversTest : DefaultAbstractResolverTestBase() {
     private val postId = UUID.randomUUID()
     private val likeId = UUID.randomUUID()
 
-    override fun getSchema(): ViaductSchema = SchemaFactory(DefaultCoroutineInterop).fromResources()
-
     private fun queryObj() = Query.Builder(context).build()
 
     private fun postObj(id: UUID = postId) = ViaductBlogPost.Builder(context)
-        .id(context.globalIDFor(ViaductBlogPost.Reflection, id.toString()))
+        .id(globalIDFor(ViaductBlogPost.Reflection, id.toString()))
         .title("Test Post")
         .content("Test content")
         .createdAt("2025-01-01T10:00:00")
@@ -84,12 +79,11 @@ class LikeFieldResolversTest : DefaultAbstractResolverTestBase() {
         val resolver = PostLikesResolver()
         every { likeRepository.findByPostId(postId) } returns listOf(mockLike)
 
-        val result = runFieldResolver(
-            resolver = resolver,
-            objectValue = postObj(),
-            queryValue = queryObj(),
+        val result = runFieldResolver(resolver) {
+            objectValue = postObj()
+            queryValue = queryObj()
             arguments = NoArguments
-        )
+            }
 
         assertEquals(1, result.size)
         assertEquals(likeId.toString(), result[0].getId().internalID)
@@ -100,12 +94,11 @@ class LikeFieldResolversTest : DefaultAbstractResolverTestBase() {
         val resolver = PostLikesResolver()
         every { likeRepository.findByPostId(postId) } returns emptyList()
 
-        val result = runFieldResolver(
-            resolver = resolver,
-            objectValue = postObj(),
-            queryValue = queryObj(),
+        val result = runFieldResolver(resolver) {
+            objectValue = postObj()
+            queryValue = queryObj()
             arguments = NoArguments
-        )
+            }
 
         assertEquals(0, result.size)
     }
@@ -117,12 +110,11 @@ class LikeFieldResolversTest : DefaultAbstractResolverTestBase() {
         val resolver = PostLikeCountResolver()
         every { likeRepository.countByPostId(postId) } returns 5L
 
-        val result = runFieldResolver(
-            resolver = resolver,
-            objectValue = postObj(),
-            queryValue = queryObj(),
+        val result = runFieldResolver(resolver) {
+            objectValue = postObj()
+            queryValue = queryObj()
             arguments = NoArguments
-        )
+            }
 
         assertEquals(5, result)
     }
@@ -133,12 +125,11 @@ class LikeFieldResolversTest : DefaultAbstractResolverTestBase() {
         every { likeRepository.countByPostId(postId) } returns Int.MAX_VALUE.toLong() + 1L
 
         assertThrows<IllegalArgumentException> {
-            runFieldResolver(
-                resolver = resolver,
-                objectValue = postObj(),
-                queryValue = queryObj(),
+            runFieldResolver(resolver) {
+                objectValue = postObj()
+                queryValue = queryObj()
                 arguments = NoArguments
-            )
+                }
         }
     }
 
@@ -147,12 +138,11 @@ class LikeFieldResolversTest : DefaultAbstractResolverTestBase() {
         val resolver = PostLikeCountResolver()
         every { likeRepository.countByPostId(postId) } returns 0L
 
-        val result = runFieldResolver(
-            resolver = resolver,
-            objectValue = postObj(),
-            queryValue = queryObj(),
+        val result = runFieldResolver(resolver) {
+            objectValue = postObj()
+            queryValue = queryObj()
             arguments = NoArguments
-        )
+            }
 
         assertEquals(0, result)
     }
@@ -164,13 +154,12 @@ class LikeFieldResolversTest : DefaultAbstractResolverTestBase() {
         val resolver = PostIsLikedByMeResolver()
         every { likeRepository.existsByPostAndUser(postId, userId) } returns true
 
-        val result = runFieldResolver(
-            resolver = resolver,
-            objectValue = postObj(),
-            queryValue = queryObj(),
-            arguments = NoArguments,
+        val result = runFieldResolver(resolver) {
+            objectValue = postObj()
+            queryValue = queryObj()
+            arguments = NoArguments
             requestContext = RequestContext(user = mockUser)
-        )
+            }
 
         assertTrue(result)
     }
@@ -180,13 +169,12 @@ class LikeFieldResolversTest : DefaultAbstractResolverTestBase() {
         val resolver = PostIsLikedByMeResolver()
         every { likeRepository.existsByPostAndUser(postId, userId) } returns false
 
-        val result = runFieldResolver(
-            resolver = resolver,
-            objectValue = postObj(),
-            queryValue = queryObj(),
-            arguments = NoArguments,
+        val result = runFieldResolver(resolver) {
+            objectValue = postObj()
+            queryValue = queryObj()
+            arguments = NoArguments
             requestContext = RequestContext(user = mockUser)
-        )
+            }
 
         assertFalse(result)
     }
@@ -195,13 +183,12 @@ class LikeFieldResolversTest : DefaultAbstractResolverTestBase() {
     fun `PostIsLikedByMeResolver returns false when unauthenticated`() = runBlocking {
         val resolver = PostIsLikedByMeResolver()
 
-        val result = runFieldResolver(
-            resolver = resolver,
-            objectValue = postObj(),
-            queryValue = queryObj(),
-            arguments = NoArguments,
+        val result = runFieldResolver(resolver) {
+            objectValue = postObj()
+            queryValue = queryObj()
+            arguments = NoArguments
             requestContext = RequestContext()
-        )
+            }
 
         assertFalse(result)
         verify(exactly = 0) { likeRepository.existsByPostAndUser(any<UUID>(), any<UUID>()) }
@@ -214,12 +201,11 @@ class LikeFieldResolversTest : DefaultAbstractResolverTestBase() {
         val resolver = PostCommentCountResolver()
         every { commentRepository.countByPostId(postId) } returns 4L
 
-        val result = runFieldResolver(
-            resolver = resolver,
-            objectValue = postObj(),
-            queryValue = queryObj(),
+        val result = runFieldResolver(resolver) {
+            objectValue = postObj()
+            queryValue = queryObj()
             arguments = NoArguments
-        )
+            }
 
         assertEquals(4, result)
     }
@@ -229,12 +215,11 @@ class LikeFieldResolversTest : DefaultAbstractResolverTestBase() {
         val resolver = PostCommentCountResolver()
         every { commentRepository.countByPostId(postId) } returns 0L
 
-        val result = runFieldResolver(
-            resolver = resolver,
-            objectValue = postObj(),
-            queryValue = queryObj(),
+        val result = runFieldResolver(resolver) {
+            objectValue = postObj()
+            queryValue = queryObj()
             arguments = NoArguments
-        )
+            }
 
         assertEquals(0, result)
     }
@@ -245,12 +230,11 @@ class LikeFieldResolversTest : DefaultAbstractResolverTestBase() {
         every { commentRepository.countByPostId(postId) } returns Int.MAX_VALUE.toLong() + 1L
 
         assertThrows<IllegalArgumentException> {
-            runFieldResolver(
-                resolver = resolver,
-                objectValue = postObj(),
-                queryValue = queryObj(),
+            runFieldResolver(resolver) {
+                objectValue = postObj()
+                queryValue = queryObj()
                 arguments = NoArguments
-            )
+                }
         }
     }
 }

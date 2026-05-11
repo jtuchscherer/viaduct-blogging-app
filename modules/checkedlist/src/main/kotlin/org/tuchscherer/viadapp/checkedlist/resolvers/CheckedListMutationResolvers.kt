@@ -5,7 +5,7 @@ import org.tuchscherer.checkedlist.port.PostCreationPort
 import org.tuchscherer.checkedlist.repositories.CheckedListItemRepository
 import org.tuchscherer.viadapp.checkedlist.resolverbases.MutationResolvers
 import org.koin.java.KoinJavaComponent.inject
-import viaduct.api.Resolver
+import viaduct.api.resolver.Resolver
 import viaduct.api.grts.CheckedListItem as ViaductCheckedListItem
 import viaduct.api.grts.CheckedListPost as ViaductCheckedListPost
 import java.util.UUID

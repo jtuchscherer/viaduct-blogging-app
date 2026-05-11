@@ -2,11 +2,13 @@ package org.tuchscherer.viadapp.resolvers
 
 import org.tuchscherer.auth.NotFoundException
 import org.tuchscherer.auth.requireAuth
+import org.tuchscherer.database.repositories.PostRepository
 import org.tuchscherer.database.repositories.UserRepository
 import org.tuchscherer.viadapp.resolvers.resolverbases.QueryResolvers
 import org.tuchscherer.viadapp.resolvers.resolverbases.UserResolvers
 import viaduct.api.FieldValue
-import viaduct.api.Resolver
+import viaduct.api.resolver.Resolver
+import viaduct.api.grts.BlogPost as ViaductBlogPost
 import viaduct.api.grts.User as ViaductUser
 import java.util.UUID
 
@@ -16,6 +18,16 @@ class MeResolver : QueryResolvers.Me() {
         val user = requireAuth(ctx.requestContext)
 
         return user.toViaductUser(ctx)
+    }
+}
+
+@Resolver(objectValueFragment = "fragment _ on User { id }")
+class UserPostsResolver(
+    private val postRepository: PostRepository
+) : UserResolvers.Posts() {
+    override suspend fun resolve(ctx: Context): List<ViaductBlogPost> {
+        val userId = UUID.fromString(ctx.getObjectValue().getId().internalID)
+        return postRepository.findByAuthorId(userId).map { it.toViaductBlogPost(ctx) }
     }
 }
 

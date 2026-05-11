@@ -15,21 +15,16 @@ import org.koin.core.context.GlobalContext
 import org.koin.dsl.module
 import viaduct.api.grts.*
 import viaduct.api.grts.BlogPost as ViaductBlogPost
-import viaduct.engine.SchemaFactory
-import viaduct.engine.api.ViaductSchema
-import viaduct.engine.runtime.execution.DefaultCoroutineInterop
-import viaduct.tenant.testing.DefaultAbstractResolverTestBase
+import viaduct.api.testing.ResolverTestBase
 import java.time.LocalDateTime
 import java.util.*
 
-class PostResolverTest : DefaultAbstractResolverTestBase() {
+class PostResolverTest : ResolverTestBase() {
 
     private lateinit var postRepository: PostRepository
     private lateinit var mockPost: Post
     private val userId = UUID.randomUUID()
     private val postId = UUID.randomUUID()
-
-    override fun getSchema(): ViaductSchema = SchemaFactory(DefaultCoroutineInterop).fromResources()
 
     private fun queryObj() = Query.Builder(context).build()
 
@@ -57,17 +52,16 @@ class PostResolverTest : DefaultAbstractResolverTestBase() {
     fun `PostResolver returns post by id`() = runBlocking {
         val resolver = PostResolver(postRepository)
         val args = Query_Post_Arguments.Builder(context)
-            .id(context.globalIDFor(ViaductBlogPost.Reflection, postId.toString()))
+            .id(globalIDFor(ViaductBlogPost.Reflection, postId.toString()))
             .build()
 
         every { postRepository.findById(postId) } returns mockPost
 
-        val result = runFieldResolver(
-            resolver = resolver,
-            objectValue = queryObj(),
-            queryValue = queryObj(),
+        val result = runFieldResolver(resolver) {
+            objectValue = queryObj()
+            queryValue = queryObj()
             arguments = args
-        )
+            }
 
         assertNotNull(result)
         assertEquals(postId.toString(), result?.getId()?.internalID)
@@ -78,17 +72,16 @@ class PostResolverTest : DefaultAbstractResolverTestBase() {
     fun `PostResolver returns null when post not found`() = runBlocking {
         val resolver = PostResolver(postRepository)
         val args = Query_Post_Arguments.Builder(context)
-            .id(context.globalIDFor(ViaductBlogPost.Reflection, postId.toString()))
+            .id(globalIDFor(ViaductBlogPost.Reflection, postId.toString()))
             .build()
 
         every { postRepository.findById(postId) } returns null
 
-        val result = runFieldResolver(
-            resolver = resolver,
-            objectValue = queryObj(),
-            queryValue = queryObj(),
+        val result = runFieldResolver(resolver) {
+            objectValue = queryObj()
+            queryValue = queryObj()
             arguments = args
-        )
+            }
 
         assertNull(result)
     }
