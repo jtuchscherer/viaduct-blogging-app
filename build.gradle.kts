@@ -128,13 +128,18 @@ distributions {
     }
 }
 
-// Force Netty to a patched version to address CVEs (CRLF injection, HTTP request smuggling).
+// Force patched dependency versions to address CVEs.
 val viaductVersion: String = libs.versions.viaduct.get()
 val nettyVersion: String = libs.versions.netty.get()
 val jacksonCore3Version: String = libs.versions.jackson3.get()
+val bouncyCastleVersion: String = libs.versions.bouncycastle.get()
 configurations.all {
     resolutionStrategy.force(
         "tools.jackson.core:jackson-core:$jacksonCore3Version",
+        "org.bouncycastle:bcprov-jdk18on:$bouncyCastleVersion",
+        "org.bouncycastle:bcpg-jdk18on:$bouncyCastleVersion",
+        "org.bouncycastle:bcpkix-jdk18on:$bouncyCastleVersion",
+        "org.bouncycastle:bcutil-jdk18on:$bouncyCastleVersion",
         "io.netty:netty-codec-http:$nettyVersion",
         "io.netty:netty-codec-http2:$nettyVersion",
         "io.netty:netty-codec-compression:$nettyVersion",

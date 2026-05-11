@@ -22,6 +22,7 @@ mockk = "1.14.9"
 h2 = "2.4.240"
 assertj = "3.27.7"
 netty = "4.2.13.Final"
+bouncycastle = "1.84"
 
 [plugins]
 viaduct-application = { id = "com.airbnb.viaduct.application-gradle-plugin", version.ref = "viaduct" }
