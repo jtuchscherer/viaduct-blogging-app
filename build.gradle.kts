@@ -46,6 +46,9 @@ dependencies {
     implementation(libs.viaduct.api)
     implementation(libs.viaduct.runtime)
     implementation(libs.graphql.java)
+    // Viaduct's fat runtime jar uses graphql.scalars.ExtendedScalars internally but
+    // does not bundle or declare it as a transitive dep, so we must add it explicitly.
+    implementation(libs.graphql.java.extended.scalars)
     implementation("javax.inject:javax.inject:1")
     implementation(libs.logback.classic)
     implementation(libs.kotlinx.coroutines.core)
