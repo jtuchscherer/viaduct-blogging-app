@@ -18,13 +18,6 @@ import org.junit.jupiter.api.Test
 import org.koin.core.context.GlobalContext
 import org.koin.dsl.module
 import java.util.UUID
-import viaduct.api.context.FieldExecutionContext
-import viaduct.api.globalid.GlobalID
-import viaduct.api.grts.CheckedListPost as ViaductCheckedListPost
-import viaduct.api.grts.Query as ViaductQuery
-import viaduct.api.internal.InternalContext
-import viaduct.api.types.Arguments.NoArguments
-import viaduct.api.types.CompositeOutput
 
 class CheckedListPostFieldResolversTest {
 
@@ -52,59 +45,27 @@ class CheckedListPostFieldResolversTest {
     }
 
     private fun mockCommentCountContext(): CheckedListPostResolvers.CommentCount.Context {
-        val post = mockk<ViaductCheckedListPost>()
-        val globalId = mockk<GlobalID<ViaductCheckedListPost>>()
-        every { globalId.internalID } returns postId.toString()
-        every { post.getId() } returns globalId
-
-        val inner = mockk<FieldExecutionContext<ViaductCheckedListPost, ViaductQuery, NoArguments, CompositeOutput.NotComposite>>(
-            relaxed = true,
-            moreInterfaces = arrayOf(InternalContext::class),
-        )
-        coEvery { inner.getObjectValue() } returns post
-        return CheckedListPostResolvers.CommentCount.Context(inner)
+        val ctx = mockk<CheckedListPostResolvers.CommentCount.Context>(relaxed = true)
+        coEvery { ctx.getObjectValue().getId().internalID } returns postId.toString()
+        return ctx
     }
 
     private fun mockLikeCountContext(): CheckedListPostResolvers.LikeCount.Context {
-        val post = mockk<ViaductCheckedListPost>()
-        val globalId = mockk<GlobalID<ViaductCheckedListPost>>()
-        every { globalId.internalID } returns postId.toString()
-        every { post.getId() } returns globalId
-
-        val inner = mockk<FieldExecutionContext<ViaductCheckedListPost, ViaductQuery, NoArguments, CompositeOutput.NotComposite>>(
-            relaxed = true,
-            moreInterfaces = arrayOf(InternalContext::class),
-        )
-        coEvery { inner.getObjectValue() } returns post
-        return CheckedListPostResolvers.LikeCount.Context(inner)
+        val ctx = mockk<CheckedListPostResolvers.LikeCount.Context>(relaxed = true)
+        coEvery { ctx.getObjectValue().getId().internalID } returns postId.toString()
+        return ctx
     }
 
     private fun mockIsLikedByMeContext(): CheckedListPostResolvers.IsLikedByMe.Context {
-        val post = mockk<ViaductCheckedListPost>()
-        val globalId = mockk<GlobalID<ViaductCheckedListPost>>()
-        every { globalId.internalID } returns postId.toString()
-        every { post.getId() } returns globalId
-
-        val inner = mockk<FieldExecutionContext<ViaductCheckedListPost, ViaductQuery, NoArguments, CompositeOutput.NotComposite>>(
-            relaxed = true,
-            moreInterfaces = arrayOf(InternalContext::class),
-        )
-        coEvery { inner.getObjectValue() } returns post
-        return CheckedListPostResolvers.IsLikedByMe.Context(inner)
+        val ctx = mockk<CheckedListPostResolvers.IsLikedByMe.Context>(relaxed = true)
+        coEvery { ctx.getObjectValue().getId().internalID } returns postId.toString()
+        return ctx
     }
 
     private fun mockItemsContext(): CheckedListPostResolvers.Items.Context {
-        val post = mockk<ViaductCheckedListPost>()
-        val globalId = mockk<GlobalID<ViaductCheckedListPost>>()
-        every { globalId.internalID } returns postId.toString()
-        every { post.getId() } returns globalId
-
-        val inner = mockk<FieldExecutionContext<ViaductCheckedListPost, ViaductQuery, NoArguments, viaduct.api.grts.CheckedListItem>>(
-            relaxed = true,
-            moreInterfaces = arrayOf(InternalContext::class),
-        )
-        coEvery { inner.getObjectValue() } returns post
-        return CheckedListPostResolvers.Items.Context(inner)
+        val ctx = mockk<CheckedListPostResolvers.Items.Context>(relaxed = true)
+        coEvery { ctx.getObjectValue().getId().internalID } returns postId.toString()
+        return ctx
     }
 
     // ── items ─────────────────────────────────────────────────────────────────
