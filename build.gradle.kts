@@ -106,26 +106,6 @@ application {
     mainClass.set("org.tuchscherer.viadapp.ViaductApplicationKt")
 }
 
-// Several Viaduct artifacts publish a jar literally named `api-1.0.0-rc.1.jar`
-// (com.airbnb.viaduct:api, com.airbnb.viaduct.engine:api, com.airbnb.viaduct.service:api,
-// com.airbnb.viaduct.tenant:api). Before viaduct@c111d1c5 the runtime shadow jar bundled
-// all of them, so the filename collisions in the distribution's lib/ didn't matter. After
-// c111d1c5 each api jar must coexist on the classpath, but the Application plugin would
-// either fail (default) or drop three of four (DuplicatesStrategy.EXCLUDE). Rename
-// colliding viaduct artifacts so each ends up with a unique filename in lib/.
-// distributions {
-//     named("main") {
-//         contents {
-//             eachFile {
-//                 val groupDir = Regex("files-2\\.1/([^/]+)/").find(file.toString())?.groupValues?.get(1)
-//                 if (groupDir?.startsWith("com.airbnb.viaduct.") == true) {
-//                     name = "${groupDir.removePrefix("com.airbnb.viaduct.")}-$name"
-//                 }
-//             }
-//         }
-//     }
-// }
-
 // Force patched dependency versions to address CVEs.
 val viaductVersion: String = libs.versions.viaduct.get()
 val nettyVersion: String = libs.versions.netty.get()
@@ -158,17 +138,6 @@ configurations.all {
 tasks.test {
     useJUnitPlatform()
     finalizedBy(tasks.jacocoTestReport)
-    // The test-fixtures fat jar bundles stale JUnit Platform classes (1.11.x from kotest's
-    // transitive deps), which shadow the project's declared 1.12.2 on the classpath and cause
-    // NoSuchMethodError at runtime. Put the project's JUnit jars first until the fat jar ships
-    // a fix that excludes org/junit/** from the bundle.
-    doFirst {
-        val junitJars = configurations.testRuntimeClasspath.get().resolvedConfiguration
-            .resolvedArtifacts
-            .filter { it.moduleVersion.id.group.startsWith("org.junit") }
-            .map { it.file }
-        classpath = files(junitJars) + classpath
-    }
 }
 
 tasks.jacocoTestReport {
