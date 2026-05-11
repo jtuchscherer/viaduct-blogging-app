@@ -160,10 +160,10 @@ configurations.all {
 tasks.test {
     useJUnitPlatform()
     finalizedBy(tasks.jacocoTestReport)
-
-    // The Viaduct test-fixtures fat jar bundles stale junit-platform-commons classes.
-    // Put explicit junit jars before the fat jar on the classpath so the correct
-    // version is found first. Remove once a fixed fat jar is published.
+    // The test-fixtures fat jar bundles stale JUnit Platform classes (1.11.x from kotest's
+    // transitive deps), which shadow the project's declared 1.12.2 on the classpath and cause
+    // NoSuchMethodError at runtime. Put the project's JUnit jars first until the fat jar ships
+    // a fix that excludes org/junit/** from the bundle.
     doFirst {
         val junitJars = configurations.testRuntimeClasspath.get().resolvedConfiguration
             .resolvedArtifacts
