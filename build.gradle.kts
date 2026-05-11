@@ -91,8 +91,7 @@ dependencies {
     implementation(libs.koin.ktor)
 
     // Testing
-    testImplementation(testFixtures(libs.viaduct.tenant.api))
-    testImplementation(testFixtures(libs.viaduct.tenant.runtime))
+    testImplementation(libs.viaduct.testfixtures)
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.junit.jupiter.engine)
     testImplementation(libs.junit.platform.launcher)
@@ -115,18 +114,18 @@ application {
 // c111d1c5 each api jar must coexist on the classpath, but the Application plugin would
 // either fail (default) or drop three of four (DuplicatesStrategy.EXCLUDE). Rename
 // colliding viaduct artifacts so each ends up with a unique filename in lib/.
-distributions {
-    named("main") {
-        contents {
-            eachFile {
-                val groupDir = Regex("files-2\\.1/([^/]+)/").find(file.toString())?.groupValues?.get(1)
-                if (groupDir?.startsWith("com.airbnb.viaduct.") == true) {
-                    name = "${groupDir.removePrefix("com.airbnb.viaduct.")}-$name"
-                }
-            }
-        }
-    }
-}
+// distributions {
+//     named("main") {
+//         contents {
+//             eachFile {
+//                 val groupDir = Regex("files-2\\.1/([^/]+)/").find(file.toString())?.groupValues?.get(1)
+//                 if (groupDir?.startsWith("com.airbnb.viaduct.") == true) {
+//                     name = "${groupDir.removePrefix("com.airbnb.viaduct.")}-$name"
+//                 }
+//             }
+//         }
+//     }
+// }
 
 // Force patched dependency versions to address CVEs.
 val viaductVersion: String = libs.versions.viaduct.get()
