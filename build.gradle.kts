@@ -108,12 +108,25 @@ application {
     mainClass.set("org.tuchscherer.viadapp.ViaductApplicationKt")
 }
 
-// viaduct.api appears on the runtime classpath twice: once as a direct dep and once
-// transitively through viaduct.runtime (which re-exports it via its POM). Gradle 8.14+
-// fails distTar/distZip/installDist when duplicate archive entries have no strategy set.
-tasks.withType<Tar> { duplicatesStrategy = DuplicatesStrategy.EXCLUDE }
-tasks.withType<Zip> { duplicatesStrategy = DuplicatesStrategy.EXCLUDE }
-tasks.withType<Sync> { duplicatesStrategy = DuplicatesStrategy.EXCLUDE }
+// Several Viaduct artifacts publish a jar literally named `api-1.0.0-rc.1.jar`
+// (com.airbnb.viaduct:api, com.airbnb.viaduct.engine:api, com.airbnb.viaduct.service:api,
+// com.airbnb.viaduct.tenant:api). Before viaduct@c111d1c5 the runtime shadow jar bundled
+// all of them, so the filename collisions in the distribution's lib/ didn't matter. After
+// c111d1c5 each api jar must coexist on the classpath, but the Application plugin would
+// either fail (default) or drop three of four (DuplicatesStrategy.EXCLUDE). Rename
+// colliding viaduct artifacts so each ends up with a unique filename in lib/.
+distributions {
+    named("main") {
+        contents {
+            eachFile {
+                val groupDir = Regex("files-2\\.1/([^/]+)/").find(file.toString())?.groupValues?.get(1)
+                if (groupDir?.startsWith("com.airbnb.viaduct.") == true) {
+                    name = "${groupDir.removePrefix("com.airbnb.viaduct.")}-$name"
+                }
+            }
+        }
+    }
+}
 
 // Force Netty to a patched version to address CVEs (CRLF injection, HTTP request smuggling).
 val viaductVersion: String = libs.versions.viaduct.get()
