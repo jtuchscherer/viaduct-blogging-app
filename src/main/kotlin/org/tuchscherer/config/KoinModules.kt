@@ -27,11 +27,10 @@ import org.tuchscherer.database.repositories.*
 import org.tuchscherer.viadapp.resolvers.*
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
-import viaduct.service.BasicViaductFactory
-import viaduct.service.SchemaRegistrationInfo
 import viaduct.service.SchemaScopeInfo
-import viaduct.service.TenantRegistrationInfo
+import viaduct.service.ViaductBuilder
 import viaduct.service.api.Viaduct
+import viaduct.service.api.spi.SharedTenantModuleBootstrapper
 
 /**
  * Koin module for application configuration.
@@ -83,18 +82,14 @@ val viaductModule = module {
     singleOf(::QueryFieldComplexityCalculator)
     single { QueryComplexityGuard(get()) }
     single<Viaduct> {
-        val underlying = BasicViaductFactory.create(
-            schemaRegistrationInfo = SchemaRegistrationInfo(
-                scopes = listOf(
-                    SchemaScopeInfo(schemaId = "public", scopesToApply = setOf("public")),
-                    SchemaScopeInfo(schemaId = "admin", scopesToApply = setOf("public", "admin")),
-                )
-            ),
-            tenantRegistrationInfo = TenantRegistrationInfo(
-                tenantPackagePrefix = "org.tuchscherer.viadapp",
-                tenantCodeInjector = KoinTenantCodeInjector(),
-            ),
-        )
+        val underlying = ViaductBuilder()
+            .withScopedSchemas(listOf(
+                SchemaScopeInfo("public", setOf("public")),
+                SchemaScopeInfo("admin", setOf("public", "admin")),
+            ))
+            .withTenantModuleBootstrapper(SharedTenantModuleBootstrapper(KoinTenantCodeInjector()))
+            .withMeterRegistry(get())
+            .build()
         GuardedViaduct(underlying, get())
     }
 }
