@@ -45,7 +45,6 @@ dependencies {
 
     implementation(libs.viaduct.api)
     implementation(libs.viaduct.runtime)
-    implementation(libs.graphql.java)
     implementation("javax.inject:javax.inject:1")
     implementation(libs.logback.classic)
     implementation(libs.kotlinx.coroutines.core)
@@ -91,8 +90,7 @@ dependencies {
     implementation(libs.koin.ktor)
 
     // Testing
-    testImplementation(testFixtures(libs.viaduct.tenant.api))
-    testImplementation(testFixtures(libs.viaduct.tenant.runtime))
+    testImplementation(libs.viaduct.test.fixtures)
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.junit.jupiter.engine)
     testImplementation(libs.junit.platform.launcher)
@@ -108,26 +106,6 @@ application {
     mainClass.set("org.tuchscherer.viadapp.ViaductApplicationKt")
 }
 
-// Several Viaduct artifacts publish a jar literally named `api-1.0.0-rc.1.jar`
-// (com.airbnb.viaduct:api, com.airbnb.viaduct.engine:api, com.airbnb.viaduct.service:api,
-// com.airbnb.viaduct.tenant:api). Before viaduct@c111d1c5 the runtime shadow jar bundled
-// all of them, so the filename collisions in the distribution's lib/ didn't matter. After
-// c111d1c5 each api jar must coexist on the classpath, but the Application plugin would
-// either fail (default) or drop three of four (DuplicatesStrategy.EXCLUDE). Rename
-// colliding viaduct artifacts so each ends up with a unique filename in lib/.
-distributions {
-    named("main") {
-        contents {
-            eachFile {
-                val groupDir = Regex("files-2\\.1/([^/]+)/").find(file.toString())?.groupValues?.get(1)
-                if (groupDir?.startsWith("com.airbnb.viaduct.") == true) {
-                    name = "${groupDir.removePrefix("com.airbnb.viaduct.")}-$name"
-                }
-            }
-        }
-    }
-}
-
 // Override patched dependency versions to address CVEs.
 //
 // Bouncy Castle: the Kotlin Gradle plugin hardcodes "org.bouncycastle:bc*:1.80" in its
@@ -140,6 +118,8 @@ distributions {
 //
 // Netty / Jackson: force() is sufficient for straightforward version upgrades on directly
 // declared dependencies where the requested version already matches the catalog version.
+//
+// Force patched dependency versions to address CVEs.
 val viaductVersion: String = libs.versions.viaduct.get()
 val nettyVersion: String = libs.versions.netty.get()
 val jacksonCore3Version: String = libs.versions.jackson3.get()
