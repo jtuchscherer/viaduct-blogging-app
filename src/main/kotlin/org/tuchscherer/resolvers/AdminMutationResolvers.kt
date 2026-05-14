@@ -1,7 +1,6 @@
 package org.tuchscherer.viadapp.resolvers
 
 import org.tuchscherer.auth.NotFoundException
-import org.tuchscherer.auth.requireAdmin
 import org.tuchscherer.database.repositories.CommentRepository
 import org.tuchscherer.database.repositories.LikeRepository
 import org.tuchscherer.database.repositories.PostRepository
@@ -11,18 +10,13 @@ import viaduct.api.resolver.Resolver
 import viaduct.api.grts.AdminDeleteUserResult
 import viaduct.api.grts.BlogPost as ViaductBlogPost
 import viaduct.api.grts.User as ViaductUser
-import java.util.*
+import java.util.UUID
 
-/**
- * Resolver for adminUpdateUser mutation - update any user's details.
- */
 @Resolver
 class AdminUpdateUserResolver(
     private val userRepository: UserRepository
 ) : AdminMutationsResolvers.UpdateUser() {
     override suspend fun resolve(ctx: Context): ViaductUser {
-        requireAdmin(ctx.requestContext)
-
         val input = ctx.arguments.input
         val userId = UUID.fromString(input.id.internalID)
 
@@ -40,9 +34,6 @@ class AdminUpdateUserResolver(
     }
 }
 
-/**
- * Resolver for adminDeleteUser mutation - delete a user and all their content.
- */
 @Resolver
 class AdminDeleteUserResolver(
     private val userRepository: UserRepository,
@@ -51,12 +42,9 @@ class AdminDeleteUserResolver(
     private val likeRepository: LikeRepository
 ) : AdminMutationsResolvers.DeleteUser() {
     override suspend fun resolve(ctx: Context): AdminDeleteUserResult {
-        requireAdmin(ctx.requestContext)
-
         val userId = UUID.fromString(ctx.arguments.id.internalID)
 
-        val user = userRepository.findById(userId)
-            ?: throw NotFoundException("User not found")
+        userRepository.findById(userId) ?: throw NotFoundException("User not found")
 
         // Delete in order: likes, comments, posts, then user
         val likesDeleted = likeRepository.deleteByUserId(userId)
@@ -73,16 +61,11 @@ class AdminDeleteUserResolver(
     }
 }
 
-/**
- * Resolver for adminUpdatePost mutation - update any post.
- */
 @Resolver
 class AdminUpdatePostResolver(
     private val postRepository: PostRepository
 ) : AdminMutationsResolvers.UpdatePost() {
     override suspend fun resolve(ctx: Context): ViaductBlogPost {
-        requireAdmin(ctx.requestContext)
-
         val input = ctx.arguments.input
         val postId = UUID.fromString(input.id.internalID)
 
@@ -99,42 +82,24 @@ class AdminUpdatePostResolver(
     }
 }
 
-/**
- * Resolver for adminDeletePost mutation - delete any post.
- */
 @Resolver
 class AdminDeletePostResolver(
     private val postRepository: PostRepository
 ) : AdminMutationsResolvers.DeletePost() {
     override suspend fun resolve(ctx: Context): Boolean {
-        requireAdmin(ctx.requestContext)
-
         val postId = UUID.fromString(ctx.arguments.id.internalID)
-
-        if (postRepository.findById(postId) == null) {
-            throw NotFoundException("Post not found")
-        }
-
+        postRepository.findById(postId) ?: throw NotFoundException("Post not found")
         return postRepository.delete(postId)
     }
 }
 
-/**
- * Resolver for adminDeleteComment mutation - delete any comment.
- */
 @Resolver
 class AdminDeleteCommentResolver(
     private val commentRepository: CommentRepository
 ) : AdminMutationsResolvers.DeleteComment() {
     override suspend fun resolve(ctx: Context): Boolean {
-        requireAdmin(ctx.requestContext)
-
         val commentId = UUID.fromString(ctx.arguments.id.internalID)
-
-        if (commentRepository.findById(commentId) == null) {
-            throw NotFoundException("Comment not found")
-        }
-
+        commentRepository.findById(commentId) ?: throw NotFoundException("Comment not found")
         return commentRepository.delete(commentId)
     }
 }

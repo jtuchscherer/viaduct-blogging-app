@@ -76,7 +76,7 @@ class LikeFieldResolversTest : ResolverTestBase() {
 
     @Test
     fun `PostLikesResolver returns likes for post`() = runBlocking {
-        val resolver = PostLikesResolver()
+        val resolver = PostLikesResolver(likeRepository)
         every { likeRepository.findByPostId(postId) } returns listOf(mockLike)
 
         val result = runFieldResolver(resolver) {
@@ -91,7 +91,7 @@ class LikeFieldResolversTest : ResolverTestBase() {
 
     @Test
     fun `PostLikesResolver returns empty list when no likes`() = runBlocking {
-        val resolver = PostLikesResolver()
+        val resolver = PostLikesResolver(likeRepository)
         every { likeRepository.findByPostId(postId) } returns emptyList()
 
         val result = runFieldResolver(resolver) {
@@ -107,7 +107,7 @@ class LikeFieldResolversTest : ResolverTestBase() {
 
     @Test
     fun `PostLikeCountResolver returns count for post`() = runBlocking {
-        val resolver = PostLikeCountResolver()
+        val resolver = PostLikeCountResolver(likeRepository)
         every { likeRepository.countByPostId(postId) } returns 5L
 
         val result = runFieldResolver(resolver) {
@@ -121,7 +121,7 @@ class LikeFieldResolversTest : ResolverTestBase() {
 
     @Test
     fun `PostLikeCountResolver throws when count exceeds Int MAX_VALUE (toCountInt guard)`() = runBlocking {
-        val resolver = PostLikeCountResolver()
+        val resolver = PostLikeCountResolver(likeRepository)
         every { likeRepository.countByPostId(postId) } returns Int.MAX_VALUE.toLong() + 1L
 
         assertThrows<IllegalArgumentException> {
@@ -135,7 +135,7 @@ class LikeFieldResolversTest : ResolverTestBase() {
 
     @Test
     fun `PostLikeCountResolver returns zero when no likes`() = runBlocking {
-        val resolver = PostLikeCountResolver()
+        val resolver = PostLikeCountResolver(likeRepository)
         every { likeRepository.countByPostId(postId) } returns 0L
 
         val result = runFieldResolver(resolver) {
@@ -151,7 +151,7 @@ class LikeFieldResolversTest : ResolverTestBase() {
 
     @Test
     fun `PostIsLikedByMeResolver returns true when user has liked the post`() = runBlocking {
-        val resolver = PostIsLikedByMeResolver()
+        val resolver = PostIsLikedByMeResolver(likeRepository)
         every { likeRepository.existsByPostAndUser(postId, userId) } returns true
 
         val result = runFieldResolver(resolver) {
@@ -166,7 +166,7 @@ class LikeFieldResolversTest : ResolverTestBase() {
 
     @Test
     fun `PostIsLikedByMeResolver returns false when user has not liked the post`() = runBlocking {
-        val resolver = PostIsLikedByMeResolver()
+        val resolver = PostIsLikedByMeResolver(likeRepository)
         every { likeRepository.existsByPostAndUser(postId, userId) } returns false
 
         val result = runFieldResolver(resolver) {
@@ -181,7 +181,7 @@ class LikeFieldResolversTest : ResolverTestBase() {
 
     @Test
     fun `PostIsLikedByMeResolver returns false when unauthenticated`() = runBlocking {
-        val resolver = PostIsLikedByMeResolver()
+        val resolver = PostIsLikedByMeResolver(likeRepository)
 
         val result = runFieldResolver(resolver) {
             objectValue = postObj()
@@ -198,7 +198,7 @@ class LikeFieldResolversTest : ResolverTestBase() {
 
     @Test
     fun `PostCommentCountResolver returns comment count for post`() = runBlocking {
-        val resolver = PostCommentCountResolver()
+        val resolver = PostCommentCountResolver(commentRepository)
         every { commentRepository.countByPostId(postId) } returns 4L
 
         val result = runFieldResolver(resolver) {
@@ -212,7 +212,7 @@ class LikeFieldResolversTest : ResolverTestBase() {
 
     @Test
     fun `PostCommentCountResolver returns zero when no comments`() = runBlocking {
-        val resolver = PostCommentCountResolver()
+        val resolver = PostCommentCountResolver(commentRepository)
         every { commentRepository.countByPostId(postId) } returns 0L
 
         val result = runFieldResolver(resolver) {
@@ -226,7 +226,7 @@ class LikeFieldResolversTest : ResolverTestBase() {
 
     @Test
     fun `PostCommentCountResolver throws when count exceeds Int MAX_VALUE (toCountInt guard)`() = runBlocking {
-        val resolver = PostCommentCountResolver()
+        val resolver = PostCommentCountResolver(commentRepository)
         every { commentRepository.countByPostId(postId) } returns Int.MAX_VALUE.toLong() + 1L
 
         assertThrows<IllegalArgumentException> {

@@ -3,7 +3,7 @@ import { gql } from '@apollo/client';
 import { useQuery } from '@apollo/client/react';
 import { appendConnectionEdges } from '../utils/pagination';
 import PostCard from '../components/PostCard';
-import type { BlogPostCard, CheckedListPost, FeedPost } from '../types';
+import type { CheckedListPost, FeedPost } from '../types';
 
 const PAGE_SIZE = 10;
 
@@ -17,9 +17,9 @@ const GET_POSTS_CONNECTION = gql`
       }
       edges {
         node {
+          __typename
           id
           title
-          content
           author {
             id
             name
@@ -28,7 +28,14 @@ const GET_POSTS_CONNECTION = gql`
           createdAt
           likeCount
           commentCount
-          readTimeMinutes
+          ... on BlogPost {
+            content
+            readTimeMinutes
+          }
+          ... on CheckedListPost {
+            description
+            readTimeMinutes
+          }
         }
       }
     }
@@ -87,7 +94,7 @@ interface PostsConnectionData {
       hasNextPage: boolean;
       endCursor: string | null;
     };
-    edges: Array<{ node: Omit<BlogPostCard, '__typename'> }>;
+    edges: Array<{ node: FeedPost }>;
   };
 }
 
@@ -124,10 +131,7 @@ function NewPostsFeed() {
   if (blogError) return <div className="error-message">Error loading posts: {blogError.message}</div>;
   if (clError) return <div className="error-message">Error loading checklists: {clError.message}</div>;
 
-  const blogPosts: BlogPostCard[] = (blogData?.postsConnection.edges.map((e) => ({
-    ...e.node,
-    __typename: 'BlogPost' as const,
-  })) ?? []);
+  const connectionPosts: FeedPost[] = blogData?.postsConnection.edges.map((e) => e.node) ?? [];
 
   const checklistPosts: CheckedListPost[] = (clData?.checkedListPosts.map((p) => ({
     ...p,
@@ -135,16 +139,16 @@ function NewPostsFeed() {
   })) ?? []);
 
   // Merge and sort by createdAt descending, then slice to displayedCount
-  const allFetchedPosts: FeedPost[] = [...blogPosts, ...checklistPosts].sort(
+  const allFetchedPosts: FeedPost[] = [...connectionPosts, ...checklistPosts].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
   );
 
   const visiblePosts = allFetchedPosts.slice(0, displayedCount);
 
   const connection = blogData?.postsConnection;
-  const totalBlogPosts = connection?.totalCount ?? 0;
+  const totalConnectionPosts = connection?.totalCount ?? 0;
   const totalChecklistPosts = checklistPosts.length;
-  const totalCount = totalBlogPosts + totalChecklistPosts;
+  const totalCount = totalConnectionPosts + totalChecklistPosts;
   const hasNextPage = connection?.pageInfo.hasNextPage ?? false;
   const hasMoreToShow = allFetchedPosts.length > displayedCount || hasNextPage;
 

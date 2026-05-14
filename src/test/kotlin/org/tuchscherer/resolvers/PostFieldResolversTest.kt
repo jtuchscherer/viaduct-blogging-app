@@ -78,7 +78,7 @@ class PostFieldResolversTest : ResolverTestBase() {
 
     @Test
     fun `PostAuthorResolver calls getAuthorIdsByPostIds in batch for found posts`() = runBlocking {
-        val resolver = PostAuthorResolver()
+        val resolver = PostAuthorResolver(postRepository)
         every { postRepository.getAuthorIdsByPostIds(listOf(postId)) } returns mapOf(postId to userId)
 
         val ctx = mockk<BlogPostResolvers.Author.Context>(relaxed = true)
@@ -92,7 +92,7 @@ class PostFieldResolversTest : ResolverTestBase() {
 
     @Test
     fun `PostAuthorResolver returns error FieldValue when post not found`() = runBlocking {
-        val resolver = PostAuthorResolver()
+        val resolver = PostAuthorResolver(postRepository)
         every { postRepository.getAuthorIdsByPostIds(listOf(postId)) } returns emptyMap()
 
         val ctx = mockk<BlogPostResolvers.Author.Context>(relaxed = true)
@@ -108,7 +108,7 @@ class PostFieldResolversTest : ResolverTestBase() {
 
     @Test
     fun `PostCommentsFieldResolver returns comments for post`() = runBlocking {
-        val resolver = PostCommentsFieldResolver()
+        val resolver = PostCommentsFieldResolver(commentRepository)
         every { commentRepository.findByPostId(postId) } returns listOf(mockComment)
 
         val result = runFieldResolver(resolver) {
@@ -124,7 +124,7 @@ class PostFieldResolversTest : ResolverTestBase() {
 
     @Test
     fun `PostCommentsFieldResolver returns empty list when no comments`() = runBlocking {
-        val resolver = PostCommentsFieldResolver()
+        val resolver = PostCommentsFieldResolver(commentRepository)
         every { commentRepository.findByPostId(postId) } returns emptyList()
 
         val result = runFieldResolver(resolver) {

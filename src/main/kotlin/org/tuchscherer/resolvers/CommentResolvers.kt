@@ -10,7 +10,7 @@ import org.tuchscherer.viadapp.resolvers.resolverbases.QueryResolvers
 import viaduct.api.resolver.Resolver
 import viaduct.api.grts.Comment as ViaductComment
 import java.time.LocalDateTime
-import java.util.*
+import java.util.UUID
 
 @Resolver
 class CreateCommentResolver(

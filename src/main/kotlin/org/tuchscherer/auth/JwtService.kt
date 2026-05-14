@@ -6,7 +6,7 @@ import com.auth0.jwt.exceptions.JWTVerificationException
 import org.tuchscherer.config.JwtConfig
 import org.tuchscherer.database.User
 import org.tuchscherer.database.repositories.UserRepository
-import java.util.*
+import java.util.Date
 
 /**
  * Service for JWT token generation and validation.

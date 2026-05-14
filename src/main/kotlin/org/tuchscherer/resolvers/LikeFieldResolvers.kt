@@ -4,15 +4,14 @@ import org.tuchscherer.auth.optionalAuth
 import org.tuchscherer.database.repositories.CommentRepository
 import org.tuchscherer.database.repositories.LikeRepository
 import org.tuchscherer.viadapp.resolvers.resolverbases.BlogPostResolvers
-import org.koin.java.KoinJavaComponent.inject
 import viaduct.api.resolver.Resolver
 import viaduct.api.grts.Like as ViaductLike
-import java.util.*
+import java.util.UUID
 
 @Resolver(objectValueFragment = "fragment _ on BlogPost { id }")
-class PostLikesResolver : BlogPostResolvers.Likes() {
-    private val likeRepository: LikeRepository by inject(LikeRepository::class.java)
-
+class PostLikesResolver(
+    private val likeRepository: LikeRepository,
+) : BlogPostResolvers.Likes() {
     override suspend fun resolve(ctx: Context): List<ViaductLike> {
         val postId = UUID.fromString(ctx.getObjectValue().getId().internalID)
 
@@ -26,9 +25,9 @@ class PostLikesResolver : BlogPostResolvers.Likes() {
 }
 
 @Resolver(objectValueFragment = "fragment _ on BlogPost { id }")
-class PostLikeCountResolver : BlogPostResolvers.LikeCount() {
-    private val likeRepository: LikeRepository by inject(LikeRepository::class.java)
-
+class PostLikeCountResolver(
+    private val likeRepository: LikeRepository,
+) : BlogPostResolvers.LikeCount() {
     override suspend fun resolve(ctx: Context): Int {
         val postId = UUID.fromString(ctx.getObjectValue().getId().internalID)
 
@@ -37,9 +36,9 @@ class PostLikeCountResolver : BlogPostResolvers.LikeCount() {
 }
 
 @Resolver(objectValueFragment = "fragment _ on BlogPost { id }")
-class PostIsLikedByMeResolver : BlogPostResolvers.IsLikedByMe() {
-    private val likeRepository: LikeRepository by inject(LikeRepository::class.java)
-
+class PostIsLikedByMeResolver(
+    private val likeRepository: LikeRepository,
+) : BlogPostResolvers.IsLikedByMe() {
     override suspend fun resolve(ctx: Context): Boolean {
         val postId = UUID.fromString(ctx.getObjectValue().getId().internalID)
         val user = optionalAuth(ctx.requestContext) ?: return false
@@ -48,9 +47,9 @@ class PostIsLikedByMeResolver : BlogPostResolvers.IsLikedByMe() {
 }
 
 @Resolver(objectValueFragment = "fragment _ on BlogPost { id }")
-class PostCommentCountResolver : BlogPostResolvers.CommentCount() {
-    private val commentRepository: CommentRepository by inject(CommentRepository::class.java)
-
+class PostCommentCountResolver(
+    private val commentRepository: CommentRepository,
+) : BlogPostResolvers.CommentCount() {
     override suspend fun resolve(ctx: Context): Int {
         val postId = UUID.fromString(ctx.getObjectValue().getId().internalID)
 

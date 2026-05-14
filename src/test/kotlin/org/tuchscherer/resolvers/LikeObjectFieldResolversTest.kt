@@ -70,7 +70,7 @@ class LikeObjectFieldResolversTest : ResolverTestBase() {
 
     @Test
     fun `LikeUserResolver returns user for like`() = runBlocking {
-        val resolver = LikeUserResolver()
+        val resolver = LikeUserResolver(likeRepository)
         every { likeRepository.getUserForLike(likeId) } returns mockUser
 
         val result = runFieldResolver(resolver) {
@@ -86,7 +86,7 @@ class LikeObjectFieldResolversTest : ResolverTestBase() {
 
     @Test
     fun `LikeUserResolver throws when like not found`() = runBlocking {
-        val resolver = LikeUserResolver()
+        val resolver = LikeUserResolver(likeRepository)
         every { likeRepository.getUserForLike(likeId) } returns null
 
         assertThrows<NotFoundException> {
@@ -102,7 +102,7 @@ class LikeObjectFieldResolversTest : ResolverTestBase() {
 
     @Test
     fun `LikePostResolver returns post for like`() = runBlocking {
-        val resolver = LikePostResolver()
+        val resolver = LikePostResolver(likeRepository)
         every { likeRepository.getPostForLike(likeId) } returns mockPost
 
         val result = runFieldResolver(resolver) {
@@ -119,7 +119,7 @@ class LikeObjectFieldResolversTest : ResolverTestBase() {
 
     @Test
     fun `LikePostResolver throws when like not found`() = runBlocking {
-        val resolver = LikePostResolver()
+        val resolver = LikePostResolver(likeRepository)
         every { likeRepository.getPostForLike(likeId) } returns null
 
         assertThrows<NotFoundException> {

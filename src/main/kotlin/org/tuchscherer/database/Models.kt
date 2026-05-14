@@ -3,7 +3,7 @@ package org.tuchscherer.database
 import org.jetbrains.exposed.v1.dao.java.UUIDEntity
 import org.jetbrains.exposed.v1.dao.java.UUIDEntityClass
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
-import java.util.*
+import java.util.UUID
 
 class User(id: EntityID<UUID>) : UUIDEntity(id) {
     companion object : UUIDEntityClass<User>(Users)

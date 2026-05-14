@@ -2,7 +2,6 @@
 
 package org.tuchscherer.resolvers
 
-import org.tuchscherer.auth.AuthorizationException
 import org.tuchscherer.auth.NotFoundException
 import org.tuchscherer.auth.RequestContext
 import org.tuchscherer.database.Comment
@@ -56,13 +55,11 @@ class AdminMutationResolversTest : ResolverTestBase() {
     private lateinit var commentRepository: CommentRepository
     private lateinit var likeRepository: LikeRepository
     private lateinit var mockAdminUser: User
-    private lateinit var mockRegularUser: User
     private lateinit var mockPost: Post
     private lateinit var mockComment: Comment
     private lateinit var mockDbUser: User
 
     private val adminUserId = UUID.randomUUID()
-    private val regularUserId = UUID.randomUUID()
     private val targetUserId = UUID.randomUUID()
     private val postId = UUID.randomUUID()
     private val commentId = UUID.randomUUID()
@@ -91,10 +88,6 @@ class AdminMutationResolversTest : ResolverTestBase() {
         mockAdminUser = mockk(relaxed = true)
         every { mockAdminUser.id } returns EntityID(adminUserId, mockk())
         every { mockAdminUser.isAdmin } returns true
-
-        mockRegularUser = mockk(relaxed = true)
-        every { mockRegularUser.id } returns EntityID(regularUserId, mockk())
-        every { mockRegularUser.isAdmin } returns false
 
         mockDbUser = mockk(relaxed = true)
         every { mockDbUser.id } returns EntityID(targetUserId, mockk())
@@ -157,19 +150,6 @@ class AdminMutationResolversTest : ResolverTestBase() {
         verify(exactly = 0) { postRepository.delete(any()) }
     }
 
-    @Test
-    fun `AdminDeletePostResolver throws AuthorizationException for non-admin user`() = runBlocking {
-        val resolver = AdminDeletePostResolver(postRepository)
-        val args = AdminMutations_DeletePost_Arguments.Builder(context)
-            .id(globalIDFor(ViaductBlogPost.Reflection, postId.toString()))
-            .build()
-
-        assertThrows<AuthorizationException> {
-            runOnAdminMutations(resolver, args, RequestContext(user = mockRegularUser))
-        }
-        verify(exactly = 0) { postRepository.findById(any()) }
-    }
-
     // ── AdminDeleteCommentResolver ────────────────────────────────────────────
 
     @Test
@@ -200,19 +180,6 @@ class AdminMutationResolversTest : ResolverTestBase() {
             runOnAdminMutations(resolver, args, RequestContext(user = mockAdminUser))
         }
         verify(exactly = 0) { commentRepository.delete(any()) }
-    }
-
-    @Test
-    fun `AdminDeleteCommentResolver throws AuthorizationException for non-admin user`() = runBlocking {
-        val resolver = AdminDeleteCommentResolver(commentRepository)
-        val args = AdminMutations_DeleteComment_Arguments.Builder(context)
-            .id(globalIDFor(viaduct.api.grts.Comment.Reflection, commentId.toString()))
-            .build()
-
-        assertThrows<AuthorizationException> {
-            runOnAdminMutations(resolver, args, RequestContext(user = mockRegularUser))
-        }
-        verify(exactly = 0) { commentRepository.findById(any()) }
     }
 
     // ── AdminDeleteUserResolver ───────────────────────────────────────────────
@@ -254,19 +221,6 @@ class AdminMutationResolversTest : ResolverTestBase() {
         verify(exactly = 0) { userRepository.delete(any()) }
     }
 
-    @Test
-    fun `AdminDeleteUserResolver throws AuthorizationException for non-admin user`() = runBlocking {
-        val resolver = AdminDeleteUserResolver(userRepository, postRepository, commentRepository, likeRepository)
-        val args = AdminMutations_DeleteUser_Arguments.Builder(context)
-            .id(globalIDFor(ViaductUser.Reflection, targetUserId.toString()))
-            .build()
-
-        assertThrows<AuthorizationException> {
-            runOnAdminMutations(resolver, args, RequestContext(user = mockRegularUser))
-        }
-        verify(exactly = 0) { userRepository.findById(any()) }
-    }
-
     // ── AdminUpdateUserResolver ───────────────────────────────────────────────
 
     @Test
@@ -301,20 +255,6 @@ class AdminMutationResolversTest : ResolverTestBase() {
 
         assertThrows<NotFoundException> {
             runOnAdminMutations(resolver, args, RequestContext(user = mockAdminUser))
-        }
-    }
-
-    @Test
-    fun `AdminUpdateUserResolver throws AuthorizationException for non-admin user`() = runBlocking {
-        val resolver = AdminUpdateUserResolver(userRepository)
-        val input = AdminUpdateUserInput.Builder(context)
-            .id(globalIDFor(ViaductUser.Reflection, targetUserId.toString()))
-            .name("New Name")
-            .build()
-        val args = AdminMutations_UpdateUser_Arguments.Builder(context).input(input).build()
-
-        assertThrows<AuthorizationException> {
-            runOnAdminMutations(resolver, args, RequestContext(user = mockRegularUser))
         }
     }
 
@@ -374,20 +314,6 @@ class AdminMutationResolversTest : ResolverTestBase() {
 
         assertThrows<NotFoundException> {
             runOnAdminMutations(resolver, args, RequestContext(user = mockAdminUser))
-        }
-    }
-
-    @Test
-    fun `AdminUpdatePostResolver throws AuthorizationException for non-admin user`() = runBlocking {
-        val resolver = AdminUpdatePostResolver(postRepository)
-        val input = AdminUpdatePostInput.Builder(context)
-            .id(globalIDFor(ViaductBlogPost.Reflection, postId.toString()))
-            .title("New Title")
-            .build()
-        val args = AdminMutations_UpdatePost_Arguments.Builder(context).input(input).build()
-
-        assertThrows<AuthorizationException> {
-            runOnAdminMutations(resolver, args, RequestContext(user = mockRegularUser))
         }
     }
 

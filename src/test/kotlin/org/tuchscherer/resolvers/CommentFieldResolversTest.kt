@@ -2,6 +2,7 @@ package org.tuchscherer.resolvers
 
 import org.tuchscherer.auth.NotFoundException
 import org.tuchscherer.database.Post
+import org.tuchscherer.database.PostType
 import org.tuchscherer.database.User
 import org.tuchscherer.database.repositories.CommentRepository
 import org.tuchscherer.viadapp.resolvers.CommentAuthorResolver
@@ -56,6 +57,7 @@ class CommentFieldResolversTest : ResolverTestBase() {
         every { mockPost.id } returns EntityID(postId, mockk())
         every { mockPost.title } returns "Test Post"
         every { mockPost.content } returns "Test content"
+        every { mockPost.postType } returns PostType.BLOG_POST
         every { mockPost.createdAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
         every { mockPost.updatedAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
 
@@ -69,7 +71,7 @@ class CommentFieldResolversTest : ResolverTestBase() {
 
     @Test
     fun `CommentAuthorResolver returns author for comment`() = runBlocking {
-        val resolver = CommentAuthorResolver()
+        val resolver = CommentAuthorResolver(commentRepository)
         every { commentRepository.getAuthorForComment(commentId) } returns mockUser
 
         val result = runFieldResolver(resolver) {
@@ -85,7 +87,7 @@ class CommentFieldResolversTest : ResolverTestBase() {
 
     @Test
     fun `CommentAuthorResolver throws when comment not found`() = runBlocking {
-        val resolver = CommentAuthorResolver()
+        val resolver = CommentAuthorResolver(commentRepository)
         every { commentRepository.getAuthorForComment(commentId) } returns null
 
         assertThrows<NotFoundException> {
@@ -101,7 +103,7 @@ class CommentFieldResolversTest : ResolverTestBase() {
 
     @Test
     fun `CommentPostResolver returns post for comment`() = runBlocking {
-        val resolver = CommentPostResolver()
+        val resolver = CommentPostResolver(commentRepository)
         every { commentRepository.getPostForComment(commentId) } returns mockPost
 
         val result = runFieldResolver(resolver) {
@@ -118,7 +120,7 @@ class CommentFieldResolversTest : ResolverTestBase() {
 
     @Test
     fun `CommentPostResolver throws when comment not found`() = runBlocking {
-        val resolver = CommentPostResolver()
+        val resolver = CommentPostResolver(commentRepository)
         every { commentRepository.getPostForComment(commentId) } returns null
 
         assertThrows<NotFoundException> {

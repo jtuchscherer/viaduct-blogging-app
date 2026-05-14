@@ -14,7 +14,7 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { GRAPHQL_URL, registerUser } from './fixtures/auth';
+import { GRAPHQL_URL, registerUser, registerAndLogin } from './fixtures/auth';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -513,6 +513,60 @@ test.describe('CheckedList — likePost and unlikePost', () => {
   });
 });
 
+// ── myCheckedListPosts query ──────────────────────────────────────────────────
+
+test.describe('CheckedList — myCheckedListPosts query', () => {
+  test('returns only the authenticated user\'s checklist posts', async ({ page }) => {
+    const suffix = Date.now();
+    const { token: user1Token } = await registerUser(page, `cl_my_u1_${suffix}`);
+    const { token: user2Token } = await registerUser(page, `cl_my_u2_${suffix}`);
+
+    const title = `My Personal Checklist ${suffix}`;
+    await createCheckedListPost(page, user1Token, title, ['Task A']);
+    await createCheckedListPost(page, user2Token, `Other User's List ${suffix}`, ['Task B']);
+
+    const body = await gql(page, '{ myCheckedListPosts { id title } }', user1Token);
+    expect(body.errors).toBeUndefined();
+    const titles = body.data.myCheckedListPosts.map((p: { title: string }) => p.title);
+    expect(titles).toContain(title);
+    expect(titles.every((t: string) => !t.includes("Other User's"))).toBe(true);
+  });
+
+  test('requires authentication', async ({ page }) => {
+    const body = await gql(page, '{ myCheckedListPosts { id } }');
+    expect(body.errors).toBeTruthy();
+  });
+});
+
+// ── My Posts page shows checklist posts (regression) ─────────────────────────
+
+// Regression: myCheckedListPosts was missing — My Posts only showed BlogPosts.
+test.describe('CheckedList — My Posts page', () => {
+  test('checklist post appears on the My Posts page', async ({ page }) => {
+    const suffix = Date.now();
+    const creds = await registerAndLogin(page, `cl_myposts_${suffix}`);
+    const title = `My Checklist ${suffix}`;
+    await createCheckedListPost(page, creds.token, title, ['First task']);
+
+    await page.goto('/my-posts');
+
+    await expect(page.locator('.posts-list')).toContainText(title);
+    await expect(page.locator('.post-card--checklist')).toBeVisible();
+  });
+
+  test('checklist post does not appear on another user\'s My Posts page', async ({ page }) => {
+    const suffix = Date.now();
+    const { token: authorToken } = await registerUser(page, `cl_myp_author_${suffix}`);
+    const viewerCreds = await registerAndLogin(page, `cl_myp_viewer_${suffix}`);
+    const title = `Author Checklist ${suffix}`;
+    await createCheckedListPost(page, authorToken, title, ['Task']);
+
+    await page.goto('/my-posts');
+
+    await expect(page.locator('body')).not.toContainText(title);
+  });
+});
+
 // ── analytics: viewCount & readTimeMinutes ────────────────────────────────────
 
 test.describe('CheckedList — analytics (viewCount & readTimeMinutes)', () => {
@@ -571,5 +625,33 @@ test.describe('CheckedList — analytics (viewCount & readTimeMinutes)', () => {
     expect(found).toBeTruthy();
     expect(found.__typename).toBe('CheckedListPost');
     expect(found.title).toBe(title);
+  });
+});
+
+// ── postsConnection — PostEdge.node typed as Post interface ───────────────────
+
+test.describe('CheckedList — postsConnection accepts Post interface fragments', () => {
+  test('postsConnection accepts ... on CheckedListPost fragment without validation error', async ({ page }) => {
+    // Before the fix, PostEdge.node was typed as BlogPost (concrete), so
+    // "... on CheckedListPost" was rejected by GraphQL validation.
+    // This test verifies the schema fix: node is now typed as Post (interface).
+    const body = await gql(
+      page,
+      `{
+        postsConnection {
+          edges {
+            node {
+              __typename
+              id
+              title
+              ... on BlogPost { content }
+              ... on CheckedListPost { description }
+            }
+          }
+        }
+      }`,
+    );
+    expect(body.errors).toBeUndefined();
+    expect(body.data.postsConnection).toBeTruthy();
   });
 });
