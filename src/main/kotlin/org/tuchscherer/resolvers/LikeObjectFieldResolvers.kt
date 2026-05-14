@@ -4,17 +4,16 @@ import org.tuchscherer.auth.NotFoundException
 import org.tuchscherer.database.PostType
 import org.tuchscherer.database.repositories.LikeRepository
 import org.tuchscherer.viadapp.resolvers.resolverbases.LikeResolvers
-import org.koin.java.KoinJavaComponent.inject
 import viaduct.api.resolver.Resolver
 import viaduct.api.grts.CheckedListPost as ViaductCheckedListPost
 import viaduct.api.grts.Post as ViaductPost
 import viaduct.api.grts.User as ViaductUser
-import java.util.*
+import java.util.UUID
 
 @Resolver(objectValueFragment = "fragment _ on Like { id }")
-class LikeUserResolver : LikeResolvers.User() {
-    private val likeRepository: LikeRepository by inject(LikeRepository::class.java)
-
+class LikeUserResolver(
+    private val likeRepository: LikeRepository,
+) : LikeResolvers.User() {
     override suspend fun resolve(ctx: Context): ViaductUser {
         val likeId = UUID.fromString(ctx.getObjectValue().getId().internalID)
         val user = likeRepository.getUserForLike(likeId)
@@ -24,9 +23,9 @@ class LikeUserResolver : LikeResolvers.User() {
 }
 
 @Resolver(objectValueFragment = "fragment _ on Like { id }")
-class LikePostResolver : LikeResolvers.Post() {
-    private val likeRepository: LikeRepository by inject(LikeRepository::class.java)
-
+class LikePostResolver(
+    private val likeRepository: LikeRepository,
+) : LikeResolvers.Post() {
     override suspend fun resolve(ctx: Context): ViaductPost {
         val likeId = UUID.fromString(ctx.getObjectValue().getId().internalID)
         val post = likeRepository.getPostForLike(likeId)

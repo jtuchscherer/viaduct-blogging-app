@@ -6,7 +6,7 @@ import org.tuchscherer.viadapp.resolvers.resolverbases.QueryResolvers
 import viaduct.api.resolver.Resolver
 import viaduct.api.grts.BlogPost as ViaductBlogPost
 import viaduct.api.grts.PostsConnection
-import java.util.*
+import java.util.UUID
 
 @Resolver
 class PostsResolver(

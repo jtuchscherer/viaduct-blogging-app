@@ -4,17 +4,16 @@ import org.tuchscherer.auth.NotFoundException
 import org.tuchscherer.database.PostType
 import org.tuchscherer.database.repositories.CommentRepository
 import org.tuchscherer.viadapp.resolvers.resolverbases.CommentResolvers
-import org.koin.java.KoinJavaComponent.inject
 import viaduct.api.resolver.Resolver
 import viaduct.api.grts.CheckedListPost as ViaductCheckedListPost
 import viaduct.api.grts.Post as ViaductPost
 import viaduct.api.grts.User as ViaductUser
-import java.util.*
+import java.util.UUID
 
 @Resolver(objectValueFragment = "fragment _ on Comment { id }")
-class CommentAuthorResolver : CommentResolvers.Author() {
-    private val commentRepository: CommentRepository by inject(CommentRepository::class.java)
-
+class CommentAuthorResolver(
+    private val commentRepository: CommentRepository,
+) : CommentResolvers.Author() {
     override suspend fun resolve(ctx: Context): ViaductUser {
         val commentId = UUID.fromString(ctx.getObjectValue().getId().internalID)
         val author = commentRepository.getAuthorForComment(commentId)
@@ -24,9 +23,9 @@ class CommentAuthorResolver : CommentResolvers.Author() {
 }
 
 @Resolver(objectValueFragment = "fragment _ on Comment { id }")
-class CommentPostResolver : CommentResolvers.Post() {
-    private val commentRepository: CommentRepository by inject(CommentRepository::class.java)
-
+class CommentPostResolver(
+    private val commentRepository: CommentRepository,
+) : CommentResolvers.Post() {
     override suspend fun resolve(ctx: Context): ViaductPost {
         val commentId = UUID.fromString(ctx.getObjectValue().getId().internalID)
         val post = commentRepository.getPostForComment(commentId)
