@@ -138,6 +138,11 @@ class GraphQLServer(
                         val user = token?.let { authDeps.jwtService.getUserFromToken(it) }
                         val requestContext = user?.let { org.tuchscherer.auth.RequestContext(user = it) }
 
+                        if (call.request.headers["X-Schema"] == "admin" && (user == null || !user.isAdmin)) {
+                            call.respond(HttpStatusCode.Forbidden, mapOf("error" to "Admin access required"))
+                            return@post
+                        }
+
                         val schemaId = when (call.request.headers["X-Schema"]) {
                             "admin" -> ADMIN_SCHEMA
                             else -> PUBLIC_SCHEMA

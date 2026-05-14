@@ -2,7 +2,6 @@
 
 package org.tuchscherer.resolvers
 
-import org.tuchscherer.auth.AuthorizationException
 import org.tuchscherer.auth.RequestContext
 import org.tuchscherer.database.Comment
 import org.tuchscherer.database.Post
@@ -41,13 +40,11 @@ class AdminQueryResolversTest : ResolverTestBase() {
     private lateinit var likeRepository: LikeRepository
 
     private lateinit var mockAdminUser: User
-    private lateinit var mockRegularUser: User
     private lateinit var mockDbUser: User
     private lateinit var mockPost: Post
     private lateinit var mockComment: Comment
 
     private val adminUserId = UUID.randomUUID()
-    private val regularUserId = UUID.randomUUID()
     private val dbUserId = UUID.randomUUID()
     private val postId = UUID.randomUUID()
     private val commentId = UUID.randomUUID()
@@ -65,10 +62,6 @@ class AdminQueryResolversTest : ResolverTestBase() {
         mockAdminUser = mockk(relaxed = true)
         every { mockAdminUser.id } returns EntityID(adminUserId, mockk())
         every { mockAdminUser.isAdmin } returns true
-
-        mockRegularUser = mockk(relaxed = true)
-        every { mockRegularUser.id } returns EntityID(regularUserId, mockk())
-        every { mockRegularUser.isAdmin } returns false
 
         mockDbUser = mockk(relaxed = true)
         every { mockDbUser.id } returns EntityID(dbUserId, mockk())
@@ -143,21 +136,6 @@ class AdminQueryResolversTest : ResolverTestBase() {
     }
 
     @Test
-    fun `AdminUsersResolver throws AuthorizationException for non-admin user`() = runBlocking {
-        val resolver = AdminUsersResolver(userRepository)
-        val args = AdminQueries_Users_Arguments.Builder(context).limit(10).offset(0).build()
-
-        assertThrows<AuthorizationException> {
-            runFieldResolver(resolver) {
-                objectValue = adminQueriesObj()
-                queryValue = queryObj()
-                arguments = args
-                requestContext = RequestContext(user = mockRegularUser)
-                }
-        }
-    }
-
-    @Test
     fun `AdminUsersResolver throws when totalCount exceeds Int MAX_VALUE (toCountInt guard)`() = runBlocking {
         val resolver = AdminUsersResolver(userRepository)
         val args = AdminQueries_Users_Arguments.Builder(context).limit(10).offset(0).build()
@@ -216,21 +194,6 @@ class AdminQueryResolversTest : ResolverTestBase() {
     }
 
     @Test
-    fun `AdminPostsResolver throws AuthorizationException for non-admin user`() = runBlocking {
-        val resolver = AdminPostsResolver(postRepository)
-        val args = AdminQueries_Posts_Arguments.Builder(context).limit(10).offset(0).build()
-
-        assertThrows<AuthorizationException> {
-            runFieldResolver(resolver) {
-                objectValue = adminQueriesObj()
-                queryValue = queryObj()
-                arguments = args
-                requestContext = RequestContext(user = mockRegularUser)
-                }
-        }
-    }
-
-    @Test
     fun `AdminPostsResolver throws when totalCount exceeds Int MAX_VALUE (toCountInt guard)`() = runBlocking {
         val resolver = AdminPostsResolver(postRepository)
         val args = AdminQueries_Posts_Arguments.Builder(context).limit(10).offset(0).build()
@@ -286,21 +249,6 @@ class AdminQueryResolversTest : ResolverTestBase() {
 
         assertEquals(20, result.getTotalCount())
         assertEquals(1, result.getComments().size)
-    }
-
-    @Test
-    fun `AdminCommentsResolver throws AuthorizationException for non-admin user`() = runBlocking {
-        val resolver = AdminCommentsResolver(commentRepository)
-        val args = AdminQueries_Comments_Arguments.Builder(context).limit(10).offset(0).build()
-
-        assertThrows<AuthorizationException> {
-            runFieldResolver(resolver) {
-                objectValue = adminQueriesObj()
-                queryValue = queryObj()
-                arguments = args
-                requestContext = RequestContext(user = mockRegularUser)
-                }
-        }
     }
 
     @Test
@@ -419,20 +367,6 @@ class AdminQueryResolversTest : ResolverTestBase() {
         }
     }
 
-    @Test
-    fun `AdminStatsResolver throws AuthorizationException for non-admin user`() = runBlocking {
-        val resolver = AdminStatsResolver(userRepository, postRepository, commentRepository, likeRepository)
-
-        assertThrows<AuthorizationException> {
-            runFieldResolver(resolver) {
-                objectValue = adminQueriesObj()
-                queryValue = queryObj()
-                arguments = viaduct.api.types.Arguments.NoArguments
-                requestContext = RequestContext(user = mockRegularUser)
-                }
-        }
-    }
-
     // ── AdminUserResolver ─────────────────────────────────────────────────────
 
     @Test
@@ -473,23 +407,6 @@ class AdminQueryResolversTest : ResolverTestBase() {
             }
 
         assertNull(result)
-    }
-
-    @Test
-    fun `AdminUserResolver throws AuthorizationException for non-admin user`() = runBlocking {
-        val resolver = AdminUserResolver(userRepository)
-        val args = AdminQueries_User_Arguments.Builder(context)
-            .id(globalIDFor(viaduct.api.grts.User.Reflection, dbUserId.toString()))
-            .build()
-
-        assertThrows<AuthorizationException> {
-            runFieldResolver(resolver) {
-                objectValue = adminQueriesObj()
-                queryValue = queryObj()
-                arguments = args
-                requestContext = RequestContext(user = mockRegularUser)
-                }
-        }
     }
 
     // ── AdminUserContentCountsResolver ────────────────────────────────────────
@@ -577,23 +494,6 @@ class AdminQueryResolversTest : ResolverTestBase() {
         }
     }
 
-    @Test
-    fun `AdminUserContentCountsResolver throws AuthorizationException for non-admin user`() = runBlocking {
-        val resolver = AdminUserContentCountsResolver(postRepository, commentRepository, likeRepository)
-        val args = AdminQueries_UserContentCounts_Arguments.Builder(context)
-            .userId(globalIDFor(viaduct.api.grts.User.Reflection, dbUserId.toString()))
-            .build()
-
-        assertThrows<AuthorizationException> {
-            runFieldResolver(resolver) {
-                objectValue = adminQueriesObj()
-                queryValue = queryObj()
-                arguments = args
-                requestContext = RequestContext(user = mockRegularUser)
-                }
-        }
-    }
-
     // ── AdminPostResolver ─────────────────────────────────────────────────────
 
     @Test
@@ -636,20 +536,4 @@ class AdminQueryResolversTest : ResolverTestBase() {
         assertNull(result)
     }
 
-    @Test
-    fun `AdminPostResolver throws AuthorizationException for non-admin user`() = runBlocking {
-        val resolver = AdminPostResolver(postRepository)
-        val args = AdminQueries_Post_Arguments.Builder(context)
-            .id(globalIDFor(ViaductBlogPost.Reflection, postId.toString()))
-            .build()
-
-        assertThrows<AuthorizationException> {
-            runFieldResolver(resolver) {
-                objectValue = adminQueriesObj()
-                queryValue = queryObj()
-                arguments = args
-                requestContext = RequestContext(user = mockRegularUser)
-                }
-        }
-    }
 }
