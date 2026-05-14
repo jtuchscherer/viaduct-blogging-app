@@ -64,6 +64,12 @@ class ViaductPostCreationPort : PostCreationPort {
             .map { it.toData() }
     }
 
+    override fun getCheckedListPostsByAuthorId(authorId: UUID): List<PostData> = transaction {
+        Post.find { (Posts.postType eq PostType.CHECKED_LIST) and (Posts.authorId eq authorId) }
+            .orderBy(Posts.createdAt to SortOrder.DESC)
+            .map { it.toData() }
+    }
+
     override fun getAuthorIdsForPosts(postIds: List<UUID>): Map<UUID, UUID> = transaction {
         if (postIds.isEmpty()) return@transaction emptyMap()
         Post.find {

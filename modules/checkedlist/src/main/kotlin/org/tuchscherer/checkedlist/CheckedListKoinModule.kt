@@ -13,6 +13,7 @@ import org.tuchscherer.viadapp.checkedlist.resolvers.CheckedListPostItemsResolve
 import org.tuchscherer.viadapp.checkedlist.resolvers.CheckedListPostLikeCountResolver
 import org.tuchscherer.viadapp.checkedlist.resolvers.CheckedListPostLikesResolver
 import org.tuchscherer.viadapp.checkedlist.resolvers.CheckedListPostsQueryResolver
+import org.tuchscherer.viadapp.checkedlist.resolvers.MyCheckedListPostsQueryResolver
 import org.tuchscherer.viadapp.checkedlist.resolvers.CreateCheckedListPostMutationResolver
 import org.tuchscherer.viadapp.checkedlist.resolvers.DeleteCheckedListItemMutationResolver
 import org.tuchscherer.viadapp.checkedlist.resolvers.DeleteCheckedListPostMutationResolver
@@ -45,6 +46,7 @@ val checkedListKoinModule = module {
     singleOf(::CheckedListPostLikeCountResolver)
     singleOf(::CheckedListPostIsLikedByMeResolver)
     singleOf(::CheckedListPostsQueryResolver)
+    singleOf(::MyCheckedListPostsQueryResolver)
     singleOf(::CreateCheckedListPostMutationResolver)
     singleOf(::UpdateCheckedListPostMutationResolver)
     singleOf(::DeleteCheckedListPostMutationResolver)
