@@ -748,6 +748,31 @@ fi
 # Step 12: Test Admin API
 print_header "Step 12: Test Admin API"
 
+# Gate: unauthenticated request with X-Schema: admin must be rejected with 403
+print_info "Verifying admin schema gate rejects unauthenticated requests..."
+UNAUTH_ADMIN_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "X-Schema: admin" \
+    -d '{"query": "{ admin { stats { userCount } } }"}')
+if [ "$UNAUTH_ADMIN_CODE" = "403" ]; then
+    print_success "Admin schema gate: unauthenticated request correctly rejected (403)"
+else
+    print_error "Admin schema gate: expected 403 for unauthenticated request, got $UNAUTH_ADMIN_CODE"
+fi
+
+# Gate: authenticated non-admin user with X-Schema: admin must also be rejected with 403
+print_info "Verifying admin schema gate rejects non-admin users..."
+NON_ADMIN_ADMIN_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $USER2_TOKEN" \
+    -H "X-Schema: admin" \
+    -d '{"query": "{ admin { stats { userCount } } }"}')
+if [ "$NON_ADMIN_ADMIN_CODE" = "403" ]; then
+    print_success "Admin schema gate: non-admin user correctly rejected (403)"
+else
+    print_error "Admin schema gate: expected 403 for non-admin user, got $NON_ADMIN_ADMIN_CODE"
+fi
+
 # Promote alice to admin in the database
 print_info "Promoting alice to admin..."
 sqlite3 "${DB_FILE}" "UPDATE users SET is_admin = 1 WHERE username = 'alice';"
