@@ -2,7 +2,7 @@ package org.tuchscherer.database.repositories
 
 import org.tuchscherer.database.Post
 import java.time.LocalDateTime
-import java.util.*
+import java.util.UUID
 
 /**
  * Repository interface for Post database operations.

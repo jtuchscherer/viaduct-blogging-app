@@ -8,7 +8,7 @@ import org.tuchscherer.viadapp.resolvers.resolverbases.MutationResolvers
 import viaduct.api.resolver.Resolver
 import viaduct.api.grts.Like as ViaductLike
 import java.time.LocalDateTime
-import java.util.*
+import java.util.UUID
 
 @Resolver
 class LikePostMutationResolver(

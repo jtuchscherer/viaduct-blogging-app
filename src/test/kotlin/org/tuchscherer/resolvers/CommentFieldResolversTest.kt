@@ -71,7 +71,7 @@ class CommentFieldResolversTest : ResolverTestBase() {
 
     @Test
     fun `CommentAuthorResolver returns author for comment`() = runBlocking {
-        val resolver = CommentAuthorResolver()
+        val resolver = CommentAuthorResolver(commentRepository)
         every { commentRepository.getAuthorForComment(commentId) } returns mockUser
 
         val result = runFieldResolver(resolver) {
@@ -87,7 +87,7 @@ class CommentFieldResolversTest : ResolverTestBase() {
 
     @Test
     fun `CommentAuthorResolver throws when comment not found`() = runBlocking {
-        val resolver = CommentAuthorResolver()
+        val resolver = CommentAuthorResolver(commentRepository)
         every { commentRepository.getAuthorForComment(commentId) } returns null
 
         assertThrows<NotFoundException> {
@@ -103,7 +103,7 @@ class CommentFieldResolversTest : ResolverTestBase() {
 
     @Test
     fun `CommentPostResolver returns post for comment`() = runBlocking {
-        val resolver = CommentPostResolver()
+        val resolver = CommentPostResolver(commentRepository)
         every { commentRepository.getPostForComment(commentId) } returns mockPost
 
         val result = runFieldResolver(resolver) {
@@ -120,7 +120,7 @@ class CommentFieldResolversTest : ResolverTestBase() {
 
     @Test
     fun `CommentPostResolver throws when comment not found`() = runBlocking {
-        val resolver = CommentPostResolver()
+        val resolver = CommentPostResolver(commentRepository)
         every { commentRepository.getPostForComment(commentId) } returns null
 
         assertThrows<NotFoundException> {
