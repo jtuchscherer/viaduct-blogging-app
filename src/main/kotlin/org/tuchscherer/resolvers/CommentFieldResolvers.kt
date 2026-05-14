@@ -1,12 +1,10 @@
 package org.tuchscherer.viadapp.resolvers
 
 import org.tuchscherer.auth.NotFoundException
-import org.tuchscherer.database.PostType
 import org.tuchscherer.database.repositories.CommentRepository
 import org.tuchscherer.viadapp.resolvers.resolverbases.CommentResolvers
 import org.koin.java.KoinJavaComponent.inject
 import viaduct.api.resolver.Resolver
-import viaduct.api.grts.CheckedListPost as ViaductCheckedListPost
 import viaduct.api.grts.Post as ViaductPost
 import viaduct.api.grts.User as ViaductUser
 import java.util.*
@@ -31,10 +29,6 @@ class CommentPostResolver : CommentResolvers.Post() {
         val commentId = UUID.fromString(ctx.getObjectValue().getId().internalID)
         val post = commentRepository.getPostForComment(commentId)
             ?: throw NotFoundException("Comment not found")
-        return when (post.postType) {
-            PostType.CHECKED_LIST ->
-                ctx.nodeRef(ctx.globalIDFor(ViaductCheckedListPost.Reflection, post.id.value.toString()))
-            else -> post.toViaductBlogPost(ctx)
-        }
+        return post.toViaductPost(ctx)
     }
 }

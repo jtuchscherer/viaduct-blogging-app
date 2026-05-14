@@ -48,7 +48,7 @@ class PostsConnectionResolver(
         // parent ConnectionBuilder type, so totalCount() (which only exists on the
         // generated PostsConnection.Builder subclass) is set up front.
         val builder = PostsConnection.Builder(ctx).totalCount(totalCount)
-        builder.fromSlice(posts, hasMore) { it.toViaductBlogPost(ctx) }
+        builder.fromSlice(posts, hasMore) { post -> post.toViaductPost(ctx) }
         return builder.build()
     }
 }

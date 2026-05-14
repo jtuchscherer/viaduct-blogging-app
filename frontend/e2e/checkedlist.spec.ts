@@ -573,3 +573,31 @@ test.describe('CheckedList — analytics (viewCount & readTimeMinutes)', () => {
     expect(found.title).toBe(title);
   });
 });
+
+// ── postsConnection — PostEdge.node typed as Post interface ───────────────────
+
+test.describe('CheckedList — postsConnection accepts Post interface fragments', () => {
+  test('postsConnection accepts ... on CheckedListPost fragment without validation error', async ({ page }) => {
+    // Before the fix, PostEdge.node was typed as BlogPost (concrete), so
+    // "... on CheckedListPost" was rejected by GraphQL validation.
+    // This test verifies the schema fix: node is now typed as Post (interface).
+    const body = await gql(
+      page,
+      `{
+        postsConnection {
+          edges {
+            node {
+              __typename
+              id
+              title
+              ... on BlogPost { content }
+              ... on CheckedListPost { description }
+            }
+          }
+        }
+      }`,
+    );
+    expect(body.errors).toBeUndefined();
+    expect(body.data.postsConnection).toBeTruthy();
+  });
+});

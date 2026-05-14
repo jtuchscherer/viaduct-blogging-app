@@ -2,6 +2,7 @@ package org.tuchscherer.resolvers
 
 import org.tuchscherer.auth.NotFoundException
 import org.tuchscherer.database.Post
+import org.tuchscherer.database.PostType
 import org.tuchscherer.database.User
 import org.tuchscherer.database.repositories.CommentRepository
 import org.tuchscherer.viadapp.resolvers.CommentAuthorResolver
@@ -56,6 +57,7 @@ class CommentFieldResolversTest : ResolverTestBase() {
         every { mockPost.id } returns EntityID(postId, mockk())
         every { mockPost.title } returns "Test Post"
         every { mockPost.content } returns "Test content"
+        every { mockPost.postType } returns PostType.BLOG_POST
         every { mockPost.createdAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
         every { mockPost.updatedAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
 
