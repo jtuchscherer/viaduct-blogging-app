@@ -7,7 +7,7 @@ import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.inList
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import java.time.LocalDateTime
-import java.util.*
+import java.util.UUID
 
 /**
  * Exposed ORM implementation of UserRepository.

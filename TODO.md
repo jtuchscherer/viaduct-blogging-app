@@ -2,7 +2,7 @@
 
 **Status**: 🚀 In Progress — Phases 1–23 complete; AI features (Phases 24–27) remaining
 
-**Last Updated**: 2026-05-06
+**Last Updated**: 2026-05-14
 
 ## Test Statistics
 
@@ -445,3 +445,21 @@
 **Key files**: migration SQL, `PostEmbeddingRepository`, `EmbeddingService`, `RecommendationService`, resolver, `RecommendationsPanel.tsx`
 
 **Success criteria**: recommendations panel shows ≥ 1 relevant post after a user views several posts; unauthenticated / no-history users see trending posts instead; `./gradlew test` green.
+
+---
+
+## Tech Debt
+
+### Migrate Koin modules from DSL to annotation-based API for compile-time safety
+
+**Context**: Koin's compiler plugin (`koin-annotations` + `koin-ksp-compiler`) validates the full dependency graph at compile time — "if it compiles, it works" — with no test code required. Currently the project uses DSL-only modules (`val xModule = module { }` / `singleOf(::Resolver)`), which means dependency graph errors are only caught at test time via the `KoinModulesTest.verify()` test added alongside this note.
+
+**What to do**:
+1. Add `koin-annotations` and `koin-ksp-compiler` (KSP) dependencies to `build.gradle.kts`
+2. Annotate each module class with `@Module` and each binding with `@Single` / `@Factory` as appropriate
+3. Replace `val allModules = listOf(...)` startup with annotation-based `startKoin<AppModule>()`
+4. Remove the `verify()` test in `KoinModulesTest` once compile-time safety covers it
+
+**Reference**: https://insert-koin.io/docs/reference/koin-compiler/compile-safety
+
+**Why it's deferred**: non-trivial mechanical migration with no user-visible impact; the `verify()` test covers the same gap in the interim.

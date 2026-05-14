@@ -2,7 +2,7 @@ package org.tuchscherer.database.repositories
 
 import org.tuchscherer.database.Comment
 import java.time.LocalDateTime
-import java.util.*
+import java.util.UUID
 
 /**
  * Repository interface for Comment database operations.

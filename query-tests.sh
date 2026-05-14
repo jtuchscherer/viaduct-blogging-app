@@ -702,16 +702,16 @@ else
     print_error "Skipping second page test — no cursor returned from first page"
 fi
 
-# postsConnection — analytics fields (viewCount, readTimeMinutes) on edges
-print_info "Checking postsConnection edges expose viewCount and readTimeMinutes..."
+# postsConnection — analytics fields (viewCount, readTimeMinutes) via type fragments on edges
+print_info "Checking postsConnection edges expose viewCount and readTimeMinutes via BlogPost fragment..."
 CONN_ANALYTICS_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
     -H "Content-Type: application/json" \
-    -d '{"query": "{ postsConnection { edges { node { id viewCount readTimeMinutes } } } }"}')
+    -d '{"query": "{ postsConnection { edges { node { id ... on BlogPost { viewCount readTimeMinutes } ... on CheckedListPost { viewCount readTimeMinutes } } } } }"}')
 
 if echo $CONN_ANALYTICS_RESPONSE | grep -q '"viewCount"' && ! echo $CONN_ANALYTICS_RESPONSE | grep -q '"errors"'; then
-    print_success "postsConnection edges include viewCount"
+    print_success "postsConnection edges include viewCount via type fragment"
 else
-    print_error "postsConnection edges missing viewCount"
+    print_error "postsConnection edges missing viewCount via type fragment"
     echo "Response: $CONN_ANALYTICS_RESPONSE"
 fi
 
@@ -720,6 +720,19 @@ if echo $CONN_ANALYTICS_RESPONSE | grep -qE '"readTimeMinutes":[0-9]'; then
 else
     print_error "postsConnection edges missing or non-numeric readTimeMinutes"
     echo "Response: $CONN_ANALYTICS_RESPONSE"
+fi
+
+# postsConnection — verify PostEdge.node accepts CheckedListPost inline fragments (schema fix)
+print_info "Checking postsConnection accepts ... on CheckedListPost fragments without validation error..."
+CONN_FRAGMENT_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -d '{"query": "{ postsConnection { edges { node { __typename id title ... on BlogPost { content } ... on CheckedListPost { description } } } } }"}')
+
+if ! echo $CONN_FRAGMENT_RESPONSE | grep -q '"errors"'; then
+    print_success "postsConnection accepts BlogPost and CheckedListPost inline fragments"
+else
+    print_error "postsConnection rejected inline fragments (PostEdge.node schema type may be wrong)"
+    echo "Response: $CONN_FRAGMENT_RESPONSE"
 fi
 
 # Step 11: Test Health and Metrics endpoints
@@ -747,6 +760,31 @@ fi
 
 # Step 12: Test Admin API
 print_header "Step 12: Test Admin API"
+
+# Gate: unauthenticated request with X-Schema: admin must be rejected with 403
+print_info "Verifying admin schema gate rejects unauthenticated requests..."
+UNAUTH_ADMIN_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "X-Schema: admin" \
+    -d '{"query": "{ admin { stats { userCount } } }"}')
+if [ "$UNAUTH_ADMIN_CODE" = "403" ]; then
+    print_success "Admin schema gate: unauthenticated request correctly rejected (403)"
+else
+    print_error "Admin schema gate: expected 403 for unauthenticated request, got $UNAUTH_ADMIN_CODE"
+fi
+
+# Gate: authenticated non-admin user with X-Schema: admin must also be rejected with 403
+print_info "Verifying admin schema gate rejects non-admin users..."
+NON_ADMIN_ADMIN_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $USER2_TOKEN" \
+    -H "X-Schema: admin" \
+    -d '{"query": "{ admin { stats { userCount } } }"}')
+if [ "$NON_ADMIN_ADMIN_CODE" = "403" ]; then
+    print_success "Admin schema gate: non-admin user correctly rejected (403)"
+else
+    print_error "Admin schema gate: expected 403 for non-admin user, got $NON_ADMIN_ADMIN_CODE"
+fi
 
 # Promote alice to admin in the database
 print_info "Promoting alice to admin..."

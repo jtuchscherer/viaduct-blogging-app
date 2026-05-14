@@ -15,7 +15,9 @@ import org.koin.core.context.GlobalContext
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 import org.koin.test.KoinTest
+import org.koin.dsl.module
 import org.koin.test.inject
+import org.koin.test.verify.verify
 
 /**
  * Tests for Koin module configuration.
@@ -199,6 +201,15 @@ class KoinModulesTest : KoinTest {
         val obsDeps: ObservabilityDependencies by inject()
         assertNotNull(obsDeps.meterRegistry)
         assertNotNull(obsDeps.databaseFactory)
+    }
+
+    @Test
+    fun `verify statically checks all constructor-injected bindings are resolvable`() {
+        // Combine into one module so the verifier sees cross-module definitions
+        // (e.g. MeterRegistry from metricsModule satisfying DatabaseFactory in configModule).
+        // Environment is an enum used inside AppConfig.load() and is never a Koin dependency.
+        val combined = module { includes(*allModules.toTypedArray()) }
+        combined.verify(extraTypes = listOf(Environment::class))
     }
 
     @Test

@@ -4,6 +4,7 @@
 package org.tuchscherer.resolvers
 
 import org.tuchscherer.database.Post
+import org.tuchscherer.database.PostType
 import org.tuchscherer.database.repositories.PostRepository
 import org.tuchscherer.viadapp.resolvers.*
 import org.tuchscherer.viadapp.resolvers.resolverbases.QueryResolvers
@@ -42,6 +43,7 @@ class PostsResolverTest : ResolverTestBase() {
         every { mockPost.title } returns "Test Post"
         every { mockPost.content } returns "Test content"
         every { mockPost.authorId } returns EntityID(userId, mockk())
+        every { mockPost.postType } returns PostType.BLOG_POST
         every { mockPost.createdAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
         every { mockPost.updatedAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
 
@@ -191,5 +193,22 @@ class PostsResolverTest : ResolverTestBase() {
         assertFalse(pageInfo.getHasNextPage())
         assertNull(pageInfo.getStartCursor())
         assertNull(pageInfo.getEndCursor())
+    }
+
+    @Test
+    fun `PostsConnectionResolver includes CheckedListPost nodes in the connection`() = runBlocking {
+        val resolver = PostsConnectionResolver(postRepository)
+        val checkedListPost = mockk<Post>()
+        every { checkedListPost.id } returns EntityID(UUID.randomUUID(), mockk())
+        every { checkedListPost.postType } returns PostType.CHECKED_LIST
+
+        every { postRepository.findPage(any(), any()) } returns listOf(mockPost, checkedListPost)
+        every { postRepository.count() } returns 2L
+
+        val result = resolver.resolve(buildConnectionContext())
+
+        assertNotNull(result)
+        assertEquals(2, result!!.getTotalCount())
+        assertEquals(2, result.getEdges()?.size)
     }
 }

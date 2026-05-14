@@ -2,7 +2,7 @@ package org.tuchscherer.database.repositories
 
 import org.tuchscherer.database.Like
 import java.time.LocalDateTime
-import java.util.*
+import java.util.UUID
 
 /**
  * Repository interface for Like database operations.
