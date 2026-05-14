@@ -1,9 +1,13 @@
 package org.tuchscherer.viadapp.resolvers
 
+import org.tuchscherer.database.PostType
 import viaduct.api.context.ExecutionContext
+import viaduct.api.context.ResolverExecutionContext
 import viaduct.api.grts.BlogPost as ViaductBlogPost
+import viaduct.api.grts.CheckedListPost as ViaductCheckedListPost
 import viaduct.api.grts.Comment as ViaductComment
 import viaduct.api.grts.Like as ViaductLike
+import viaduct.api.grts.Post as ViaductPost
 import viaduct.api.grts.User as ViaductUser
 
 /**
@@ -23,6 +27,13 @@ internal fun org.tuchscherer.database.User.toViaductUser(ctx: ExecutionContext) 
         email(email)
         name(name)
         createdAt(createdAt.toString())
+    }
+
+internal fun org.tuchscherer.database.Post.toViaductPost(ctx: ResolverExecutionContext<*>): ViaductPost =
+    when (postType) {
+        PostType.CHECKED_LIST ->
+            ctx.nodeRef(ctx.globalIDFor(ViaductCheckedListPost.Reflection, id.value.toString()))
+        else -> toViaductBlogPost(ctx)
     }
 
 internal fun org.tuchscherer.database.Post.toViaductBlogPost(ctx: ExecutionContext) =
