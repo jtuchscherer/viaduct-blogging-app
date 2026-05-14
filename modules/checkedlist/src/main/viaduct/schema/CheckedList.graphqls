@@ -56,6 +56,8 @@ input UpdateCheckedListItemInput @scope(to: ["public", "admin"]) {
 extend type Query @scope(to: ["public", "admin"]) {
   # Returns all checklist posts, newest first.
   checkedListPosts: [CheckedListPost!]! @resolver
+  # Returns only the authenticated user's checklist posts, newest first.
+  myCheckedListPosts: [CheckedListPost!]! @resolver
 }
 
 extend type Mutation @scope(to: ["public", "admin"]) {

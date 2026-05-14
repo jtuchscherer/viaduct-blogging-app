@@ -78,6 +78,9 @@ interface PostCreationPort {
     /** Returns all CheckedListPost rows ordered by createdAt DESC. */
     fun getAllCheckedListPosts(): List<PostData>
 
+    /** Returns all CheckedListPost rows for a specific author, ordered by createdAt DESC. */
+    fun getCheckedListPostsByAuthorId(authorId: UUID): List<PostData>
+
     /** Returns authorId for each requested post ID. Missing IDs are absent. */
     fun getAuthorIdsForPosts(postIds: List<UUID>): Map<UUID, UUID>
 

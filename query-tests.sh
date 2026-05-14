@@ -1229,6 +1229,33 @@ else
     echo "Response: $UNAUTH_QUERY"
 fi
 
+# Query myCheckedListPosts — should return user1's checklist post.
+print_info "Querying myCheckedListPosts for user1..."
+MY_CHECKLIST_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $USER1_TOKEN" \
+    -d '{"query": "{ myCheckedListPosts { id title } }"}')
+
+if echo $MY_CHECKLIST_RESPONSE | grep -q "$CHECKLIST_POST_ID" && ! echo $MY_CHECKLIST_RESPONSE | grep -q '"errors"'; then
+    print_success "myCheckedListPosts returns user1's checklist post"
+else
+    print_error "myCheckedListPosts did not return user1's checklist post"
+    echo "Response: $MY_CHECKLIST_RESPONSE"
+fi
+
+# Query myCheckedListPosts without authentication — should fail.
+print_info "Querying myCheckedListPosts without authentication..."
+MY_CHECKLIST_UNAUTH=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -d '{"query": "{ myCheckedListPosts { id } }"}')
+
+if echo $MY_CHECKLIST_UNAUTH | grep -q '"errors"'; then
+    print_success "myCheckedListPosts requires authentication"
+else
+    print_error "myCheckedListPosts should require authentication but did not return an error"
+    echo "Response: $MY_CHECKLIST_UNAUTH"
+fi
+
 # Add a third item via addCheckedListItem.
 print_info "Adding a checklist item via addCheckedListItem..."
 ADD_ITEM_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
