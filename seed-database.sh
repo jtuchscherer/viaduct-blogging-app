@@ -1,6 +1,7 @@
 #!/bin/bash
 # Seed script for the blog database (PostgreSQL)
-# Creates 4 users (3 regular + 1 admin), 12 posts, comments, and likes
+# Creates 5 users (3 regular + 2 admin), 12 blog posts, 3 checklist posts,
+# comments, likes, and seeded post views
 #
 # PREREQUISITE: The database schema must already exist.
 # The app creates tables on startup via SchemaUtils.create().
@@ -42,9 +43,9 @@ hash_password() {
 }
 
 # Check if tables exist
-TABLE_COUNT=$($PSQL -t -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public' AND table_name IN ('users','posts','comments','likes');" | tr -d ' ')
-if [ "$TABLE_COUNT" -ne 4 ]; then
-    echo "Error: Database schema is incomplete (found $TABLE_COUNT/4 tables)."
+TABLE_COUNT=$($PSQL -t -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public' AND table_name IN ('users','posts','comments','likes','checked_list_items','post_views');" | tr -d ' ')
+if [ "$TABLE_COUNT" -ne 6 ]; then
+    echo "Error: Database schema is incomplete (found $TABLE_COUNT/6 tables)."
     echo "Start the app first so it can create the schema."
     exit 1
 fi
@@ -56,7 +57,7 @@ if [ "$USER_COUNT" -gt 0 ]; then
     read -p "Delete existing data and reseed? (y/N) " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        $PSQL -c "DELETE FROM likes; DELETE FROM comments; DELETE FROM posts; DELETE FROM users;"
+        $PSQL -c "DELETE FROM post_views; DELETE FROM checked_list_items; DELETE FROM likes; DELETE FROM comments; DELETE FROM posts; DELETE FROM users;"
         echo "Cleared existing data."
     else
         echo "Aborted."
@@ -113,6 +114,11 @@ CLI12_ID=$(generate_uuid)
 CLI13_ID=$(generate_uuid)
 CLI14_ID=$(generate_uuid)
 CLI15_ID=$(generate_uuid)
+CLI16_ID=$(generate_uuid)
+CLI17_ID=$(generate_uuid)
+CLI18_ID=$(generate_uuid)
+CLI19_ID=$(generate_uuid)
+CLI20_ID=$(generate_uuid)
 
 # Generate comment UUIDs
 COMMENT1_ID=$(generate_uuid)
@@ -245,24 +251,40 @@ INSERT INTO checked_list_items (id, post_id, text, checked, position, created_at
     ('${CLI1_ID}',  '${CL1_ID}', 'Whole milk (2L)',           true,  0, '${NOW}'),
     ('${CLI2_ID}',  '${CL1_ID}', 'Eggs (12-pack)',             true,  1, '${NOW}'),
     ('${CLI3_ID}',  '${CL1_ID}', 'Sourdough bread',            false, 2, '${NOW}'),
-    ('${CLI4_ID}',  '${CL1_ID}', 'Greek yoghurt',              false, 3, '${NOW}'),
-    ('${CLI5_ID}',  '${CL1_ID}', 'Chicken breast (1 kg)',      false, 4, '${NOW}');
+    ('${CLI4_ID}',  '${CL1_ID}', 'Greek yoghurt',              false, 3, '${NOW}');
 
 -- Items for Bob's home-office wishlist (CL2)
 INSERT INTO checked_list_items (id, post_id, text, checked, position, created_at) VALUES
-    ('${CLI6_ID}',  '${CL2_ID}', 'Ultrawide monitor (34")',    true,  0, '${NOW}'),
-    ('${CLI7_ID}',  '${CL2_ID}', 'Mechanical keyboard',        true,  1, '${NOW}'),
-    ('${CLI8_ID}',  '${CL2_ID}', 'Ergonomic chair',            false, 2, '${NOW}'),
-    ('${CLI9_ID}',  '${CL2_ID}', 'USB-C hub',                  false, 3, '${NOW}'),
-    ('${CLI10_ID}', '${CL2_ID}', 'Desk lamp with USB charging', false, 4, '${NOW}');
+    ('${CLI5_ID}',  '${CL2_ID}', 'Ultrawide monitor (34")',     true,  0, '${NOW}'),
+    ('${CLI6_ID}',  '${CL2_ID}', 'Mechanical keyboard',         true,  1, '${NOW}'),
+    ('${CLI7_ID}',  '${CL2_ID}', 'Ergonomic chair',             false, 2, '${NOW}'),
+    ('${CLI8_ID}',  '${CL2_ID}', 'USB-C hub',                   false, 3, '${NOW}'),
+    ('${CLI9_ID}',  '${CL2_ID}', 'Desk lamp with USB charging', false, 4, '${NOW}'),
+    ('${CLI10_ID}', '${CL2_ID}', 'Monitor arm',                 true,  5, '${NOW}'),
+    ('${CLI11_ID}', '${CL2_ID}', 'Webcam light bar',            false, 6, '${NOW}');
 
 -- Items for Charlie's marathon checklist (CL3)
 INSERT INTO checked_list_items (id, post_id, text, checked, position, created_at) VALUES
-    ('${CLI11_ID}', '${CL3_ID}', 'Race bib pinned to shirt',   true,  0, '${NOW}'),
-    ('${CLI12_ID}', '${CL3_ID}', 'Running shoes (laced tight)', true,  1, '${NOW}'),
-    ('${CLI13_ID}', '${CL3_ID}', 'GPS watch charged',          true,  2, '${NOW}'),
-    ('${CLI14_ID}', '${CL3_ID}', 'Gels & chews packed',        false, 3, '${NOW}'),
-    ('${CLI15_ID}', '${CL3_ID}', 'Post-race recovery snack',   false, 4, '${NOW}');
+    ('${CLI12_ID}', '${CL3_ID}', 'Race bib pinned to shirt',       true,  0, '${NOW}'),
+    ('${CLI13_ID}', '${CL3_ID}', 'Running shoes (laced tight)',    true,  1, '${NOW}'),
+    ('${CLI14_ID}', '${CL3_ID}', 'GPS watch charged',              true,  2, '${NOW}'),
+    ('${CLI15_ID}', '${CL3_ID}', 'Gels and chews packed',          false, 3, '${NOW}'),
+    ('${CLI16_ID}', '${CL3_ID}', 'Anti-chafe balm',                true,  4, '${NOW}'),
+    ('${CLI17_ID}', '${CL3_ID}', 'Drop bag labeled',               false, 5, '${NOW}'),
+    ('${CLI18_ID}', '${CL3_ID}', 'Post-race recovery snack',       false, 6, '${NOW}'),
+    ('${CLI19_ID}', '${CL3_ID}', 'Emergency contact card',         true,  7, '${NOW}'),
+    ('${CLI20_ID}', '${CL3_ID}', 'Warm layer for the start corral', false, 8, '${NOW}');
+
+-- Seed view counts for a mix of blog posts and checklist posts.
+INSERT INTO post_views (post_id, view_count) VALUES
+    ('${POST1_ID}', 18),
+    ('${POST4_ID}', 11),
+    ('${POST5_ID}', 24),
+    ('${POST7_ID}', 7),
+    ('${POST11_ID}', 15),
+    ('${CL1_ID}', 6),
+    ('${CL2_ID}', 13),
+    ('${CL3_ID}', 4);
 EOF
 
 echo ""
@@ -271,9 +293,11 @@ echo ""
 echo "=== Summary ==="
 echo "Users created: 5 (alice, bob, charlie, admin, e2e_admin)"
 echo "Blog posts created: 12"
-echo "Checklist posts created: 3 (one per regular user, 5 items each)"
+echo "Checklist posts created: 3 (4, 7, and 9 items)"
+echo "Checklist items created: 20"
 echo "Comments created: 15"
 echo "Likes created: 20"
+echo "Post view rows created: 8"
 echo ""
 echo "=== Login credentials ==="
 echo "Username: alice    Password: password123"
