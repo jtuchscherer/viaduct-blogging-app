@@ -1,8 +1,8 @@
 # TODO: Viaduct Blogging App — Implementation Plan
 
-**Status**: 🚀 In Progress — Phases 1–23 complete; AI features (Phases 24–27) on hold pending upstream Viaduct work
+**Status**: 🚀 In Progress — Phases 1–23 complete; AI features (Phases 24–27) next
 
-**Last Updated**: 2026-05-15
+**Last Updated**: 2026-05-19
 
 ## Test Statistics
 
@@ -37,11 +37,10 @@
 
 ## Next Steps
 
-- **Phases 24–27** (AI features): ⏸ **ON HOLD** — waiting on two upstream Viaduct PRs from Cetin Sahin:
-  1. Network transport for remote resolvers (airbnb/treehouse#1038272)
-  2. `proxyField` support so mutations/queries can be proxied (not yet started)
-
-  The AI features will be implemented as a **Python service** communicating with Viaduct over the remote resolver gRPC protocol — a cross-language showcase of the framework. See `AI-PLAN.md` for full design.
+- **Phase 24**: AI foundation — `:modules:ai` module, LangChain4j + Ollama, Tracy observability, `AIService` abstraction, `/health/ai` endpoint
+- **Phase 25**: Rephrase blog post content — AI button in the editor with tone selector (Professional / Casual / Concise)
+- **Phase 26**: Checklist item auto-suggestion — "Suggest next item" button when ≥ 3 items exist
+- **Phase 27**: Post recommendation engine — embedding-based "You might like" panel using `nomic-embed-text`
 
 > See `AI-PLAN.md` for full design, technology choices, and file-by-file breakdown.
 
