@@ -1,43 +1,17 @@
 # AI Integration Plan — Viaduct Blogging App
 
-**Last Updated**: 2026-05-07
+**Last Updated**: 2026-05-19
 
-## Status: ⏸ ON HOLD — waiting on upstream Viaduct work
+## Status: 🚀 In Progress
 
-**Do not start implementation until both blockers are resolved:**
+Implementation is proceeding now with the Kotlin + LangChain4j stack. The remote resolver showcase (Python service communicating over gRPC) remains the long-term vision and will be layered on top once Cetin's upstream work lands:
 
-| Blocker | Owner | Status |
+| Future upgrade | Owner | Status |
 |---|---|---|
-| Network transport for remote resolvers (`RemoteResolverInitializer` using real gRPC/Netty instead of in-process channels) | Cetin Sahin | PR open: airbnb/treehouse#1038272 |
-| `proxyField` transport support (field resolvers — mutations and queries — proxied over gRPC, not just node resolvers) | Cetin Sahin | Not started yet |
+| Network transport for remote resolvers | Cetin Sahin | PR open: airbnb/treehouse#1038272 |
+| `proxyField` transport (proxy mutations/queries, not just node resolvers) | Cetin Sahin | Not yet started |
 
-### Why we're waiting
-
-The original plan (LangChain4j + Kotlin AI resolvers) is being revised to use **Python + remote resolvers** instead. The blogging app is a showcase for Viaduct features; having a cross-language, cross-container AI service communicating with the Viaduct process over the remote resolver gRPC protocol is a much better demonstration of the framework's capabilities than a plain HTTP call to Ollama.
-
-The revised architecture (see diagram below) requires both blockers to be resolved before implementation makes sense. The Python service needs network transport to run in a separate Docker container, and all three AI features are field resolvers (mutations + queries) that need `proxyField` proxying support.
-
-### Revised target architecture
-
-```
-docker-compose:
-
-┌──────────────────────────┐   gRPC (network)    ┌───────────────────────────┐
-│  Viaduct JVM  :8080      │ ──────────────────► │  Python AI Service  :50051 │
-│                          │                      │                            │
-│  RemoteProxyResolver     │ ◄────────────────── │  Implements proto stubs    │
-│  Factory (proxies AI     │   callback gRPC      │  LangChain (Python)        │
-│  resolvers to Python)    │                      │  Calls Ollama              │
-└──────────────────────────┘                      └──────────────┬─────────────┘
-                                                                  │ HTTP
-                                                      ┌───────────▼────────────┐
-                                                      │  Ollama  :11434         │
-                                                      │  llama3.2               │
-                                                      │  nomic-embed-text       │
-                                                      └────────────────────────┘
-```
-
-Python gRPC stubs generated from the same `remote_resolver.proto` already in the Viaduct repo — single source of truth, no hand-written protocol code on either side.
+When both land, the Kotlin AI resolvers can be moved into a Python service and proxied via remote resolvers with minimal changes to the GraphQL schema or frontend — the interface stays identical.
 
 ---
 
