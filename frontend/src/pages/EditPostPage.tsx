@@ -4,6 +4,7 @@ import { gql } from '@apollo/client';
 import { useQuery, useMutation } from '@apollo/client/react';
 import RichTextEditor from '../components/RichTextEditor';
 import { isContentEmpty } from '../utils/content';
+import { useAIHealth } from '../hooks/useAIHealth';
 
 // ── Queries & Mutations ───────────────────────────────────────────────────────
 
@@ -41,6 +42,14 @@ const UPDATE_BLOG_POST = gql`
       id
       title
       content
+    }
+  }
+`;
+
+const REPHRASE_CONTENT = gql`
+  mutation RephraseContent($content: String!, $tone: RephraseTone) {
+    rephraseContent(content: $content, tone: $tone) {
+      rephrasedContent
     }
   }
 `;
@@ -86,10 +95,23 @@ function EditBlogPostForm({ post }: { post: BlogPostNode }) {
   const [title, setTitle] = useState(post.title);
   const [content, setContent] = useState(post.content);
   const [error, setError] = useState('');
+  const [tone, setTone] = useState<'PROFESSIONAL' | 'CASUAL' | 'CONCISE'>('PROFESSIONAL');
+  const [contentKey, setContentKey] = useState(0);
+
+  const aiHealth = useAIHealth();
+  const aiAvailable = aiHealth?.ollamaReachable ?? false;
 
   const [updatePost, { loading }] = useMutation(UPDATE_BLOG_POST, {
     onCompleted: () => navigate(`/post/${post.id}`),
     onError: (err) => setError(err.message),
+  });
+
+  const [rephraseContent, { loading: rephrasing }] = useMutation(REPHRASE_CONTENT, {
+    onCompleted: (data) => {
+      setContent(data.rephraseContent.rephrasedContent);
+      setContentKey((k) => k + 1);
+    },
+    onError: (err) => setError(`Rephrase failed: ${err.message}`),
   });
 
   const handleSubmit = async (e: FormEvent) => {
@@ -100,6 +122,10 @@ function EditBlogPostForm({ post }: { post: BlogPostNode }) {
       return;
     }
     await updatePost({ variables: { input: { id: post.id, title: title.trim(), content } } });
+  };
+
+  const handleRephrase = () => {
+    rephraseContent({ variables: { content, tone } });
   };
 
   return (
@@ -121,12 +147,37 @@ function EditBlogPostForm({ post }: { post: BlogPostNode }) {
             />
           </div>
           <div className="form-group">
-            <label>Content</label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <label>Content</label>
+              {aiAvailable && (
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                  <select
+                    value={tone}
+                    onChange={(e) => setTone(e.target.value as typeof tone)}
+                    disabled={loading || rephrasing}
+                    style={{ fontSize: '0.85rem', padding: '0.25rem 0.5rem' }}
+                  >
+                    <option value="PROFESSIONAL">Professional</option>
+                    <option value="CASUAL">Casual</option>
+                    <option value="CONCISE">Concise</option>
+                  </select>
+                  <button
+                    type="button"
+                    onClick={handleRephrase}
+                    disabled={loading || rephrasing || isContentEmpty(content)}
+                    className="btn-secondary"
+                    style={{ fontSize: '0.85rem', padding: '0.25rem 0.75rem' }}
+                  >
+                    {rephrasing ? 'Rephrasing…' : '✨ Rephrase'}
+                  </button>
+                </div>
+              )}
+            </div>
             <RichTextEditor
-              key={post.id}
-              initialContent={post.content}
+              key={`${post.id}-${contentKey}`}
+              initialContent={content}
               onChange={setContent}
-              disabled={loading}
+              disabled={loading || rephrasing}
               placeholder="Write your post content…"
             />
           </div>

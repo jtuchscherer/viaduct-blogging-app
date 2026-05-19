@@ -173,6 +173,9 @@ val resolverModule = module {
     singleOf(::BlogPostNodeResolver)
     singleOf(::CommentNodeResolver)
     singleOf(::LikeNodeResolver)
+
+    // AI resolvers
+    singleOf(::RephraseContentResolver)
 }
 
 /**
