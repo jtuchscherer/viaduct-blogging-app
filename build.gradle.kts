@@ -42,6 +42,7 @@ viaductModule {
 dependencies {
     implementation(project(":modules:analytics"))
     implementation(project(":modules:checkedlist"))
+    implementation(project(":modules:ai"))
 
     implementation(libs.viaduct.api)
     implementation(libs.viaduct.runtime)
