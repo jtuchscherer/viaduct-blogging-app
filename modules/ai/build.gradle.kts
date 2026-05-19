@@ -8,6 +8,7 @@ dependencies {
     implementation(libs.koin.core)
     implementation(libs.langchain4j.core)
     implementation(libs.langchain4j.ollama)
+    runtimeOnly(libs.tracy.core)
 
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.junit.jupiter.engine)

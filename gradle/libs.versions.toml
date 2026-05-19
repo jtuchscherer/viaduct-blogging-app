@@ -24,6 +24,7 @@ assertj = "3.27.7"
 netty = "4.2.13.Final"
 bouncycastle = "1.84"
 langchain4j = "0.36.2"
+tracy = "0.1.0"
 
 [plugins]
 viaduct-application = { id = "com.airbnb.viaduct.application-gradle-plugin", version.ref = "viaduct" }
@@ -80,3 +81,4 @@ h2 = { module = "com.h2database:h2", version.ref = "h2" }
 assertj-core = { module = "org.assertj:assertj-core", version.ref = "assertj" }
 langchain4j-core = { module = "dev.langchain4j:langchain4j", version.ref = "langchain4j" }
 langchain4j-ollama = { module = "dev.langchain4j:langchain4j-ollama", version.ref = "langchain4j" }
+tracy-core = { module = "org.jetbrains.ai.tracy:tracy-core", version.ref = "tracy" }

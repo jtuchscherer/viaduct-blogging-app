@@ -5,10 +5,6 @@ import dev.langchain4j.model.ollama.OllamaEmbeddingModel
 import org.slf4j.LoggerFactory
 import java.time.Duration
 
-// TODO: Instrument spans with JetBrains Tracy once it becomes available on Maven Central.
-// Tracy was announced March 2026 (https://blog.jetbrains.com/kotlin/2026/03/introducing-tracy-the-ai-observability-library-for-kotlin/)
-// but is not yet published to any public Maven repository.
-
 /**
  * Production [AIService] backed by a locally running Ollama instance via LangChain4j.
  *
