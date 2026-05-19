@@ -1,5 +1,7 @@
 package org.tuchscherer.config
 
+import org.tuchscherer.ai.OllamaConfig
+
 /**
  * Application configuration that loads environment-specific settings.
  * Supports test, dev, and production environments.
@@ -8,7 +10,8 @@ data class AppConfig(
     val environment: Environment,
     val jwt: JwtConfig,
     val database: DatabaseConfig,
-    val server: ServerConfig
+    val server: ServerConfig,
+    val ollama: OllamaConfig = OllamaConfig.load(),
 ) {
     companion object {
         /**

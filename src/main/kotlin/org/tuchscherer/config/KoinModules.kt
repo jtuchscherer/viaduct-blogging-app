@@ -3,6 +3,7 @@ package org.tuchscherer.config
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
+import org.tuchscherer.ai.aiKoinModule
 import org.tuchscherer.analytics.ViaductPostTypeLookupPort
 import org.tuchscherer.analytics.analyticsKoinModule
 import org.tuchscherer.analytics.port.PostTypeLookupPort
@@ -41,6 +42,7 @@ val configModule = module {
     single { get<AppConfig>().jwt }
     single { get<AppConfig>().database }
     single { get<AppConfig>().server }
+    single { get<AppConfig>().ollama }
     single { DatabaseFactory(get(), get()) }
 }
 
@@ -209,4 +211,5 @@ val allModules = listOf(
     analyticsPortModule,
     checkedListPortModule,
     checkedListKoinModule,
+    aiKoinModule,
 )
