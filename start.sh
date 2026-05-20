@@ -24,6 +24,9 @@ cleanup() {
     [ -n "$SERVER_PID" ] && kill -- -$SERVER_PID 2>/dev/null || true
     [ -n "$FRONTEND_PID" ] && kill -- -$FRONTEND_PID 2>/dev/null || true
 
+    # Only stop Ollama if we started it ourselves
+    [ -n "$OLLAMA_PID" ] && kill "$OLLAMA_PID" 2>/dev/null || true
+
     # Fallback: kill anything still holding the ports
     lsof -ti :8080 | xargs kill 2>/dev/null || true
     lsof -ti :5173 | xargs kill 2>/dev/null || true
@@ -48,6 +51,14 @@ if ! command -v npm &> /dev/null; then
     exit 1
 fi
 
+if ! command -v ollama &> /dev/null; then
+    echo -e "${YELLOW}⚠️  Ollama is not installed — AI features will be disabled.${NC}"
+    echo "     Install from https://ollama.com to enable rephrase and suggestions."
+    OLLAMA_AVAILABLE=false
+else
+    OLLAMA_AVAILABLE=true
+fi
+
 echo -e "${GREEN}✅ Prerequisites OK${NC}"
 echo ""
 
@@ -67,6 +78,48 @@ if [ ! -d "frontend/node_modules" ]; then
     echo ""
 fi
 
+# Start Ollama if available
+if [ "$OLLAMA_AVAILABLE" = true ]; then
+    echo -e "${BLUE}🤖 Starting Ollama...${NC}"
+    CHAT_MODEL="${OLLAMA_CHAT_MODEL:-llama3.2}"
+    EMBED_MODEL="${OLLAMA_EMBEDDING_MODEL:-nomic-embed-text}"
+
+    if curl -sf http://localhost:11434/api/tags > /dev/null 2>&1; then
+        echo -e "${GREEN}✅ Ollama already running${NC}"
+        OLLAMA_PID=""
+    else
+        ollama serve > ollama.log 2>&1 &
+        OLLAMA_PID=$!
+        echo -e "${GREEN}✅ Ollama starting (PID: $OLLAMA_PID)${NC}"
+        echo -e "${YELLOW}⏳ Waiting for Ollama to be ready...${NC}"
+        for i in $(seq 1 15); do
+            if curl -sf http://localhost:11434/api/tags > /dev/null 2>&1; then
+                echo -e "${GREEN}✅ Ollama is ready${NC}"
+                break
+            fi
+            if [ "$i" -eq 15 ]; then
+                echo -e "${YELLOW}⚠️  Ollama did not respond in time — AI features may be unavailable${NC}"
+            fi
+            sleep 2
+        done
+    fi
+
+    pull_model() {
+        local model="$1"
+        if ollama list 2>/dev/null | grep -q "^${model}"; then
+            echo -e "${GREEN}✅ Model ${model} already present${NC}"
+        else
+            echo -e "${YELLOW}⏳ Pulling ${model} (first-run download, may take a few minutes)...${NC}"
+            ollama pull "${model}"
+            echo -e "${GREEN}✅ Model ${model} ready${NC}"
+        fi
+    }
+
+    pull_model "${CHAT_MODEL}"
+    pull_model "${EMBED_MODEL}"
+    echo ""
+fi
+
 # Start the backend server
 echo -e "${BLUE}🌐 Starting server (GraphQL + Auth on port 8080)...${NC}"
 ./gradlew run > server.log 2>&1 &
@@ -76,14 +129,16 @@ echo -e "${GREEN}✅ Server starting (PID: $SERVER_PID)${NC}"
 # Wait for server to be ready
 echo ""
 echo -e "${YELLOW}⏳ Waiting for server to be ready...${NC}"
-sleep 5
-
-# Check if server is responding
-if curl -s http://localhost:8080/health > /dev/null 2>&1; then
-    echo -e "${GREEN}✅ Server is ready at http://localhost:8080${NC}"
-else
-    echo -e "${YELLOW}⚠️  Server may still be starting up...${NC}"
-fi
+for i in $(seq 1 30); do
+    if curl -sf http://localhost:8080/health > /dev/null 2>&1; then
+        echo -e "${GREEN}✅ Server is ready at http://localhost:8080${NC}"
+        break
+    fi
+    if [ "$i" -eq 30 ]; then
+        echo -e "${YELLOW}⚠️  Server did not respond after 60s — check server.log${NC}"
+    fi
+    sleep 2
+done
 
 # Start the frontend dev server
 echo ""
@@ -103,14 +158,21 @@ echo -e "${BLUE}Services running:${NC}"
 echo "  🌐 Backend (GraphQL + Auth): http://localhost:8080"
 echo "     - GraphQL endpoint:       http://localhost:8080/graphql"
 echo "     - GraphiQL endpoint:      http://localhost:8080/graphiql?path=/graphql"
-echo "     - Auth endpoints:         http://localhost:8080/auth/*
-     - Health endpoint:        http://localhost:8080/health
-     - Metrics endpoint:       http://localhost:8080/metrics"
+echo "     - Auth endpoints:         http://localhost:8080/auth/*"
+echo "     - Health endpoint:        http://localhost:8080/health"
+echo "     - AI health endpoint:     http://localhost:8080/health/ai"
+echo "     - Metrics endpoint:       http://localhost:8080/metrics"
 echo "  ⚛️  Frontend:                 http://localhost:5173"
+if [ "$OLLAMA_AVAILABLE" = true ]; then
+echo "  🤖 Ollama:                   http://localhost:11434"
+fi
 echo ""
 echo -e "${BLUE}Logs:${NC}"
 echo "  Server:   tail -f server.log"
 echo "  Frontend: tail -f frontend-dev.log"
+if [ "$OLLAMA_AVAILABLE" = true ] && [ -n "$OLLAMA_PID" ]; then
+echo "  Ollama:   tail -f ollama.log"
+fi
 echo ""
 echo -e "${YELLOW}Press Ctrl+C to stop all services${NC}"
 echo ""

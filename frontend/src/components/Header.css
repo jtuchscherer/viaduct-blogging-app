@@ -49,8 +49,8 @@
   white-space: nowrap;
 }
 
-.btn-primary,
-.btn-secondary {
+.header .btn-primary,
+.header .btn-secondary {
   padding: 0.5rem 1rem;
   border-radius: 4px;
   text-decoration: none;
@@ -60,22 +60,22 @@
   transition: background-color 0.2s;
 }
 
-.btn-primary {
+.header .btn-primary {
   background-color: #3498db;
   color: white;
 }
 
-.btn-primary:hover {
+.header .btn-primary:hover {
   background-color: #2980b9;
 }
 
-.btn-secondary {
+.header .btn-secondary {
   background-color: transparent;
   color: white;
   border: 1px solid white;
 }
 
-.btn-secondary:hover {
+.header .btn-secondary:hover {
   background-color: rgba(255, 255, 255, 0.1);
 }
 

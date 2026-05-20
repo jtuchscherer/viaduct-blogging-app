@@ -21,7 +21,6 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import org.slf4j.LoggerFactory
 import org.tuchscherer.ai.AIService
-import org.tuchscherer.ai.OllamaConfig
 import org.tuchscherer.auth.AuthenticationService
 import org.tuchscherer.auth.JwtService
 import org.tuchscherer.config.JwtConfig
@@ -72,7 +71,6 @@ class GraphQLServer(
     private val observability: ObservabilityDependencies,
     private val viaduct: Viaduct,
     private val aiService: AIService,
-    private val ollamaConfig: OllamaConfig,
 ) {
 
     private val logger = LoggerFactory.getLogger(GraphQLServer::class.java)
@@ -209,10 +207,11 @@ class GraphQLServer(
 
                 get("/health/ai") {
                     val reachable = aiService.isReachable()
+                    val models = aiService.modelConfig()
                     val response = mapOf(
                         "ollamaReachable" to reachable,
-                        "chatModel" to ollamaConfig.chatModel,
-                        "embeddingModel" to ollamaConfig.embeddingModel,
+                        "chatModel" to models.chatModel,
+                        "embeddingModel" to models.embeddingModel,
                     )
                     if (reachable) {
                         call.respond(HttpStatusCode.OK, response)

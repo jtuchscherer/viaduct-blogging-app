@@ -1739,6 +1739,50 @@ else
     print_info "Checklist post title not found in trending (may be out of top results)"
 fi
 
+# --- AI Module Tests ---
+
+print_header "AI Module Tests"
+
+print_info "Testing rephraseContent mutation — unauthenticated request should be rejected..."
+REPHRASE_UNAUTH=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -d '{"query": "mutation { rephraseContent(content: \"Hello world\", tone: PROFESSIONAL) { rephrasedContent } }"}')
+if echo $REPHRASE_UNAUTH | grep -qiE "not authenticated|unauthenticated|unauthorized|AuthenticationException"; then
+    print_success "rephraseContent requires authentication"
+else
+    print_error "rephraseContent should require authentication"
+    echo "Response: $REPHRASE_UNAUTH"
+fi
+
+print_info "Testing rephraseContent mutation — blank content should be rejected..."
+REPHRASE_BLANK=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $USER1_TOKEN" \
+    -d '{"query": "mutation { rephraseContent(content: \"\", tone: PROFESSIONAL) { rephrasedContent } }"}')
+if echo $REPHRASE_BLANK | grep -qi "blank\|must not be blank\|errors"; then
+    print_success "rephraseContent rejected blank content"
+else
+    print_error "rephraseContent should reject blank content"
+    echo "Response: $REPHRASE_BLANK"
+fi
+
+print_info "Testing /health/ai endpoint..."
+HEALTH_AI=$(curl -s http://localhost:${GRAPHQL_PORT}/health/ai)
+if echo $HEALTH_AI | grep -q "ollamaReachable"; then
+    print_success "/health/ai returns ollamaReachable field"
+else
+    print_error "/health/ai did not return expected response"
+    echo "Response: $HEALTH_AI"
+fi
+
+print_info "Verifying /health/ai returns chatModel and embeddingModel fields..."
+if echo $HEALTH_AI | grep -q "chatModel" && echo $HEALTH_AI | grep -q "embeddingModel"; then
+    print_success "/health/ai returns chatModel and embeddingModel fields"
+else
+    print_error "/health/ai missing chatModel or embeddingModel"
+    echo "Response: $HEALTH_AI"
+fi
+
 # --- Query Complexity Guard (Negative Tests) ---
 
 print_info "Testing complexity guard: large 'first' arg should be rejected..."

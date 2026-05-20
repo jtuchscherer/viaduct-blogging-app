@@ -66,3 +66,14 @@ export interface BlogPostCard {
 
 /** Union of all post types that can appear in the homepage feed. */
 export type FeedPost = BlogPostCard | CheckedListPost;
+
+/** Response shape from GET /health/ai. */
+export interface AIHealth {
+  ollamaReachable: boolean;
+  chatModel: string;
+  embeddingModel: string;
+}
+
+/** Tone options for the rephrase mutation, mirroring the GraphQL RephraseTone enum. */
+export type RephraseTone = 'PROFESSIONAL' | 'CASUAL' | 'CONCISE';
+
