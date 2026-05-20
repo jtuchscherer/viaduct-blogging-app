@@ -3,7 +3,8 @@ package org.tuchscherer.ai
 import dev.langchain4j.model.ollama.OllamaChatModel
 import dev.langchain4j.model.ollama.OllamaEmbeddingModel
 import org.slf4j.LoggerFactory
-import java.time.Duration
+import java.net.HttpURLConnection
+import java.net.URI
 
 /**
  * Production [AIService] backed by a locally running Ollama instance via LangChain4j.
@@ -27,15 +28,6 @@ class OllamaAIService(private val config: OllamaConfig) : AIService {
         OllamaEmbeddingModel.builder()
             .baseUrl(config.baseUrl)
             .modelName(config.embeddingModel)
-            .build()
-    }
-
-    /** Lightweight probe model used only for [isReachable] checks — short timeout, reused across calls. */
-    private val probeModel: OllamaChatModel by lazy {
-        OllamaChatModel.builder()
-            .baseUrl(config.baseUrl)
-            .modelName(config.chatModel)
-            .timeout(Duration.ofSeconds(5))
             .build()
     }
 
@@ -75,10 +67,26 @@ class OllamaAIService(private val config: OllamaConfig) : AIService {
         }
     }
 
+    override fun modelConfig(): AIModelConfig = AIModelConfig(
+        chatModel = config.chatModel,
+        embeddingModel = config.embeddingModel,
+    )
+
+    /**
+     * Checks Ollama reachability via a lightweight GET /api/tags request.
+     * This avoids loading any model into memory, so it responds instantly
+     * even when the chat model hasn't been used yet (cold start).
+     */
     override fun isReachable(): Boolean {
         return try {
-            probeModel.generate("ping")
-            true
+            val url = URI("${config.baseUrl}/api/tags").toURL()
+            val conn = url.openConnection() as HttpURLConnection
+            conn.connectTimeout = 3_000
+            conn.readTimeout = 3_000
+            conn.requestMethod = "GET"
+            val status = conn.responseCode
+            conn.disconnect()
+            status in 200..299
         } catch (e: Exception) {
             logger.debug("Ollama reachability check failed: {}", e.message)
             false

@@ -158,7 +158,7 @@ class RephraseContentResolverTest : ResolverTestBase() {
     }
 
     @Test
-    fun `RephraseContentResolver wraps AIServiceException in RuntimeException`() = runBlocking {
+    fun `RephraseContentResolver propagates AIServiceException when AI service fails`() = runBlocking {
         val failingAiService = mockk<org.tuchscherer.ai.AIService>()
         every {
             failingAiService.rephrase(any(), any())
@@ -169,7 +169,7 @@ class RephraseContentResolverTest : ResolverTestBase() {
             .content("Hello world")
             .build()
 
-        val ex = assertThrows<RuntimeException> {
+        val ex = assertThrows<AIServiceException> {
             runMutationFieldResolver(resolver) {
                 queryValue = queryObj()
                 arguments = args
@@ -177,6 +177,6 @@ class RephraseContentResolverTest : ResolverTestBase() {
             }
         }
         assertNotNull(ex.message)
-        assert(ex.message!!.contains("AI service error"))
+        assert(ex.message!!.contains("Ollama is down"))
     }
 }

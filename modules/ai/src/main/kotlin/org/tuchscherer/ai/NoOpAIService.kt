@@ -16,4 +16,9 @@ class NoOpAIService : AIService {
         FloatArray(384) { it.toFloat() / 384f }
 
     override fun isReachable(): Boolean = true
+
+    override fun modelConfig(): AIModelConfig = AIModelConfig(
+        chatModel = "llama3.2",
+        embeddingModel = "nomic-embed-text",
+    )
 }

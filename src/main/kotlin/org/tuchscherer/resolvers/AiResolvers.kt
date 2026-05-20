@@ -1,7 +1,6 @@
 package org.tuchscherer.viadapp.resolvers
 
 import org.tuchscherer.ai.AIService
-import org.tuchscherer.ai.AIServiceException
 import org.tuchscherer.ai.RephraseTone as ServiceTone
 import org.tuchscherer.auth.requireAuth
 import org.tuchscherer.viadapp.resolvers.resolverbases.MutationResolvers
@@ -27,16 +26,12 @@ class RephraseContentResolver(
         }
 
         val serviceTone = when (tone) {
+            null, ViaductTone.PROFESSIONAL -> ServiceTone.PROFESSIONAL
             ViaductTone.CASUAL -> ServiceTone.CASUAL
             ViaductTone.CONCISE -> ServiceTone.CONCISE
-            else -> ServiceTone.PROFESSIONAL
         }
 
-        val rephrased = try {
-            aiService.rephrase(content, serviceTone)
-        } catch (e: AIServiceException) {
-            throw RuntimeException("AI service error: ${e.message}", e)
-        }
+        val rephrased = aiService.rephrase(content, serviceTone)
 
         return RephraseResult.of(ctx) {
             rephrasedContent(rephrased)

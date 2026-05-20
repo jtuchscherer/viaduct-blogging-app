@@ -3,7 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { gql } from '@apollo/client';
 import { useMutation } from '@apollo/client/react';
 import RichTextEditor from '../components/RichTextEditor';
+import RephraseControls from '../components/RephraseControls';
 import { isContentEmpty } from '../utils/content';
+import { useAIHealth } from '../hooks/useAIHealth';
+import { useRephrase } from '../hooks/useRephrase';
 
 // ── Mutations ─────────────────────────────────────────────────────────────────
 
@@ -38,6 +41,13 @@ function BlogPostForm() {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
+  const aiHealth = useAIHealth();
+  const { tone, setTone, contentKey, rephrasing, handleRephrase } = useRephrase(
+    content,
+    setContent,
+    setError,
+  );
+
   const [createPost, { loading }] = useMutation<{ createPost: { id: string } }>(CREATE_BLOG_POST, {
     onCompleted: (data) => navigate(`/post/${data.createPost.id}`),
     onError: (err) => setError(err.message),
@@ -71,11 +81,24 @@ function BlogPostForm() {
       </div>
 
       <div className="form-group">
-        <label>Content</label>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <label>Content</label>
+          <RephraseControls
+            aiHealth={aiHealth}
+            tone={tone}
+            onToneChange={setTone}
+            onRephrase={handleRephrase}
+            rephrasing={rephrasing}
+            formLoading={loading}
+            contentEmpty={isContentEmpty(content)}
+          />
+        </div>
         <RichTextEditor
-          initialContent=""
+          key={contentKey}
+          initialContent={content}
           onChange={setContent}
-          disabled={loading}
+          disabled={loading || rephrasing}
+          isLoading={rephrasing}
           placeholder="Write your post content…"
         />
       </div>
