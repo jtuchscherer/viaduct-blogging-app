@@ -31,6 +31,8 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import viaduct.service.api.ExecutionInput
 import viaduct.service.api.SchemaId
 import viaduct.service.api.Viaduct
+import viaduct.service.wiring.graphiql.GraphiQLHtmlConfig
+import viaduct.service.wiring.graphiql.graphiQLHtml
 import java.util.UUID
 
 data class GraphQLRequest(
@@ -180,12 +182,25 @@ class GraphQLServer(
                 }
 
                 get("/graphiql") {
-                    val resource = this::class.java.classLoader.getResource("graphiql/index.html")
-                    if (resource != null) {
-                        call.respondText(resource.readText(), ContentType.Text.Html)
-                    } else {
-                        call.respond(HttpStatusCode.NotFound, "GraphiQL not found")
-                    }
+                    call.respondText(
+                        graphiQLHtml(
+                            GraphiQLHtmlConfig(
+                                title = "Blogging App",
+                                defaultQuery = """
+                                    query {
+                                      posts {
+                                        id
+                                        title
+                                        author { username }
+                                        likeCount
+                                      }
+                                    }
+                                """.trimIndent(),
+                                storageKey = "viaduct-blogging-app",
+                            )
+                        ),
+                        ContentType.Text.Html,
+                    )
                 }
 
                 get("/health") {
