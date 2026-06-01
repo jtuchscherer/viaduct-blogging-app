@@ -1,16 +1,16 @@
 # TODO: Viaduct Blogging App — Implementation Plan
 
-**Status**: 🚀 In Progress — Phases 1–23 complete; AI features (Phases 24–27) next
+**Status**: 🚀 In Progress — Phases 1–25 complete; Phase 26 (checklist suggestion) and Phase 27 (recommendations) next
 
-**Last Updated**: 2026-05-19
+**Last Updated**: 2026-06-01
 
 ## Test Statistics
 
 | Suite | Count | Status |
 |---|---|---|
-| Unit + Integration tests (`./gradlew test`) | 483 | ✅ All passing |
-| API E2E tests (`./query-tests.sh`) | 114 | ✅ All passing |
-| Browser E2E tests (Playwright, 109 tests × 3 browsers) | 327 runs | ✅ All passing |
+| Unit + Integration tests (`./gradlew test`) | 501 | ✅ All passing |
+| API E2E tests (`./query-tests.sh`) | 123 | ✅ All passing |
+| Browser E2E tests (Playwright, 123 tests × 3 browsers) | 369 runs | ✅ All passing |
 | Frontend unit tests (`npm test`) | 69 | ✅ All passing |
 
 ## Completed Phases
@@ -32,13 +32,13 @@
 | Admin | Full CRUD over users/posts/comments; dashboard stats; `requireAdmin()` guard; cascading user delete |
 | Analytics (Phase 20–22) | `PostViews` table, `viewCount`/`readTimeMinutes` batch resolvers, `recordPostView` mutation, `trending` query; admin stats analytics; homepage New/Trending sort |
 | CheckedList (Phase 23) | `CheckedListPost` type with toggleable ordered items; full resolver/repo/test/frontend coverage; unified feed with type-aware post cards; create/edit/detail UI |
+| AI foundation (Phase 24) | `:modules:ai` module; `AIService`/`OllamaAIService`/`NoOpAIService`; `OllamaConfig` env vars; Tracy observability; `GET /health/ai`; `useAIHealth` hook |
+| AI rephrase (Phase 25) | `rephraseContent` GraphQL mutation; `RephraseControls` component; `useRephrase` hook; tone selector; controls on Create + Edit pages; full test coverage |
 | Bug fixes | Dark mode post type toggle; CheckedList like button; author-only item toggle enforcement (backend + frontend) |
 | Code quality | Domain exceptions, `requireAuth()`/`optionalAuth()` helpers, `useLikeToggle` hook, `PaginationControls` component, `UserRepository.updateFields()`, `.btn-secondary` CSS class, Ports and Adapters documentation |
 
 ## Next Steps
 
-- **Phase 24**: AI foundation — `:modules:ai` module, LangChain4j + Ollama, Tracy observability, `AIService` abstraction, `/health/ai` endpoint
-- **Phase 25**: Rephrase blog post content — AI button in the editor with tone selector (Professional / Casual / Concise)
 - **Phase 26**: Checklist item auto-suggestion — "Suggest next item" button when ≥ 3 items exist
 - **Phase 27**: Post recommendation engine — embedding-based "You might like" panel using `nomic-embed-text`
 
@@ -360,47 +360,34 @@
 
 ---
 
-## Phase 24: AI Foundation & Infrastructure ⏳ TODO
+## Phase 24: AI Foundation & Infrastructure ✅ DONE
 
 **Goal**: shared AI plumbing — module, LangChain4j + Ollama client, Tracy observability, `AIService` abstraction, health endpoint.
 
-**Depends on**: nothing — can start immediately after Phase 23.
-
-### Tasks
-
-1. Create `:modules:ai` Gradle module; add `langchain4j-ollama`, `langchain4j` core, and Tracy dependencies
-2. `OllamaConfig` data class reading `OLLAMA_BASE_URL`, `OLLAMA_CHAT_MODEL`, `OLLAMA_EMBEDDING_MODEL` from env / `application.conf`
-3. `AIService` interface with `rephrase`, `suggestNextItem`, `generateEmbedding`, `isReachable`
-4. `OllamaAIService` implementation via LangChain4j, wrapped with Tracy instrumentation
-5. `NoOpAIService` stub for tests (no Ollama daemon required in CI)
-6. Koin `aiModule` wired into `AppConfig`
-7. `/health/ai` endpoint returning `{ ollamaReachable, chatModel, embeddingModel }`
-8. `useAIHealth` frontend hook that fetches `/health/ai` once on load
-
-**Key files**: `modules/ai/`, `KoinModules.kt`, `GraphQLServer.kt`, `frontend/src/hooks/useAIHealth.ts`
-
-**Success criteria**: `/health/ai` returns correct JSON; `NoOpAIService` tests pass; `./gradlew test` green.
+**What was built**:
+- `:modules:ai` Gradle module with `langchain4j-ollama`, `langchain4j` core, Tracy (`runtimeOnly`)
+- `OllamaConfig` reading `OLLAMA_BASE_URL`, `OLLAMA_CHAT_MODEL`, `OLLAMA_EMBEDDING_MODEL` from env
+- `AIService` interface: `rephrase`, `suggestNextItem`, `generateEmbedding`, `isReachable`, `modelConfig`
+- `OllamaAIService` (production) and `NoOpAIService` (test stub) implementations
+- `GET /health/ai` returns `{ ollamaReachable, chatModel, embeddingModel }` with HTTP 200/503
+- `useAIHealth` hook (cached per session via module-level Promise — single fetch)
+- `start.sh` launches Ollama natively for Metal GPU acceleration
 
 ---
 
-## Phase 25: Rephrase Blog Post Content ⏳ TODO
+## Phase 25: Rephrase Blog Post Content ✅ DONE
 
 **Goal**: "Rephrase with AI ✨" button in the blog post editor with tone selector.
 
-**Depends on**: Phase 24.
-
-### Tasks
-
-1. Schema: add `RephraseTone` enum, `RephraseResult` type, `rephraseContent(content, tone)` mutation
-2. `RephraseContentMutationResolver` — auth-required; validates non-blank + ≤ 50 000 chars; calls `AIService.rephrase`
-3. Prompt template as resource file (not hardcoded): supports `{{content}}` and `{{tone}}` placeholders
-4. Register in Koin `aiModule`; unit tests with `NoOpAIService`
-5. Frontend (`EditPostPage.tsx`): button + tone dropdown; spinner during call; update Lexical editor on success; hide when Ollama offline (via `useAIHealth`)
-6. Playwright test: button appears, spinner shows, editor content updates after mock response
-
-**Key files**: `modules/ai/src/main/viaduct/schema/ai.graphqls`, new resolver, `EditPostPage.tsx`
-
-**Success criteria**: mutation returns rephrased content; blank/too-long inputs rejected; button hidden when Ollama down.
+**What was built**:
+- `RephraseTone` enum, `RephraseResult` type, `rephraseContent(content, tone)` GraphQL mutation
+- `RephraseContentResolver` — auth-required; validates non-blank + ≤ 50 000 chars; exhaustive `when` on tone (null → PROFESSIONAL); `AIServiceException` propagates directly
+- `useRephrase` hook (tone state, contentKey, mutation, handleRephrase) shared by Create and Edit pages
+- `RephraseControls` component (tone selector + Rephrase button + "Ollama offline" label)
+- Controls shown on Create Post and Edit Post pages; absent on Checklist pages
+- `OllamaAIService.isReachable()` uses lightweight `GET /api/tags` probe (not model inference)
+- `GraphQLServer` decoupled from `OllamaConfig` via `AIService.modelConfig()`
+- Tests: `RephraseContentResolverTest` (8 cases), `OllamaAIServiceTest` (4 cases), 9 Playwright E2E tests across Create + Edit pages
 
 ---
 
