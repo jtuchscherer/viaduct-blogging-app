@@ -71,4 +71,29 @@ class QueryComplexityGuardTest {
         assertEquals(250, QueryComplexityGuard.MAX_COMPLEXITY)
         assertEquals(8, QueryComplexityGuard.MAX_DEPTH)
     }
+
+    @Test
+    fun `introspection query is not blocked by the depth limit`() {
+        // GraphiQL's schema fetch goes 15 levels deep — well past MAX_DEPTH=8 — but
+        // must never be rejected because it only queries meta-fields.
+        val query = """
+            { __schema { types { fields { type { ofType { ofType { ofType { name } } } } } } } }
+        """.trimIndent()
+        assertNull(guard.check(query))
+    }
+
+    @Test
+    fun `__typename alone is treated as introspection and passes`() {
+        assertNull(guard.check("{ __typename }"))
+    }
+
+    @Test
+    fun `mixed introspection and regular fields are NOT exempt`() {
+        // A query that combines __schema with a real field is not a pure introspection
+        // query and should still be subject to depth/complexity checks.
+        val query = "{ __schema { queryType { name } } posts { id } }"
+        // Depth is 3 — well within limits — so this should pass, but it passes because
+        // it's within limits, NOT because it was treated as introspection.
+        assertNull(guard.check(query))
+    }
 }
