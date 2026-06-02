@@ -156,6 +156,7 @@ button[type="submit"]:disabled {
 /* ── Rich Text Editor ─────────────────────────────────────────────────────── */
 
 .editor-wrapper {
+  position: relative;
   border: 1px solid #333;
   border-radius: 6px;
   background-color: #ffffff;
@@ -166,6 +167,30 @@ button[type="submit"]:disabled {
 .editor-wrapper.editor-disabled {
   opacity: 0.6;
   pointer-events: none;
+}
+
+.editor-loading-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.65);
+  border-radius: 6px;
+  z-index: 10;
+}
+
+.editor-loading-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid #ccc;
+  border-top-color: #646cff;
+  border-radius: 50%;
+  animation: editor-spin 0.7s linear infinite;
+}
+
+@keyframes editor-spin {
+  to { transform: rotate(360deg); }
 }
 
 .editor-toolbar {
