@@ -59,6 +59,8 @@ class QueryComplexityGuard(
             return null
         }
 
+        if (isIntrospectionQuery(doc)) return null
+
         val depth = depthOf(doc)
         if (depth > maxDepth) {
             logger.warn("query rejected: depth $depth > $maxDepth")
@@ -93,6 +95,20 @@ class QueryComplexityGuard(
             message = message,
             extensions = mapOf("classification" to "ExecutionAborted"),
         )
+
+    /**
+     * Returns true when every root field in every operation is a GraphQL meta-field
+     * (name starts with `__`, e.g. `__schema`, `__type`, `__typename`). These are
+     * introspection queries issued by tooling such as GraphiQL and must not be blocked
+     * by depth or complexity limits.
+     */
+    private fun isIntrospectionQuery(doc: Document): Boolean {
+        val operations = doc.definitions.filterIsInstance<OperationDefinition>()
+        return operations.isNotEmpty() && operations.all { op ->
+            val rootFields = op.selectionSet?.selections.orEmpty().filterIsInstance<Field>()
+            rootFields.isNotEmpty() && rootFields.all { it.name.startsWith("__") }
+        }
+    }
 
     private fun depthOf(doc: Document): Int {
         val fragments = doc.definitions
