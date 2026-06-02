@@ -557,7 +557,7 @@ test.describe('CheckedList — My Posts page', () => {
   test('checklist post does not appear on another user\'s My Posts page', async ({ page }) => {
     const suffix = Date.now();
     const { token: authorToken } = await registerUser(page, `cl_myp_author_${suffix}`);
-    const viewerCreds = await registerAndLogin(page, `cl_myp_viewer_${suffix}`);
+    await registerAndLogin(page, `cl_myp_viewer_${suffix}`);
     const title = `Author Checklist ${suffix}`;
     await createCheckedListPost(page, authorToken, title, ['Task']);
 

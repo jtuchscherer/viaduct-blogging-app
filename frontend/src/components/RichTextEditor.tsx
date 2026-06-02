@@ -217,6 +217,8 @@ interface RichTextEditorProps {
   initialContent: string;
   onChange: (html: string) => void;
   disabled?: boolean;
+  /** Show a loading spinner overlay (e.g. while an AI rephrase is in progress). */
+  isLoading?: boolean;
   placeholder?: string;
 }
 
@@ -224,6 +226,7 @@ export default function RichTextEditor({
   initialContent,
   onChange,
   disabled,
+  isLoading,
   placeholder = 'Write your post content…',
 }: RichTextEditorProps) {
   const initialConfig = {
@@ -263,6 +266,11 @@ export default function RichTextEditor({
   return (
     <LexicalComposer initialConfig={initialConfig}>
       <div className={`editor-wrapper${disabled ? ' editor-disabled' : ''}`}>
+        {isLoading && (
+          <div className="editor-loading-overlay" aria-label="Loading" aria-busy="true">
+            <span className="editor-loading-spinner" />
+          </div>
+        )}
         <Toolbar disabled={disabled} />
         <div className="editor-inner">
           <RichTextPlugin

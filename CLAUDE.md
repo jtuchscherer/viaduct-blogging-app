@@ -32,6 +32,7 @@ npm run lint             # ESLint
 ./gradlew test           # backend unit + integration tests
 ./query-tests.sh         # curl-based GraphQL API tests (starts its own server automatically)
 ./e2e.sh                 # Playwright browser tests (starts its own servers automatically)
+cd frontend && npm run typecheck       # TypeScript type-check (catches type errors the dev server misses)
 cd frontend && npm run test -- --run   # frontend Vitest unit tests
 cd frontend && npm run test:e2e        # Playwright tests only (servers must already be running)
 cd frontend && npm run test:e2e:ui     # Playwright interactive UI mode
@@ -176,8 +177,8 @@ Run all four suites in this order. Each must be fully green before proceeding:
 # 1. Backend unit + integration
 ./gradlew test
 
-# 2. Frontend unit
-cd frontend && npm run test -- --run && cd ..
+# 2. Frontend type-check + lint + unit tests
+cd frontend && bash test.sh && cd ..
 
 # 3. GraphQL query tests (self-contained — starts its own server)
 ./query-tests.sh
