@@ -8,12 +8,13 @@ dependencies {
     implementation(libs.koin.core)
     implementation(libs.langchain4j.core)
     implementation(libs.langchain4j.ollama)
-    runtimeOnly(libs.tracy.core)
+    implementation(libs.tracy.core)
 
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.junit.jupiter.engine)
     testImplementation(libs.junit.platform.launcher)
     testImplementation(libs.assertj.core)
+    testImplementation("io.opentelemetry:opentelemetry-sdk-testing:1.51.0")
 }
 
 tasks.test {
