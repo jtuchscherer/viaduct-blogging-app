@@ -22,4 +22,5 @@ bin/
 
 # AI
 .claude/
+.claire/
 docker-compose.log
