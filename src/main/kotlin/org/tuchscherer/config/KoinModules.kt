@@ -176,6 +176,7 @@ val resolverModule = module {
 
     // AI resolvers
     singleOf(::RephraseContentResolver)
+    singleOf(::SuggestChecklistItemMutationResolver)
 }
 
 /**

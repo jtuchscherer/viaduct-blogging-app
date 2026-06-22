@@ -6,6 +6,8 @@ import { useAuth } from '../contexts/AuthContext';
 import DOMPurify from 'dompurify';
 import { formatReadTime } from '../utils/content';
 import type { CheckedListItem } from '../types';
+import { useAIHealth } from '../hooks/useAIHealth';
+import { useSuggestItem } from '../hooks/useSuggestItem';
 
 // ── GraphQL documents ─────────────────────────────────────────────────────────
 
@@ -403,6 +405,9 @@ function CheckedListDetail({ post, refetch }: { post: CheckedListPostData; refet
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editingItemText, setEditingItemText] = useState('');
 
+  const aiHealth = useAIHealth();
+  const { suggest, suggesting } = useSuggestItem();
+
   const { handleLikeToggle } = useLikeToggle(post.id, post.isLikedByMe, isAuthenticated, refetch);
   const [toggleItem] = useMutation(TOGGLE_ITEM, { onCompleted: refetch });
   const [addItem] = useMutation(ADD_ITEM, {
@@ -433,6 +438,11 @@ function CheckedListDetail({ post, refetch }: { post: CheckedListPostData; refet
   };
 
   const sortedItems = [...(post.items ?? [])].sort((a, b) => a.position - b.position);
+
+  const handleSuggestItem = async () => {
+    const suggested = await suggest(sortedItems.map((item) => item.text));
+    if (suggested) setNewItemText(suggested);
+  };
 
   return (
     <article className="post-detail post-detail--checklist">
@@ -544,6 +554,21 @@ function CheckedListDetail({ post, refetch }: { post: CheckedListPostData; refet
               <button type="submit" className="btn-primary btn-add-item">
                 Add
               </button>
+              {aiHealth?.ollamaReachable && (
+                <button
+                  type="button"
+                  className="btn-suggest-item"
+                  onClick={handleSuggestItem}
+                  disabled={suggesting || sortedItems.length < 3}
+                  title={
+                    sortedItems.length < 3
+                      ? 'Add at least 3 items to enable AI suggestions'
+                      : 'Suggest next item with AI'
+                  }
+                >
+                  {suggesting ? 'Suggesting…' : '✨ Suggest'}
+                </button>
+              )}
             </div>
           </form>
         )}

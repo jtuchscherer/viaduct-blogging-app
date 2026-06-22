@@ -7,6 +7,7 @@ import RephraseControls from '../components/RephraseControls';
 import { isContentEmpty } from '../utils/content';
 import { useAIHealth } from '../hooks/useAIHealth';
 import { useRephrase } from '../hooks/useRephrase';
+import { useSuggestItem } from '../hooks/useSuggestItem';
 
 // ── Mutations ─────────────────────────────────────────────────────────────────
 
@@ -129,6 +130,9 @@ function ChecklistForm() {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
+  const aiHealth = useAIHealth();
+  const { suggest, suggesting } = useSuggestItem();
+
   const [createChecklist, { loading }] = useMutation<{ createCheckedListPost: { id: string } }>(CREATE_CHECKLIST_POST, {
     onCompleted: (data) => navigate(`/post/${data.createCheckedListPost.id}`),
     onError: (err) => setError(err.message),
@@ -141,6 +145,12 @@ function ChecklistForm() {
   };
 
   const addItem = () => setItems([...items, '']);
+
+  const handleSuggestItem = async () => {
+    const nonEmpty = items.filter((t) => t.trim());
+    const suggested = await suggest(nonEmpty);
+    if (suggested) setItems([...items, suggested]);
+  };
 
   const removeItem = (index: number) => {
     if (items.length === 1) return; // keep at least one row
@@ -229,6 +239,21 @@ function ChecklistForm() {
           >
             + Add item
           </button>
+          {aiHealth?.ollamaReachable && (
+            <button
+              type="button"
+              className="btn-suggest-item"
+              onClick={handleSuggestItem}
+              disabled={loading || suggesting || items.filter((t) => t.trim()).length < 3}
+              title={
+                items.filter((t) => t.trim()).length < 3
+                  ? 'Add at least 3 items to enable AI suggestions'
+                  : 'Suggest next item with AI'
+              }
+            >
+              {suggesting ? 'Suggesting…' : '✨ Suggest item'}
+            </button>
+          )}
         </div>
       </div>
 

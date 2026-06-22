@@ -245,3 +245,73 @@ test.describe('AI — rephrase blog post', () => {
     await expect(page.locator('select').filter({ hasText: 'Professional' })).not.toBeVisible();
   });
 });
+
+// ── AI — checklist item suggestion ───────────────────────────────────────────
+
+/** Intercept the suggestChecklistItem GraphQL mutation and return a canned response. */
+async function mockSuggestChecklistItem(page: import('@playwright/test').Page, suggestedText: string) {
+  await page.route('**/graphql', async (route) => {
+    const body = route.request().postDataJSON();
+    if (typeof body?.query === 'string' && body.query.includes('suggestChecklistItem')) {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          data: { suggestChecklistItem: { suggestedText } },
+        }),
+      });
+    } else {
+      await route.continue();
+    }
+  });
+}
+
+test.describe('AI — checklist item suggestion on create page', () => {
+  test('suggest button is hidden on checklist form when Ollama is unreachable', async ({ page }) => {
+    await mockAIHealthUnreachable(page);
+    await registerAndLogin(page, `ai_cl_suggest_offline_${Date.now()}`);
+
+    await page.goto('/create');
+    await page.locator('label').filter({ hasText: 'Checklist' }).click();
+
+    await expect(page.getByRole('button', { name: /suggest item/i })).not.toBeVisible();
+  });
+
+  test('suggest button is disabled with fewer than 3 items on create page', async ({ page }) => {
+    await mockAIHealthReachable(page);
+    await registerAndLogin(page, `ai_cl_suggest_few_${Date.now()}`);
+
+    await page.goto('/create');
+    await page.locator('label').filter({ hasText: 'Checklist' }).click();
+
+    // Only 1 empty item → button is disabled
+    const suggestBtn = page.getByRole('button', { name: /suggest item/i });
+    await expect(suggestBtn).toBeVisible();
+    await expect(suggestBtn).toBeDisabled();
+  });
+
+  test('suggest button is enabled and appends suggestion to item list', async ({ page }) => {
+    await mockAIHealthReachable(page);
+    await mockSuggestChecklistItem(page, 'Buy orange juice');
+
+    await registerAndLogin(page, `ai_cl_suggest_ok_${Date.now()}`);
+
+    await page.goto('/create');
+    await page.locator('label').filter({ hasText: 'Checklist' }).click();
+
+    // Add 3 filled items so the button is enabled
+    const firstInput = page.locator('input[placeholder="Item 1…"]');
+    await firstInput.fill('Buy milk');
+    await page.getByRole('button', { name: /\+ add item/i }).click();
+    await page.locator('input[placeholder="Item 2…"]').fill('Buy eggs');
+    await page.getByRole('button', { name: /\+ add item/i }).click();
+    await page.locator('input[placeholder="Item 3…"]').fill('Buy bread');
+
+    const suggestBtn = page.getByRole('button', { name: /suggest item/i });
+    await expect(suggestBtn).toBeEnabled();
+    await suggestBtn.click();
+
+    // The suggestion should appear as a new item row
+    await expect(page.locator('input[value="Buy orange juice"]')).toBeVisible();
+  });
+});
