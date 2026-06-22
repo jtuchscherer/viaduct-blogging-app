@@ -1,14 +1,22 @@
 package org.tuchscherer.ai
 
 import com.sun.net.httpserver.HttpServer
+import io.opentelemetry.api.trace.StatusCode
+import io.opentelemetry.sdk.OpenTelemetrySdk
+import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter
+import io.opentelemetry.sdk.trace.SdkTracerProvider
+import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.jetbrains.ai.tracy.core.TracingManager
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import java.net.InetSocketAddress
 
 /**
- * Unit tests for [OllamaAIService.isReachable].
+ * Tests for [OllamaAIService].
  *
  * Uses an embedded JDK [HttpServer] to simulate Ollama responses without
  * requiring a real Ollama installation. Each test binds to a random free port
@@ -39,7 +47,12 @@ class OllamaAIServiceTest {
     @AfterEach
     fun tearDown() {
         server.stop(0)
+        TracingManager.isTracingEnabled = false
     }
+
+    // -------------------------------------------------------------------------
+    // isReachable
+    // -------------------------------------------------------------------------
 
     @Test
     fun `isReachable returns true when api-tags responds with 200`() {
@@ -83,5 +96,99 @@ class OllamaAIServiceTest {
         val start = System.currentTimeMillis()
         assertThat(service.isReachable()).isFalse()
         assertThat(System.currentTimeMillis() - start).isLessThan(5_000)
+    }
+
+    // -------------------------------------------------------------------------
+    // Tracy instrumentation
+    // -------------------------------------------------------------------------
+
+    @Nested
+    inner class TracingTests {
+
+        private lateinit var spanExporter: InMemorySpanExporter
+
+        @BeforeEach
+        fun enableTracing() {
+            spanExporter = InMemorySpanExporter.create()
+            val tracerProvider = SdkTracerProvider.builder()
+                .addSpanProcessor(SimpleSpanProcessor.create(spanExporter))
+                .build()
+            TracingManager.setSdk(
+                OpenTelemetrySdk.builder()
+                    .setTracerProvider(tracerProvider)
+                    .build()
+            )
+            TracingManager.isTracingEnabled = true
+        }
+
+        @Test
+        fun `rephrase emits a span with operation name and tone attribute`() {
+            server.createContext("/api/chat") { exchange ->
+                val body = """{"model":"llama3.2","message":{"role":"assistant","content":"Rephrased."},"done":true}""".toByteArray()
+                exchange.sendResponseHeaders(200, body.size.toLong())
+                exchange.responseBody.use { it.write(body) }
+            }
+
+            service.rephrase("hello", RephraseTone.PROFESSIONAL)
+
+            val spans = spanExporter.finishedSpanItems
+            assertThat(spans).hasSize(1)
+            assertThat(spans[0].name).isEqualTo("ai.rephrase")
+            assertThat(spans[0].attributes.asMap().entries.map { it.key.key })
+                .contains("ai.tone", "ai.model")
+            assertThat(spans[0].status.statusCode).isEqualTo(StatusCode.OK)
+        }
+
+        @Test
+        fun `rephrase emits an ERROR span when Ollama returns an error`() {
+            server.createContext("/api/chat") { exchange ->
+                exchange.sendResponseHeaders(500, -1)
+                exchange.responseBody.close()
+            }
+
+            assertThatThrownBy { service.rephrase("hello", RephraseTone.CASUAL) }
+                .isInstanceOf(AIServiceException::class.java)
+
+            val spans = spanExporter.finishedSpanItems
+            assertThat(spans).hasSize(1)
+            assertThat(spans[0].name).isEqualTo("ai.rephrase")
+            assertThat(spans[0].status.statusCode).isEqualTo(StatusCode.ERROR)
+        }
+
+        @Test
+        fun `suggestNextItem emits a span with item count attribute`() {
+            server.createContext("/api/chat") { exchange ->
+                val body = """{"model":"llama3.2","message":{"role":"assistant","content":"Suggested item"},"done":true}""".toByteArray()
+                exchange.sendResponseHeaders(200, body.size.toLong())
+                exchange.responseBody.use { it.write(body) }
+            }
+
+            service.suggestNextItem(listOf("Buy milk", "Buy eggs", "Buy bread"))
+
+            val spans = spanExporter.finishedSpanItems
+            assertThat(spans).hasSize(1)
+            assertThat(spans[0].name).isEqualTo("ai.suggestNextItem")
+            assertThat(spans[0].attributes.asMap().entries.map { it.key.key })
+                .contains("ai.existingItemCount", "ai.model")
+            assertThat(spans[0].status.statusCode).isEqualTo(StatusCode.OK)
+        }
+
+        @Test
+        fun `generateEmbedding emits a span with the embedding model attribute`() {
+            server.createContext("/api/embed") { exchange ->
+                val body = """{"model":"nomic-embed-text","embeddings":[[0.1,0.2,0.3]]}""".toByteArray()
+                exchange.sendResponseHeaders(200, body.size.toLong())
+                exchange.responseBody.use { it.write(body) }
+            }
+
+            service.generateEmbedding("some text")
+
+            val spans = spanExporter.finishedSpanItems
+            assertThat(spans).hasSize(1)
+            assertThat(spans[0].name).isEqualTo("ai.generateEmbedding")
+            assertThat(spans[0].attributes.asMap().entries.map { it.key.key })
+                .contains("ai.model")
+            assertThat(spans[0].status.statusCode).isEqualTo(StatusCode.OK)
+        }
     }
 }
