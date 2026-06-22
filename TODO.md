@@ -1,6 +1,6 @@
 # TODO: Viaduct Blogging App — Implementation Plan
 
-**Status**: 🚀 In Progress — Phases 1–25 complete; Phase 26 (checklist suggestion) and Phase 27 (recommendations) next
+**Status**: 🚀 In Progress — Phases 1–26 complete; Phase 27 (recommendations) next
 
 **Last Updated**: 2026-06-22
 
@@ -8,10 +8,10 @@
 
 | Suite | Count | Status |
 |---|---|---|
-| Unit + Integration tests (`./gradlew test`) | 501 | ✅ All passing |
+| Unit + Integration tests (`./gradlew test`) | 508 | ✅ All passing |
 | API E2E tests (`./query-tests.sh`) | 123 | ✅ All passing |
-| Browser E2E tests (Playwright, 123 tests × 3 browsers) | 369 runs | ✅ All passing |
-| Frontend unit tests (`npm test`) | 69 | ✅ All passing |
+| Browser E2E tests (Playwright, 126 tests × 3 browsers) | 378 runs | ✅ All passing |
+| Frontend unit tests (`npm test`) | 74 | ✅ All passing |
 
 ## Completed Phases
 
@@ -34,12 +34,12 @@
 | CheckedList (Phase 23) | `CheckedListPost` type with toggleable ordered items; full resolver/repo/test/frontend coverage; unified feed with type-aware post cards; create/edit/detail UI |
 | AI foundation (Phase 24) | `:modules:ai` module; `AIService`/`OllamaAIService`/`NoOpAIService`; `OllamaConfig` env vars; Tracy observability; `GET /health/ai`; `useAIHealth` hook |
 | AI rephrase (Phase 25) | `rephraseContent` GraphQL mutation; `RephraseControls` component; `useRephrase` hook; tone selector; controls on Create + Edit pages; full test coverage |
+| AI suggestion (Phase 26) | `suggestChecklistItem` mutation; `SuggestChecklistItemMutationResolver`; `useSuggestItem` hook; ✨ Suggest button on Create + Detail pages; ≥ 3 item guard; full test coverage |
 | Bug fixes | Dark mode post type toggle; CheckedList like button; author-only item toggle enforcement (backend + frontend) |
 | Code quality | Domain exceptions, `requireAuth()`/`optionalAuth()` helpers, `useLikeToggle` hook, `PaginationControls` component, `UserRepository.updateFields()`, `.btn-secondary` CSS class, Ports and Adapters documentation |
 
 ## Next Steps
 
-- **Phase 26**: Checklist item auto-suggestion — "Suggest next item" button when ≥ 3 items exist
 - **Phase 27**: Post recommendation engine — embedding-based "You might like" panel using `nomic-embed-text`
 
 > See `AI-PLAN.md` for full design, technology choices, and file-by-file breakdown.
@@ -391,7 +391,7 @@
 
 ---
 
-## Phase 26: Checklist Item Auto-suggestion ⏳ TODO
+## Phase 26: Checklist Item Auto-suggestion ✅ DONE
 
 **Goal**: "Suggest next item" button in the checklist editor when ≥ 3 items exist.
 

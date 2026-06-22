@@ -622,3 +622,19 @@ button[type="submit"]:disabled {
 }
 
 .btn-add-item:hover { background: #eafaf1; }
+
+.btn-suggest-item {
+  align-self: flex-start;
+  margin-top: 0.25rem;
+  padding: 0.4rem 0.85rem;
+  background: none;
+  border: 1px dashed #8e44ad;
+  color: #8e44ad;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.15s;
+}
+
+.btn-suggest-item:hover:not(:disabled) { background: #f5eef8; }
+.btn-suggest-item:disabled { opacity: 0.5; cursor: not-allowed; }

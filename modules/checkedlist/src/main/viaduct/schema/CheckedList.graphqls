@@ -53,6 +53,11 @@ input UpdateCheckedListItemInput @scope(to: ["public", "admin"]) {
   text: String!
 }
 
+# Wraps the AI-suggested text for a checklist item.
+type SuggestedChecklistItem @scope(to: ["public", "admin"]) {
+  suggestedText: String!
+}
+
 extend type Query @scope(to: ["public", "admin"]) {
   # Returns all checklist posts, newest first.
   checkedListPosts: [CheckedListPost!]! @resolver
@@ -81,4 +86,7 @@ extend type Mutation @scope(to: ["public", "admin"]) {
 
   # Deletes a checklist item. Requires authentication and post ownership.
   deleteCheckedListItem(id: ID! @idOf(type: "CheckedListItem")): Boolean! @resolver
+
+  # Suggests the next checklist item using AI. Requires authentication and ≥ 3 existing items.
+  suggestChecklistItem(existingItems: [String!]!): SuggestedChecklistItem! @resolver
 }
