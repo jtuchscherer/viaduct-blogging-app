@@ -31,7 +31,7 @@ import org.koin.dsl.module
 import viaduct.service.SchemaScopeInfo
 import viaduct.service.ViaductBuilder
 import viaduct.service.api.Viaduct
-import viaduct.service.api.spi.SharedTenantModuleBootstrapper
+import viaduct.service.api.spi.SharedTenantModuleInjectorFactory
 
 /**
  * Koin module for application configuration.
@@ -89,7 +89,7 @@ val viaductModule = module {
                 SchemaScopeInfo("public", setOf("public")),
                 SchemaScopeInfo("admin", setOf("public", "admin")),
             ))
-            .withTenantModuleBootstrapper(SharedTenantModuleBootstrapper(KoinTenantCodeInjector()))
+            .withTenantModuleInjectorFactory(SharedTenantModuleInjectorFactory(KoinTenantCodeInjector()))
             .withMeterRegistry(get())
             .build()
         GuardedViaduct(underlying, get())
