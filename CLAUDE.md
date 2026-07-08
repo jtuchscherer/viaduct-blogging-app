@@ -207,13 +207,12 @@ Apply every refactoring you identify. Prefer many small, focused commits over la
 
 Repeat Step 2 in full. Refactoring must not break anything. Fix any regressions before declaring the task complete.
 
-## Maintaining TODO.md, DEVELOPMENT_PLAN.md, and CODE_QUALITY_PLAN.md
+## Maintaining TODO.md and DEVELOPMENT_PLAN.md
 
-Whenever you modify `TODO.md`, `DEVELOPMENT_PLAN.md`, or `CODE_QUALITY_PLAN.md`, update the `**Last Updated**` date at the top of the respective file to today's date.
+Whenever you modify `TODO.md` or `DEVELOPMENT_PLAN.md`, update the `**Last Updated**` date at the top of the respective file to today's date.
 
 - `TODO.md` — feature phases and implementation roadmap
 - `DEVELOPMENT_PLAN.md` — architecture, schema, and high-level design
-- `CODE_QUALITY_PLAN.md` — tech debt, code quality findings, and cleanup tasks
 
 ## Key decisions
 
