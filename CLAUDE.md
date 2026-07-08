@@ -207,13 +207,12 @@ Apply every refactoring you identify. Prefer many small, focused commits over la
 
 Repeat Step 2 in full. Refactoring must not break anything. Fix any regressions before declaring the task complete.
 
-## Maintaining TODO.md, DEVELOPMENT_PLAN.md, and CODE_QUALITY_PLAN.md
+## Maintaining TODO.md and DEVELOPMENT_PLAN.md
 
-Whenever you modify `TODO.md`, `DEVELOPMENT_PLAN.md`, or `CODE_QUALITY_PLAN.md`, update the `**Last Updated**` date at the top of the respective file to today's date.
+Whenever you modify `TODO.md` or `DEVELOPMENT_PLAN.md`, update the `**Last Updated**` date at the top of the respective file to today's date.
 
 - `TODO.md` — feature phases and implementation roadmap
 - `DEVELOPMENT_PLAN.md` — architecture, schema, and high-level design
-- `CODE_QUALITY_PLAN.md` — tech debt, code quality findings, and cleanup tasks
 
 ## Key decisions
 
@@ -221,3 +220,4 @@ Whenever you modify `TODO.md`, `DEVELOPMENT_PLAN.md`, or `CODE_QUALITY_PLAN.md`,
 - **`fromList` for pagination**: `PostsConnectionResolver` uses `ConnectionBuilder.fromList` for in-memory slicing. Fine for this scale; DB-level cursor pagination is a future optimisation.
 - **Relay-style pagination**: `postsConnection(first, after)` is implemented; the existing `posts` query is kept for backwards compatibility.
 - **JWT in localStorage**: Stored as `authToken` + `authUser` keys.
+- **TypeScript pinned to `~6.0.x` (TS 7 blocked upstream)**: TypeScript 7 is the native Go port (`tsgo`/`typescript-go`). `tsc -b` and the Vite build pass under TS 7, but it can't be adopted because `typescript-eslint` — which we rely on as the *parser* for all `.ts`/`.tsx` files, not just for type-aware rules — crashes under TS 7 (`typescript-estree` throws `Cannot read properties of undefined (reading 'Cjs')`) and caps its peer at `typescript <6.1.0`. No published `typescript-eslint` version (stable or canary) supports it. Upstream tracking: [typescript-eslint#10940](https://github.com/typescript-eslint/typescript-eslint/issues/10940) (open; maintainers estimate the native port is ~1–2 years from production-ready). Revisit once `typescript-eslint` ships native-port support.

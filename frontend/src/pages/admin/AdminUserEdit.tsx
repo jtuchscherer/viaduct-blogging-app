@@ -1,7 +1,7 @@
 import { gql } from '@apollo/client';
 import { useQuery, useMutation } from '@apollo/client/react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 const ADMIN_USER = gql`
   query AdminUser($id: ID!) {
@@ -47,23 +47,26 @@ interface AdminUserData {
 
 export default function AdminUserEdit() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const { data, loading, error } = useQuery<AdminUserData>(ADMIN_USER, { variables: { id } });
+
+  if (loading) return <div className="loading-spinner">Loading...</div>;
+  if (error) return <div className="error-message">Error: {error.message}</div>;
+  if (!data?.admin?.user) return <div className="error-message">User not found</div>;
+
+  // Mount the form with the loaded user as its initial state. The `key` remounts
+  // (and re-initializes) the form whenever a different user is loaded.
+  return <EditUserForm key={data.admin.user.id} user={data.admin.user} />;
+}
+
+function EditUserForm({ user }: { user: User }) {
+  const navigate = useNavigate();
   const [updateUser] = useMutation(ADMIN_UPDATE_USER);
 
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [name, setName] = useState(user.name);
+  const [email, setEmail] = useState(user.email);
+  const [isAdmin, setIsAdmin] = useState(user.isAdmin);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
-
-  useEffect(() => {
-    if (data?.admin?.user) {
-      setName(data.admin.user.name);
-      setEmail(data.admin.user.email);
-      setIsAdmin(data.admin.user.isAdmin);
-    }
-  }, [data]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,7 +77,7 @@ export default function AdminUserEdit() {
       await updateUser({
         variables: {
           input: {
-            id,
+            id: user.id,
             name,
             email,
             isAdmin,
@@ -88,12 +91,6 @@ export default function AdminUserEdit() {
       setSaving(false);
     }
   };
-
-  if (loading) return <div className="loading-spinner">Loading...</div>;
-  if (error) return <div className="error-message">Error: {error.message}</div>;
-  if (!data?.admin?.user) return <div className="error-message">User not found</div>;
-
-  const user = data.admin.user;
 
   return (
     <div>

@@ -16,8 +16,8 @@ buildscript {
             "io.netty:netty-resolver:4.1.132.Final",
             "io.netty:netty-transport-native-epoll:4.1.132.Final",
             "io.netty:netty-transport-native-kqueue:4.1.132.Final",
-            "ch.qos.logback:logback-classic:1.5.32",
-            "ch.qos.logback:logback-core:1.5.32"
+            "ch.qos.logback:logback-classic:1.5.37",
+            "ch.qos.logback:logback-core:1.5.37"
         )
     }
 }
