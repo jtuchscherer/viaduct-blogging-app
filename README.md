@@ -8,6 +8,7 @@ A full-stack blogging application with a Kotlin/Viaduct GraphQL backend and a Re
 - Node.js + npm
 - (Optional) Podman + `podman compose` — for containerised deployment
 - (Optional) `psql` — only needed to run `seed-database.sh` manually
+- (Optional) Ollama — for AI features (rephrase, content suggestions)
 
 ## Quick Start
 
@@ -17,13 +18,61 @@ A full-stack blogging application with a Kotlin/Viaduct GraphQL backend and a Re
 
 Then open **http://localhost:5173** in your browser.
 
+> **AI features** (rephrase, content suggestions) require Ollama to be installed — see [Ollama Setup](#ollama-setup) below. The app runs fine without it; the AI controls simply become unavailable.
+
+---
+
+## Ollama Setup
+
+[Ollama](https://ollama.com) runs LLMs locally and powers the AI features in the app: rephrasing blog post content in different tones, and suggesting the next item on a checklist. Without it the app works normally — the rephrase controls stay visible but disabled with an "Ollama offline" label, and the checklist "✨ Suggest" button is hidden entirely.
+
+### Install
+
+**macOS (Homebrew):**
+```bash
+brew install ollama
+```
+
+**macOS (app):** Download from **https://ollama.com/download** and drag to Applications.
+
+**Linux:**
+```bash
+curl -fsSL https://ollama.com/install.sh | sh
+```
+
+### Pull the required models
+
+```bash
+ollama pull llama3.2           # chat model — used for rephrase
+ollama pull nomic-embed-text   # embedding model — used for recommendations
+```
+
+> **Note:** `start.sh` pulls these automatically on first run if they are not already present, so you can skip this step.
+
+### Verify Ollama is working
+
+```bash
+ollama list                    # should show llama3.2 and nomic-embed-text
+curl http://localhost:11434/api/tags   # should return JSON with the model list
+```
+
+### Environment variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `OLLAMA_BASE_URL` | `http://localhost:11434` | Ollama server URL (override if running remotely) |
+| `OLLAMA_CHAT_MODEL` | `llama3.2` | Model used for rephrase and suggestions |
+| `OLLAMA_EMBEDDING_MODEL` | `nomic-embed-text` | Model used for embeddings |
+
+> **Containerised deployment:** When using `start-containers.sh`, Ollama runs as a container automatically — no local install needed. The models are pulled inside the container on first run.
+
 ---
 
 ## Shell Scripts
 
 ### `start.sh` — local development
 
-Builds the backend, installs frontend dependencies (if missing), then starts both servers in the background. Logs stream to `server.log` and `frontend-dev.log`. Press **Ctrl+C** to stop everything cleanly.
+Builds the backend, installs frontend dependencies (if missing), then starts both servers in the background. If [Ollama](#ollama-setup) is installed, it also starts `ollama serve` (if not already running) and pulls the required models on first run. Logs stream to `server.log`, `frontend-dev.log`, and (if Ollama was started by the script) `ollama.log`. Press **Ctrl+C** to stop everything cleanly.
 
 ```
 Backend:  http://localhost:8080
@@ -31,8 +80,10 @@ Backend:  http://localhost:8080
   GraphiQL:   http://localhost:8080/graphiql?path=/graphql
   Auth:       http://localhost:8080/auth/*
   Health:     http://localhost:8080/health
+  AI Health:  http://localhost:8080/health/ai
   Metrics:    http://localhost:8080/metrics
 Frontend: http://localhost:5173
+Ollama:   http://localhost:11434  (if installed)
 ```
 
 ### `start-containers.sh` — containerised deployment

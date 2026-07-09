@@ -12,6 +12,19 @@ services:
       interval: 5s
       retries: 5
 
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
   app:
     build: .
     ports:
@@ -27,6 +40,7 @@ services:
       DATABASE_PASSWORD: ${POSTGRES_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
       CORS_ORIGIN: ${CORS_ORIGIN}
+      OLLAMA_BASE_URL: http://ollama:11434
 
   frontend:
     build:
@@ -38,3 +52,6 @@ services:
       - "5173:80"
     depends_on:
       - app
+
+volumes:
+  ollama_data:
