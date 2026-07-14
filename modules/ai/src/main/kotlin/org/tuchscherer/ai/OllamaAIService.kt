@@ -45,7 +45,7 @@ class OllamaAIService(private val config: OllamaConfig) : AIService {
                 RephraseTone.CONCISE -> "concise and to the point"
             }
             val prompt = "Rephrase the following text in a $toneInstruction tone. Return only the rephrased text:\n\n$content"
-            val result = chatModel.generate(prompt)
+            val result = chatModel.chat(prompt)
             span.setStatus(StatusCode.OK)
             result
         } catch (e: Exception) {
@@ -68,7 +68,7 @@ class OllamaAIService(private val config: OllamaConfig) : AIService {
         return try {
             val itemList = existingItems.joinToString("\n") { "- $it" }
             val prompt = "Given this list of items:\n$itemList\n\nSuggest one additional item that would logically follow. Return only the suggested item text, nothing else."
-            val result = chatModel.generate(prompt)
+            val result = chatModel.chat(prompt)
             span.setStatus(StatusCode.OK)
             result
         } catch (e: Exception) {
