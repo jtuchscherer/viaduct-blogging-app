@@ -10,6 +10,11 @@ dependencies {
     implementation(platform(libs.opentelemetry.bom))
     testImplementation(platform(libs.opentelemetry.bom))
 
+    // langchain4j-core pins its own com.fasterxml.jackson:jackson-bom:2.21.4, which has a CVE
+    // fixed in 2.21.5. Declaring jackson-databind directly at the version catalog's patched
+    // version wins normal Gradle conflict resolution (highest requested version) over that bom.
+    implementation(libs.jackson.databind)
+
     implementation(libs.koin.core)
     implementation(libs.langchain4j.core)
     implementation(libs.langchain4j.ollama)
