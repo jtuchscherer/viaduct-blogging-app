@@ -100,6 +100,9 @@ class PostsResolverTest : ResolverTestBase() {
         // 0.30 ConnectionBuilder.fromSlice internally calls arguments.toOffsetLimit(maxLimit)
         // with Viaduct's own default to derive the offset for cursor encoding, so match any int.
         every { args.toOffsetLimit(any<Int>()) } returns OffsetLimit(offset, first)
+        // fromSlice requires this to be false before taking that path; only backward pagination
+        // needs a total count, and these fixtures paginate forward.
+        every { args.requiresTotalCountForOffsetLimit() } returns false
         val selections = mkSelectionSetFactory().selectionsOn(PostsConnection.Reflection, "postsConnection", emptyMap())
         val mockConnCtx = MockConnectionFieldExecutionContext<Query, Query, Query_PostsConnection_Arguments, PostsConnection>(
             objectValue = Query.Builder(context).build(),

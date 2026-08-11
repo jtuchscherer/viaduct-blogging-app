@@ -51,7 +51,7 @@ class CheckedListPostBatchResolverTest {
         val results = CheckedListPostBatchResolver().batchResolve(listOf(mockContext(id)))
 
         assertEquals(1, results.size)
-        assertTrue(results[0].isError)
+        assertTrue(results.values.single().isError)
     }
 
     @Test
@@ -62,6 +62,6 @@ class CheckedListPostBatchResolverTest {
         val results = CheckedListPostBatchResolver().batchResolve(ids.map(::mockContext))
 
         assertEquals(3, results.size)
-        assertTrue(results.all { it.isError })
+        assertTrue(results.values.all { it.isError })
     }
 }
