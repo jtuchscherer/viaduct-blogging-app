@@ -85,6 +85,37 @@ class CheckedListItemRepositoryTest {
         assertNull(repository.getItem(UUID.randomUUID()))
     }
 
+    // ── findByIds ─────────────────────────────────────────────────────────────
+
+    @Test
+    fun `findByIds batch-fetches items keyed by item id`() {
+        val item1 = repository.addItem(postId, "Task A")
+        val item2 = repository.addItem(postId, "Task B")
+
+        val result = repository.findByIds(listOf(item1.id, item2.id))
+
+        assertEquals(2, result.size)
+        assertEquals("Task A", result[item1.id]?.text)
+        assertEquals("Task B", result[item2.id]?.text)
+    }
+
+    @Test
+    fun `findByIds omits ids that do not exist`() {
+        val item = repository.addItem(postId, "Task A")
+        val missingId = UUID.randomUUID()
+
+        val result = repository.findByIds(listOf(item.id, missingId))
+
+        assertEquals(1, result.size)
+        assertTrue(result.containsKey(item.id))
+        assertFalse(result.containsKey(missingId))
+    }
+
+    @Test
+    fun `findByIds returns empty map for empty input`() {
+        assertTrue(repository.findByIds(emptyList()).isEmpty())
+    }
+
     // ── getItemsForPost ────────────────────────────────────────────────────────
 
     @Test

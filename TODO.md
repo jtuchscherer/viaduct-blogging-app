@@ -2,16 +2,16 @@
 
 **Status**: 🚀 In Progress — Phases 1–26 complete; Phase 27 (recommendations) next
 
-**Last Updated**: 2026-06-22
+**Last Updated**: 2026-08-11
 
 ## Test Statistics
 
 | Suite | Count | Status |
 |---|---|---|
-| Unit + Integration tests (`./gradlew test`) | 508 | ✅ All passing |
+| Unit + Integration tests (`./gradlew test`) | 535 | ✅ All passing |
 | API E2E tests (`./query-tests.sh`) | 123 | ✅ All passing |
 | Browser E2E tests (Playwright, 126 tests × 3 browsers) | 378 runs | ✅ All passing |
-| Frontend unit tests (`npm test`) | 74 | ✅ All passing |
+| Frontend unit tests (`npm test`) | 84 | ✅ All passing |
 
 ## Completed Phases
 
@@ -36,7 +36,7 @@
 | AI rephrase (Phase 25) | `rephraseContent` GraphQL mutation; `RephraseControls` component; `useRephrase` hook; tone selector; controls on Create + Edit pages; full test coverage |
 | AI suggestion (Phase 26) | `suggestChecklistItem` mutation; `SuggestChecklistItemMutationResolver`; `useSuggestItem` hook; ✨ Suggest button on Create + Detail pages; ≥ 3 item guard; full test coverage |
 | Bug fixes | Dark mode post type toggle; CheckedList like button; author-only item toggle enforcement (backend + frontend) |
-| Code quality | Domain exceptions, `requireAuth()`/`optionalAuth()` helpers, `useLikeToggle` hook, `PaginationControls` component, `UserRepository.updateFields()`, `.btn-secondary` CSS class, Ports and Adapters documentation |
+| Code quality | Domain exceptions, `requireAuth()`/`optionalAuth()` helpers, `useLikeToggle` hook, `PaginationControls` component, `UserRepository.updateFields()`, `.btn-secondary` CSS class, Ports and Adapters documentation, `:modules:resolverkit` — shared `batchNodeResolve` helper deduplicating the Node batch-resolver shape across the root app and `:modules:checkedlist`; also adds `CheckedListItemRepository.findByIds()`, fixing an N+1 lookup |
 
 ## Next Steps
 

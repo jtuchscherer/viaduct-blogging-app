@@ -35,6 +35,7 @@ dependencies {
     implementation(project(":modules:analytics"))
     implementation(project(":modules:checkedlist"))
     implementation(project(":modules:ai"))
+    implementation(project(":modules:resolverkit"))
 
     implementation(libs.viaduct.api)
     implementation(libs.viaduct.runtime)

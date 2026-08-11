@@ -32,6 +32,12 @@ interface CheckedListItemRepository {
     fun getItem(id: UUID): CheckedListItemData?
 
     /**
+     * Batch-fetches items by ID. Returns a map from item ID to item, omitting any ID
+     * that does not exist.
+     */
+    fun findByIds(ids: List<UUID>): Map<UUID, CheckedListItemData>
+
+    /**
      * Fetches all items for a post ordered by position ascending.
      */
     fun getItemsForPost(postId: UUID): List<CheckedListItemData>

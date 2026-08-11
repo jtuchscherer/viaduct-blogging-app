@@ -69,6 +69,18 @@ class ExposedCheckedListItemRepository : CheckedListItemRepository {
             ?.toData()
     }
 
+    override fun findByIds(ids: List<UUID>): Map<UUID, CheckedListItemData> {
+        if (ids.isEmpty()) return emptyMap()
+        val idStrs = ids.map { it.toString() }
+        return transaction {
+            CheckedListItems
+                .selectAll()
+                .where { CheckedListItems.id inList idStrs }
+                .map { it.toData() }
+                .associateBy { it.id }
+        }
+    }
+
     override fun getItemsForPost(postId: UUID): List<CheckedListItemData> = transaction {
         CheckedListItems
             .selectAll()
