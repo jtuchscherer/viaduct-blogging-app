@@ -54,7 +54,7 @@ class CheckedListItemBatchResolverTest {
         val results = CheckedListItemBatchResolver().batchResolve(listOf(mockContext(itemId)))
 
         assertEquals(1, results.size)
-        assertTrue(results[0].isError)
+        assertTrue(results.values.single().isError)
     }
 
     @Test
@@ -65,6 +65,6 @@ class CheckedListItemBatchResolverTest {
         val results = CheckedListItemBatchResolver().batchResolve(ids.map(::mockContext))
 
         assertEquals(3, results.size)
-        assertTrue(results.all { it.isError })
+        assertTrue(results.values.all { it.isError })
     }
 }

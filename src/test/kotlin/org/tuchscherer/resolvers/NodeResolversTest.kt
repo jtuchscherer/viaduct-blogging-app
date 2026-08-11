@@ -71,8 +71,8 @@ class NodeResolversTest : ResolverTestBase() {
         val results = UserNodeResolver(repo).batchResolve(listOf(userNodeCtx(id)))
 
         assertEquals(1, results.size)
-        assertTrue(results[0].isError)
-        val err = runCatching { results[0].get() }.exceptionOrNull()
+        assertTrue(results.values.single().isError)
+        val err = runCatching { results.values.single().get() }.exceptionOrNull()
         assertTrue(err is NotFoundException, "Expected NotFoundException, got $err")
         assertTrue(err!!.message!!.contains(id.toString()))
     }
@@ -100,8 +100,8 @@ class NodeResolversTest : ResolverTestBase() {
         val results = BlogPostNodeResolver(repo).batchResolve(listOf(postNodeCtx(id)))
 
         assertEquals(1, results.size)
-        assertTrue(results[0].isError)
-        val err = runCatching { results[0].get() }.exceptionOrNull()
+        assertTrue(results.values.single().isError)
+        val err = runCatching { results.values.single().get() }.exceptionOrNull()
         assertTrue(err is NotFoundException, "Expected NotFoundException, got $err")
     }
 
@@ -127,8 +127,8 @@ class NodeResolversTest : ResolverTestBase() {
         val results = CommentNodeResolver(repo).batchResolve(listOf(commentNodeCtx(id)))
 
         assertEquals(1, results.size)
-        assertTrue(results[0].isError)
-        val err = runCatching { results[0].get() }.exceptionOrNull()
+        assertTrue(results.values.single().isError)
+        val err = runCatching { results.values.single().get() }.exceptionOrNull()
         assertTrue(err is NotFoundException, "Expected NotFoundException, got $err")
     }
 
@@ -154,8 +154,8 @@ class NodeResolversTest : ResolverTestBase() {
         val results = LikeNodeResolver(repo).batchResolve(listOf(likeNodeCtx(id)))
 
         assertEquals(1, results.size)
-        assertTrue(results[0].isError)
-        val err = runCatching { results[0].get() }.exceptionOrNull()
+        assertTrue(results.values.single().isError)
+        val err = runCatching { results.values.single().get() }.exceptionOrNull()
         assertTrue(err is NotFoundException, "Expected NotFoundException, got $err")
     }
 
