@@ -12,15 +12,17 @@ type User implements Node @resolver(isBatching: true) @scope(to: ["public", "adm
 # Post interface — shared contract for all post types.
 # readTimeMinutes is intentionally absent here: it is provided by the analytics
 # tenant module (PostAnalytics.graphqls) which extends each concrete post type.
-interface Post @scope(to: ["public", "admin"]) {
+# The fields below intentionally carry no @resolver: field resolvers belong on the
+# concrete post types, each of which declares its own.
+interface Post implements Node @scope(to: ["public", "admin"]) {
   id: ID!
   title: String!
-  author: User! @resolver(isBatching: true)
-  comments: [Comment!]! @resolver
-  commentCount: Int! @resolver
-  likes: [Like!]! @resolver
-  likeCount: Int! @resolver
-  isLikedByMe: Boolean! @resolver
+  author: User!
+  comments: [Comment!]!
+  commentCount: Int!
+  likes: [Like!]!
+  likeCount: Int!
+  isLikedByMe: Boolean!
   createdAt: String!
   updatedAt: String!
 }
