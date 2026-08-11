@@ -16,23 +16,24 @@ import java.util.UUID
 class CheckedListItemBatchResolver : NodeResolvers.CheckedListItem() {
     private val itemRepository: CheckedListItemRepository by inject(CheckedListItemRepository::class.java)
 
-    override suspend fun batchResolve(contexts: List<Context>): List<FieldValue<ViaductCheckedListItem>> {
+    override suspend fun batchResolve(contexts: List<Context>): Map<Context, FieldValue<ViaductCheckedListItem>> {
         val ids = contexts.map { UUID.fromString(it.id.internalID) }
 
-        return contexts.zip(ids).map { (ctx, id) ->
+        return contexts.zip(ids).associate { (ctx, id) ->
             val data = itemRepository.getItem(id)
-                ?: return@map FieldValue.ofError(
-                    NoSuchElementException("CheckedListItem not found: $id")
+            ctx to if (data == null) {
+                FieldValue.ofError(NoSuchElementException("CheckedListItem not found: $id"))
+            } else {
+                FieldValue.ofValue(
+                    ViaductCheckedListItem.of(ctx) {
+                        id(ctx.globalIDFor(ViaductCheckedListItem.Reflection, data.id.toString()))
+                        text(data.text)
+                        checked(data.checked)
+                        position(data.position)
+                        createdAt(data.createdAt)
+                    }
                 )
-            FieldValue.ofValue(
-                ViaductCheckedListItem.of(ctx) {
-                    id(ctx.globalIDFor(ViaductCheckedListItem.Reflection, data.id.toString()))
-                    text(data.text)
-                    checked(data.checked)
-                    position(data.position)
-                    createdAt(data.createdAt)
-                }
-            )
+            }
         }
     }
 }

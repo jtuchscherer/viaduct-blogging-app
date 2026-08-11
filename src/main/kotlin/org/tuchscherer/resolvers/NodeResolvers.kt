@@ -21,12 +21,14 @@ private fun <C, E, G> batchNodeResolve(
     findByIds: (List<UUID>) -> Map<UUID, E>,
     transform: (E, C) -> G,
     entityName: String,
-): List<FieldValue<G>> {
+): Map<C, FieldValue<G>> {
     val ids = contexts.map(extractId)
     val byId = findByIds(ids)
-    return contexts.zip(ids).map { (ctx, id) ->
-        byId[id]?.let { FieldValue.ofValue(transform(it, ctx)) }
-            ?: FieldValue.ofError(NotFoundException("$entityName not found: $id"))
+    return contexts.zip(ids).associate { (ctx, id) ->
+        ctx to (
+            byId[id]?.let { FieldValue.ofValue(transform(it, ctx)) }
+                ?: FieldValue.ofError(NotFoundException("$entityName not found: $id"))
+        )
     }
 }
 
@@ -34,7 +36,7 @@ private fun <C, E, G> batchNodeResolve(
 class UserNodeResolver(
     private val userRepository: UserRepository
 ) : NodeResolvers.User() {
-    override suspend fun batchResolve(contexts: List<Context>): List<FieldValue<ViaductUser>> =
+    override suspend fun batchResolve(contexts: List<Context>): Map<Context, FieldValue<ViaductUser>> =
         batchNodeResolve(
             contexts = contexts,
             extractId = { UUID.fromString(it.id.internalID) },
@@ -48,7 +50,7 @@ class UserNodeResolver(
 class BlogPostNodeResolver(
     private val postRepository: PostRepository
 ) : NodeResolvers.BlogPost() {
-    override suspend fun batchResolve(contexts: List<Context>): List<FieldValue<ViaductBlogPost>> =
+    override suspend fun batchResolve(contexts: List<Context>): Map<Context, FieldValue<ViaductBlogPost>> =
         batchNodeResolve(
             contexts = contexts,
             extractId = { UUID.fromString(it.id.internalID) },
@@ -62,7 +64,7 @@ class BlogPostNodeResolver(
 class CommentNodeResolver(
     private val commentRepository: CommentRepository
 ) : NodeResolvers.Comment() {
-    override suspend fun batchResolve(contexts: List<Context>): List<FieldValue<ViaductComment>> =
+    override suspend fun batchResolve(contexts: List<Context>): Map<Context, FieldValue<ViaductComment>> =
         batchNodeResolve(
             contexts = contexts,
             extractId = { UUID.fromString(it.id.internalID) },
@@ -76,7 +78,7 @@ class CommentNodeResolver(
 class LikeNodeResolver(
     private val likeRepository: LikeRepository
 ) : NodeResolvers.Like() {
-    override suspend fun batchResolve(contexts: List<Context>): List<FieldValue<ViaductLike>> =
+    override suspend fun batchResolve(contexts: List<Context>): Map<Context, FieldValue<ViaductLike>> =
         batchNodeResolve(
             contexts = contexts,
             extractId = { UUID.fromString(it.id.internalID) },

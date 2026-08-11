@@ -6,6 +6,7 @@ import viaduct.service.api.GraphQLError
 import viaduct.service.api.SchemaId
 import viaduct.service.api.Viaduct
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.Executor
 
 /**
  * Wraps a [Viaduct] instance with a [QueryComplexityGuard] that runs before each execution.
@@ -18,18 +19,19 @@ class GuardedViaduct(
     private val guard: QueryComplexityGuard,
 ) : Viaduct {
 
-    override fun execute(executionInput: ExecutionInput, schemaId: SchemaId): ExecutionResult =
+    override suspend fun execute(executionInput: ExecutionInput, schemaId: SchemaId): ExecutionResult =
         guard.check(executionInput.operationText, executionInput.variables)
             ?.let(::abortResult)
             ?: delegate.execute(executionInput, schemaId)
 
-    override suspend fun executeAsync(
+    override fun executeAsync(
         executionInput: ExecutionInput,
         schemaId: SchemaId,
+        executor: Executor,
     ): CompletableFuture<ExecutionResult> =
         guard.check(executionInput.operationText, executionInput.variables)
             ?.let { CompletableFuture.completedFuture(abortResult(it)) }
-            ?: delegate.executeAsync(executionInput, schemaId)
+            ?: delegate.executeAsync(executionInput, schemaId, executor)
 
     override fun getAppliedScopes(schemaId: SchemaId): Set<String>? =
         delegate.getAppliedScopes(schemaId)
