@@ -88,7 +88,9 @@ Ollama:   http://localhost:11434  (if installed)
 
 ### `start-containers.sh` — containerised deployment
 
-Runs the full stack (PostgreSQL + backend + frontend) in containers via Podman Compose. On first run it builds the Gradle distribution (`installDist`), builds both container images, starts all three services, waits for them to be healthy, then seeds the database with sample data. Ctrl+C shuts everything down cleanly.
+Runs the full stack (PostgreSQL + Ollama + backend + frontend) in containers via Podman Compose. On first run it pulls the PostgreSQL and Ollama base images (~1.5 GB for Ollama), builds the Gradle distribution (`installDist`), builds both application images, starts all four services, waits for them to be healthy, pulls the Ollama models, then seeds the database with sample data. Ctrl+C shuts everything down cleanly.
+
+> **First run takes a while.** The base-image pull happens before the health check starts, so a slow download can't trip the timeout. The backend wait allows 10 minutes by default — override with `BACKEND_TIMEOUT_SECS` if your machine needs longer.
 
 **Prerequisites:** Podman must be installed and its VM must be running (`podman machine start`). The script will start the VM automatically if it is stopped. `psql` is required only if you run `seed-database.sh` manually — the startup script handles seeding automatically.
 
