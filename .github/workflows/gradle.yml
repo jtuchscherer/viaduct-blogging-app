@@ -83,6 +83,13 @@ jobs:
 
   dependency-submission:
 
+    # Only submit on pushes to main. The dependency graph is meant to reflect the
+    # default branch, so submitting from a PR adds nothing — and PRs opened from
+    # forks receive a read-only GITHUB_TOKEN regardless of the `permissions` block
+    # below, so the submission API returns "Resource not accessible by
+    # integration" and the job fails for every outside contribution.
+    if: github.event_name == 'push'
+
     runs-on: ubuntu-latest
     permissions:
       contents: write
