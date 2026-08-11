@@ -6,10 +6,6 @@ plugins {
     jacoco
 }
 
-viaductModule {
-    modulePackageSuffix.set("checkedlist")
-}
-
 dependencies {
     api(libs.viaduct.api)
     implementation(libs.viaduct.runtime)
