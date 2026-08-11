@@ -5,6 +5,11 @@ plugins {
 }
 
 dependencies {
+    // tracy-core (AI observability) pulls a full OpenTelemetry 1.51.0 set transitively; this BOM
+    // forces the whole set to a patched version together to avoid version skew (CVE fix, #36).
+    implementation(platform(libs.opentelemetry.bom))
+    testImplementation(platform(libs.opentelemetry.bom))
+
     implementation(libs.koin.core)
     implementation(libs.langchain4j.core)
     implementation(libs.langchain4j.ollama)
@@ -14,7 +19,7 @@ dependencies {
     testImplementation(libs.junit.jupiter.engine)
     testImplementation(libs.junit.platform.launcher)
     testImplementation(libs.assertj.core)
-    testImplementation("io.opentelemetry:opentelemetry-sdk-testing:1.51.0")
+    testImplementation("io.opentelemetry:opentelemetry-sdk-testing")
 }
 
 tasks.test {

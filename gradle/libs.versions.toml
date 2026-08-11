@@ -25,6 +25,7 @@ netty = "4.2.16.Final"
 bouncycastle = "1.84"
 langchain4j = "1.17.2"
 tracy = "0.1.0"
+opentelemetry = "1.62.0"
 
 [plugins]
 viaduct-application = { id = "com.airbnb.viaduct.application-gradle-plugin", version.ref = "viaduct" }
@@ -82,3 +83,7 @@ assertj-core = { module = "org.assertj:assertj-core", version.ref = "assertj" }
 langchain4j-core = { module = "dev.langchain4j:langchain4j", version.ref = "langchain4j" }
 langchain4j-ollama = { module = "dev.langchain4j:langchain4j-ollama", version.ref = "langchain4j" }
 tracy-core = { module = "org.jetbrains.ai.tracy:tracy-core", version.ref = "tracy" }
+# tracy-core 0.1.0 (latest published) transitively pulls a full OpenTelemetry 1.51.0 set, which
+# has a known CVE in opentelemetry-api. This BOM forces that whole set to a patched version in one
+# place, so every otel artifact tracy pulls moves together — see :modules:ai/build.gradle.kts.
+opentelemetry-bom = { module = "io.opentelemetry:opentelemetry-bom", version.ref = "opentelemetry" }
