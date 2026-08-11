@@ -131,4 +131,71 @@ class SuggestChecklistItemResolverTest : ResolverTestBase() {
         }
         assertEquals("Ollama is down", ex.message)
     }
+
+    // ── Input validation ──────────────────────────────────────────────────────
+
+    /** Builds a resolver context with the given item texts and an authenticated user. */
+    private fun ctxWithItems(items: List<String>): MutationResolvers.SuggestChecklistItem.Context {
+        val ctx = mockk<MutationResolvers.SuggestChecklistItem.Context>(relaxed = true)
+        every { ctx.arguments.existingItems } returns items
+        every { ctx.requestContext } returns RequestContext(user = mockUser)
+        return ctx
+    }
+
+    @Test
+    fun `throws IllegalArgumentException for more than 100 items`() {
+        val resolver = SuggestChecklistItemMutationResolver(NoOpAIService())
+
+        assertThrows<IllegalArgumentException> {
+            runBlocking { resolver.resolve(ctxWithItems(List(101) { "Item $it" })) }
+        }
+    }
+
+    @Test
+    fun `accepts exactly 100 items (upper boundary)`() = runBlocking {
+        // Success paths must go through the Viaduct harness so the result type can be built.
+        val resolver = SuggestChecklistItemMutationResolver(NoOpAIService())
+        val args = Mutation_SuggestChecklistItem_Arguments.Builder(context)
+            .existingItems(List(100) { "Item $it" })
+            .build()
+
+        val result = runMutationFieldResolver(resolver) {
+            queryValue = queryObj()
+            arguments = args
+            requestContext = RequestContext(user = mockUser)
+        }
+
+        // NoOpAIService returns "Item ${size + 1}"
+        assertEquals("Item 101", result.getSuggestedText())
+    }
+
+    @Test
+    fun `throws IllegalArgumentException when an item is blank`() {
+        val resolver = SuggestChecklistItemMutationResolver(NoOpAIService())
+
+        assertThrows<IllegalArgumentException> {
+            runBlocking { resolver.resolve(ctxWithItems(listOf("Buy milk", "   ", "Buy bread"))) }
+        }
+    }
+
+    @Test
+    fun `throws IllegalArgumentException when an item exceeds 1000 characters`() {
+        val resolver = SuggestChecklistItemMutationResolver(NoOpAIService())
+
+        assertThrows<IllegalArgumentException> {
+            runBlocking { resolver.resolve(ctxWithItems(listOf("A", "a".repeat(1001), "C"))) }
+        }
+    }
+
+    @Test
+    fun `does not call the AI service when validation fails`() {
+        val aiService = mockk<org.tuchscherer.ai.AIService>()
+        // No stub for suggestNextItem: if the resolver called it, MockK would throw
+        // a "no answer found" error instead of the expected IllegalArgumentException.
+        val resolver = SuggestChecklistItemMutationResolver(aiService)
+
+        assertThrows<IllegalArgumentException> {
+            runBlocking { resolver.resolve(ctxWithItems(listOf("A", "B"))) }
+        }
+    }
 }
