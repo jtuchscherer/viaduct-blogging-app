@@ -5,6 +5,7 @@ import org.tuchscherer.database.repositories.CommentRepository
 import org.tuchscherer.database.repositories.LikeRepository
 import org.tuchscherer.database.repositories.PostRepository
 import org.tuchscherer.database.repositories.UserRepository
+import org.tuchscherer.resolverkit.batchNodeResolve
 import org.tuchscherer.viadapp.resolvers.resolverbases.NodeResolvers
 import viaduct.api.FieldValue
 import viaduct.api.resolver.Resolver
@@ -12,25 +13,7 @@ import viaduct.api.grts.BlogPost as ViaductBlogPost
 import viaduct.api.grts.Comment as ViaductComment
 import viaduct.api.grts.Like as ViaductLike
 import viaduct.api.grts.User as ViaductUser
-
 import java.util.UUID
-
-private fun <C, E, G> batchNodeResolve(
-    contexts: List<C>,
-    extractId: (C) -> UUID,
-    findByIds: (List<UUID>) -> Map<UUID, E>,
-    transform: (E, C) -> G,
-    entityName: String,
-): Map<C, FieldValue<G>> {
-    val ids = contexts.map(extractId)
-    val byId = findByIds(ids)
-    return contexts.zip(ids).associate { (ctx, id) ->
-        ctx to (
-            byId[id]?.let { FieldValue.ofValue(transform(it, ctx)) }
-                ?: FieldValue.ofError(NotFoundException("$entityName not found: $id"))
-        )
-    }
-}
 
 @Resolver
 class UserNodeResolver(
@@ -42,7 +25,7 @@ class UserNodeResolver(
             extractId = { UUID.fromString(it.id.internalID) },
             findByIds = userRepository::findByIds,
             transform = { user, ctx -> user.toViaductUser(ctx) },
-            entityName = "User",
+            notFound = { id -> NotFoundException("User not found: $id") },
         )
 }
 
@@ -56,7 +39,7 @@ class BlogPostNodeResolver(
             extractId = { UUID.fromString(it.id.internalID) },
             findByIds = postRepository::findByIds,
             transform = { post, ctx -> post.toViaductBlogPost(ctx) },
-            entityName = "Post",
+            notFound = { id -> NotFoundException("Post not found: $id") },
         )
 }
 
@@ -70,7 +53,7 @@ class CommentNodeResolver(
             extractId = { UUID.fromString(it.id.internalID) },
             findByIds = commentRepository::findByIds,
             transform = { comment, ctx -> comment.toViaductComment(ctx) },
-            entityName = "Comment",
+            notFound = { id -> NotFoundException("Comment not found: $id") },
         )
 }
 
@@ -84,6 +67,6 @@ class LikeNodeResolver(
             extractId = { UUID.fromString(it.id.internalID) },
             findByIds = likeRepository::findByIds,
             transform = { like, ctx -> like.toViaductLike(ctx) },
-            entityName = "Like",
+            notFound = { id -> NotFoundException("Like not found: $id") },
         )
 }

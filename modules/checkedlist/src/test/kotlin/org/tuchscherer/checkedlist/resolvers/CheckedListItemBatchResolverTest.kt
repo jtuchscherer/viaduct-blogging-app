@@ -2,8 +2,8 @@ package org.tuchscherer.checkedlist.resolvers
 
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.runBlocking
-import org.tuchscherer.checkedlist.repositories.CheckedListItemData
 import org.tuchscherer.checkedlist.repositories.CheckedListItemRepository
 import org.tuchscherer.viadapp.checkedlist.resolvers.CheckedListItemBatchResolver
 import org.tuchscherer.viadapp.checkedlist.resolverbases.NodeResolvers
@@ -18,7 +18,6 @@ class CheckedListItemBatchResolverTest {
 
     private lateinit var itemRepository: CheckedListItemRepository
     private val itemId = UUID.randomUUID()
-    private val postId = UUID.randomUUID()
 
     @BeforeEach
     fun setup() {
@@ -32,15 +31,6 @@ class CheckedListItemBatchResolverTest {
         }
     }
 
-    private fun stubItemData(id: UUID = itemId) = CheckedListItemData(
-        id = id,
-        postId = postId,
-        text = "Buy milk",
-        checked = false,
-        position = 0,
-        createdAt = "2025-01-01T10:00:00",
-    )
-
     private fun mockContext(id: UUID): NodeResolvers.CheckedListItem.Context {
         val ctx = mockk<NodeResolvers.CheckedListItem.Context>(relaxed = true)
         every { ctx.id.internalID } returns id.toString()
@@ -49,7 +39,7 @@ class CheckedListItemBatchResolverTest {
 
     @Test
     fun `returns error FieldValue when item not found`() = runBlocking {
-        every { itemRepository.getItem(any()) } returns null
+        every { itemRepository.findByIds(any()) } returns emptyMap()
 
         val results = CheckedListItemBatchResolver().batchResolve(listOf(mockContext(itemId)))
 
@@ -59,12 +49,22 @@ class CheckedListItemBatchResolverTest {
 
     @Test
     fun `returns error for each missing ID in a batch`() = runBlocking {
-        every { itemRepository.getItem(any()) } returns null
+        every { itemRepository.findByIds(any()) } returns emptyMap()
 
         val ids = List(3) { UUID.randomUUID() }
         val results = CheckedListItemBatchResolver().batchResolve(ids.map(::mockContext))
 
         assertEquals(3, results.size)
         assertTrue(results.values.all { it.isError })
+    }
+
+    @Test
+    fun `calls findByIds once for the whole batch`() = runBlocking {
+        val ids = List(3) { UUID.randomUUID() }
+        every { itemRepository.findByIds(any()) } returns emptyMap()
+
+        CheckedListItemBatchResolver().batchResolve(ids.map(::mockContext))
+
+        verify(exactly = 1) { itemRepository.findByIds(ids) }
     }
 }

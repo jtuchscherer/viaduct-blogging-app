@@ -2,6 +2,7 @@ package org.tuchscherer.checkedlist.resolvers
 
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.runBlocking
 import org.tuchscherer.checkedlist.port.PostCreationPort
 import org.tuchscherer.viadapp.checkedlist.resolvers.CheckedListPostBatchResolver
@@ -63,5 +64,15 @@ class CheckedListPostBatchResolverTest {
 
         assertEquals(3, results.size)
         assertTrue(results.values.all { it.isError })
+    }
+
+    @Test
+    fun `calls getPostsData once for the whole batch`() = runBlocking {
+        val ids = List(3) { UUID.randomUUID() }
+        every { postCreationPort.getPostsData(any()) } returns emptyMap()
+
+        CheckedListPostBatchResolver().batchResolve(ids.map(::mockContext))
+
+        verify(exactly = 1) { postCreationPort.getPostsData(ids) }
     }
 }

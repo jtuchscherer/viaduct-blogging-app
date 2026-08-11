@@ -1,6 +1,7 @@
 package org.tuchscherer.viadapp.checkedlist.resolvers
 
 import org.tuchscherer.checkedlist.repositories.CheckedListItemRepository
+import org.tuchscherer.resolverkit.batchNodeResolve
 import org.tuchscherer.viadapp.checkedlist.resolverbases.NodeResolvers
 import org.koin.java.KoinJavaComponent.inject
 import viaduct.api.FieldValue
@@ -16,24 +17,20 @@ import java.util.UUID
 class CheckedListItemBatchResolver : NodeResolvers.CheckedListItem() {
     private val itemRepository: CheckedListItemRepository by inject(CheckedListItemRepository::class.java)
 
-    override suspend fun batchResolve(contexts: List<Context>): Map<Context, FieldValue<ViaductCheckedListItem>> {
-        val ids = contexts.map { UUID.fromString(it.id.internalID) }
-
-        return contexts.zip(ids).associate { (ctx, id) ->
-            val data = itemRepository.getItem(id)
-            ctx to if (data == null) {
-                FieldValue.ofError(NoSuchElementException("CheckedListItem not found: $id"))
-            } else {
-                FieldValue.ofValue(
-                    ViaductCheckedListItem.of(ctx) {
-                        id(ctx.globalIDFor(ViaductCheckedListItem.Reflection, data.id.toString()))
-                        text(data.text)
-                        checked(data.checked)
-                        position(data.position)
-                        createdAt(data.createdAt)
-                    }
-                )
-            }
-        }
-    }
+    override suspend fun batchResolve(contexts: List<Context>): Map<Context, FieldValue<ViaductCheckedListItem>> =
+        batchNodeResolve(
+            contexts = contexts,
+            extractId = { UUID.fromString(it.id.internalID) },
+            findByIds = itemRepository::findByIds,
+            transform = { data, ctx ->
+                ViaductCheckedListItem.of(ctx) {
+                    id(ctx.globalIDFor(ViaductCheckedListItem.Reflection, data.id.toString()))
+                    text(data.text)
+                    checked(data.checked)
+                    position(data.position)
+                    createdAt(data.createdAt)
+                }
+            },
+            notFound = { id -> NoSuchElementException("CheckedListItem not found: $id") },
+        )
 }

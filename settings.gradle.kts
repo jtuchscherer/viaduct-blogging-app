@@ -18,8 +18,9 @@ plugins {
 
 rootProject.name = "viaduct-blogging-app"
 
-// Plain Gradle module — it carries no Viaduct resolvers, so it stays outside the topology.
+// Plain Gradle modules — they carry no Viaduct resolvers, so they stay outside the topology.
 include(":modules:ai")
+include(":modules:resolverkit")
 
 // The root project is both the application and a Viaduct module, so it appears twice below.
 includeViaductApplication {
