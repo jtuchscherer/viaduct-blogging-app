@@ -15,6 +15,13 @@ cleanup() {
     trap - SIGINT SIGTERM EXIT
     echo ""
     echo -e "${YELLOW}Shutting down...${NC}"
+    # Stop the backgrounded `compose up` first. Otherwise it is still creating
+    # containers while `down` runs, wins the race, and leaves an orphaned stack
+    # running after this script has reported everything stopped.
+    if [ -n "${COMPOSE_PID:-}" ] && kill -0 "$COMPOSE_PID" 2>/dev/null; then
+        kill "$COMPOSE_PID" 2>/dev/null || true
+        wait "$COMPOSE_PID" 2>/dev/null || true
+    fi
     podman compose down 2>/dev/null || true
     echo -e "${GREEN}All services stopped.${NC}"
     exit 0
@@ -59,9 +66,16 @@ echo ""
 
 # --- Start all containers ---
 
+# Pull the remote base images first, as a separate step. On a cold machine this
+# downloads ~1.5 GB for Ollama alone, which must not sit inside the backend health
+# timeout below — otherwise the script gives up mid-download and tears down its own
+# progress. Runs in the foreground so the download progress is visible.
+echo -e "${BLUE}Pulling base images (first run downloads ~1.5 GB for Ollama — several minutes)...${NC}"
+podman compose pull postgres ollama
+echo -e "${GREEN}Base images ready${NC}"
+echo ""
+
 echo -e "${BLUE}Starting containers...${NC}"
-echo -e "${YELLOW}Note: first run pulls the Ollama image (~1.5 GB) — this may take several minutes.${NC}"
-echo -e "${YELLOW}      Subsequent runs will start much faster.${NC}"
 podman compose up --build > podman-compose.log 2>&1 &
 COMPOSE_PID=$!
 echo -e "${GREEN}Containers started (PID: $COMPOSE_PID)${NC}"
@@ -69,14 +83,27 @@ echo ""
 
 # --- Wait for backend ---
 
-echo -e "${YELLOW}Waiting for backend to be ready...${NC}"
-for i in $(seq 1 45); do
+# Budget covers building the app/frontend images plus Postgres init and JVM start.
+# Progress is printed periodically so a slow build is distinguishable from a hang.
+BACKEND_TIMEOUT_SECS=${BACKEND_TIMEOUT_SECS:-600}
+BACKEND_ATTEMPTS=$((BACKEND_TIMEOUT_SECS / 2))
+echo -e "${YELLOW}Waiting for backend to be ready (up to ${BACKEND_TIMEOUT_SECS}s while images build)...${NC}"
+for i in $(seq 1 "$BACKEND_ATTEMPTS"); do
     if curl -sf http://localhost:8080/health >/dev/null 2>&1; then
         echo -e "${GREEN}Backend is ready${NC}"
         break
     fi
-    if [ "$i" -eq 45 ]; then
-        echo -e "${RED}Backend did not become healthy after 90s. Check logs:${NC}"
+    # Fail fast if compose itself died rather than waiting out the whole budget.
+    if ! kill -0 "$COMPOSE_PID" 2>/dev/null; then
+        echo -e "${RED}Compose exited before the backend became healthy. Check logs:${NC}"
+        echo "  tail -50 podman-compose.log"
+        exit 1
+    fi
+    if [ $((i % 15)) -eq 0 ]; then
+        echo -e "${YELLOW}  still waiting... ($((i * 2))s elapsed)${NC}"
+    fi
+    if [ "$i" -eq "$BACKEND_ATTEMPTS" ]; then
+        echo -e "${RED}Backend did not become healthy after ${BACKEND_TIMEOUT_SECS}s. Check logs:${NC}"
         echo "  podman compose logs app"
         exit 1
     fi
