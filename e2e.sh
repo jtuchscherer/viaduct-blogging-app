@@ -11,16 +11,22 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-# Override via env vars to run alongside other test suites in parallel:
+# shellcheck source=test-lib.sh
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/test-lib.sh"
+
+# Each run gets its own ports, database, and logs by default, so this suite can run
+# alongside query-tests.sh or the same suite in another git worktree. The starting
+# ports are offset by PID so two runs starting at once diverge. Pin as needed:
 #   GRAPHQL_PORT=8082 FRONTEND_PORT=5174 DB_FILE=blog-e2e.db ./e2e.sh
-GRAPHQL_PORT=${GRAPHQL_PORT:-8082}
-FRONTEND_PORT=${FRONTEND_PORT:-5174}
-DB_FILE=${DB_FILE:-blog-e2e.db}
+RUN_ID=$$
+GRAPHQL_PORT=${GRAPHQL_PORT:-$(find_free_port $((8400 + RUN_ID % 300)))}
+FRONTEND_PORT=${FRONTEND_PORT:-$(find_free_port $((5300 + RUN_ID % 300)))}
+DB_FILE=${DB_FILE:-blog-e2e-${RUN_ID}.db}
 
 SERVER_PID=""
 FRONTEND_PID=""
-SERVER_LOG="/tmp/viaduct-server-e2e-${GRAPHQL_PORT}.log"
-FRONTEND_LOG="/tmp/viaduct-frontend-e2e-${FRONTEND_PORT}.log"
+SERVER_LOG=${SERVER_LOG:-/tmp/viaduct-e2e-server-${RUN_ID}-${GRAPHQL_PORT}.log}
+FRONTEND_LOG=${FRONTEND_LOG:-/tmp/viaduct-e2e-frontend-${RUN_ID}-${FRONTEND_PORT}.log}
 
 cleanup() {
     echo ""
@@ -56,10 +62,16 @@ echo -e "${BLUE}======================================${NC}"
 echo ""
 
 # --- Clean slate ---
+# Do not kill whatever holds these ports — it may be another worktree's test run or
+# a local dev server. Fail fast instead; ports are auto-selected by default, so this
+# only trips when they were pinned to something already busy.
 rm -f "${DB_FILE}"
-lsof -ti:"${GRAPHQL_PORT}" | xargs kill -9 2>/dev/null || true
-lsof -ti:"${FRONTEND_PORT}" | xargs kill -9 2>/dev/null || true
-sleep 1
+for p in "${GRAPHQL_PORT}" "${FRONTEND_PORT}"; do
+    if port_in_use "$p"; then
+        echo -e "${RED}✗ Port $p is already in use; unset GRAPHQL_PORT/FRONTEND_PORT or pick free ports${NC}"
+        exit 1
+    fi
+done
 
 # --- Build backend ---
 echo -e "${BLUE}Building backend...${NC}"

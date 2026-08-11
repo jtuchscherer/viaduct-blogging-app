@@ -11,14 +11,21 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# Configuration — override via env vars to run multiple suites in parallel:
+# shellcheck source=test-lib.sh
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/test-lib.sh"
+
+# Configuration. Each run gets its own port, database, and log file by default, so
+# a second suite — or the same suite in another git worktree — cannot collide with
+# it. The starting port is offset by PID so two runs starting at once diverge.
+# Pin any of these to a fixed value when you need to:
 #   GRAPHQL_PORT=8081 DB_FILE=blog-query.db ./query-tests.sh
-GRAPHQL_PORT=${GRAPHQL_PORT:-8081}
-DB_FILE=${DB_FILE:-blog-query.db}
+RUN_ID=$$
+GRAPHQL_PORT=${GRAPHQL_PORT:-$(find_free_port $((8100 + RUN_ID % 300)))}
+DB_FILE=${DB_FILE:-blog-query-${RUN_ID}.db}
 
 AUTH_URL="http://localhost:${GRAPHQL_PORT}"
 GRAPHQL_URL="http://localhost:${GRAPHQL_PORT}/graphql"
-SERVER_LOG="/tmp/viaduct-server-${GRAPHQL_PORT}.log"
+SERVER_LOG=${SERVER_LOG:-/tmp/viaduct-query-tests-${RUN_ID}-${GRAPHQL_PORT}.log}
 
 # Test results
 TESTS_PASSED=0
@@ -86,10 +93,14 @@ fi
 # Step 3: Start the server
 print_header "Step 3: Start Server"
 
-# Kill any existing servers on the port
-print_info "Checking for existing servers on port ${GRAPHQL_PORT}..."
-lsof -ti:"${GRAPHQL_PORT}" | xargs kill -9 2>/dev/null || true
-sleep 2
+# Do not kill whatever holds the port — it may be another worktree's test run or a
+# local dev server. Fail fast instead; the default port is auto-selected, so this
+# only trips when GRAPHQL_PORT was pinned to something already busy.
+print_info "Using port ${GRAPHQL_PORT}..."
+if port_in_use "${GRAPHQL_PORT}"; then
+    print_error "Port ${GRAPHQL_PORT} is already in use; unset GRAPHQL_PORT or pick a free port"
+    exit 1
+fi
 
 GRAPHQL_PORT="${GRAPHQL_PORT}" DATABASE_URL="jdbc:sqlite:${PWD}/${DB_FILE}" ./gradlew run > $SERVER_LOG 2>&1 &
 SERVER_PID=$!
