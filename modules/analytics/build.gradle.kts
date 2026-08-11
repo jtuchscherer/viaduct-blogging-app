@@ -6,10 +6,6 @@ plugins {
     jacoco
 }
 
-viaductModule {
-    modulePackageSuffix.set("analytics")
-}
-
 dependencies {
     api(libs.viaduct.api)
     implementation(libs.viaduct.runtime)

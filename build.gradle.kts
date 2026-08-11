@@ -31,14 +31,6 @@ plugins {
     jacoco
 }
 
-viaductApplication {
-    modulePackagePrefix.set("org.tuchscherer.viadapp")
-}
-
-viaductModule {
-    modulePackageSuffix.set("resolvers")
-}
-
 dependencies {
     implementation(project(":modules:analytics"))
     implementation(project(":modules:checkedlist"))
