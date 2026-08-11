@@ -100,6 +100,23 @@ application {
     mainClass.set("org.tuchscherer.viadapp.ViaductApplicationKt")
 }
 
+// Force a patched OpenTelemetry everywhere. The Kotlin Gradle plugin's Swift Export worker
+// tooling (org.jetbrains.kotlin:swift-export-embeddable, pulled in by kotlin.jvm on every
+// project) transitively depends on opentelemetry-api/-context 1.41.0, which has a CVE fixed
+// in 1.62.0 — unrelated to the :modules:ai/tracy-core occurrence already forced via the
+// opentelemetry-bom platform dependency there (#36). swiftExportClasspathResolvable is a
+// per-project configuration the Kotlin plugin creates on every project, so this needs
+// allprojects rather than the root-only configurations.all block below.
+val opentelemetryVersion: String = libs.versions.opentelemetry.get()
+allprojects {
+    configurations.all {
+        resolutionStrategy.force(
+            "io.opentelemetry:opentelemetry-api:$opentelemetryVersion",
+            "io.opentelemetry:opentelemetry-context:$opentelemetryVersion",
+        )
+    }
+}
+
 // Force patched dependency versions to address CVEs.
 val viaductVersion: String = libs.versions.viaduct.get()
 val nettyVersion: String = libs.versions.netty.get()
