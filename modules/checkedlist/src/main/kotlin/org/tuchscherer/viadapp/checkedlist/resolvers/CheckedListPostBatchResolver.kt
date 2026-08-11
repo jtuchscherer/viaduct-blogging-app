@@ -16,16 +16,17 @@ import java.util.UUID
 class CheckedListPostBatchResolver : NodeResolvers.CheckedListPost() {
     private val postCreationPort: PostCreationPort by inject(PostCreationPort::class.java)
 
-    override suspend fun batchResolve(contexts: List<Context>): List<FieldValue<ViaductCheckedListPost>> {
+    override suspend fun batchResolve(contexts: List<Context>): Map<Context, FieldValue<ViaductCheckedListPost>> {
         val ids = contexts.map { UUID.fromString(it.id.internalID) }
         val byId = postCreationPort.getPostsData(ids)
 
-        return contexts.zip(ids).map { (ctx, id) ->
+        return contexts.zip(ids).associate { (ctx, id) ->
             val data = byId[id]
-                ?: return@map FieldValue.ofError(
-                    NoSuchElementException("CheckedListPost not found: $id")
-                )
-            FieldValue.ofValue(data.toViaductPost(ctx))
+            ctx to if (data == null) {
+                FieldValue.ofError(NoSuchElementException("CheckedListPost not found: $id"))
+            } else {
+                FieldValue.ofValue(data.toViaductPost(ctx))
+            }
         }
     }
 }
