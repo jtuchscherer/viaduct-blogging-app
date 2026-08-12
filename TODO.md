@@ -1,8 +1,8 @@
 # TODO: Viaduct Blogging App — Implementation Plan
 
-**Status**: 🚀 In Progress — Phases 1–26 complete; Phase 27 (recommendations) next
+**Status**: 🚀 In Progress — Phases 1–26 complete; Phase 27 (recommendations) on hold
 
-**Last Updated**: 2026-08-11
+**Last Updated**: 2026-08-12
 
 ## Test Statistics
 
@@ -40,7 +40,7 @@
 
 ## Next Steps
 
-- **Phase 27**: Post recommendation engine — embedding-based "You might like" panel using `nomic-embed-text`
+- **Phase 27**: Post recommendation engine — ⏸️ on hold, see the phase section for why
 
 > See `AI-PLAN.md` for full design, technology choices, and file-by-file breakdown.
 
@@ -411,7 +411,48 @@
 
 ---
 
-## Phase 27: Post Recommendation Engine ⏳ TODO
+## Phase 27: Post Recommendation Engine ⏸️ ON HOLD
+
+**On hold as of 2026-08-12.** Not blocked by anything external — paused because a design review
+found the personalisation half of the plan rests on data the app does not collect, and because
+the corpus is too small for personalisation to mean much yet.
+
+### Why it is on hold
+
+1. **There is no per-user view history.** The plan builds a taste centroid from posts the user
+   "liked or viewed", but `post_views` is `(post_id, view_count)` — an aggregate counter with no
+   user column. `recordPostView` takes no auth and never sees a user, deliberately, so anonymous
+   views count toward `trending`. The only per-user signal that exists is likes
+   (`LikeRepository.findByUserId`), and likes are sparse: 20 across 4 users in seed data. A
+   likes-only version would fall back to trending for nearly every user.
+
+2. **Scale.** With 12 posts, recommending 3–5 means surfacing ~40% of the blog. The centroid
+   math runs, but it cannot carry much signal.
+
+3. **Two smaller gaps in the plan as written**: it embeds `title + content`, but
+   `CheckedListPost` has no `content` (it has `description` + `items`), and its embedding hook is
+   specified on `createPost`/`updatePost` — the BlogPost mutations only — so checklist posts
+   would silently never get embeddings while still appearing in a `[Post!]!` result. There is
+   also no backfill for posts that already exist, so recommendations stay empty until every post
+   is edited.
+
+### Options considered
+
+| Option | Cost | Verdict |
+|---|---|---|
+| Likes only | none | ships, but is the trending panel wearing a different label |
+| Per-user view event log | migration, user-identity port for analytics, unbounded row growth, privacy decision | strongest signal, most work and most privacy surface |
+| Bounded `(user_id, post_id)` interaction table | migration + port, bounded by users × posts | the sweet spot *if* personalisation is the goal |
+| Item-to-item "More like this" | no tracking, no port, no privacy question | recommended first step |
+
+**Suggested path when this resumes:** do item-to-item similarity first. Everything hard about
+this phase is the embedding pipeline — migration, repository, per-type text extraction,
+backfill, retry when Ollama is down, cosine ranking, the panel — and item-to-item exercises all
+of it with no cold start and no user tracking. Adding the taste vector afterwards is roughly a
+day on a proven pipeline. If personalisation is added later, the per-user write must be separate
+from `incrementViewCount`; trending should keep counting anonymous views.
+
+### Original plan (unchanged, for reference)
 
 **Goal**: personalised "You might like" panel on the home feed using semantic embeddings.
 
