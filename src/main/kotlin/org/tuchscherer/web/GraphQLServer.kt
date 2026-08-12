@@ -29,8 +29,6 @@ import org.tuchscherer.database.DatabaseFactory
 import org.tuchscherer.database.repositories.UserRepository
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import viaduct.service.api.ExecutionInput
-import viaduct.service.api.SchemaId
-import viaduct.service.api.Viaduct
 import viaduct.service.wiring.graphiql.GraphiQLHtmlConfig
 import viaduct.service.wiring.graphiql.graphiQLHtml
 import java.util.UUID
@@ -71,17 +69,12 @@ class GraphQLServer(
     private val authDeps: AuthDependencies,
     private val serverConfig: ServerConfig,
     private val observability: ObservabilityDependencies,
-    private val viaduct: Viaduct,
+    private val executor: SchemaRoutingExecutor,
     private val aiService: AIService,
 ) {
 
     private val logger = LoggerFactory.getLogger(GraphQLServer::class.java)
     private val jwtAlgorithm by lazy { Algorithm.HMAC256(authDeps.jwtConfig.secret) }
-
-    companion object {
-        val PUBLIC_SCHEMA = SchemaId.Scoped("public", setOf("public"))
-        val ADMIN_SCHEMA = SchemaId.Scoped("admin", setOf("public", "admin"))
-    }
 
     fun start() {
         embeddedServer(Netty, port = serverConfig.graphqlPort) {
@@ -147,9 +140,9 @@ class GraphQLServer(
                             return@post
                         }
 
-                        val schemaId = when (call.request.headers["X-Schema"]) {
-                            "admin" -> ADMIN_SCHEMA
-                            else -> PUBLIC_SCHEMA
+                        val audience = when (call.request.headers["X-Schema"]) {
+                            "admin" -> SchemaRoutingExecutor.Audience.ADMIN
+                            else -> SchemaRoutingExecutor.Audience.PUBLIC
                         }
 
                         val executionInput = ExecutionInput.create(
@@ -159,7 +152,7 @@ class GraphQLServer(
                         )
 
                         val startMs = System.currentTimeMillis()
-                        val result = viaduct.execute(executionInput, schemaId)
+                        val result = executor.execute(executionInput, audience)
                         val durationMs = System.currentTimeMillis() - startMs
 
                         val hasErrors = result.toSpecification()["errors"] != null

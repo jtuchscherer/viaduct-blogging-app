@@ -23,6 +23,7 @@ import org.tuchscherer.complexity.QueryComplexityGuard
 import org.tuchscherer.database.DatabaseFactory
 import org.tuchscherer.web.AuthDependencies
 import org.tuchscherer.web.GraphQLServer
+import org.tuchscherer.web.SchemaRoutingExecutor
 import org.tuchscherer.web.ObservabilityDependencies
 import org.tuchscherer.database.repositories.*
 import org.tuchscherer.viadapp.resolvers.*
@@ -104,6 +105,7 @@ val viaductModule = module {
 val serverModule = module {
     singleOf(::AuthDependencies)
     singleOf(::ObservabilityDependencies)
+    singleOf(::SchemaRoutingExecutor)
     singleOf(::GraphQLServer)
 }
 
