@@ -29,7 +29,6 @@ import org.tuchscherer.database.repositories.*
 import org.tuchscherer.viadapp.resolvers.*
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
-import viaduct.service.SchemaScopeInfo
 import viaduct.service.ViaductBuilder
 import viaduct.service.api.Viaduct
 import viaduct.service.api.spi.SharedTenantModuleInjectorFactory
@@ -86,11 +85,7 @@ val viaductModule = module {
     single { QueryComplexityGuard(get()) }
     single<Viaduct> {
         val underlying = ViaductBuilder()
-            .withScopedSchemas(
-                SchemaScopes.servedSchemas.map { (schemaId, scopes) ->
-                    SchemaScopeInfo.Scoped(schemaId, scopes)
-                }
-            )
+            .withScopedSchemas(ViaductSchemas.all)
             .withTenantModuleInjectorFactory(SharedTenantModuleInjectorFactory(KoinTenantCodeInjector()))
             .withMeterRegistry(get())
             .build()
