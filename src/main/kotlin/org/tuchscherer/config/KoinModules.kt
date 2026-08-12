@@ -85,10 +85,11 @@ val viaductModule = module {
     single { QueryComplexityGuard(get()) }
     single<Viaduct> {
         val underlying = ViaductBuilder()
-            .withScopedSchemas(listOf(
-                SchemaScopeInfo.Scoped("public", setOf("public")),
-                SchemaScopeInfo.Scoped("admin", setOf("public", "admin")),
-            ))
+            .withScopedSchemas(
+                SchemaScopes.servedSchemas.map { (schemaId, scopes) ->
+                    SchemaScopeInfo.Scoped(schemaId, scopes)
+                }
+            )
             .withTenantModuleInjectorFactory(SharedTenantModuleInjectorFactory(KoinTenantCodeInjector()))
             .withMeterRegistry(get())
             .build()
