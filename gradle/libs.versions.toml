@@ -21,6 +21,8 @@ junit-platform-launcher = "6.1.1"
 mockk = "1.14.11"
 h2 = "2.4.240"
 assertj = "3.27.7"
+# Matches the kotest version viaduct-test-fixtures already brings transitively.
+kotest = "5.9.1"
 netty = "4.2.16.Final"
 bouncycastle = "1.84"
 langchain4j = "1.17.2"
@@ -79,6 +81,7 @@ junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine", vers
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher", version.ref = "junit-platform-launcher" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 h2 = { module = "com.h2database:h2", version.ref = "h2" }
+kotest-property = { module = "io.kotest:kotest-property", version.ref = "kotest" }
 assertj-core = { module = "org.assertj:assertj-core", version.ref = "assertj" }
 langchain4j-core = { module = "dev.langchain4j:langchain4j", version.ref = "langchain4j" }
 langchain4j-ollama = { module = "dev.langchain4j:langchain4j-ollama", version.ref = "langchain4j" }
