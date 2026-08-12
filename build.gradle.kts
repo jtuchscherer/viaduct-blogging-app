@@ -103,6 +103,7 @@ dependencies {
     testImplementation(libs.mockk)
     testImplementation(libs.h2)
     testImplementation(libs.assertj.core)
+    testImplementation(libs.kotest.property)
 }
 
 application {
