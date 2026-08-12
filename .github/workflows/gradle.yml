@@ -70,6 +70,11 @@ jobs:
     - name: Run API E2E Tests
       run: bash query-tests.sh
 
+    # Fails if the public GraphQL contract drifted from the committed snapshot. Intentional
+    # changes are landed by re-running `./schema-check.sh --update` and committing the diff.
+    - name: Check public GraphQL schema snapshot
+      run: bash schema-check.sh
+
     # NOTE: The Gradle Wrapper is the default and recommended way to run Gradle (https://docs.gradle.org/current/userguide/gradle_wrapper.html).
     # If your project does not have the Gradle Wrapper configured, you can use the following configuration to run Gradle with a specified version.
     #
