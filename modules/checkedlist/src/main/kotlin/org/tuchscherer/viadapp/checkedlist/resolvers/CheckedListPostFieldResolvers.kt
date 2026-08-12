@@ -15,9 +15,20 @@ import viaduct.api.grts.User as ViaductUser
 import java.util.UUID
 
 /**
- * Resolves [CheckedListPost.items] — the ordered list of checklist items.
+ * Parent selection shared by every field resolver in this file: spreads [PostIdFragment], the
+ * named fragment declared in `CheckedListFragments.kt`.
+ *
+ * A `const val` because annotation arguments must be compile-time constants, and spreading a
+ * named fragment rather than inlining `{ id }` so the selection is schema-validated at build
+ * time instead of at execution time.
  */
-@Resolver(objectValueFragment = "fragment _ on CheckedListPost { id }")
+private const val POST_ID = "fragment _ on CheckedListPost { ...PostIdFragment }"
+
+/**
+ * Resolves [CheckedListPost.items] — the ordered list of checklist items.
+ *
+ */
+@Resolver(objectValueFragment = POST_ID)
 class CheckedListPostItemsResolver : CheckedListPostResolvers.Items() {
     private val itemRepository: CheckedListItemRepository by inject(CheckedListItemRepository::class.java)
 
@@ -31,7 +42,7 @@ class CheckedListPostItemsResolver : CheckedListPostResolvers.Items() {
  * Batch resolves [CheckedListPost.author]. Uses [PostCreationPort] to get author IDs,
  * then delegates to Viaduct's node cache via [ctx.nodeRef].
  */
-@Resolver(objectValueFragment = "fragment _ on CheckedListPost { id }")
+@Resolver(objectValueFragment = POST_ID)
 class CheckedListPostAuthorBatchResolver : CheckedListPostResolvers.Author() {
     private val postCreationPort: PostCreationPort by inject(PostCreationPort::class.java)
 
@@ -54,7 +65,7 @@ class CheckedListPostAuthorBatchResolver : CheckedListPostResolvers.Author() {
 /**
  * Resolves [CheckedListPost.comments].
  */
-@Resolver(objectValueFragment = "fragment _ on CheckedListPost { id }")
+@Resolver(objectValueFragment = POST_ID)
 class CheckedListPostCommentsResolver : CheckedListPostResolvers.Comments() {
     private val socialPort: PostSocialPort by inject(PostSocialPort::class.java)
 
@@ -73,7 +84,7 @@ class CheckedListPostCommentsResolver : CheckedListPostResolvers.Comments() {
 /**
  * Resolves [CheckedListPost.commentCount].
  */
-@Resolver(objectValueFragment = "fragment _ on CheckedListPost { id }")
+@Resolver(objectValueFragment = POST_ID)
 class CheckedListPostCommentCountResolver : CheckedListPostResolvers.CommentCount() {
     private val socialPort: PostSocialPort by inject(PostSocialPort::class.java)
 
@@ -86,7 +97,7 @@ class CheckedListPostCommentCountResolver : CheckedListPostResolvers.CommentCoun
 /**
  * Resolves [CheckedListPost.likes].
  */
-@Resolver(objectValueFragment = "fragment _ on CheckedListPost { id }")
+@Resolver(objectValueFragment = POST_ID)
 class CheckedListPostLikesResolver : CheckedListPostResolvers.Likes() {
     private val socialPort: PostSocialPort by inject(PostSocialPort::class.java)
 
@@ -104,7 +115,7 @@ class CheckedListPostLikesResolver : CheckedListPostResolvers.Likes() {
 /**
  * Resolves [CheckedListPost.likeCount].
  */
-@Resolver(objectValueFragment = "fragment _ on CheckedListPost { id }")
+@Resolver(objectValueFragment = POST_ID)
 class CheckedListPostLikeCountResolver : CheckedListPostResolvers.LikeCount() {
     private val socialPort: PostSocialPort by inject(PostSocialPort::class.java)
 
@@ -117,7 +128,7 @@ class CheckedListPostLikeCountResolver : CheckedListPostResolvers.LikeCount() {
 /**
  * Resolves [CheckedListPost.isLikedByMe]. Returns false for unauthenticated requests.
  */
-@Resolver(objectValueFragment = "fragment _ on CheckedListPost { id }")
+@Resolver(objectValueFragment = POST_ID)
 class CheckedListPostIsLikedByMeResolver : CheckedListPostResolvers.IsLikedByMe() {
     private val socialPort: PostSocialPort by inject(PostSocialPort::class.java)
     private val currentUserProvider: CheckedListCurrentUserProvider
