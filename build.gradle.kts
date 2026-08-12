@@ -1,9 +1,17 @@
 // Force patched versions in the Gradle plugin classpath.
-// The Viaduct plugin pulls in Netty 4.1.x, older Logback, and old Jackson (2.17.3, via
-// com.airbnb.viaduct.gradle:common -> jackson-module-kotlin) as build-time dependencies;
-// these show up in GitHub's dependency graph (attributed to settings.gradle.kts) and
-// trigger Dependabot alerts even though they are only used during the build, not at
-// runtime.
+// The Viaduct plugin pulls in Netty 4.1.x and older Logback as build-time
+// dependencies; these show up in GitHub's dependency graph (attributed to
+// settings.gradle.kts) and trigger Dependabot alerts even though they are
+// only used during the build, not at runtime.
+//
+// NOTE: this mechanism does NOT reach dependencies pulled in via the plugins{} DSL
+// (resolved through pluginManagement, a separate graph from buildscript.configurations).
+// The Viaduct plugin also transitively depends on jackson-module-kotlin 2.17.3 (CVE, fixed
+// in 2.22.1) via com.airbnb.viaduct.gradle:common — forcing it here looked like it worked
+// (`./gradlew buildEnvironment` reported it as forced) but the live dependency-submission
+// SBOM kept showing the unforced 2.17.3, and the corresponding Dependabot alerts never
+// cleared. Removed rather than left in place; see #36's follow-up discussion. The real fix
+// is upstream, in Viaduct's own gradle:common module bumping jackson-module-kotlin.
 buildscript {
     configurations.all {
         resolutionStrategy.force(
@@ -18,11 +26,7 @@ buildscript {
             "io.netty:netty-transport-native-epoll:4.1.132.Final",
             "io.netty:netty-transport-native-kqueue:4.1.132.Final",
             "ch.qos.logback:logback-classic:1.5.37",
-            "ch.qos.logback:logback-core:1.5.37",
-            "com.fasterxml.jackson.core:jackson-databind:2.22.1",
-            "com.fasterxml.jackson.core:jackson-core:2.22.1",
-            "com.fasterxml.jackson.core:jackson-annotations:2.22",
-            "com.fasterxml.jackson.module:jackson-module-kotlin:2.22.1"
+            "ch.qos.logback:logback-core:1.5.37"
         )
     }
 }
