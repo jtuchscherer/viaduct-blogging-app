@@ -105,19 +105,30 @@ application {
     mainClass.set("org.tuchscherer.viadapp.ViaductApplicationKt")
 }
 
-// Force a patched OpenTelemetry everywhere. The Kotlin Gradle plugin's Swift Export worker
-// tooling (org.jetbrains.kotlin:swift-export-embeddable, pulled in by kotlin.jvm on every
-// project) transitively depends on opentelemetry-api/-context 1.41.0, which has a CVE fixed
-// in 1.62.0 — unrelated to the :modules:ai/tracy-core occurrence already forced via the
-// opentelemetry-bom platform dependency there (#36). swiftExportClasspathResolvable is a
-// per-project configuration the Kotlin plugin creates on every project, so this needs
-// allprojects rather than the root-only configurations.all block below.
+// Force patched versions across every project. The Kotlin Gradle plugin creates several
+// internal tooling configurations on every project regardless of whether we ever exercise
+// them, each pulling its own dependencies independent of anything we declare:
+//   - swiftExportClasspathResolvable (Kotlin/Native Swift Export worker) transitively
+//     depends on opentelemetry-api/-context 1.41.0, CVE fixed in 1.62.0 — unrelated to the
+//     :modules:ai/tracy-core occurrence already forced via the opentelemetry-bom platform
+//     dependency there (#36).
+//   - kotlinBouncyCastleConfiguration ("Bouncy Castle dependencies used internally for
+//     library publishing validation tasks. Not used during compilation.", per its own
+//     description) transitively depends on bouncycastle 1.80/1.80.2 — the same CVEs
+//     already forced below for our own runtime dependencies, fixed in 1.84.
+// Both are per-project configurations the Kotlin plugin creates on every project, so this
+// needs allprojects rather than the root-only configurations.all block below.
 val opentelemetryVersion: String = libs.versions.opentelemetry.get()
+val bouncyCastleVersion: String = libs.versions.bouncycastle.get()
 allprojects {
     configurations.all {
         resolutionStrategy.force(
             "io.opentelemetry:opentelemetry-api:$opentelemetryVersion",
             "io.opentelemetry:opentelemetry-context:$opentelemetryVersion",
+            "org.bouncycastle:bcprov-jdk18on:$bouncyCastleVersion",
+            "org.bouncycastle:bcpg-jdk18on:$bouncyCastleVersion",
+            "org.bouncycastle:bcpkix-jdk18on:$bouncyCastleVersion",
+            "org.bouncycastle:bcutil-jdk18on:$bouncyCastleVersion",
         )
     }
 }
@@ -126,14 +137,9 @@ allprojects {
 val viaductVersion: String = libs.versions.viaduct.get()
 val nettyVersion: String = libs.versions.netty.get()
 val jacksonCore3Version: String = libs.versions.jackson3.get()
-val bouncyCastleVersion: String = libs.versions.bouncycastle.get()
 configurations.all {
     resolutionStrategy.force(
         "tools.jackson.core:jackson-core:$jacksonCore3Version",
-        "org.bouncycastle:bcprov-jdk18on:$bouncyCastleVersion",
-        "org.bouncycastle:bcpg-jdk18on:$bouncyCastleVersion",
-        "org.bouncycastle:bcpkix-jdk18on:$bouncyCastleVersion",
-        "org.bouncycastle:bcutil-jdk18on:$bouncyCastleVersion",
         "io.netty:netty-codec-http:$nettyVersion",
         "io.netty:netty-codec-http2:$nettyVersion",
         "io.netty:netty-codec-compression:$nettyVersion",
