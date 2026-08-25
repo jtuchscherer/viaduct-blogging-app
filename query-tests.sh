@@ -516,7 +516,7 @@ USER1_GID=$(curl -s -X POST $GRAPHQL_URL \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer $USER1_TOKEN" \
     -d '{"query":"query { me { id } }"}' \
-    | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data']['me']['id'])")
+    | jq -r '.data.me.id // empty')
 
 NODE_POST_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
     -H "Content-Type: application/json" \
@@ -543,7 +543,7 @@ FRESH_LIKE_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer $USER2_TOKEN" \
     -d "{\"query\":\"mutation { likePost(postId: \\\"$POST1_ID\\\") { id } }\"}")
-FRESH_LIKE_ID=$(echo "$FRESH_LIKE_RESPONSE" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data']['likePost']['id'])")
+FRESH_LIKE_ID=$(echo "$FRESH_LIKE_RESPONSE" | jq -r '.data.likePost.id // empty')
 
 NODE_LIKE_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
     -H "Content-Type: application/json" \
@@ -633,7 +633,7 @@ else
 fi
 
 # Verify totalCount = 2 (POST1 and POST3 remain after POST2 was deleted)
-TOTAL_COUNT=$(echo $CONN_RESPONSE | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data']['postsConnection']['totalCount'])" 2>/dev/null || echo "")
+TOTAL_COUNT=$(echo $CONN_RESPONSE | jq -r '.data.postsConnection.totalCount // empty' 2>/dev/null || echo "")
 if [ "$TOTAL_COUNT" = "2" ]; then
     print_success "postsConnection totalCount=2 (correct)"
 else
@@ -648,9 +648,9 @@ CONN_PAGED_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
         \"query\": \"{ postsConnection(first: 1) { totalCount pageInfo { hasNextPage endCursor } edges { cursor node { id title } } } }\"
     }")
 
-PAGE1_TITLE=$(echo $CONN_PAGED_RESPONSE | python3 -c "import sys,json; d=json.load(sys.stdin); edges=d['data']['postsConnection']['edges']; print(edges[0]['node']['title'] if edges else '')" 2>/dev/null || echo "")
-HAS_NEXT=$(echo $CONN_PAGED_RESPONSE | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data']['postsConnection']['pageInfo']['hasNextPage'])" 2>/dev/null || echo "")
-END_CURSOR=$(echo $CONN_PAGED_RESPONSE | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data']['postsConnection']['pageInfo']['endCursor'] or '')" 2>/dev/null || echo "")
+PAGE1_TITLE=$(echo $CONN_PAGED_RESPONSE | jq -r '.data.postsConnection.edges[0].node.title // empty' 2>/dev/null || echo "")
+HAS_NEXT=$(echo $CONN_PAGED_RESPONSE | jq -r '.data.postsConnection.pageInfo.hasNextPage' 2>/dev/null || echo "")
+END_CURSOR=$(echo $CONN_PAGED_RESPONSE | jq -r '.data.postsConnection.pageInfo.endCursor // empty' 2>/dev/null || echo "")
 
 if [ -n "$PAGE1_TITLE" ]; then
     print_success "postsConnection(first: 1) returned first post: \"$PAGE1_TITLE\""
@@ -659,7 +659,7 @@ else
     echo "Response: $CONN_PAGED_RESPONSE"
 fi
 
-if [ "$HAS_NEXT" = "True" ]; then
+if [ "$HAS_NEXT" = "true" ]; then
     print_success "postsConnection(first: 1) hasNextPage=true (more posts exist)"
 else
     print_error "postsConnection(first: 1) expected hasNextPage=true, got: $HAS_NEXT"
@@ -680,8 +680,8 @@ if [ -n "$END_CURSOR" ]; then
             \"query\": \"{ postsConnection(first: 1, after: \\\"$END_CURSOR\\\") { totalCount pageInfo { hasNextPage } edges { node { id title } } } }\"
         }")
 
-    PAGE2_TITLE=$(echo $CONN_AFTER_RESPONSE | python3 -c "import sys,json; d=json.load(sys.stdin); edges=d['data']['postsConnection']['edges']; print(edges[0]['node']['title'] if edges else '')" 2>/dev/null || echo "")
-    HAS_NEXT_PAGE2=$(echo $CONN_AFTER_RESPONSE | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data']['postsConnection']['pageInfo']['hasNextPage'])" 2>/dev/null || echo "")
+    PAGE2_TITLE=$(echo $CONN_AFTER_RESPONSE | jq -r '.data.postsConnection.edges[0].node.title // empty' 2>/dev/null || echo "")
+    HAS_NEXT_PAGE2=$(echo $CONN_AFTER_RESPONSE | jq -r '.data.postsConnection.pageInfo.hasNextPage' 2>/dev/null || echo "")
 
     if [ -n "$PAGE2_TITLE" ]; then
         print_success "Second page returned post: \"$PAGE2_TITLE\""
@@ -696,14 +696,14 @@ if [ -n "$END_CURSOR" ]; then
         print_error "Pages contain same or missing content (page1=\"$PAGE1_TITLE\", page2=\"$PAGE2_TITLE\")"
     fi
 
-    if [ "$HAS_NEXT_PAGE2" = "False" ]; then
+    if [ "$HAS_NEXT_PAGE2" = "false" ]; then
         print_success "Second page hasNextPage=false (no more posts)"
     else
         print_error "Second page expected hasNextPage=false, got: $HAS_NEXT_PAGE2"
     fi
 
     # Verify totalCount is consistent across both pages
-    TOTAL_COUNT_PAGE2=$(echo $CONN_AFTER_RESPONSE | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data']['postsConnection']['totalCount'])" 2>/dev/null || echo "")
+    TOTAL_COUNT_PAGE2=$(echo $CONN_AFTER_RESPONSE | jq -r '.data.postsConnection.totalCount // empty' 2>/dev/null || echo "")
     if [ "$TOTAL_COUNT_PAGE2" = "2" ]; then
         print_success "totalCount=2 consistent on second page"
     else
@@ -820,13 +820,13 @@ ALICE_GID=$(curl -s -X POST $GRAPHQL_URL \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer $ADMIN_TOKEN" \
     -d '{"query": "{ me { id } }"}' \
-    | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data']['me']['id'])" 2>/dev/null || echo "")
+    | jq -r '.data.me.id // empty' 2>/dev/null || echo "")
 
 BOB_GID=$(curl -s -X POST $GRAPHQL_URL \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer $USER2_TOKEN" \
     -d '{"query": "{ me { id } }"}' \
-    | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data']['me']['id'])" 2>/dev/null || echo "")
+    | jq -r '.data.me.id // empty' 2>/dev/null || echo "")
 
 # --- Admin Queries ---
 
@@ -837,7 +837,7 @@ ADMIN_STATS_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
     -H "X-Schema: admin" \
     -d '{"query": "{ admin { stats { userCount postCount commentCount likeCount } } }"}')
 
-STATS_USER_COUNT=$(echo $ADMIN_STATS_RESPONSE | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data']['admin']['stats']['userCount'])" 2>/dev/null || echo "")
+STATS_USER_COUNT=$(echo $ADMIN_STATS_RESPONSE | jq -r '.data.admin.stats.userCount // empty' 2>/dev/null || echo "")
 if [ -n "$STATS_USER_COUNT" ] && [ "$STATS_USER_COUNT" -ge 2 ]; then
     print_success "admin.stats returns userCount=$STATS_USER_COUNT (>= 2)"
 else
@@ -845,7 +845,7 @@ else
     echo "Response: $ADMIN_STATS_RESPONSE"
 fi
 
-STATS_POST_COUNT=$(echo $ADMIN_STATS_RESPONSE | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data']['admin']['stats']['postCount'])" 2>/dev/null || echo "")
+STATS_POST_COUNT=$(echo $ADMIN_STATS_RESPONSE | jq -r '.data.admin.stats.postCount // empty' 2>/dev/null || echo "")
 if [ -n "$STATS_POST_COUNT" ] && [ "$STATS_POST_COUNT" -ge 1 ]; then
     print_success "admin.stats returns postCount=$STATS_POST_COUNT (>= 1)"
 else
@@ -904,7 +904,7 @@ ADMIN_USERS_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
     -H "X-Schema: admin" \
     -d '{"query": "{ admin { users(limit: 10) { totalCount users { id username } } } }"}')
 
-USERS_TOTAL=$(echo $ADMIN_USERS_RESPONSE | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data']['admin']['users']['totalCount'])" 2>/dev/null || echo "")
+USERS_TOTAL=$(echo $ADMIN_USERS_RESPONSE | jq -r '.data.admin.users.totalCount // empty' 2>/dev/null || echo "")
 if [ -n "$USERS_TOTAL" ] && [ "$USERS_TOTAL" -ge 2 ]; then
     print_success "admin.users returns totalCount=$USERS_TOTAL (>= 2)"
 else
@@ -933,7 +933,7 @@ ADMIN_CONTENT_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
     -H "X-Schema: admin" \
     -d "{\"query\": \"{ admin { userContentCounts(userId: \\\"$ALICE_GID\\\") { postCount commentCount likeCount } } }\"}")
 
-ALICE_POST_COUNT=$(echo $ADMIN_CONTENT_RESPONSE | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data']['admin']['userContentCounts']['postCount'])" 2>/dev/null || echo "")
+ALICE_POST_COUNT=$(echo $ADMIN_CONTENT_RESPONSE | jq -r '.data.admin.userContentCounts.postCount // empty' 2>/dev/null || echo "")
 if [ -n "$ALICE_POST_COUNT" ] && [ "$ALICE_POST_COUNT" -ge 1 ]; then
     print_success "admin.userContentCounts returns postCount=$ALICE_POST_COUNT for alice"
 else
@@ -948,7 +948,7 @@ ADMIN_POSTS_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
     -H "X-Schema: admin" \
     -d '{"query": "{ admin { posts(limit: 10) { totalCount posts { id title } } } }"}')
 
-POSTS_TOTAL=$(echo $ADMIN_POSTS_RESPONSE | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data']['admin']['posts']['totalCount'])" 2>/dev/null || echo "")
+POSTS_TOTAL=$(echo $ADMIN_POSTS_RESPONSE | jq -r '.data.admin.posts.totalCount // empty' 2>/dev/null || echo "")
 if [ -n "$POSTS_TOTAL" ] && [ "$POSTS_TOTAL" -ge 1 ]; then
     print_success "admin.posts returns totalCount=$POSTS_TOTAL (>= 1)"
 else
@@ -977,7 +977,7 @@ ADMIN_COMMENTS_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
     -H "X-Schema: admin" \
     -d '{"query": "{ admin { comments(limit: 10) { totalCount comments { id content } } } }"}')
 
-COMMENTS_TOTAL=$(echo $ADMIN_COMMENTS_RESPONSE | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data']['admin']['comments']['totalCount'])" 2>/dev/null || echo "")
+COMMENTS_TOTAL=$(echo $ADMIN_COMMENTS_RESPONSE | jq -r '.data.admin.comments.totalCount // empty' 2>/dev/null || echo "")
 if [ -n "$COMMENTS_TOTAL" ] && [ "$COMMENTS_TOTAL" -ge 1 ]; then
     print_success "admin.comments returns totalCount=$COMMENTS_TOTAL (>= 1)"
 else
@@ -1007,7 +1007,7 @@ THROWAWAY_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
     -H "Authorization: Bearer $USER2_TOKEN" \
     -d '{"query": "mutation { createPost(input: {title: \"Throwaway\", content: \"Will be admin-deleted\"}) { id } }"}')
 
-THROWAWAY_ID=$(echo $THROWAWAY_RESPONSE | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data']['createPost']['id'])" 2>/dev/null || echo "")
+THROWAWAY_ID=$(echo $THROWAWAY_RESPONSE | jq -r '.data.createPost.id // empty' 2>/dev/null || echo "")
 
 if [ -n "$THROWAWAY_ID" ]; then
     print_info "Testing adminDeletePost mutation..."
@@ -1466,7 +1466,7 @@ ADD_FOR_UPDATE=$(curl -s -X POST $GRAPHQL_URL \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer $USER1_TOKEN" \
     -d "{\"query\": \"mutation { addCheckedListItem(input: { postId: \\\"$CHECKLIST_POST_ID\\\", text: \\\"Original text\\\" }) { id text } }\"}")
-ITEM_FOR_UPDATE_ID=$(echo $ADD_FOR_UPDATE | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data']['addCheckedListItem']['id'])" 2>/dev/null || echo "")
+ITEM_FOR_UPDATE_ID=$(echo $ADD_FOR_UPDATE | jq -r '.data.addCheckedListItem.id // empty' 2>/dev/null || echo "")
 
 if [ ! -z "$ITEM_FOR_UPDATE_ID" ]; then
     UPDATE_ITEM_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
@@ -1503,7 +1503,7 @@ THROWAWAY_CL_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer $USER1_TOKEN" \
     -d '{"query": "mutation { createCheckedListPost(input: { title: \"Throwaway Checklist\", items: [\"item\"] }) { id } }"}')
-THROWAWAY_CL_ID=$(echo $THROWAWAY_CL_RESPONSE | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data']['createCheckedListPost']['id'])" 2>/dev/null || echo "")
+THROWAWAY_CL_ID=$(echo $THROWAWAY_CL_RESPONSE | jq -r '.data.createCheckedListPost.id // empty' 2>/dev/null || echo "")
 
 if [ ! -z "$THROWAWAY_CL_ID" ]; then
     DELETE_CL_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
@@ -1696,14 +1696,7 @@ CL_VIEW_COUNT_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
     -H "Content-Type: application/json" \
     -d "{\"query\": \"{ checkedListPosts { id viewCount } }\"}")
 
-CL_VIEW_COUNT=$(echo $CL_VIEW_COUNT_RESPONSE | python3 -c "
-import sys,json
-data = json.load(sys.stdin)
-for p in data['data']['checkedListPosts']:
-    if p['id'] == '$(echo $CHECKLIST_POST_ID | sed "s/\"/\\\\\"/g")':
-        print(p['viewCount'])
-        break
-" 2>/dev/null)
+CL_VIEW_COUNT=$(echo $CL_VIEW_COUNT_RESPONSE | jq -r --arg id "$CHECKLIST_POST_ID" '.data.checkedListPosts[] | select(.id == $id) | .viewCount' 2>/dev/null)
 
 if [ ! -z "$CL_VIEW_COUNT" ] && [ "$CL_VIEW_COUNT" -ge 1 ] 2>/dev/null; then
     print_success "viewCount on CheckedListPost is $CL_VIEW_COUNT (>= 1)"
