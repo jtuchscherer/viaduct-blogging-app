@@ -3,10 +3,12 @@ package org.tuchscherer.viadapp.resolvers
 import org.tuchscherer.auth.AuthorizationException
 import org.tuchscherer.auth.NotFoundException
 import org.tuchscherer.auth.requireAuth
+import org.tuchscherer.database.PostStatus
 import org.tuchscherer.database.repositories.PostRepository
 import org.tuchscherer.viadapp.resolvers.resolverbases.MutationResolvers
 import viaduct.api.resolver.Resolver
 import viaduct.api.grts.BlogPost as ViaductBlogPost
+import viaduct.api.grts.PostStatus as ViaductPostStatus
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -26,7 +28,13 @@ class CreatePostResolver(
             content = input.content,
             authorId = user.id.value,
             createdAt = LocalDateTime.now(),
-            updatedAt = LocalDateTime.now()
+            updatedAt = LocalDateTime.now(),
+            // Omitted status means PUBLISHED, so clients written before drafts existed are
+            // unaffected.
+            status = when (input.status) {
+                ViaductPostStatus.DRAFT -> PostStatus.DRAFT
+                else -> PostStatus.PUBLISHED
+            }
         )
 
         return post.toViaductBlogPost(ctx)

@@ -14,6 +14,12 @@ type User implements Node @resolver(isBatching: true) @scope(to: ["public", "adm
 # tenant module (PostAnalytics.graphqls) which extends each concrete post type.
 # The fields below intentionally carry no @resolver: field resolvers belong on the
 # concrete post types, each of which declares its own.
+# Whether a post is visible to everyone or only to its author.
+enum PostStatus @scope(to: ["public", "admin"]) {
+  DRAFT
+  PUBLISHED
+}
+
 interface Post implements Node @scope(to: ["public", "admin"]) {
   id: ID!
   title: String!
@@ -23,6 +29,10 @@ interface Post implements Node @scope(to: ["public", "admin"]) {
   likes: [Like!]!
   likeCount: Int!
   isLikedByMe: Boolean!
+  # DRAFT is visible only to the author and to admins.
+  status: PostStatus!
+  # Null while a draft; set on publish and cleared on unpublish.
+  publishedAt: String
   createdAt: String!
   updatedAt: String!
 }
@@ -38,6 +48,10 @@ type BlogPost implements Post & Node @resolver(isBatching: true) @scope(to: ["pu
   likes: [Like!]! @resolver
   likeCount: Int! @resolver
   isLikedByMe: Boolean! @resolver
+  # DRAFT is visible only to the author and to admins.
+  status: PostStatus!
+  # Null while a draft; set on publish and cleared on unpublish.
+  publishedAt: String
   createdAt: String!
   updatedAt: String!
 }
@@ -63,6 +77,8 @@ type Like implements Node @resolver(isBatching: true) @scope(to: ["public", "adm
 input CreatePostInput @scope(to: ["public", "admin"]) {
   title: String!
   content: String!
+  # Defaults to PUBLISHED when omitted, so existing clients keep their behaviour.
+  status: PostStatus
 }
 
 input UpdatePostInput @scope(to: ["public", "admin"]) {
@@ -200,6 +216,10 @@ extend type Mutation @scope(to: ["public", "admin"]) {
   # Like operations
   likePost(postId: ID! @idOf(type: "BlogPost")): Like! @resolver
   unlikePost(postId: ID! @idOf(type: "BlogPost")): Boolean! @resolver
+
+  # Draft / publish. postId is a bare ID! so one mutation serves every post type.
+  publishPost(postId: ID!): Post! @resolver
+  unpublishPost(postId: ID!): Post! @resolver
 
   # AI operations
   rephraseContent(content: String!, tone: RephraseTone): RephraseResult! @resolver

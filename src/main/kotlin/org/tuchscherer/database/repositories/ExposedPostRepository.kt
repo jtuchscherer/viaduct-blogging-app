@@ -5,6 +5,7 @@ import org.tuchscherer.database.Comments
 import org.tuchscherer.database.Like
 import org.tuchscherer.database.Likes
 import org.tuchscherer.database.Post
+import org.tuchscherer.database.PostStatus
 import org.tuchscherer.database.PostType
 import org.tuchscherer.database.Posts
 import org.tuchscherer.database.Users
@@ -31,12 +32,17 @@ class ExposedPostRepository : PostRepository {
             .associateBy { it.id.value }
     }
 
+    // Deliberately unfiltered by status: an author must see their own drafts here.
     override fun findByAuthorId(authorId: UUID): List<Post> = transaction {
         Post.find { (Posts.authorId eq authorId) and (Posts.postType eq PostType.BLOG_POST) }.toList()
     }
 
+    // Published only: the public feed must never surface a draft, and filtering here means a
+    // draft is not loaded at all rather than filtered out later.
     override fun findAll(): List<Post> = transaction {
-        Post.find { Posts.postType eq PostType.BLOG_POST }.toList()
+        Post.find {
+            (Posts.postType eq PostType.BLOG_POST) and (Posts.status eq PostStatus.PUBLISHED)
+        }.toList()
     }
 
     override fun create(
@@ -44,16 +50,30 @@ class ExposedPostRepository : PostRepository {
         content: String,
         authorId: UUID,
         createdAt: LocalDateTime,
-        updatedAt: LocalDateTime
+        updatedAt: LocalDateTime,
+        status: String
     ): Post = transaction {
         Post.new {
             this.title = title
             this.content = content
             this.authorId = EntityID(authorId, Users)
+            this.status = status
+            // A post created as published is published now; a draft has no publication time.
+            this.publishedAt = if (status == PostStatus.PUBLISHED) createdAt else null
             this.createdAt = createdAt
             this.updatedAt = updatedAt
         }
     }
+
+    override fun updateStatus(id: UUID, status: String, publishedAt: LocalDateTime?): Post? =
+        transaction {
+            Post.findById(id)?.also {
+                it.status = status
+                it.publishedAt = publishedAt
+                it.updatedAt = LocalDateTime.now()
+                it.flush()
+            }
+        }
 
     override fun update(post: Post): Post = transaction {
         post.also {
@@ -82,15 +102,22 @@ class ExposedPostRepository : PostRepository {
     }
 
     override fun findPage(limit: Int, offset: Int): List<Post> = transaction {
-        Post.find { Posts.postType eq PostType.BLOG_POST }
-            .orderBy(Posts.createdAt to org.jetbrains.exposed.v1.core.SortOrder.DESC)
+        Post.find {
+            (Posts.postType eq PostType.BLOG_POST) and (Posts.status eq PostStatus.PUBLISHED)
+        }
+            // Ordered by publication rather than creation, so a long-held draft appears as new
+            // when it is finally published.
+            .orderBy(Posts.publishedAt to org.jetbrains.exposed.v1.core.SortOrder.DESC)
             .limit(limit)
             .offset(offset.toLong())
             .toList()
     }
 
+    // Must agree with findPage, or totalCount would advertise drafts the caller cannot fetch.
     override fun count(): Long = transaction {
-        Post.find { Posts.postType eq PostType.BLOG_POST }.count()
+        Post.find {
+            (Posts.postType eq PostType.BLOG_POST) and (Posts.status eq PostStatus.PUBLISHED)
+        }.count()
     }
 
     override fun getAuthorIdsByPostIds(postIds: List<UUID>): Map<UUID, UUID> = transaction {

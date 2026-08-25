@@ -3,6 +3,7 @@
 package org.tuchscherer.resolvers
 
 import org.tuchscherer.auth.RequestContext
+import org.tuchscherer.database.PostStatus
 import org.tuchscherer.database.Comment
 import org.tuchscherer.database.Post
 import org.tuchscherer.database.User
@@ -77,6 +78,7 @@ class AdminQueryResolversTest : ResolverTestBase() {
         every { mockPost.authorId } returns EntityID(dbUserId, mockk())
         every { mockPost.createdAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
         every { mockPost.updatedAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
+        every { mockPost.status } returns PostStatus.PUBLISHED
 
         mockComment = mockk(relaxed = true)
         every { mockComment.id } returns EntityID(commentId, mockk())

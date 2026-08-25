@@ -23,6 +23,10 @@ type CheckedListPost implements Post & Node @resolver(isBatching: true) @scope(t
   likes: [Like!]! @resolver
   likeCount: Int! @resolver
   isLikedByMe: Boolean! @resolver
+  # DRAFT is visible only to the author and to admins.
+  status: PostStatus!
+  # Null while a draft; set on publish and cleared on unpublish.
+  publishedAt: String
   createdAt: String!
   updatedAt: String!
 }
@@ -32,6 +36,8 @@ input CreateCheckedListPostInput @scope(to: ["public", "admin"]) {
   title: String!
   description: String
   items: [String!]!
+  # Defaults to PUBLISHED when omitted, so existing clients keep their behaviour.
+  status: PostStatus
 }
 
 # Input type for adding an item to an existing checklist post.

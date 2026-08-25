@@ -3,6 +3,7 @@
 
 package org.tuchscherer.resolvers
 
+import org.tuchscherer.database.PostStatus
 import org.tuchscherer.database.Post
 import org.tuchscherer.database.PostType
 import org.tuchscherer.database.repositories.PostRepository
@@ -46,6 +47,7 @@ class PostsResolverTest : ResolverTestBase() {
         every { mockPost.postType } returns PostType.BLOG_POST
         every { mockPost.createdAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
         every { mockPost.updatedAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
+        every { mockPost.status } returns PostStatus.PUBLISHED
 
         GlobalContext.getOrNull()?.let { GlobalContext.stopKoin() }
         org.koin.core.context.startKoin {

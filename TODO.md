@@ -499,11 +499,11 @@ Two things follow from unpublish that the implementation has to settle:
   published survive unpublishing and reappear on republish. Deleting them would make unpublish a
   destructive act, which is not what "unpublish" implies. Note this means unpublishing hides
   *other people's* comments, which is the author's prerogative over their own post.
-- **`published_at` on unpublish — still open.** Keeping the original value means republishing
-  leaves the post in its old feed position; clearing it means the post resurfaces as new. Keeping
-  it is the safer default (unpublish is not a way to farm the top of the feed), so treat
-  `published_at` as "first published at" and let `status` alone decide visibility. Worth a second
-  look when the feed ordering is built.
+- **`published_at` is cleared on unpublish.** Decided: unpublishing sets it back to null, and
+  a later republish stamps a fresh timestamp. So the column means "published at, if currently
+  published" rather than "first published at", and a republished post resurfaces as new in a feed
+  ordered by it. The alternative — keeping the original value so a republished post returns to its
+  old position — was considered and rejected.
 
 ### Data model
 

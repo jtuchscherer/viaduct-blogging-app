@@ -4,6 +4,7 @@ import org.tuchscherer.database.PostType
 import viaduct.api.context.ExecutionContext
 import viaduct.api.context.ResolverExecutionContext
 import viaduct.api.grts.BlogPost as ViaductBlogPost
+import viaduct.api.grts.PostStatus as ViaductPostStatus
 import viaduct.api.grts.CheckedListPost as ViaductCheckedListPost
 import viaduct.api.grts.Comment as ViaductComment
 import viaduct.api.grts.Like as ViaductLike
@@ -18,6 +19,26 @@ import viaduct.api.grts.User as ViaductUser
 internal fun Long.toCountInt(): Int {
     require(this <= Int.MAX_VALUE) { "Count value $this exceeds GraphQL Int range (${Int.MAX_VALUE})" }
     return toInt()
+}
+
+/**
+ * Extract the UUID from a Viaduct global ID (base64 `TypeName:uuid`).
+ *
+ * Used by mutations whose argument is a bare `ID!` rather than `@idOf(type: ...)`, so that one
+ * mutation can accept either post type. The type prefix is discarded because both post types
+ * live in the same table.
+ *
+ * The analytics module has its own copy: it is compiled in isolation and cannot depend on the
+ * root project.
+ */
+internal fun decodePostGlobalId(encodedId: String): java.util.UUID {
+    val decoded = runCatching { String(java.util.Base64.getDecoder().decode(encodedId)) }
+        .getOrElse { throw IllegalArgumentException("Invalid post ID: $encodedId") }
+    val colonIdx = decoded.indexOf(String.format(":"))
+    require(colonIdx > 0) { "Invalid post ID format: $encodedId" }
+    val internalId = decoded.substring(colonIdx + 1)
+    return runCatching { java.util.UUID.fromString(internalId) }
+        .getOrElse { throw IllegalArgumentException("Invalid UUID in post ID: $internalId") }
 }
 
 internal fun org.tuchscherer.database.User.toViaductUser(ctx: ExecutionContext) =
@@ -41,6 +62,8 @@ internal fun org.tuchscherer.database.Post.toViaductBlogPost(ctx: ExecutionConte
         id(ctx.globalIDFor(ViaductBlogPost.Reflection, id.value.toString()))
         title(title)
         content(content)
+        status(ViaductPostStatus.valueOf(status))
+        publishedAt(publishedAt?.toString())
         createdAt(createdAt.toString())
         updatedAt(updatedAt.toString())
     }

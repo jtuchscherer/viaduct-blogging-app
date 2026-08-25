@@ -6,6 +6,7 @@ import org.tuchscherer.auth.AuthenticationException
 import org.tuchscherer.auth.AuthorizationException
 import org.tuchscherer.auth.NotFoundException
 import org.tuchscherer.auth.RequestContext
+import org.tuchscherer.database.PostStatus
 import org.tuchscherer.database.Post
 import org.tuchscherer.database.User
 import org.tuchscherer.database.repositories.PostRepository
@@ -48,6 +49,7 @@ class DeletePostResolverTest : ResolverTestBase() {
         every { mockPost.authorId } returns EntityID(userId, mockk())
         every { mockPost.createdAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
         every { mockPost.updatedAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
+        every { mockPost.status } returns PostStatus.PUBLISHED
 
         GlobalContext.getOrNull()?.let { GlobalContext.stopKoin() }
         org.koin.core.context.startKoin {

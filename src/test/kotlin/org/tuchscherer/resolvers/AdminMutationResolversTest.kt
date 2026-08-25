@@ -4,6 +4,7 @@ package org.tuchscherer.resolvers
 
 import org.tuchscherer.auth.NotFoundException
 import org.tuchscherer.auth.RequestContext
+import org.tuchscherer.database.PostStatus
 import org.tuchscherer.database.Comment
 import org.tuchscherer.database.Post
 import org.tuchscherer.database.User
@@ -103,6 +104,7 @@ class AdminMutationResolversTest : ResolverTestBase() {
         every { mockPost.content } returns "Original content"
         every { mockPost.createdAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
         every { mockPost.updatedAt } returns LocalDateTime.of(2025, 1, 1, 12, 0)
+        every { mockPost.status } returns PostStatus.PUBLISHED
 
         mockComment = mockk(relaxed = true)
         every { mockComment.id } returns EntityID(commentId, mockk())
@@ -283,6 +285,7 @@ class AdminMutationResolversTest : ResolverTestBase() {
         every { updatedPost.content } returns "New content"
         every { updatedPost.createdAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
         every { updatedPost.updatedAt } returns LocalDateTime.of(2025, 1, 1, 12, 0)
+        every { updatedPost.status } returns PostStatus.PUBLISHED
 
         val input = AdminUpdatePostInput.Builder(context)
             .id(globalIDFor(ViaductBlogPost.Reflection, postId.toString()))
