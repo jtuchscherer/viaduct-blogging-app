@@ -65,6 +65,13 @@ class ExposedPostRepository : PostRepository {
         }
     }
 
+    override fun publishedIds(ids: List<UUID>): Set<UUID> = transaction {
+        if (ids.isEmpty()) return@transaction emptySet()
+        Post.find {
+            (Posts.id inList ids.map { EntityID(it, Posts) }) and (Posts.status eq PostStatus.PUBLISHED)
+        }.map { it.id.value }.toSet()
+    }
+
     override fun updateStatus(id: UUID, status: String, publishedAt: LocalDateTime?): Post? =
         transaction {
             Post.findById(id)?.also {

@@ -38,6 +38,11 @@ interface PostRepository {
      * publishedAt is stamped when publishing and cleared when unpublishing, so it always means
      * "published at, if currently published". Returns null when the post does not exist.
      */
+    /**
+     * Of [ids], the subset that is published. Covers every post type, since both share the table.
+     */
+    fun publishedIds(ids: List<UUID>): Set<UUID>
+
     fun updateStatus(id: UUID, status: String, publishedAt: LocalDateTime?): Post?
 
     fun create(

@@ -6,6 +6,8 @@ import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import org.tuchscherer.ai.aiKoinModule
 import org.tuchscherer.analytics.ViaductPostTypeLookupPort
 import org.tuchscherer.analytics.analyticsKoinModule
+import org.tuchscherer.analytics.ViaductPostStatusLookupPort
+import org.tuchscherer.analytics.port.PostStatusLookupPort
 import org.tuchscherer.analytics.port.PostTypeLookupPort
 import org.tuchscherer.auth.AuthenticationService
 import org.tuchscherer.checkedlist.ViaductCheckedListCurrentUserProvider
@@ -199,6 +201,7 @@ val checkedListPortModule = module {
  */
 val analyticsPortModule = module {
     single<PostTypeLookupPort> { ViaductPostTypeLookupPort(get()) }
+    single<PostStatusLookupPort> { ViaductPostStatusLookupPort(get()) }
 }
 
 /**

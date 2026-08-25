@@ -5,6 +5,7 @@ import org.tuchscherer.checkedlist.repositories.CheckedListItemData
 import viaduct.api.context.ExecutionContext
 import viaduct.api.grts.CheckedListItem as ViaductCheckedListItem
 import viaduct.api.grts.CheckedListPost as ViaductCheckedListPost
+import viaduct.api.grts.PostStatus as ViaductPostStatus
 
 /**
  * Safe Long→Int conversion for GraphQL count fields.
@@ -28,6 +29,8 @@ internal fun PostData.toViaductPost(ctx: ExecutionContext): ViaductCheckedListPo
         id(ctx.globalIDFor(ViaductCheckedListPost.Reflection, d.id.toString()))
         title(d.title)
         description(d.description)
+        status(ViaductPostStatus.valueOf(d.status))
+        publishedAt(d.publishedAt)
         createdAt(d.createdAt)
         updatedAt(d.updatedAt)
     }

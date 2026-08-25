@@ -7,6 +7,7 @@ import org.tuchscherer.database.Comments
 import org.tuchscherer.database.Like
 import org.tuchscherer.database.Likes
 import org.tuchscherer.database.Post
+import org.tuchscherer.database.PostStatus
 import org.tuchscherer.database.PostType
 import org.tuchscherer.database.Posts
 import org.jetbrains.exposed.v1.core.SortOrder
@@ -31,13 +32,21 @@ import java.util.UUID
  */
 class ViaductPostCreationPort : PostCreationPort {
 
-    override fun createCheckedListPost(title: String, authorId: UUID, description: String): PostData = transaction {
+    override fun createCheckedListPost(
+        title: String,
+        authorId: UUID,
+        description: String,
+        status: String,
+    ): PostData = transaction {
         val now = LocalDateTime.now()
         val post = Post.new {
             this.title = title
             this.content = description  // description is stored in the content column
             this.authorId = EntityID(authorId, Posts)
             this.postType = PostType.CHECKED_LIST
+            this.status = status
+            // A checklist created as published is published now; a draft has no publication time.
+            this.publishedAt = if (status == PostStatus.PUBLISHED) now else null
             this.createdAt = now
             this.updatedAt = now
         }
@@ -58,9 +67,14 @@ class ViaductPostCreationPort : PostCreationPort {
         }.associate { it.id.value to it.toData() }
     }
 
+    // Published only: the public checklist feed must never surface a draft, and filtering here
+    // means a draft is never loaded rather than filtered out afterwards.
     override fun getAllCheckedListPosts(): List<PostData> = transaction {
-        Post.find { Posts.postType eq PostType.CHECKED_LIST }
-            .orderBy(Posts.createdAt to SortOrder.DESC)
+        Post.find {
+            (Posts.postType eq PostType.CHECKED_LIST) and (Posts.status eq PostStatus.PUBLISHED)
+        }
+            // Ordered by publication, so a long-held draft appears as new once published.
+            .orderBy(Posts.publishedAt to SortOrder.DESC)
             .map { it.toData() }
     }
 
@@ -104,6 +118,8 @@ class ViaductPostCreationPort : PostCreationPort {
         title = title,
         description = content,  // description is stored in Posts.content
         authorId = authorId.value,
+        status = status,
+        publishedAt = publishedAt?.toString(),
         createdAt = createdAt.toString(),
         updatedAt = updatedAt.toString(),
     )

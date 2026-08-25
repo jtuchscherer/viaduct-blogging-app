@@ -8,6 +8,7 @@ import org.koin.java.KoinJavaComponent.inject
 import viaduct.api.resolver.Resolver
 import viaduct.api.grts.CheckedListItem as ViaductCheckedListItem
 import viaduct.api.grts.CheckedListPost as ViaductCheckedListPost
+import viaduct.api.grts.PostStatus as ViaductPostStatus
 import java.util.UUID
 
 /**
@@ -35,7 +36,12 @@ class CreateCheckedListPostMutationResolver : MutationResolvers.CreateCheckedLis
         itemTexts.forEach { validateItemText(it) }
 
         val description = input.description ?: ""
-        val postData = postCreationPort.createCheckedListPost(input.title, userId, description)
+        // Omitted status means PUBLISHED, so clients written before drafts existed are unaffected.
+        val status = when (input.status) {
+            ViaductPostStatus.DRAFT -> "DRAFT"
+            else -> "PUBLISHED"
+        }
+        val postData = postCreationPort.createCheckedListPost(input.title, userId, description, status)
         itemTexts.forEach { text -> itemRepository.addItem(postData.id, text) }
 
         return postData.toViaductPost(ctx)

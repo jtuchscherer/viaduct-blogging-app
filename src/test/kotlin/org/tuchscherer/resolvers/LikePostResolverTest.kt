@@ -3,6 +3,7 @@ package org.tuchscherer.resolvers
 import org.tuchscherer.auth.AuthenticationException
 import org.tuchscherer.auth.NotFoundException
 import org.tuchscherer.auth.RequestContext
+import org.tuchscherer.database.PostStatus
 import org.tuchscherer.database.Like
 import org.tuchscherer.database.Post
 import org.tuchscherer.database.Posts
@@ -53,6 +54,7 @@ class LikePostResolverTest : ResolverTestBase() {
         mockPost = mockk(relaxed = true)
         every { mockPost.id } returns EntityID(postId, Posts)
         every { mockPost.title } returns "Test Post"
+        every { mockPost.status } returns PostStatus.PUBLISHED
 
         mockLike = mockk(relaxed = true)
         every { mockLike.id } returns EntityID(likeId, mockk())

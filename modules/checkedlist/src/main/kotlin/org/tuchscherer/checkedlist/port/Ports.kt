@@ -37,6 +37,10 @@ data class PostData(
     val title: String,
     val description: String,
     val authorId: UUID,
+    /** "DRAFT" or "PUBLISHED". A string so the module needs no root-project enum. */
+    val status: String,
+    /** Null while a draft. */
+    val publishedAt: String?,
     val createdAt: String,
     val updatedAt: String,
 )
@@ -67,7 +71,13 @@ data class LikeView(
  */
 interface PostCreationPort {
     /** Creates a new post row with postType=CHECKED_LIST, returning its scalar data. */
-    fun createCheckedListPost(title: String, authorId: UUID, description: String = ""): PostData
+    /** [status] is "DRAFT" or "PUBLISHED"; publishedAt is stamped only when publishing. */
+    fun createCheckedListPost(
+        title: String,
+        authorId: UUID,
+        description: String = "",
+        status: String = "PUBLISHED",
+    ): PostData
 
     /** Fetches scalar fields for a single CheckedListPost by ID, or null if not found. */
     fun getPostData(id: UUID): PostData?
@@ -76,9 +86,11 @@ interface PostCreationPort {
     fun getPostsData(ids: List<UUID>): Map<UUID, PostData>
 
     /** Returns all CheckedListPost rows ordered by createdAt DESC. */
+    /** Published checklists only — the public feed must never surface a draft. */
     fun getAllCheckedListPosts(): List<PostData>
 
     /** Returns all CheckedListPost rows for a specific author, ordered by createdAt DESC. */
+    /** Every checklist by this author, drafts included: this backs My Posts. */
     fun getCheckedListPostsByAuthorId(authorId: UUID): List<PostData>
 
     /** Returns authorId for each requested post ID. Missing IDs are absent. */

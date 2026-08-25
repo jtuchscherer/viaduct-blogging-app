@@ -1,5 +1,6 @@
 package org.tuchscherer.viadapp.resolvers
 
+import org.tuchscherer.auth.optionalAuth
 import org.tuchscherer.auth.requireAuth
 import org.tuchscherer.database.repositories.PostRepository
 import org.tuchscherer.viadapp.resolvers.resolverbases.QueryResolvers
@@ -23,7 +24,12 @@ class PostResolver(
 ) : QueryResolvers.Post() {
     override suspend fun resolve(ctx: Context): ViaductBlogPost? {
         val postId = UUID.fromString(ctx.arguments.id.internalID)
-        return postRepository.findById(postId)?.toViaductBlogPost(ctx)
+        val viewer = optionalAuth(ctx.requestContext)
+        // Null rather than an error for a draft the viewer may not see: the same answer a
+        // genuinely missing post gives, so this cannot confirm that the post exists.
+        return postRepository.findById(postId)
+            ?.takeIf { it.isVisibleTo(viewer) }
+            ?.toViaductBlogPost(ctx)
     }
 }
 

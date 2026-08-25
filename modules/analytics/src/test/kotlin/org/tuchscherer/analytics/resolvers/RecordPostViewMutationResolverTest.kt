@@ -1,5 +1,7 @@
 package org.tuchscherer.analytics.resolvers
 
+import org.tuchscherer.analytics.port.PostStatusLookupPort
+
 import io.mockk.every
 import io.mockk.justRun
 import io.mockk.mockk
@@ -29,6 +31,13 @@ class RecordPostViewMutationResolverTest {
         org.koin.core.context.startKoin {
             modules(module {
                 single<PostViewRepository> { postViewRepository }
+                // Reports every requested id as published, so these tests stay about ranking
+                // and limits rather than about publication status.
+                single<PostStatusLookupPort> {
+                    object : PostStatusLookupPort {
+                        override fun publishedIds(ids: List<java.util.UUID>): Set<java.util.UUID> = ids.toSet()
+                    }
+                }
             })
         }
     }

@@ -39,7 +39,8 @@ class CheckedListMutationResolverTest {
 
     private fun makePostData(authorId: UUID = userId) = PostData(
         id = postId, title = "Test Post", description = "",
-        authorId = authorId, createdAt = "2024-01-01T00:00:00", updatedAt = "2024-01-01T00:00:00",
+        authorId = authorId, status = "PUBLISHED", publishedAt = "2024-01-01T00:00:00",
+        createdAt = "2024-01-01T00:00:00", updatedAt = "2024-01-01T00:00:00",
     )
 
     private fun makeItemData() = CheckedListItemData(

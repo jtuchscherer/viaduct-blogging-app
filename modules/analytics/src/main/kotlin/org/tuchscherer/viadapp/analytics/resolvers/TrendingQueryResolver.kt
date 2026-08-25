@@ -1,5 +1,6 @@
 package org.tuchscherer.viadapp.analytics.resolvers
 
+import org.tuchscherer.analytics.port.PostStatusLookupPort
 import org.tuchscherer.analytics.port.PostTypeLookupPort
 import org.tuchscherer.analytics.port.PostTypeLookupPort.PostKind
 import org.tuchscherer.analytics.repositories.PostViewRepository
@@ -25,10 +26,29 @@ import viaduct.api.grts.Post as ViaductPost
 class TrendingQueryResolver : QueryResolvers.Trending() {
     private val postViewRepository: PostViewRepository by inject(PostViewRepository::class.java)
     private val postTypeLookupPort: PostTypeLookupPort by inject(PostTypeLookupPort::class.java)
+    private val postStatusLookupPort: PostStatusLookupPort by inject(PostStatusLookupPort::class.java)
+
+    private companion object {
+        /**
+         * How many extra candidates to rank before dropping unpublished ones.
+         *
+         * Views are ranked first and filtered second, so filtering alone would return fewer than
+         * the requested limit. Over-fetching keeps the list full in the common case without
+         * paging through the whole table.
+         */
+        const val OVER_FETCH_FACTOR = 3
+    }
 
     override suspend fun resolve(ctx: Context): List<ViaductPost> {
         val limit = ctx.arguments.limit ?: 10
-        val postIds = postViewRepository.getMostViewed(limit)
+
+        // A post keeps the views it earned while published, so unpublishing it would otherwise
+        // leave it sitting in trending. Filter by current status, not by view history.
+        val candidates = postViewRepository.getMostViewed(limit * OVER_FETCH_FACTOR)
+        if (candidates.isEmpty()) return emptyList()
+
+        val published = postStatusLookupPort.publishedIds(candidates)
+        val postIds = candidates.filter { it in published }.take(limit)
         if (postIds.isEmpty()) return emptyList()
 
         val typeByPostId = postTypeLookupPort.getPostTypes(postIds)

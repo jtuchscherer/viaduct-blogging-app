@@ -9,7 +9,9 @@
   BlogPost.isLikedByMe: Boolean!
   BlogPost.likeCount: Int!
   BlogPost.likes: [Like!]!
+  BlogPost.publishedAt: String
   BlogPost.readTimeMinutes: Float!
+  BlogPost.status: PostStatus!
   BlogPost.title: String!
   BlogPost.updatedAt: String!
   BlogPost.viewCount: Int!
@@ -28,7 +30,9 @@
   CheckedListPost.items: [CheckedListItem!]!
   CheckedListPost.likeCount: Int!
   CheckedListPost.likes: [Like!]!
+  CheckedListPost.publishedAt: String
   CheckedListPost.readTimeMinutes: Float!
+  CheckedListPost.status: PostStatus!
   CheckedListPost.title: String!
   CheckedListPost.updatedAt: String!
   CheckedListPost.viewCount: Int!
@@ -39,10 +43,12 @@
   Comment.post: Post!
   CreateCheckedListPostInput.description (input)
   CreateCheckedListPostInput.items (input)
+  CreateCheckedListPostInput.status (input)
   CreateCheckedListPostInput.title (input)
   CreateCommentInput.content (input)
   CreateCommentInput.postId (input)
   CreatePostInput.content (input)
+  CreatePostInput.status (input)
   CreatePostInput.title (input)
   Like.createdAt: String!
   Like.id: ID!
@@ -57,11 +63,13 @@
   Mutation.deleteComment: Boolean!
   Mutation.deletePost: Boolean!
   Mutation.likePost: Like!
+  Mutation.publishPost: Post!
   Mutation.recordPostView: Boolean!
   Mutation.rephraseContent: RephraseResult!
   Mutation.suggestChecklistItem: SuggestedChecklistItem!
   Mutation.toggleCheckedListItem: CheckedListItem!
   Mutation.unlikePost: Boolean!
+  Mutation.unpublishPost: Post!
   Mutation.updateCheckedListItem: CheckedListItem!
   Mutation.updateCheckedListPost: CheckedListPost!
   Mutation.updatePost: BlogPost!
@@ -78,10 +86,14 @@
   Post.isLikedByMe: Boolean!
   Post.likeCount: Int!
   Post.likes: [Like!]!
+  Post.publishedAt: String
+  Post.status: PostStatus!
   Post.title: String!
   Post.updatedAt: String!
   PostEdge.cursor: String!
   PostEdge.node: Post
+  PostStatus.DRAFT (enum)
+  PostStatus.PUBLISHED (enum)
   PostsConnection.edges: [PostEdge]
   PostsConnection.pageInfo: PageInfo!
   PostsConnection.totalCount: Int
@@ -116,6 +128,7 @@
   User.name: String!
   User.posts: [BlogPost!]!
   User.username: String!
+ENUM PostStatus
 ENUM RephraseTone
 INPUT_OBJECT AddCheckedListItemInput
 INPUT_OBJECT CreateCheckedListPostInput
