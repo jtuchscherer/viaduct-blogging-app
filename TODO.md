@@ -1,8 +1,8 @@
 # TODO: Viaduct Blogging App — Implementation Plan
 
-**Status**: 🚀 In Progress — Phases 1–26 complete; Phase 27 (recommendations) on hold
+**Status**: 🚀 In Progress — Phases 1–26 complete; Phase 27 (recommendations) on hold; Phase 28 (drafts) planned
 
-**Last Updated**: 2026-08-12
+**Last Updated**: 2026-08-25
 
 ## Test Statistics
 
@@ -41,6 +41,7 @@
 ## Next Steps
 
 - **Phase 27**: Post recommendation engine — ⏸️ on hold, see the phase section for why
+- **Phase 28** (next): Draft / publish for blog posts and checklists
 
 > See `AI-PLAN.md` for full design, technology choices, and file-by-file breakdown.
 
@@ -473,6 +474,119 @@ from `incrementViewCount`; trending should keep counting anonymous views.
 **Key files**: migration SQL, `PostEmbeddingRepository`, `EmbeddingService`, `RecommendationService`, resolver, `RecommendationsPanel.tsx`
 
 **Success criteria**: recommendations panel shows ≥ 1 relevant post after a user views several posts; unauthenticated / no-history users see trending posts instead; `./gradlew test` green.
+
+---
+
+## Phase 28: Draft / Publish ⏳ TODO
+
+**Goal**: an author can save a blog post or checklist as a draft, keep editing it privately, and
+publish when ready. Drafts are visible only to their author (and to admins).
+
+**Depends on**: nothing outstanding. Touches Phases 11–12 (pagination), 20–22 (analytics),
+23 (checklists) and the admin surface, because each of those is a way to reach a post.
+
+### Data model
+
+Both post types share the `posts` table, so **one status column covers both** — no per-type work.
+
+- `status varchar(20) NOT NULL DEFAULT 'PUBLISHED'` — `PostStatus.DRAFT` / `PostStatus.PUBLISHED`,
+  mirroring how `postType` is stored as a string constant.
+- `published_at datetime NULL` — null while a draft; set on first publish. `created_at` keeps
+  meaning "created", so the two are not conflated.
+- Flyway migration `V2__add_post_status.sql` (only `V1__create_tables.sql` exists today). It must
+  **backfill existing rows** to `PUBLISHED` with `published_at = created_at`; otherwise every
+  existing post silently becomes a draft and disappears from the feed.
+
+### Schema
+
+```graphql
+enum PostStatus @scope(to: ["public", "admin"]) { DRAFT PUBLISHED }
+```
+
+- `interface Post` gains `status: PostStatus!` and `publishedAt: String`, so both `BlogPost` and
+  `CheckedListPost` expose them.
+- `CreatePostInput` and `CreateCheckedListPostInput` gain an optional `status`, defaulting to
+  `PUBLISHED` so existing clients are unaffected.
+- `publishPost(postId: ID!)` and `unpublishPost(postId: ID!)` — a bare `ID!` with no `@idOf`, the
+  pattern `recordPostView` already uses so one mutation serves both post types. Auth required,
+  author only.
+- Every new type and field needs `@scope(to: ["public", "admin"])`; the vocabulary test from the
+  scope work will fail the build on a typo'd scope name.
+
+### Read paths — each needs an explicit decision
+
+Missing one of these is how a draft leaks. Enumerated from the schema rather than from memory:
+
+| Entry point | Drafts |
+|---|---|
+| `posts` | exclude |
+| `postsConnection` **and its `totalCount`** | exclude |
+| `checkedListPosts` | exclude |
+| `trending` | exclude |
+| `myPosts` / `myCheckedListPosts` | include — own drafts only |
+| `post(id)` | author or admin only |
+| **`node(id)` → `BlogPost` / `CheckedListPost`** | author or admin only |
+| `admin { posts }` / `admin { post(id) }` | include, with status shown |
+| `postComments(postId)` | empty for a draft |
+| `Comment.post` / `Like.post` | unreachable if writes are blocked; assert anyway |
+
+`node(id)` is the one to get right. It is not a convenience path — `PostDetailPage` and
+`EditPostPage` both read a post through `node(id)`, so it is the main single-post read and the
+most likely leak.
+
+### Write paths
+
+- `createComment`, `likePost`, `unlikePost` on a draft → reject. A draft has no audience.
+- `recordPostView` on a draft → no-op, so drafts cannot accumulate views or reach `trending`.
+- `addCheckedListItem` / `updateCheckedListItem` / `toggleCheckedListItem` on the author's own
+  draft → allowed; that is editing, not engagement.
+
+### Repository and port changes
+
+- `PostRepository`: `findAll`, `findPage`, `count`, `findByIds` need a published-only filter;
+  `findByAuthorId` keeps drafts. `create` takes a status; add `updateStatus(id, status)`.
+- `PostCreationPort` (checkedlist): `getAllCheckedListPosts` filters drafts,
+  `createCheckedListPost` takes a status, and `PostData` carries `status` so the module can render
+  a badge without a second lookup.
+
+### Frontend
+
+- **CreatePostPage** — "Save draft" alongside "Publish", on both the blog and checklist forms.
+- **EditPostPage** — publish / unpublish control, and a banner while the post is a draft.
+- **MyPostsPage** — draft badge and an All / Drafts / Published filter.
+- **PostDetailPage** — draft banner for the author; not-found for anyone else.
+- **HomePage** — unchanged, since drafts are excluded server-side. Its "New" sort should order
+  published posts by `publishedAt`, not `createdAt`, or a long-held draft jumps to the top on
+  publish.
+
+### Tests
+
+The leak tests are the point of this phase, not an afterthought:
+
+- another user's draft via `node(id)`, `post(id)`, `postComments`, `trending`, and
+  `postsConnection.totalCount`
+- the author's own draft **is** visible in `myPosts` and through `node(id)`
+- publish → appears in the feed; unpublish → disappears
+- `createComment` / `likePost` / `recordPostView` against a draft are rejected or no-ops
+- repository integration tests (H2) for the status filters, plus the migration backfill
+- `query-tests.sh` cases for the rejection paths, and a Playwright happy path: save draft → absent
+  from home → present in My Posts with a badge → publish → appears on home
+- `./schema-check.sh --update` — the contract gains an enum, two interface fields and two
+  mutations. Commit the snapshot diff so the change is reviewed.
+
+### Risks
+
+1. **Draft leakage through `node(id)`.** Primary risk, and the least obvious, because Relay node
+   resolution bypasses the list queries entirely.
+2. **Migration backfill.** Getting the default wrong unpublishes the whole blog.
+3. **`trending` under-filling.** It ranks ids by view count and then loads posts; filtering drafts
+   afterwards can return fewer than `limit`. Filter in the query or over-fetch and trim.
+4. **Feed ordering.** `createdAt` versus `publishedAt` changes where a newly published old draft
+   lands.
+
+**Success criteria**: an author can save, edit and publish a draft; no unauthenticated or
+non-author request can reach a draft through any entry point in the table above; existing posts
+stay published after migrating; all four suites green and the schema snapshot updated.
 
 ---
 
