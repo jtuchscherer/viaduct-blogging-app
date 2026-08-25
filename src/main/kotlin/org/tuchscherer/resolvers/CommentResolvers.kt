@@ -27,6 +27,7 @@ class CreateCommentResolver(
         val postId = UUID.fromString(input.postId.internalID)
         val post = postRepository.findById(postId)
             ?: throw NotFoundException("Post not found")
+        post.requirePublished("comment on")
 
         val comment = commentRepository.create(
             content = input.content,

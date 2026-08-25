@@ -3,6 +3,7 @@ package org.tuchscherer.resolvers
 import org.tuchscherer.auth.AuthenticationException
 import org.tuchscherer.auth.NotFoundException
 import org.tuchscherer.auth.RequestContext
+import org.tuchscherer.database.PostStatus
 import org.tuchscherer.database.Comment
 import org.tuchscherer.database.Post
 import org.tuchscherer.database.Posts
@@ -54,6 +55,7 @@ class CreateCommentResolverTest : ResolverTestBase() {
         mockPost = mockk(relaxed = true)
         every { mockPost.id } returns EntityID(postId, Posts)
         every { mockPost.title } returns "Test Post"
+        every { mockPost.status } returns PostStatus.PUBLISHED
 
         mockComment = mockk(relaxed = true)
         every { mockComment.id } returns EntityID(commentId, mockk())

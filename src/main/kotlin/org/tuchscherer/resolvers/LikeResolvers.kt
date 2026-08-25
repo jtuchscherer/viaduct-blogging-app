@@ -21,6 +21,7 @@ class LikePostMutationResolver(
 
         val post = postRepository.findById(postId)
             ?: throw NotFoundException("Post not found")
+        post.requirePublished("like")
 
         val existingLike = likeRepository.findByPostAndUser(post.id.value, user.id.value)
 

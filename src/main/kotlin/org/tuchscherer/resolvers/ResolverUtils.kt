@@ -1,5 +1,7 @@
 package org.tuchscherer.viadapp.resolvers
 
+import org.tuchscherer.auth.PostVisibility
+
 import org.tuchscherer.database.PostType
 import viaduct.api.context.ExecutionContext
 import viaduct.api.context.ResolverExecutionContext
@@ -31,6 +33,32 @@ internal fun Long.toCountInt(): Int {
  * The analytics module has its own copy: it is compiled in isolation and cannot depend on the
  * root project.
  */
+/**
+ * Whether [viewer] may read this post, delegating to [PostVisibility].
+ *
+ * An extension so the single-post read paths cannot accidentally disagree about how the
+ * viewer's id and admin flag are pulled out of the entity.
+ */
+internal fun org.tuchscherer.database.Post.isVisibleTo(viewer: org.tuchscherer.database.User?): Boolean =
+    PostVisibility.canView(
+        status = status,
+        authorId = authorId.value,
+        viewerId = viewer?.id?.value,
+        viewerIsAdmin = viewer?.isAdmin ?: false,
+    )
+
+/**
+ * Rejects engagement with a draft.
+ *
+ * A draft has no audience, so it cannot be commented on, liked or counted as viewed — not even
+ * by its author. Editing a draft is a different thing and stays allowed.
+ */
+internal fun org.tuchscherer.database.Post.requirePublished(action: String) {
+    if (status != org.tuchscherer.database.PostStatus.PUBLISHED) {
+        throw org.tuchscherer.auth.AuthorizationException("Cannot $action a draft post")
+    }
+}
+
 internal fun decodePostGlobalId(encodedId: String): java.util.UUID {
     val decoded = runCatching { String(java.util.Base64.getDecoder().decode(encodedId)) }
         .getOrElse { throw IllegalArgumentException("Invalid post ID: $encodedId") }

@@ -1,5 +1,7 @@
 package org.tuchscherer.analytics.resolvers
 
+import org.tuchscherer.analytics.port.PostStatusLookupPort
+
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
@@ -33,6 +35,13 @@ class TrendingQueryResolverTest {
         org.koin.core.context.startKoin {
             modules(module {
                 single<PostViewRepository> { postViewRepository }
+                // Reports every requested id as published, so these tests stay about ranking
+                // and limits rather than about publication status.
+                single<PostStatusLookupPort> {
+                    object : PostStatusLookupPort {
+                        override fun publishedIds(ids: List<java.util.UUID>): Set<java.util.UUID> = ids.toSet()
+                    }
+                }
                 single<PostTypeLookupPort> { postTypeLookupPort }
             })
         }
@@ -50,7 +59,7 @@ class TrendingQueryResolverTest {
         val post1 = UUID.randomUUID()
         val post2 = UUID.randomUUID()
         val post3 = UUID.randomUUID()
-        every { postViewRepository.getMostViewed(10) } returns listOf(post2, post1, post3)
+        every { postViewRepository.getMostViewed(30) } returns listOf(post2, post1, post3)
         every { postTypeLookupPort.getPostTypes(any()) } returns mapOf(
             post1 to PostKind.BLOG_POST,
             post2 to PostKind.BLOG_POST,
@@ -68,7 +77,7 @@ class TrendingQueryResolverTest {
 
     @Test
     fun `returns empty list when no posts have been viewed`() = runBlocking {
-        every { postViewRepository.getMostViewed(10) } returns emptyList()
+        every { postViewRepository.getMostViewed(30) } returns emptyList()
 
         val ctx = mockCtx()
         every { ctx.arguments.limit } returns 10
@@ -79,10 +88,12 @@ class TrendingQueryResolverTest {
     }
 
     @Test
-    fun `passes limit argument to repository`() = runBlocking {
-        // getMostViewed(5) is stubbed; calling getMostViewed(anything else) would throw,
-        // which proves the resolver used the correct limit from context.arguments.
-        every { postViewRepository.getMostViewed(5) } returns emptyList()
+    fun `over-fetches candidates so filtering unpublished posts cannot under-fill the list`() = runBlocking {
+        // Views are ranked before publication status is checked, so asking for exactly `limit`
+        // candidates would return fewer than `limit` results once drafts are dropped. The
+        // resolver asks for limit * OVER_FETCH_FACTOR instead. Only that call is stubbed, so a
+        // request for any other count would throw and fail this test.
+        every { postViewRepository.getMostViewed(15) } returns emptyList()
 
         val ctx = mockCtx()
         every { ctx.arguments.limit } returns 5
@@ -98,7 +109,7 @@ class TrendingQueryResolverTest {
         // records remain.  The resolver must skip it rather than creating a dead node-ref
         // that the BlogPost resolver would fail to resolve with NotFoundException.
         val postId = UUID.randomUUID()
-        every { postViewRepository.getMostViewed(10) } returns listOf(postId)
+        every { postViewRepository.getMostViewed(30) } returns listOf(postId)
         every { postTypeLookupPort.getPostTypes(any()) } returns emptyMap()
 
         val ctx = mockCtx()
@@ -114,7 +125,7 @@ class TrendingQueryResolverTest {
     fun `handles mix of BlogPost and CheckedListPost IDs`() = runBlocking {
         val blogId = UUID.randomUUID()
         val checklistId = UUID.randomUUID()
-        every { postViewRepository.getMostViewed(10) } returns listOf(blogId, checklistId)
+        every { postViewRepository.getMostViewed(30) } returns listOf(blogId, checklistId)
         every { postTypeLookupPort.getPostTypes(any()) } returns mapOf(
             blogId to PostKind.BLOG_POST,
             checklistId to PostKind.CHECKLIST_POST,
