@@ -61,7 +61,7 @@ echo -e "${GREEN}Backend ready${NC}"
 ACTUAL=$(curl -s -X POST "http://localhost:${GRAPHQL_PORT}/graphql" \
     -H 'Content-Type: application/json' \
     -d '{"query":"{ __schema { types { name kind fields { name type { name kind ofType { name kind ofType { name kind ofType { name kind ofType { name kind } } } } } } inputFields { name } enumValues { name } } } }"}' \
-  | python3 "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/schema-normalize.py")
+  | node "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/schema-normalize.mjs")
 
 if [ -z "$ACTUAL" ]; then
     echo -e "${RED}✗ Introspection returned nothing${NC}"
