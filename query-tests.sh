@@ -1813,6 +1813,409 @@ else
     echo "Response: $DEPTH_OVER"
 fi
 
+# --- Draft / Publish (Phase 28) ---
+
+print_header "Draft / Publish Tests"
+
+# Existing posts must stay published after the migration backfill.
+print_info "Testing that an existing post is PUBLISHED..."
+EXISTING_STATUS=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -d "{\"query\": \"{ post(id: \\\"$POST1_ID\\\") { status publishedAt } }\"}")
+
+if echo $EXISTING_STATUS | grep -q '"status":"PUBLISHED"'; then
+    print_success "Existing post is PUBLISHED (migration backfill)"
+else
+    print_error "Existing post is not PUBLISHED"
+    echo "Response: $EXISTING_STATUS"
+fi
+
+print_info "Creating a DRAFT blog post..."
+DRAFT_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $USER1_TOKEN" \
+    -d '{"query": "mutation { createPost(input: { title: \"Draft Post\", content: \"Not ready yet\", status: DRAFT }) { id status publishedAt } }"}')
+DRAFT_POST_ID=$(echo $DRAFT_RESPONSE | grep -o '"id":"[^"]*' | head -1 | sed 's/"id":"//')
+
+if [ -n "$DRAFT_POST_ID" ]; then
+    print_success "Captured the draft post id"
+else
+    print_error "No draft post id captured — the assertions below cannot be trusted"
+fi
+
+if echo $DRAFT_RESPONSE | grep -q '"status":"DRAFT"'; then
+    print_success "createPost accepted status: DRAFT"
+else
+    print_error "createPost did not return status DRAFT"
+    echo "Response: $DRAFT_RESPONSE"
+fi
+
+if echo $DRAFT_RESPONSE | grep -q '"publishedAt":null'; then
+    print_success "A draft has no publishedAt"
+else
+    print_error "A draft should have publishedAt: null"
+    echo "Response: $DRAFT_RESPONSE"
+fi
+
+# --- Read paths: the draft must not leak ---
+
+print_info "Testing that a draft is absent from posts..."
+PUBLIC_FEED=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -d '{"query": "{ posts { id } }"}')
+
+if [ -z "$DRAFT_POST_ID" ]; then
+    print_error "Cannot check posts for a draft: no draft id"
+elif echo $PUBLIC_FEED | grep -q "$DRAFT_POST_ID"; then
+    print_error "Draft leaked into posts"
+    echo "Response: $PUBLIC_FEED"
+else
+    print_success "Draft is absent from posts"
+fi
+
+print_info "Testing that a draft is absent from postsConnection..."
+CONN_FEED=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -d '{"query": "{ postsConnection(first: 20) { edges { node { id } } totalCount } }"}')
+
+if [ -z "$DRAFT_POST_ID" ]; then
+    print_error "Cannot check postsConnection for a draft: no draft id"
+elif echo $CONN_FEED | grep -q "$DRAFT_POST_ID"; then
+    print_error "Draft leaked into postsConnection"
+    echo "Response: $CONN_FEED"
+else
+    print_success "Draft is absent from postsConnection"
+fi
+
+print_info "Testing that the author sees their own draft in myPosts..."
+MY_POSTS=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $USER1_TOKEN" \
+    -d '{"query": "{ myPosts { id status } }"}')
+
+if [ -n "$DRAFT_POST_ID" ] && echo $MY_POSTS | grep -q "$DRAFT_POST_ID"; then
+    print_success "Author sees their own draft in myPosts"
+else
+    print_error "Author cannot see their own draft in myPosts"
+    echo "Response: $MY_POSTS"
+fi
+
+print_info "Testing that another user cannot read the draft via node(id)..."
+OTHER_NODE=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $USER2_TOKEN" \
+    -d "{\"query\": \"{ node(id: \\\"$DRAFT_POST_ID\\\") { ... on BlogPost { id title } } }\"}")
+
+if [ -z "$DRAFT_POST_ID" ]; then
+    print_error "Another user cannot read the draft via node(id) — SKIPPED, no draft id"
+elif echo $OTHER_NODE | grep -q '"errors"' || echo $OTHER_NODE | grep -q '"node":null'; then
+    print_success "Another user cannot read the draft via node(id)"
+else
+    print_error "Draft leaked to another user via node(id)"
+    echo "Response: $OTHER_NODE"
+fi
+
+print_info "Testing that another user cannot read the draft via post(id)..."
+OTHER_POST=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $USER2_TOKEN" \
+    -d "{\"query\": \"{ post(id: \\\"$DRAFT_POST_ID\\\") { id title } }\"}")
+
+if [ -z "$DRAFT_POST_ID" ]; then
+    print_error "Another user cannot read the draft via post(id) — SKIPPED, no draft id"
+elif echo $OTHER_POST | grep -q '"errors"' || echo $OTHER_POST | grep -q '"post":null'; then
+    print_success "Another user cannot read the draft via post(id)"
+else
+    print_error "Draft leaked to another user via post(id)"
+    echo "Response: $OTHER_POST"
+fi
+
+print_info "Testing that an unauthenticated request cannot read the draft..."
+ANON_NODE=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -d "{\"query\": \"{ node(id: \\\"$DRAFT_POST_ID\\\") { ... on BlogPost { id title } } }\"}")
+
+if [ -z "$DRAFT_POST_ID" ]; then
+    print_error "Unauthenticated request cannot read the draft — SKIPPED, no draft id"
+elif echo $ANON_NODE | grep -q '"errors"' || echo $ANON_NODE | grep -q '"node":null'; then
+    print_success "Unauthenticated request cannot read the draft"
+else
+    print_error "Draft leaked to an unauthenticated request"
+    echo "Response: $ANON_NODE"
+fi
+
+print_info "Testing that the author can read their own draft via node(id)..."
+OWN_NODE=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $USER1_TOKEN" \
+    -d "{\"query\": \"{ node(id: \\\"$DRAFT_POST_ID\\\") { ... on BlogPost { id title status } } }\"}")
+
+if [ -n "$DRAFT_POST_ID" ] && echo $OWN_NODE | grep -q "$DRAFT_POST_ID"; then
+    print_success "Author can read their own draft via node(id)"
+else
+    print_error "Author cannot read their own draft via node(id)"
+    echo "Response: $OWN_NODE"
+fi
+
+print_info "Testing that an admin can read another author's draft..."
+ADMIN_DRAFT=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "X-Schema: admin" \
+    -H "Authorization: Bearer $ADMIN_TOKEN" \
+    -d "{\"query\": \"{ admin { post(id: \\\"$DRAFT_POST_ID\\\") { id status } } }\"}")
+
+if [ -n "$DRAFT_POST_ID" ] && echo $ADMIN_DRAFT | grep -q "$DRAFT_POST_ID"; then
+    print_success "Admin can read another author's draft"
+else
+    print_error "Admin cannot read another author's draft"
+    echo "Response: $ADMIN_DRAFT"
+fi
+
+# --- Write paths: a draft has no audience ---
+
+print_info "Testing that commenting on a draft is rejected..."
+DRAFT_COMMENT=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $USER2_TOKEN" \
+    -d "{\"query\": \"mutation { createComment(input: { postId: \\\"$DRAFT_POST_ID\\\", content: \\\"nope\\\" }) { id } }\"}")
+
+if [ -z "$DRAFT_POST_ID" ]; then
+    print_error "Commenting on a draft is rejected — SKIPPED, no draft id"
+elif echo $DRAFT_COMMENT | grep -q '"errors"'; then
+    print_success "Commenting on a draft is rejected"
+else
+    print_error "Commenting on a draft was allowed"
+    echo "Response: $DRAFT_COMMENT"
+fi
+
+print_info "Testing that liking a draft is rejected..."
+DRAFT_LIKE=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $USER2_TOKEN" \
+    -d "{\"query\": \"mutation { likePost(postId: \\\"$DRAFT_POST_ID\\\") { id } }\"}")
+
+if [ -z "$DRAFT_POST_ID" ]; then
+    print_error "Liking a draft is rejected — SKIPPED, no draft id"
+elif echo $DRAFT_LIKE | grep -q '"errors"'; then
+    print_success "Liking a draft is rejected"
+else
+    print_error "Liking a draft was allowed"
+    echo "Response: $DRAFT_LIKE"
+fi
+
+print_info "Testing that recording a view on a draft does not count..."
+curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -d "{\"query\": \"mutation { recordPostView(postId: \\\"$DRAFT_POST_ID\\\") }\"}" > /dev/null
+DRAFT_VIEWS=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $USER1_TOKEN" \
+    -d "{\"query\": \"{ node(id: \\\"$DRAFT_POST_ID\\\") { ... on BlogPost { viewCount } } }\"}")
+
+if echo $DRAFT_VIEWS | grep -q '"viewCount":0'; then
+    print_success "Views are not counted on a draft"
+else
+    print_error "A draft accumulated a view"
+    echo "Response: $DRAFT_VIEWS"
+fi
+
+# --- Publishing ---
+
+print_info "Testing that a non-author cannot publish someone else's draft..."
+OTHER_PUBLISH=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $USER2_TOKEN" \
+    -d "{\"query\": \"mutation { publishPost(postId: \\\"$DRAFT_POST_ID\\\") { id status } }\"}")
+
+if [ -z "$DRAFT_POST_ID" ]; then
+    print_error "A non-author cannot publish someone else's draft — SKIPPED, no draft id"
+elif echo $OTHER_PUBLISH | grep -q '"errors"'; then
+    print_success "A non-author cannot publish someone else's draft"
+else
+    print_error "A non-author published someone else's draft"
+    echo "Response: $OTHER_PUBLISH"
+fi
+
+print_info "Testing publishPost as the author..."
+PUBLISH=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $USER1_TOKEN" \
+    -d "{\"query\": \"mutation { publishPost(postId: \\\"$DRAFT_POST_ID\\\") { id status publishedAt } }\"}")
+
+if echo $PUBLISH | grep -q '"status":"PUBLISHED"'; then
+    print_success "publishPost sets status to PUBLISHED"
+else
+    print_error "publishPost did not publish the post"
+    echo "Response: $PUBLISH"
+fi
+
+if echo $PUBLISH | grep -qE '"publishedAt":"[^"]+"'; then
+    print_success "publishedAt is set after publishing"
+else
+    print_error "publishedAt should be a timestamp after publishing"
+    echo "Response: $PUBLISH"
+fi
+
+print_info "Testing that a published post appears in posts..."
+FEED_AFTER=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -d '{"query": "{ posts { id } }"}')
+
+if [ -n "$DRAFT_POST_ID" ] && echo $FEED_AFTER | grep -q "$DRAFT_POST_ID"; then
+    print_success "Published post appears in posts"
+else
+    print_error "Published post is missing from posts"
+    echo "Response: $FEED_AFTER"
+fi
+
+print_info "Testing that another user can now read the published post..."
+OTHER_READS=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $USER2_TOKEN" \
+    -d "{\"query\": \"{ node(id: \\\"$DRAFT_POST_ID\\\") { ... on BlogPost { id } } }\"}")
+
+if [ -n "$DRAFT_POST_ID" ] && echo $OTHER_READS | grep -q "$DRAFT_POST_ID"; then
+    print_success "Another user can read the published post"
+else
+    print_error "Another user cannot read the published post"
+    echo "Response: $OTHER_READS"
+fi
+
+# --- Unpublishing keeps engagement ---
+
+print_info "Commenting on the now-published post..."
+KEEP_COMMENT=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $USER2_TOKEN" \
+    -d "{\"query\": \"mutation { createComment(input: { postId: \\\"$DRAFT_POST_ID\\\", content: \\\"survives unpublish\\\" }) { id } }\"}")
+
+if echo $KEEP_COMMENT | grep -q '"id"'; then
+    print_success "Commenting on a published post works"
+else
+    print_error "Could not comment on the published post"
+    echo "Response: $KEEP_COMMENT"
+fi
+
+print_info "Testing unpublishPost as the author..."
+UNPUBLISH=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $USER1_TOKEN" \
+    -d "{\"query\": \"mutation { unpublishPost(postId: \\\"$DRAFT_POST_ID\\\") { id status } }\"}")
+
+if echo $UNPUBLISH | grep -q '"status":"DRAFT"'; then
+    print_success "unpublishPost returns the post to DRAFT"
+else
+    print_error "unpublishPost did not return the post to DRAFT"
+    echo "Response: $UNPUBLISH"
+fi
+
+print_info "Testing that an unpublished post leaves the feed..."
+FEED_UNPUB=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -d '{"query": "{ posts { id } }"}')
+
+if [ -z "$DRAFT_POST_ID" ]; then
+    print_error "Cannot check the feed after unpublish: no draft id"
+elif echo $FEED_UNPUB | grep -q "$DRAFT_POST_ID"; then
+    print_error "Unpublished post is still in posts"
+    echo "Response: $FEED_UNPUB"
+else
+    print_success "Unpublished post left the feed"
+fi
+
+print_info "Testing that engagement survives an unpublish..."
+curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $USER1_TOKEN" \
+    -d "{\"query\": \"mutation { publishPost(postId: \\\"$DRAFT_POST_ID\\\") { id } }\"}" > /dev/null
+REPUB_COMMENTS=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -d "{\"query\": \"{ node(id: \\\"$DRAFT_POST_ID\\\") { ... on BlogPost { commentCount } } }\"}")
+
+if echo $REPUB_COMMENTS | grep -qE '"commentCount":[1-9]'; then
+    print_success "Comments survive unpublish and republish"
+else
+    print_error "Comments were lost across unpublish/republish"
+    echo "Response: $REPUB_COMMENTS"
+fi
+
+# --- Checklist drafts ---
+
+print_info "Creating a DRAFT checklist..."
+DRAFT_CL_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $USER1_TOKEN" \
+    -d '{"query": "mutation { createCheckedListPost(input: { title: \"Draft Checklist\", items: [\"one\", \"two\"], status: DRAFT }) { id status } }"}')
+DRAFT_CL_ID=$(echo $DRAFT_CL_RESPONSE | grep -o '"id":"[^"]*' | head -1 | sed 's/"id":"//')
+
+if [ -n "$DRAFT_CL_ID" ]; then
+    print_success "Captured the draft checklist id"
+else
+    print_error "No draft checklist id captured — the assertions below cannot be trusted"
+fi
+
+if echo $DRAFT_CL_RESPONSE | grep -q '"status":"DRAFT"'; then
+    print_success "createCheckedListPost accepted status: DRAFT"
+else
+    print_error "createCheckedListPost did not return status DRAFT"
+    echo "Response: $DRAFT_CL_RESPONSE"
+fi
+
+print_info "Testing that a draft checklist is absent from checkedListPosts..."
+CL_FEED=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -d '{"query": "{ checkedListPosts { id } }"}')
+
+if [ -z "$DRAFT_CL_ID" ]; then
+    print_error "Cannot check checkedListPosts for a draft: no checklist id"
+elif echo $CL_FEED | grep -q "$DRAFT_CL_ID"; then
+    print_error "Draft checklist leaked into checkedListPosts"
+    echo "Response: $CL_FEED"
+else
+    print_success "Draft checklist is absent from checkedListPosts"
+fi
+
+print_info "Testing that the author sees their draft checklist in myCheckedListPosts..."
+MY_CL=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $USER1_TOKEN" \
+    -d '{"query": "{ myCheckedListPosts { id status } }"}')
+
+if [ -n "$DRAFT_CL_ID" ] && echo $MY_CL | grep -q "$DRAFT_CL_ID"; then
+    print_success "Author sees their draft checklist in myCheckedListPosts"
+else
+    print_error "Author cannot see their draft checklist"
+    echo "Response: $MY_CL"
+fi
+
+print_info "Testing publishPost on a checklist..."
+CL_PUBLISH=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $USER1_TOKEN" \
+    -d "{\"query\": \"mutation { publishPost(postId: \\\"$DRAFT_CL_ID\\\") { id status } }\"}")
+
+if echo $CL_PUBLISH | grep -q '"status":"PUBLISHED"'; then
+    print_success "publishPost works on a checklist post"
+else
+    print_error "publishPost failed on a checklist post"
+    echo "Response: $CL_PUBLISH"
+fi
+
+print_info "Testing that a draft never reaches trending..."
+TRENDING_DRAFTS=$(curl -s -X POST $GRAPHQL_URL \
+    -H "Content-Type: application/json" \
+    -d '{"query": "{ trending(limit: 20) { id status } }"}')
+
+if echo $TRENDING_DRAFTS | grep -q '"status":"DRAFT"'; then
+    print_error "A draft appeared in trending"
+    echo "Response: $TRENDING_DRAFTS"
+elif echo $TRENDING_DRAFTS | grep -q '"status":"PUBLISHED"'; then
+    print_success "No drafts in trending"
+else
+    print_error "trending returned no post status — cannot tell whether drafts leaked"
+    echo "Response: $TRENDING_DRAFTS"
+fi
+
 # Test Summary
 print_header "Test Summary"
 echo -e "${GREEN}Tests Passed: $TESTS_PASSED${NC}"
