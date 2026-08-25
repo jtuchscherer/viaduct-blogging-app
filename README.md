@@ -6,6 +6,7 @@ A full-stack blogging application with a Kotlin/Viaduct GraphQL backend and a Re
 
 - Java JDK 21
 - Node.js + npm
+- `jq` — used by `query-tests.sh` to read JSON responses
 - (Optional) Podman + `podman compose` — for containerised deployment
 - (Optional) `psql` — only needed to run `seed-database.sh` manually
 - (Optional) Ollama — for AI features (rephrase, content suggestions)
