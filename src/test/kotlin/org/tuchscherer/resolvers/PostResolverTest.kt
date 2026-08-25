@@ -2,6 +2,7 @@
 
 package org.tuchscherer.resolvers
 
+import org.tuchscherer.database.PostStatus
 import org.tuchscherer.database.Post
 import org.tuchscherer.database.repositories.PostRepository
 import org.tuchscherer.viadapp.resolvers.*
@@ -39,6 +40,7 @@ class PostResolverTest : ResolverTestBase() {
         every { mockPost.authorId } returns EntityID(userId, mockk())
         every { mockPost.createdAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
         every { mockPost.updatedAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
+        every { mockPost.status } returns PostStatus.PUBLISHED
 
         GlobalContext.getOrNull()?.let { GlobalContext.stopKoin() }
         org.koin.core.context.startKoin {

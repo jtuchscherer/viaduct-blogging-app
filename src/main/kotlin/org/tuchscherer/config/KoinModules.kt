@@ -172,6 +172,10 @@ val resolverModule = module {
     singleOf(::CommentNodeResolver)
     singleOf(::LikeNodeResolver)
 
+    // Draft / publish resolvers
+    singleOf(::PublishPostResolver)
+    singleOf(::UnpublishPostResolver)
+
     // AI resolvers
     singleOf(::RephraseContentResolver)
     singleOf(::SuggestChecklistItemMutationResolver)

@@ -1,6 +1,7 @@
 package org.tuchscherer.resolvers
 
 import org.tuchscherer.auth.NotFoundException
+import org.tuchscherer.database.PostStatus
 import org.tuchscherer.database.Post
 import org.tuchscherer.database.PostType
 import org.tuchscherer.database.User
@@ -58,6 +59,7 @@ class LikeObjectFieldResolversTest : ResolverTestBase() {
         every { mockPost.content } returns "Test content"
         every { mockPost.createdAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
         every { mockPost.updatedAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
+        every { mockPost.status } returns PostStatus.PUBLISHED
         every { mockPost.postType } returns PostType.BLOG_POST
 
         GlobalContext.getOrNull()?.let { GlobalContext.stopKoin() }

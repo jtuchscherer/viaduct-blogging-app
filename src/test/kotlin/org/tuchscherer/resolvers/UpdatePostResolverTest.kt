@@ -3,6 +3,7 @@ package org.tuchscherer.resolvers
 import org.tuchscherer.auth.AuthorizationException
 import org.tuchscherer.auth.NotFoundException
 import org.tuchscherer.auth.RequestContext
+import org.tuchscherer.database.PostStatus
 import org.tuchscherer.database.Post
 import org.tuchscherer.database.User
 import org.tuchscherer.database.repositories.PostRepository
@@ -51,6 +52,7 @@ class UpdatePostResolverTest : ResolverTestBase() {
         every { mockPost.authorId } returns EntityID(userId, mockk())
         every { mockPost.createdAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
         every { mockPost.updatedAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
+        every { mockPost.status } returns PostStatus.PUBLISHED
 
         GlobalContext.getOrNull()?.let { GlobalContext.stopKoin() }
         org.koin.core.context.startKoin {
@@ -77,6 +79,7 @@ class UpdatePostResolverTest : ResolverTestBase() {
         every { updatedPost.content } returns "Updated content"
         every { updatedPost.createdAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
         every { updatedPost.updatedAt } returns LocalDateTime.of(2025, 1, 1, 12, 0)
+        every { updatedPost.status } returns PostStatus.PUBLISHED
         every { postRepository.updateById(postId, "Updated Title", "Updated content") } returns updatedPost
 
         val result = runMutationFieldResolver(resolver) {

@@ -23,11 +23,27 @@ object PostType {
     const val CHECKED_LIST = "CHECKED_LIST"
 }
 
+/**
+ * Publication states stored in [Posts.status].
+ *
+ * A DRAFT is visible only to its author and to admins; a PUBLISHED post is visible to everyone.
+ * Both post types share the [Posts] table, so this one column covers blog posts and checklists.
+ */
+object PostStatus {
+    const val DRAFT = "DRAFT"
+    const val PUBLISHED = "PUBLISHED"
+}
+
 object Posts : UUIDTable("posts") {
     val title = varchar("title", 500)
     val content = text("content")
     val authorId = reference("author_id", Users)
     val postType = varchar("post_type", 50).default(PostType.BLOG_POST)
+    // Defaults to PUBLISHED so rows written before drafts existed stay visible.
+    val status = varchar("status", 20).default(PostStatus.PUBLISHED)
+    // Null while a draft. Set when published, cleared again when unpublished, so it means
+    // "published at, if currently published" rather than "first published at".
+    val publishedAt = datetime("published_at").nullable()
     val createdAt = datetime("created_at").default(LocalDateTime.now())
     val updatedAt = datetime("updated_at").default(LocalDateTime.now())
 }

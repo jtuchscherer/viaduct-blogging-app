@@ -1,6 +1,7 @@
 package org.tuchscherer.database.repositories
 
 import org.tuchscherer.database.Post
+import org.tuchscherer.database.PostStatus
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -31,12 +32,21 @@ interface PostRepository {
     /**
      * Create a new post.
      */
+    /**
+     * Sets a post's publication state.
+     *
+     * publishedAt is stamped when publishing and cleared when unpublishing, so it always means
+     * "published at, if currently published". Returns null when the post does not exist.
+     */
+    fun updateStatus(id: UUID, status: String, publishedAt: LocalDateTime?): Post?
+
     fun create(
         title: String,
         content: String,
         authorId: UUID,
         createdAt: LocalDateTime = LocalDateTime.now(),
-        updatedAt: LocalDateTime = LocalDateTime.now()
+        updatedAt: LocalDateTime = LocalDateTime.now(),
+        status: String = PostStatus.PUBLISHED
     ): Post
 
     /**
