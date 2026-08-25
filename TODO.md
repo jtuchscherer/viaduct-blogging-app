@@ -485,6 +485,26 @@ publish when ready. Drafts are visible only to their author (and to admins).
 **Depends on**: nothing outstanding. Touches Phases 11–12 (pagination), 20–22 (analytics),
 23 (checklists) and the admin surface, because each of those is a way to reach a post.
 
+### Decisions
+
+- **Admins see drafts.** The admin surface lists and opens drafts by any author, with status
+  shown. `AdminQueries` is `@scope(to: ["admin"])`, so this stays behind the admin schema and the
+  existing `requireAdmin()` guard rather than becoming a second public path.
+- **Unpublishing is allowed.** `unpublishPost` returns a published post to `DRAFT`; publishing is
+  not one-way.
+
+Two things follow from unpublish that the implementation has to settle:
+
+- **Engagement is hidden, not deleted.** Comments, likes and view counts accumulated while
+  published survive unpublishing and reappear on republish. Deleting them would make unpublish a
+  destructive act, which is not what "unpublish" implies. Note this means unpublishing hides
+  *other people's* comments, which is the author's prerogative over their own post.
+- **`published_at` on unpublish — still open.** Keeping the original value means republishing
+  leaves the post in its old feed position; clearing it means the post resurfaces as new. Keeping
+  it is the safer default (unpublish is not a way to farm the top of the feed), so treat
+  `published_at` as "first published at" and let `status` alone decide visibility. Worth a second
+  look when the feed ordering is built.
+
 ### Data model
 
 Both post types share the `posts` table, so **one status column covers both** — no per-type work.
@@ -526,7 +546,7 @@ Missing one of these is how a draft leaks. Enumerated from the schema rather tha
 | `myPosts` / `myCheckedListPosts` | include — own drafts only |
 | `post(id)` | author or admin only |
 | **`node(id)` → `BlogPost` / `CheckedListPost`** | author or admin only |
-| `admin { posts }` / `admin { post(id) }` | include, with status shown |
+| `admin { posts }` / `admin { post(id) }` | include — any author's drafts, status shown |
 | `postComments(postId)` | empty for a draft |
 | `Comment.post` / `Like.post` | unreachable if writes are blocked; assert anyway |
 
@@ -568,6 +588,10 @@ The leak tests are the point of this phase, not an afterthought:
 - the author's own draft **is** visible in `myPosts` and through `node(id)`
 - publish → appears in the feed; unpublish → disappears
 - `createComment` / `likePost` / `recordPostView` against a draft are rejected or no-ops
+- an admin **can** read another author's draft through the admin surface, and a non-admin cannot
+  reach the same post through the public schema
+- unpublish round-trip: publish → comment and like it → unpublish → the post leaves the feed while
+  its comments and likes survive → republish → engagement is intact
 - repository integration tests (H2) for the status filters, plus the migration backfill
 - `query-tests.sh` cases for the rejection paths, and a Playwright happy path: save draft → absent
   from home → present in My Posts with a badge → publish → appears on home
