@@ -10,8 +10,8 @@
 |---|---|---|
 | Unit + Integration tests (`./gradlew test`) | 553 | ✅ All passing |
 | API E2E tests (`./query-tests.sh`) | 153 | ✅ All passing |
-| Browser E2E tests (Playwright, 136 tests × 3 browsers) | 408 runs | ✅ All passing |
-| Frontend unit tests (`npm test`) | 124 | ✅ All passing |
+| Browser E2E tests (Playwright, 137 tests × 3 browsers) | 411 runs | ✅ All passing |
+| Frontend unit tests (`npm test`) | 131 | ✅ All passing |
 
 ## Completed Phases
 

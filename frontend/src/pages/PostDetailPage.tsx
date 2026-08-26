@@ -273,17 +273,74 @@ function renderContent(content: string): string {
     .join('');
 }
 
+// ── Shared header and action pieces ───────────────────────────────────────────
+
+/**
+ * Views and read time.
+ *
+ * Absent on a draft: `recordPostView` is a no-op for one, so the count would always be zero and
+ * would invite the reader to wonder why. Both come back on publish.
+ */
+function PostAnalytics({
+  viewCount,
+  readTimeMinutes,
+  isDraft,
+}: {
+  viewCount?: number;
+  readTimeMinutes?: number;
+  isDraft: boolean;
+}) {
+  if (isDraft || viewCount === undefined || readTimeMinutes === undefined) return null;
+
+  return (
+    <span className="post-analytics">
+      👁 {viewCount} {viewCount === 1 ? 'view' : 'views'}
+      {' · '}
+      ⏱ {formatReadTime(readTimeMinutes)}
+    </span>
+  );
+}
+
+/**
+ * The like button.
+ *
+ * Absent on a draft, because the backend rejects likes on one — a button that always errors is
+ * worse than no button.
+ */
+function LikeButton({
+  likeCount,
+  isLikedByMe,
+  isDraft,
+  onToggle,
+}: {
+  likeCount: number;
+  isLikedByMe: boolean;
+  isDraft: boolean;
+  onToggle: () => void;
+}) {
+  if (isDraft) return null;
+
+  return (
+    <button data-testid="like-button" onClick={onToggle} className={isLikedByMe ? 'liked' : ''}>
+      ❤️ {likeCount}
+    </button>
+  );
+}
+
 // ── Comments section (shared) ─────────────────────────────────────────────────
 
 function CommentsSection({
   postId,
   comments,
   isAuthenticated,
+  isDraft,
   refetch,
 }: {
   postId: string;
   comments: Comment[];
   isAuthenticated: boolean;
+  /** A draft takes no new comments; the backend rejects them. */
+  isDraft: boolean;
   refetch: () => void;
 }) {
   const [commentContent, setCommentContent] = useState('');
@@ -308,7 +365,11 @@ function CommentsSection({
     <section className="comments-section">
       <h2 id="comments-section">Comments ({comments.length})</h2>
 
-      {isAuthenticated ? (
+      {/* Existing comments stay visible below: unpublishing hides engagement from the public, not
+          from the author, so a comment made while the post was live is not lost from view. */}
+      {isDraft ? (
+        <p className="login-prompt">This post will be open for comments once it is published.</p>
+      ) : isAuthenticated ? (
         <form onSubmit={handleCommentSubmit} className="comment-form">
           {commentError && <div className="error-message">{commentError}</div>}
           <textarea
@@ -349,6 +410,7 @@ function BlogPostDetail({ post, refetch }: { post: BlogPostData; refetch: () => 
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const isAuthor = user?.username === post.author.username;
+  const isDraft = post.status === 'DRAFT';
 
   const { handleLikeToggle } = useLikeToggle(post.id, post.isLikedByMe, isAuthenticated, refetch);
   const [deletePost] = useMutation(DELETE_POST, { onCompleted: () => navigate('/') });
@@ -361,19 +423,17 @@ function BlogPostDetail({ post, refetch }: { post: BlogPostData; refetch: () => 
 
   return (
     <article className="post-detail">
-      {post.status === 'DRAFT' && <DraftBanner />}
+      {isDraft && <DraftBanner />}
       <div className="post-header">
         <h1>{post.title}</h1>
         <div className="post-meta">
           <span>by {post.author.name}</span>
           <span>{new Date(post.createdAt).toLocaleDateString()}</span>
-          {post.viewCount !== undefined && post.readTimeMinutes !== undefined && (
-            <span className="post-analytics">
-              👁 {post.viewCount} {post.viewCount === 1 ? 'view' : 'views'}
-              {' · '}
-              ⏱ {formatReadTime(post.readTimeMinutes)}
-            </span>
-          )}
+          <PostAnalytics
+            viewCount={post.viewCount}
+            readTimeMinutes={post.readTimeMinutes}
+            isDraft={isDraft}
+          />
         </div>
       </div>
 
@@ -383,9 +443,12 @@ function BlogPostDetail({ post, refetch }: { post: BlogPostData; refetch: () => 
       />
 
       <div className="post-actions">
-        <button onClick={handleLikeToggle} className={post.isLikedByMe ? 'liked' : ''}>
-          ❤️ {post.likeCount}
-        </button>
+        <LikeButton
+          likeCount={post.likeCount}
+          isLikedByMe={post.isLikedByMe}
+          isDraft={isDraft}
+          onToggle={handleLikeToggle}
+        />
         {isAuthor && (
           <>
             <Link to={`/edit/${post.id}`} className="btn-edit">Edit</Link>
@@ -398,6 +461,7 @@ function BlogPostDetail({ post, refetch }: { post: BlogPostData; refetch: () => 
         postId={post.id}
         comments={post.comments}
         isAuthenticated={isAuthenticated}
+        isDraft={isDraft}
         refetch={refetch}
       />
     </article>
@@ -410,6 +474,7 @@ function CheckedListDetail({ post, refetch }: { post: CheckedListPostData; refet
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const isAuthor = user?.username === post.author.username;
+  const isDraft = post.status === 'DRAFT';
 
   const [newItemText, setNewItemText] = useState('');
   const [addItemError, setAddItemError] = useState('');
@@ -457,20 +522,18 @@ function CheckedListDetail({ post, refetch }: { post: CheckedListPostData; refet
 
   return (
     <article className="post-detail post-detail--checklist">
-      {post.status === 'DRAFT' && <DraftBanner />}
+      {isDraft && <DraftBanner />}
       <div className="post-header">
         <div className="post-type-badge">☑ Checklist</div>
         <h1>{post.title}</h1>
         <div className="post-meta">
           <span>by {post.author.name}</span>
           <span>{new Date(post.createdAt).toLocaleDateString()}</span>
-          {post.viewCount !== undefined && post.readTimeMinutes !== undefined && (
-            <span className="post-analytics">
-              👁 {post.viewCount} {post.viewCount === 1 ? 'view' : 'views'}
-              {' · '}
-              ⏱ {formatReadTime(post.readTimeMinutes)}
-            </span>
-          )}
+          <PostAnalytics
+            viewCount={post.viewCount}
+            readTimeMinutes={post.readTimeMinutes}
+            isDraft={isDraft}
+          />
         </div>
       </div>
 
@@ -587,9 +650,12 @@ function CheckedListDetail({ post, refetch }: { post: CheckedListPostData; refet
       </div>
 
       <div className="post-actions">
-        <button onClick={handleLikeToggle} className={post.isLikedByMe ? 'liked' : ''}>
-          ❤️ {post.likeCount}
-        </button>
+        <LikeButton
+          likeCount={post.likeCount}
+          isLikedByMe={post.isLikedByMe}
+          isDraft={isDraft}
+          onToggle={handleLikeToggle}
+        />
         {isAuthor && (
           <>
             <Link to={`/edit/${post.id}`} className="btn-edit">Edit</Link>
@@ -602,6 +668,7 @@ function CheckedListDetail({ post, refetch }: { post: CheckedListPostData; refet
         postId={post.id}
         comments={post.comments ?? []}
         isAuthenticated={isAuthenticated}
+        isDraft={isDraft}
         refetch={refetch}
       />
     </article>

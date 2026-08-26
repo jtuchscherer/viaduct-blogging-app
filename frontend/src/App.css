@@ -654,6 +654,12 @@ button[type="submit"]:disabled {
   gap: 1rem;
 }
 
+/* The primary button is width:100%, which squeezes its neighbours until their labels wrap.
+   "Save draft" broke onto two lines without this. */
+.form-actions button {
+  white-space: nowrap;
+}
+
 /* ── My Posts status filter ───────────────────────────────────────────────── */
 
 .page-header-actions {
