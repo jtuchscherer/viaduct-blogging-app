@@ -1,7 +1,7 @@
-import { gql } from '@apollo/client';
 import { useQuery, useMutation } from '@apollo/client/react';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
-import { useState, useEffect, type FormEvent } from 'react';
+import { useState, useEffect, type FormEvent, type ReactNode } from 'react';
+import type { DocumentNode } from '@apollo/client';
 import { useAuth } from '../contexts/AuthContext';
 import DOMPurify from 'dompurify';
 import { formatReadTime } from '../utils/content';
@@ -10,168 +10,7 @@ import { DraftBanner } from '../components/DraftIndicators';
 import type { CheckedListItem, PostStatus } from '../types';
 import { useAIHealth } from '../hooks/useAIHealth';
 import { useSuggestItem } from '../hooks/useSuggestItem';
-
-// ── GraphQL documents ─────────────────────────────────────────────────────────
-
-/**
- * Uses node(id) so the same route handles both BlogPost and CheckedListPost IDs.
- * __typename drives the rendering branch below.
- */
-const GET_NODE = gql`
-  query GetNode($id: ID!) {
-    node(id: $id) {
-      __typename
-      ... on BlogPost {
-        id
-        title
-        content
-        status
-        publishedAt
-        author {
-          id
-          name
-          username
-        }
-        createdAt
-        likeCount
-        isLikedByMe
-        viewCount
-        readTimeMinutes
-        comments {
-          id
-          content
-          author {
-            id
-            name
-            username
-          }
-          createdAt
-        }
-      }
-      ... on CheckedListPost {
-        id
-        title
-        description
-        status
-        publishedAt
-        author {
-          id
-          name
-          username
-        }
-        createdAt
-        likeCount
-        isLikedByMe
-        viewCount
-        readTimeMinutes
-        items {
-          id
-          text
-          checked
-          position
-          createdAt
-        }
-        comments {
-          id
-          content
-          author {
-            id
-            name
-            username
-          }
-          createdAt
-        }
-      }
-    }
-  }
-`;
-
-const RECORD_POST_VIEW = gql`
-  mutation RecordPostView($postId: ID!) {
-    recordPostView(postId: $postId)
-  }
-`;
-
-const LIKE_POST = gql`
-  mutation LikePost($postId: ID!) {
-    likePost(postId: $postId) {
-      id
-      createdAt
-    }
-  }
-`;
-
-const UNLIKE_POST = gql`
-  mutation UnlikePost($postId: ID!) {
-    unlikePost(postId: $postId)
-  }
-`;
-
-const ADD_COMMENT = gql`
-  mutation AddComment($input: CreateCommentInput!) {
-    createComment(input: $input) {
-      id
-      content
-      author {
-        id
-        name
-        username
-      }
-      createdAt
-    }
-  }
-`;
-
-const DELETE_POST = gql`
-  mutation DeletePost($id: ID!) {
-    deletePost(id: $id)
-  }
-`;
-
-const DELETE_CHECKLIST_POST = gql`
-  mutation DeleteCheckedListPost($id: ID!) {
-    deleteCheckedListPost(id: $id)
-  }
-`;
-
-const TOGGLE_ITEM = gql`
-  mutation ToggleCheckedListItem($id: ID!) {
-    toggleCheckedListItem(id: $id) {
-      id
-      checked
-    }
-  }
-`;
-
-const ADD_ITEM = gql`
-  mutation AddCheckedListItem($input: AddCheckedListItemInput!) {
-    addCheckedListItem(input: $input) {
-      id
-      text
-      checked
-      position
-      createdAt
-    }
-  }
-`;
-
-const DELETE_ITEM = gql`
-  mutation DeleteCheckedListItem($id: ID!) {
-    deleteCheckedListItem(id: $id)
-  }
-`;
-
-const UPDATE_ITEM = gql`
-  mutation UpdateCheckedListItem($input: UpdateCheckedListItemInput!) {
-    updateCheckedListItem(input: $input) {
-      id
-      text
-      checked
-      position
-      createdAt
-    }
-  }
-`;
+import { GET_NODE, RECORD_POST_VIEW, LIKE_POST, UNLIKE_POST, ADD_COMMENT, DELETE_POST, DELETE_CHECKLIST_POST, TOGGLE_ITEM, ADD_ITEM, DELETE_ITEM, UPDATE_ITEM } from '../graphql/posts';
 
 // ── Shared types ──────────────────────────────────────────────────────────────
 
@@ -327,6 +166,89 @@ function LikeButton({
   );
 }
 
+/** The header fields both post types carry. Structural, so neither type is privileged. */
+type PostHeaderFields = Pick<
+  BlogPostData,
+  'title' | 'author' | 'createdAt' | 'status' | 'viewCount' | 'readTimeMinutes'
+>;
+
+/**
+ * The block every post detail opens with: the draft banner, the title, and the by-line.
+ *
+ * Shared between the two post types because every rule in it applies to both — and each was
+ * written out twice before, so adding the draft banner meant adding it twice.
+ */
+function PostDetailHeader({ post, typeBadge }: { post: PostHeaderFields; typeBadge?: ReactNode }) {
+  const isDraft = post.status === 'DRAFT';
+
+  return (
+    <>
+      {isDraft && <DraftBanner />}
+      <div className="post-header">
+        {typeBadge}
+        <h1>{post.title}</h1>
+        <div className="post-meta">
+          <span>by {post.author.name}</span>
+          <span>{new Date(post.createdAt).toLocaleDateString()}</span>
+          <PostAnalytics
+            viewCount={post.viewCount}
+            readTimeMinutes={post.readTimeMinutes}
+            isDraft={isDraft}
+          />
+        </div>
+      </div>
+    </>
+  );
+}
+
+/** The action row under a post's body: liking for readers, editing and deleting for its author. */
+function PostActions({
+  post,
+  isAuthor,
+  onLike,
+  onDelete,
+}: {
+  post: Pick<BlogPostData, 'id' | 'likeCount' | 'isLikedByMe' | 'status'>;
+  isAuthor: boolean;
+  onLike: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <div className="post-actions">
+      <LikeButton
+        likeCount={post.likeCount}
+        isLikedByMe={post.isLikedByMe}
+        isDraft={post.status === 'DRAFT'}
+        onToggle={onLike}
+      />
+      {isAuthor && (
+        <>
+          <Link to={`/edit/${post.id}`} className="btn-edit">Edit</Link>
+          <button onClick={onDelete} className="btn-delete">Delete</button>
+        </>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Delete after confirming, then return to the feed.
+ *
+ * The mutation and the noun are parameters because the two post types have separate delete
+ * mutations and name themselves differently to the reader ("this post" / "this checklist"); the
+ * confirmation and the navigation afterwards are the same for both.
+ */
+function useDeleteWithConfirm(mutation: DocumentNode, postId: string, noun: string) {
+  const navigate = useNavigate();
+  const [deletePost] = useMutation(mutation, { onCompleted: () => navigate('/') });
+
+  return async () => {
+    if (window.confirm(`Are you sure you want to delete this ${noun}?`)) {
+      await deletePost({ variables: { id: postId } });
+    }
+  };
+}
+
 // ── Comments section (shared) ─────────────────────────────────────────────────
 
 function CommentsSection({
@@ -408,60 +330,32 @@ function CommentsSection({
 
 function BlogPostDetail({ post, refetch }: { post: BlogPostData; refetch: () => void }) {
   const { user, isAuthenticated } = useAuth();
-  const navigate = useNavigate();
   const isAuthor = user?.username === post.author.username;
-  const isDraft = post.status === 'DRAFT';
 
   const { handleLikeToggle } = useLikeToggle(post.id, post.isLikedByMe, isAuthenticated, refetch);
-  const [deletePost] = useMutation(DELETE_POST, { onCompleted: () => navigate('/') });
-
-  const handleDelete = async () => {
-    if (window.confirm('Are you sure you want to delete this post?')) {
-      await deletePost({ variables: { id: post.id } });
-    }
-  };
+  const handleDelete = useDeleteWithConfirm(DELETE_POST, post.id, 'post');
 
   return (
     <article className="post-detail">
-      {isDraft && <DraftBanner />}
-      <div className="post-header">
-        <h1>{post.title}</h1>
-        <div className="post-meta">
-          <span>by {post.author.name}</span>
-          <span>{new Date(post.createdAt).toLocaleDateString()}</span>
-          <PostAnalytics
-            viewCount={post.viewCount}
-            readTimeMinutes={post.readTimeMinutes}
-            isDraft={isDraft}
-          />
-        </div>
-      </div>
+      <PostDetailHeader post={post} />
 
       <div
         className="post-content"
         dangerouslySetInnerHTML={{ __html: renderContent(post.content) }}
       />
 
-      <div className="post-actions">
-        <LikeButton
-          likeCount={post.likeCount}
-          isLikedByMe={post.isLikedByMe}
-          isDraft={isDraft}
-          onToggle={handleLikeToggle}
-        />
-        {isAuthor && (
-          <>
-            <Link to={`/edit/${post.id}`} className="btn-edit">Edit</Link>
-            <button onClick={handleDelete} className="btn-delete">Delete</button>
-          </>
-        )}
-      </div>
+      <PostActions
+        post={post}
+        isAuthor={isAuthor}
+        onLike={handleLikeToggle}
+        onDelete={handleDelete}
+      />
 
       <CommentsSection
         postId={post.id}
         comments={post.comments}
         isAuthenticated={isAuthenticated}
-        isDraft={isDraft}
+        isDraft={post.status === 'DRAFT'}
         refetch={refetch}
       />
     </article>
@@ -472,7 +366,6 @@ function BlogPostDetail({ post, refetch }: { post: BlogPostData; refetch: () => 
 
 function CheckedListDetail({ post, refetch }: { post: CheckedListPostData; refetch: () => void }) {
   const { user, isAuthenticated } = useAuth();
-  const navigate = useNavigate();
   const isAuthor = user?.username === post.author.username;
   const isDraft = post.status === 'DRAFT';
 
@@ -494,7 +387,6 @@ function CheckedListDetail({ post, refetch }: { post: CheckedListPostData; refet
   const [updateItem] = useMutation(UPDATE_ITEM, {
     onCompleted: () => { setEditingItemId(null); setEditingItemText(''); refetch(); },
   });
-  const [deletePost] = useMutation(DELETE_CHECKLIST_POST, { onCompleted: () => navigate('/') });
 
   const handleAddItem = async (e: FormEvent) => {
     e.preventDefault();
@@ -507,11 +399,7 @@ function CheckedListDetail({ post, refetch }: { post: CheckedListPostData; refet
     await updateItem({ variables: { input: { id: itemId, text: editingItemText.trim() } } });
   };
 
-  const handleDelete = async () => {
-    if (window.confirm('Are you sure you want to delete this checklist?')) {
-      await deletePost({ variables: { id: post.id } });
-    }
-  };
+  const handleDelete = useDeleteWithConfirm(DELETE_CHECKLIST_POST, post.id, 'checklist');
 
   const sortedItems = [...(post.items ?? [])].sort((a, b) => a.position - b.position);
 
@@ -522,20 +410,10 @@ function CheckedListDetail({ post, refetch }: { post: CheckedListPostData; refet
 
   return (
     <article className="post-detail post-detail--checklist">
-      {isDraft && <DraftBanner />}
-      <div className="post-header">
-        <div className="post-type-badge">☑ Checklist</div>
-        <h1>{post.title}</h1>
-        <div className="post-meta">
-          <span>by {post.author.name}</span>
-          <span>{new Date(post.createdAt).toLocaleDateString()}</span>
-          <PostAnalytics
-            viewCount={post.viewCount}
-            readTimeMinutes={post.readTimeMinutes}
-            isDraft={isDraft}
-          />
-        </div>
-      </div>
+      <PostDetailHeader
+        post={post}
+        typeBadge={<div className="post-type-badge">☑ Checklist</div>}
+      />
 
       {post.description && (
         <p className="checklist-description">{post.description}</p>
@@ -649,20 +527,12 @@ function CheckedListDetail({ post, refetch }: { post: CheckedListPostData; refet
         )}
       </div>
 
-      <div className="post-actions">
-        <LikeButton
-          likeCount={post.likeCount}
-          isLikedByMe={post.isLikedByMe}
-          isDraft={isDraft}
-          onToggle={handleLikeToggle}
-        />
-        {isAuthor && (
-          <>
-            <Link to={`/edit/${post.id}`} className="btn-edit">Edit</Link>
-            <button onClick={handleDelete} className="btn-delete">Delete</button>
-          </>
-        )}
-      </div>
+      <PostActions
+        post={post}
+        isAuthor={isAuthor}
+        onLike={handleLikeToggle}
+        onDelete={handleDelete}
+      />
 
       <CommentsSection
         postId={post.id}

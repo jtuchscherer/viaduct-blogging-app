@@ -2,8 +2,8 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { MockedProvider } from '@apollo/client/testing/react'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
-import { gql } from '@apollo/client'
 import EditPostPage from '../../src/pages/EditPostPage'
+import { GET_NODE_FOR_EDIT, PUBLISH_POST, UNPUBLISH_POST } from '../../src/graphql/posts'
 import { AuthProvider } from '../../src/contexts/AuthContext'
 
 /**
@@ -23,52 +23,6 @@ vi.mock('../../src/components/RichTextEditor', () => ({
 vi.mock('../../src/hooks/useAIHealth', () => ({
   useAIHealth: () => ({ ollamaReachable: false, chatModel: '', embeddingModel: '' }),
 }))
-
-const GET_NODE_FOR_EDIT = gql`
-  query GetNodeForEdit($id: ID!) {
-    node(id: $id) {
-      __typename
-      ... on BlogPost {
-        id
-        title
-        content
-        status
-        author {
-          id
-        }
-      }
-      ... on CheckedListPost {
-        id
-        title
-        description
-        status
-        author {
-          id
-        }
-      }
-    }
-  }
-`
-
-const PUBLISH_POST = gql`
-  mutation PublishPost($postId: ID!) {
-    publishPost(postId: $postId) {
-      id
-      status
-      publishedAt
-    }
-  }
-`
-
-const UNPUBLISH_POST = gql`
-  mutation UnpublishPost($postId: ID!) {
-    unpublishPost(postId: $postId) {
-      id
-      status
-      publishedAt
-    }
-  }
-`
 
 const POST_ID = btoa('BlogPost:00000000-0000-0000-0000-000000000001')
 

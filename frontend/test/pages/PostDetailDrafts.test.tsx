@@ -2,8 +2,8 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MockedProvider } from '@apollo/client/testing/react'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
-import { gql } from '@apollo/client'
 import PostDetailPage from '../../src/pages/PostDetailPage'
+import { GET_NODE, RECORD_POST_VIEW } from '../../src/graphql/posts'
 import { AuthProvider } from '../../src/contexts/AuthContext'
 
 /**
@@ -14,81 +14,6 @@ import { AuthProvider } from '../../src/contexts/AuthContext'
  * a not-found error, which must read as "Post not found" rather than as a raw exception string —
  * the same thing a reader would see for a post that never existed.
  */
-
-const GET_NODE = gql`
-  query GetNode($id: ID!) {
-    node(id: $id) {
-      __typename
-      ... on BlogPost {
-        id
-        title
-        content
-        status
-        publishedAt
-        author {
-          id
-          name
-          username
-        }
-        createdAt
-        likeCount
-        isLikedByMe
-        viewCount
-        readTimeMinutes
-        comments {
-          id
-          content
-          author {
-            id
-            name
-            username
-          }
-          createdAt
-        }
-      }
-      ... on CheckedListPost {
-        id
-        title
-        description
-        status
-        publishedAt
-        author {
-          id
-          name
-          username
-        }
-        createdAt
-        likeCount
-        isLikedByMe
-        viewCount
-        readTimeMinutes
-        items {
-          id
-          text
-          checked
-          position
-          createdAt
-        }
-        comments {
-          id
-          content
-          author {
-            id
-            name
-            username
-          }
-          createdAt
-        }
-      }
-    }
-  }
-`
-
-const RECORD_POST_VIEW = gql`
-  mutation RecordPostView($postId: ID!) {
-    recordPostView(postId: $postId)
-  }
-`
 
 const POST_ID = btoa('BlogPost:00000000-0000-0000-0000-000000000001')
 

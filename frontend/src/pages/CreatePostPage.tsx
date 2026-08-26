@@ -1,6 +1,5 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { gql } from '@apollo/client';
 import { useMutation } from '@apollo/client/react';
 import RichTextEditor from '../components/RichTextEditor';
 import RephraseControls from '../components/RephraseControls';
@@ -9,29 +8,7 @@ import { useAIHealth } from '../hooks/useAIHealth';
 import { useRephrase } from '../hooks/useRephrase';
 import { useSuggestItem } from '../hooks/useSuggestItem';
 import type { PostStatus } from '../types';
-
-// ── Mutations ─────────────────────────────────────────────────────────────────
-
-const CREATE_BLOG_POST = gql`
-  mutation CreatePost($input: CreatePostInput!) {
-    createPost(input: $input) {
-      id
-      title
-      content
-      status
-    }
-  }
-`;
-
-const CREATE_CHECKLIST_POST = gql`
-  mutation CreateCheckedListPost($input: CreateCheckedListPostInput!) {
-    createCheckedListPost(input: $input) {
-      id
-      title
-      status
-    }
-  }
-`;
+import { CREATE_BLOG_POST, CREATE_CHECKLIST_POST } from '../graphql/posts';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
