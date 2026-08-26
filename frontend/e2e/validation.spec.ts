@@ -25,6 +25,9 @@ test.describe('Input validation', () => {
       await page.fill('input#title', 'a'.repeat(501));
       await page.click('[data-testid="rich-text-editor"]');
       await page.keyboard.type('Some content.');
+      // Lexical hydrates asynchronously; dropped keystrokes would fail content validation and
+      // mask the validation case this test is actually about.
+      await expect(page.locator('[data-testid="rich-text-editor"]')).toContainText('Some content');
       await page.click('button[type="submit"]');
 
       await expect(page.locator('.error-message')).toBeVisible();

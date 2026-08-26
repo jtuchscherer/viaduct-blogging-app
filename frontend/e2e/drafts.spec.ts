@@ -58,6 +58,18 @@ test.describe('Drafts — authoring', () => {
     await expect(page.locator('[data-testid="draft-banner"]')).toBeVisible();
   });
 
+  test('a draft offers no engagement the backend would refuse', async ({ page }) => {
+    await registerAndLogin(page, `draft_engage_${Date.now()}`);
+    await fillBlogForm(page, `No Engagement ${Date.now()}`, 'Nothing to react to yet.');
+    await saveAsDraft(page);
+
+    // The backend rejects comments and likes on a draft, so offering either would only produce an
+    // error the author cannot act on.
+    await expect(page.locator('textarea[placeholder="Add a comment..."]')).toHaveCount(0);
+    await expect(page.locator('[data-testid="like-button"]')).toHaveCount(0);
+    await expect(page.locator('main')).toContainText('open for comments once it is published');
+  });
+
   test('a draft does not appear on the home feed', async ({ page }) => {
     await registerAndLogin(page, `draft_feed_${Date.now()}`);
     const title = `Hidden Draft ${Date.now()}`;

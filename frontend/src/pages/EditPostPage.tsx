@@ -143,9 +143,12 @@ function PublishControls({ postId, status }: { postId: string; status: PostStatu
     <div className="publish-controls">
       {isDraft && <DraftBanner />}
       {error && <div className="error-message">{error}</div>}
+      {/* `.btn` rather than `.btn-primary`: the app's primary action colour comes from
+          `button[type="submit"]`, which this is not, and an indigo Publish beside a blue Save
+          Changes looked like a different kind of control. */}
       <button
         type="button"
-        className={isDraft ? 'btn-primary' : 'btn-secondary'}
+        className={isDraft ? 'btn' : 'btn-secondary'}
         disabled={loading}
         onClick={() => void (isDraft ? publishPost() : unpublishPost())}
       >

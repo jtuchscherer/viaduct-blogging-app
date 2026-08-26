@@ -30,6 +30,9 @@ test.describe('Blog Posts', () => {
     await page.fill('input#title', title);
     await page.click('[data-testid="rich-text-editor"]');
     await page.keyboard.type('This is the post content for testing purposes.');
+    // Lexical hydrates asynchronously; keystrokes sent before it is ready are dropped, which
+    // fails the form's own content validation and reads as a failure to navigate.
+    await expect(page.locator('[data-testid="rich-text-editor"]')).toContainText('post content for testing');
     await page.click('button[type="submit"]');
 
     await expect(page).toHaveURL(/\/post\//);
@@ -46,6 +49,9 @@ test.describe('Blog Posts', () => {
     await page.fill('input#title', title);
     await page.click('[data-testid="rich-text-editor"]');
     await page.keyboard.type('Content for home page test.');
+    // Lexical hydrates asynchronously; keystrokes sent before it is ready are dropped, which
+    // fails the form's own content validation and reads as a failure to navigate.
+    await expect(page.locator('[data-testid="rich-text-editor"]')).toContainText('Content for home page test');
     await page.click('button[type="submit"]');
     await page.waitForURL(/\/post\//);
 
@@ -80,6 +86,9 @@ test.describe('Blog Posts', () => {
     // Type text, select all, apply bold via toolbar
     await page.click('[data-testid="rich-text-editor"]');
     await page.keyboard.type('Hello bold world');
+    // Lexical hydrates asynchronously; keystrokes sent before it is ready are dropped, which
+    // fails the form's own content validation and reads as a failure to navigate.
+    await expect(page.locator('[data-testid="rich-text-editor"]')).toContainText('Hello bold world');
     await page.keyboard.press('ControlOrMeta+a');
     await page.click('[aria-label="Bold"]');
 

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MockedProvider } from '@apollo/client/testing/react'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
@@ -200,6 +200,94 @@ describe('PostDetailPage — draft banner', () => {
 
     await screen.findByText('Hello World')
     expect(screen.queryByTestId('draft-banner')).not.toBeInTheDocument()
+  })
+})
+
+/**
+ * The backend refuses comments, likes and view counts on a draft, because a draft has no audience.
+ * The page must not offer those anyway: a comment box that always errors is worse than no box.
+ *
+ * These sign the viewer in first. Without that the comment box is hidden regardless of status, and
+ * the assertions would pass whether the draft logic worked or not.
+ */
+describe('PostDetailPage — engagement on a draft', () => {
+  beforeEach(() => {
+    localStorage.setItem('authToken', 'test-token')
+    localStorage.setItem('authUser', JSON.stringify({ id: 'u1', name: 'Alice', username: 'alice' }))
+  })
+  afterEach(() => localStorage.clear())
+
+  it('offers no way to like a draft', async () => {
+    renderPage([blogPostMock('DRAFT'), viewMock])
+
+    await screen.findByText('Hello World')
+    expect(screen.queryByTestId('like-button')).not.toBeInTheDocument()
+  })
+
+  it('offers no comment box on a draft', async () => {
+    renderPage([blogPostMock('DRAFT'), viewMock])
+
+    await screen.findByText('Hello World')
+    expect(screen.queryByPlaceholderText(/add a comment/i)).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /post comment/i })).not.toBeInTheDocument()
+  })
+
+  it('says why, rather than leaving the reader to guess', async () => {
+    renderPage([blogPostMock('DRAFT'), viewMock])
+
+    await screen.findByText('Hello World')
+    expect(screen.getByText(/open for comments once it is published/i)).toBeInTheDocument()
+  })
+
+  it('hides the view count, which is not collected for a draft', async () => {
+    renderPage([blogPostMock('DRAFT'), viewMock])
+
+    await screen.findByText('Hello World')
+    // The mock reports one view, so this must match the singular wording too.
+    expect(screen.queryByText(/1 view/)).not.toBeInTheDocument()
+  })
+
+  it('offers all of it again once published', async () => {
+    renderPage([blogPostMock('PUBLISHED'), viewMock])
+
+    await screen.findByText('Hello World')
+    expect(screen.getByTestId('like-button')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText(/add a comment/i)).toBeInTheDocument()
+    expect(screen.getByText(/1 view/)).toBeInTheDocument()
+  })
+
+  it('keeps comments made while published visible to the author of an unpublished post', async () => {
+    // Unpublishing hides engagement from the public, not from the author — it is not a delete.
+    const withComment = {
+      ...blogPostMock('DRAFT'),
+      result: {
+        data: {
+          node: {
+            ...blogPostMock('DRAFT').result.data.node,
+            comments: [
+              {
+                __typename: 'Comment',
+                id: 'c1',
+                content: 'A comment from when this was live',
+                author: { __typename: 'User', id: 'u2', name: 'Bob', username: 'bob' },
+                createdAt: '2026-08-02T10:00:00Z',
+              },
+            ],
+          },
+        },
+      },
+    }
+    renderPage([withComment, viewMock])
+
+    await screen.findByText('Hello World')
+    expect(screen.getByText('A comment from when this was live')).toBeInTheDocument()
+  })
+
+  it('offers no comment box on a draft checklist either', async () => {
+    renderPage([checklistMock('DRAFT'), viewMock])
+
+    await screen.findByText('A Checklist')
+    expect(screen.queryByPlaceholderText(/add a comment/i)).not.toBeInTheDocument()
   })
 })
 
