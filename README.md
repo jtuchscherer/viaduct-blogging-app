@@ -185,10 +185,20 @@ PGHOST=localhost PGPORT=5432 \
 ```
 
 Creates:
-- **4 users** — `alice`, `bob`, `charlie`, `admin` (all with password `password123`; `admin` has admin privileges)
-- **12 posts** — 4 per regular user, with rich HTML content
-- **15 comments** spread across posts
-- **20 likes** spread across posts
+- **5 users** — `alice`, `bob`, `charlie`, `admin` (password `password123`; `admin` has admin privileges) and `e2e_admin` (password `e2eAdminPass1`)
+- **15 blog posts** — 12 published (4 per regular user, with rich HTML content) and 3 drafts, one per regular user
+- **4 checklists** — 3 published (4, 7 and 9 items) and 1 draft (3 items)
+- **17 comments** and **22 likes** spread across posts
+- **9 post-view rows**, so `trending` has something to rank
+
+Drafts are visible only to their author and to admins, so `alice`, `bob` and `charlie` each have
+one waiting in **My Posts**. Bob's is the interesting case: it was published, gathered comments,
+likes and views, and was then unpublished — unpublishing hides engagement rather than deleting it,
+so that state is worth being able to see locally.
+
+Published posts get staggered publication times an hour apart. The feed orders by `published_at`,
+and identical timestamps would leave that `ORDER BY` without a tiebreaker, so a paged feed could
+repeat or skip a post.
 
 If the database already has data it will prompt before clearing it.
 
