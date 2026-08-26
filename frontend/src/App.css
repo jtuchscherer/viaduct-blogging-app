@@ -606,3 +606,70 @@ button[type="submit"]:disabled {
 
 .btn-suggest-item:hover:not(:disabled) { background: #f5eef8; }
 .btn-suggest-item:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Draft indicators ─────────────────────────────────────────────────────── */
+
+/* Amber, and translucent rather than opaque, so it reads on both the light and
+   the dark theme without a per-theme override. */
+.draft-banner {
+  padding: 0.7rem 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid #f39c12;
+  border-left-width: 4px;
+  border-radius: 4px;
+  background: rgba(243, 156, 18, 0.12);
+  color: #b9770e;
+  font-size: 0.95rem;
+}
+
+.draft-badge {
+  display: inline-block;
+  margin-left: 0.6rem;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid #f39c12;
+  border-radius: 10px;
+  background: rgba(243, 156, 18, 0.12);
+  color: #b9770e;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  vertical-align: middle;
+}
+
+/* ── Publish / unpublish control ──────────────────────────────────────────── */
+
+.publish-controls {
+  margin-bottom: 1.5rem;
+}
+
+.publish-controls button {
+  width: auto;
+}
+
+/* ── Form action rows ─────────────────────────────────────────────────────── */
+
+.form-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+/* ── My Posts status filter ───────────────────────────────────────────────── */
+
+.page-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.status-filter {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+}
+
+.status-filter select {
+  padding: 0.35rem 0.5rem;
+  border-radius: 4px;
+}

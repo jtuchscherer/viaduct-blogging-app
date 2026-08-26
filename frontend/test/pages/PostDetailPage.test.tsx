@@ -16,6 +16,8 @@ const GET_NODE = gql`
         id
         title
         content
+        status
+        publishedAt
         author {
           id
           name
@@ -41,6 +43,8 @@ const GET_NODE = gql`
         id
         title
         description
+        status
+        publishedAt
         author {
           id
           name
@@ -92,6 +96,8 @@ const makePostMock = (viewCount = 7, readTimeMinutes = 2.0) => ({
         id: POST_ID,
         title: 'Hello World',
         content: '<p>Some body text.</p>',
+        status: 'PUBLISHED',
+        publishedAt: '2025-01-15T10:00:00Z',
         author: { __typename: 'User', id: 'u1', name: 'Alice', username: 'alice' },
         createdAt: '2025-01-15T10:00:00Z',
         likeCount: 3,

@@ -7,6 +7,9 @@ import RephraseControls from '../components/RephraseControls';
 import { isContentEmpty } from '../utils/content';
 import { useAIHealth } from '../hooks/useAIHealth';
 import { useRephrase } from '../hooks/useRephrase';
+import { renderPostQueryState } from '../components/PostQueryState';
+import { DraftBanner } from '../components/DraftIndicators';
+import type { PostStatus } from '../types';
 
 // ── Queries & Mutations ───────────────────────────────────────────────────────
 
@@ -22,6 +25,7 @@ const GET_NODE_FOR_EDIT = gql`
         id
         title
         content
+        status
         author {
           id
         }
@@ -30,10 +34,35 @@ const GET_NODE_FOR_EDIT = gql`
         id
         title
         description
+        status
         author {
           id
         }
       }
+    }
+  }
+`;
+
+/**
+ * Both transitions take a bare `ID!` and return the `Post` interface, so one pair of documents
+ * covers blog posts and checklists alike.
+ */
+const PUBLISH_POST = gql`
+  mutation PublishPost($postId: ID!) {
+    publishPost(postId: $postId) {
+      id
+      status
+      publishedAt
+    }
+  }
+`;
+
+const UNPUBLISH_POST = gql`
+  mutation UnpublishPost($postId: ID!) {
+    unpublishPost(postId: $postId) {
+      id
+      status
+      publishedAt
     }
   }
 `;
@@ -65,6 +94,7 @@ interface BlogPostNode {
   id: string;
   title: string;
   content: string;
+  status: PostStatus;
   author: { id: string };
 }
 
@@ -73,6 +103,7 @@ interface CheckedListPostNode {
   id: string;
   title: string;
   description: string;
+  status: PostStatus;
   author: { id: string };
 }
 
@@ -80,6 +111,48 @@ type NodeData = BlogPostNode | CheckedListPostNode;
 
 interface NodeQueryResult {
   node: NodeData | null;
+}
+
+// ── Publish / unpublish control ───────────────────────────────────────────────
+
+/**
+ * The one status transition that applies, plus a banner while the post is a draft.
+ *
+ * Only one of the two buttons is ever rendered: a draft can be published and a published post can
+ * be unpublished, and showing the inapplicable one disabled would only invite a click.
+ *
+ * Both mutations return the post's new status, which Apollo writes into the normalised cache under
+ * the same entity the edit query read. The control and the banner then re-render on their own.
+ * Refetching instead would put the page back into its loading state and discard whatever the
+ * author had typed into the form.
+ */
+function PublishControls({ postId, status }: { postId: string; status: PostStatus }) {
+  const [error, setError] = useState('');
+  const isDraft = status === 'DRAFT';
+
+  const options = {
+    variables: { postId },
+    onCompleted: () => setError(''),
+    onError: (err: Error) => setError(err.message),
+  };
+  const [publishPost, { loading: publishing }] = useMutation(PUBLISH_POST, options);
+  const [unpublishPost, { loading: unpublishing }] = useMutation(UNPUBLISH_POST, options);
+  const loading = publishing || unpublishing;
+
+  return (
+    <div className="publish-controls">
+      {isDraft && <DraftBanner />}
+      {error && <div className="error-message">{error}</div>}
+      <button
+        type="button"
+        className={isDraft ? 'btn-primary' : 'btn-secondary'}
+        disabled={loading}
+        onClick={() => void (isDraft ? publishPost() : unpublishPost())}
+      >
+        {isDraft ? 'Publish' : 'Unpublish'}
+      </button>
+    </div>
+  );
 }
 
 // ── Blog Post edit form ───────────────────────────────────────────────────────
@@ -116,6 +189,7 @@ function EditBlogPostForm({ post }: { post: BlogPostNode }) {
     <div className="container">
       <div className="form-container" style={{ maxWidth: '800px' }}>
         <h2>Edit Post</h2>
+        <PublishControls postId={post.id} status={post.status} />
         {error && <div className="error-message">{error}</div>}
         <form onSubmit={handleSubmit}>
           <div className="form-group">
@@ -151,7 +225,7 @@ function EditBlogPostForm({ post }: { post: BlogPostNode }) {
               placeholder="Write your post content…"
             />
           </div>
-          <div style={{ display: 'flex', gap: '1rem' }}>
+          <div className="form-actions">
             <button type="submit" className="btn-primary" disabled={loading}>
               {loading ? 'Saving...' : 'Save Changes'}
             </button>
@@ -205,6 +279,7 @@ function EditChecklistForm({ post }: { post: CheckedListPostNode }) {
     <div className="container">
       <div className="form-container" style={{ maxWidth: '800px' }}>
         <h2>Edit Checklist</h2>
+        <PublishControls postId={post.id} status={post.status} />
         <p style={{ color: '#6c757d', marginBottom: '1rem' }}>
           To add, remove, or reorder items, go back to the{' '}
           <span
@@ -241,7 +316,7 @@ function EditChecklistForm({ post }: { post: CheckedListPostNode }) {
               style={{ width: '100%', resize: 'vertical' }}
             />
           </div>
-          <div style={{ display: 'flex', gap: '1rem' }}>
+          <div className="form-actions">
             <button type="submit" className="btn-primary" disabled={loading}>
               {loading ? 'Saving...' : 'Save Changes'}
             </button>
@@ -269,19 +344,10 @@ export default function EditPostPage() {
     variables: { id },
   });
 
-  if (loading) {
-    return <div className="container"><p>Loading post...</p></div>;
+  const node = data?.node;
+  if (loading || error || !node) {
+    return renderPostQueryState({ loading, error, missing: !node });
   }
-
-  if (error) {
-    return <div className="container"><div className="error-message">Error: {error.message}</div></div>;
-  }
-
-  if (!data?.node) {
-    return <div className="container"><p>Post not found</p></div>;
-  }
-
-  const node = data.node;
 
   if (node.__typename === 'CheckedListPost') {
     return <EditChecklistForm post={node} />;

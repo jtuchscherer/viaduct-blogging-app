@@ -5,7 +5,9 @@ import { useState, useEffect, type FormEvent } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import DOMPurify from 'dompurify';
 import { formatReadTime } from '../utils/content';
-import type { CheckedListItem } from '../types';
+import { renderPostQueryState } from '../components/PostQueryState';
+import { DraftBanner } from '../components/DraftIndicators';
+import type { CheckedListItem, PostStatus } from '../types';
 import { useAIHealth } from '../hooks/useAIHealth';
 import { useSuggestItem } from '../hooks/useSuggestItem';
 
@@ -23,6 +25,8 @@ const GET_NODE = gql`
         id
         title
         content
+        status
+        publishedAt
         author {
           id
           name
@@ -48,6 +52,8 @@ const GET_NODE = gql`
         id
         title
         description
+        status
+        publishedAt
         author {
           id
           name
@@ -187,6 +193,8 @@ interface BlogPostData {
   id: string;
   title: string;
   content: string;
+  status: PostStatus;
+  publishedAt: string | null;
   author: Author;
   createdAt: string;
   likeCount: number;
@@ -201,6 +209,8 @@ interface CheckedListPostData {
   id: string;
   title: string;
   description: string;
+  status: PostStatus;
+  publishedAt: string | null;
   author: Author;
   createdAt: string;
   likeCount: number;
@@ -351,6 +361,7 @@ function BlogPostDetail({ post, refetch }: { post: BlogPostData; refetch: () => 
 
   return (
     <article className="post-detail">
+      {post.status === 'DRAFT' && <DraftBanner />}
       <div className="post-header">
         <h1>{post.title}</h1>
         <div className="post-meta">
@@ -446,6 +457,7 @@ function CheckedListDetail({ post, refetch }: { post: CheckedListPostData; refet
 
   return (
     <article className="post-detail post-detail--checklist">
+      {post.status === 'DRAFT' && <DraftBanner />}
       <div className="post-header">
         <div className="post-type-badge">☑ Checklist</div>
         <h1>{post.title}</h1>
@@ -626,11 +638,10 @@ export default function PostDetailPage() {
     }
   }, [loading, data, location.hash]);
 
-  if (loading) return <div className="container"><p>Loading post...</p></div>;
-  if (error) return <div className="container"><div className="error-message">Error: {error.message}</div></div>;
-  if (!data?.node) return <div className="container"><p>Post not found</p></div>;
-
-  const node = data.node;
+  const node = data?.node;
+  if (loading || error || !node) {
+    return renderPostQueryState({ loading, error, missing: !node });
+  }
 
   return (
     <div className="container">

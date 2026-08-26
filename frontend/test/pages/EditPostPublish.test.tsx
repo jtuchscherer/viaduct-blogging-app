@@ -171,9 +171,10 @@ describe('EditPostPage — which transition is offered', () => {
 })
 
 describe('EditPostPage — making the transition', () => {
+  // One node mock each: the new status reaches the page through the cache, not through a refetch,
+  // so the edit query is never issued a second time.
   it('publishing a draft flips the control and clears the banner', async () => {
-    // Two node mocks: the refetch after publishing consumes the second.
-    renderPage([nodeMock('DRAFT'), transitionMock('PUBLISHED'), nodeMock('PUBLISHED')])
+    renderPage([nodeMock('DRAFT'), transitionMock('PUBLISHED')])
     await screen.findByDisplayValue('Hello World')
 
     fireEvent.click(publishButton())
@@ -182,8 +183,19 @@ describe('EditPostPage — making the transition', () => {
     expect(screen.queryByTestId('draft-banner')).not.toBeInTheDocument()
   })
 
+  it('keeps the form on screen through the transition', async () => {
+    // A refetch would blank the page back to its loading state and lose unsaved edits.
+    renderPage([nodeMock('DRAFT'), transitionMock('PUBLISHED')])
+    await screen.findByDisplayValue('Hello World')
+
+    fireEvent.click(publishButton())
+
+    await waitFor(() => expect(unpublishButton()).toBeInTheDocument())
+    expect(screen.getByDisplayValue('Hello World')).toBeInTheDocument()
+  })
+
   it('unpublishing a published post flips the control and shows the banner', async () => {
-    renderPage([nodeMock('PUBLISHED'), transitionMock('DRAFT'), nodeMock('DRAFT')])
+    renderPage([nodeMock('PUBLISHED'), transitionMock('DRAFT')])
     await screen.findByDisplayValue('Hello World')
 
     fireEvent.click(unpublishButton())

@@ -1,17 +1,17 @@
 # TODO: Viaduct Blogging App — Implementation Plan
 
-**Status**: 🚀 In Progress — Phases 1–26 complete; Phase 27 (recommendations) on hold; Phase 28 (drafts) planned
+**Status**: 🚀 In Progress — Phases 1–26 and 28 complete; Phase 27 (recommendations) on hold
 
-**Last Updated**: 2026-08-25
+**Last Updated**: 2026-08-26
 
 ## Test Statistics
 
 | Suite | Count | Status |
 |---|---|---|
-| Unit + Integration tests (`./gradlew test`) | 535 | ✅ All passing |
-| API E2E tests (`./query-tests.sh`) | 123 | ✅ All passing |
-| Browser E2E tests (Playwright, 126 tests × 3 browsers) | 378 runs | ✅ All passing |
-| Frontend unit tests (`npm test`) | 84 | ✅ All passing |
+| Unit + Integration tests (`./gradlew test`) | 553 | ✅ All passing |
+| API E2E tests (`./query-tests.sh`) | 153 | ✅ All passing |
+| Browser E2E tests (Playwright, 136 tests × 3 browsers) | 408 runs | ✅ All passing |
+| Frontend unit tests (`npm test`) | 124 | ✅ All passing |
 
 ## Completed Phases
 
@@ -35,13 +35,13 @@
 | AI foundation (Phase 24) | `:modules:ai` module; `AIService`/`OllamaAIService`/`NoOpAIService`; `OllamaConfig` env vars; Tracy observability; `GET /health/ai`; `useAIHealth` hook |
 | AI rephrase (Phase 25) | `rephraseContent` GraphQL mutation; `RephraseControls` component; `useRephrase` hook; tone selector; controls on Create + Edit pages; full test coverage |
 | AI suggestion (Phase 26) | `suggestChecklistItem` mutation; `SuggestChecklistItemMutationResolver`; `useSuggestItem` hook; ✨ Suggest button on Create + Detail pages; ≥ 3 item guard; full test coverage |
+| Drafts (Phase 28) | `PostStatus` enum, `status`/`published_at` columns with a backfilling Flyway migration, `publishPost`/`unpublishPost` mutations; `PostVisibility` as the single read predicate; drafts excluded from every public read path (`posts`, `postsConnection` and its `totalCount`, `checkedListPosts`, `trending`) and from comments, likes and view counts; own drafts kept in `myPosts`/`myCheckedListPosts`; "Save draft" on both create forms, publish/unpublish on the edit page, draft badge and status filter on My Posts, draft banner on the detail page |
 | Bug fixes | Dark mode post type toggle; CheckedList like button; author-only item toggle enforcement (backend + frontend) |
 | Code quality | Domain exceptions, `requireAuth()`/`optionalAuth()` helpers, `useLikeToggle` hook, `PaginationControls` component, `UserRepository.updateFields()`, `.btn-secondary` CSS class, Ports and Adapters documentation, `:modules:resolverkit` — shared `batchNodeResolve` helper deduplicating the Node batch-resolver shape across the root app and `:modules:checkedlist`; also adds `CheckedListItemRepository.findByIds()`, fixing an N+1 lookup |
 
 ## Next Steps
 
 - **Phase 27**: Post recommendation engine — ⏸️ on hold, see the phase section for why
-- **Phase 28** (next): Draft / publish for blog posts and checklists
 
 > See `AI-PLAN.md` for full design, technology choices, and file-by-file breakdown.
 
@@ -477,7 +477,7 @@ from `incrementViewCount`; trending should keep counting anonymous views.
 
 ---
 
-## Phase 28: Draft / Publish ⏳ TODO
+## Phase 28: Draft / Publish ✅ DONE
 
 **Goal**: an author can save a blog post or checklist as a draft, keep editing it privately, and
 publish when ready. Drafts are visible only to their author (and to admins).

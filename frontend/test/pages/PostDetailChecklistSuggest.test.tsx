@@ -23,6 +23,8 @@ const GET_NODE = gql`
         id
         title
         content
+        status
+        publishedAt
         author { id name username }
         createdAt
         likeCount
@@ -35,6 +37,8 @@ const GET_NODE = gql`
         id
         title
         description
+        status
+        publishedAt
         author { id name username }
         createdAt
         likeCount
@@ -92,6 +96,8 @@ const makeChecklistMock = (itemCount: number) => ({
         id: POST_ID,
         title: 'My Checklist',
         description: 'A list',
+        status: 'PUBLISHED',
+        publishedAt: '2025-01-15T10:00:00Z',
         author: AUTHOR,
         createdAt: '2025-01-15T10:00:00Z',
         likeCount: 0,
