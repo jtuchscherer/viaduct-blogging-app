@@ -1,6 +1,6 @@
 package org.tuchscherer.viadapp.analytics.resolvers
 
-import org.tuchscherer.analytics.decodeGlobalId
+import org.tuchscherer.resolverkit.decodeGlobalId
 import org.tuchscherer.analytics.port.PostStatusLookupPort
 import org.tuchscherer.analytics.repositories.PostViewRepository
 import org.tuchscherer.viadapp.analytics.resolverbases.MutationResolvers

@@ -2,16 +2,15 @@ package org.tuchscherer.analytics
 
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
-import java.util.Base64
-import java.util.UUID
 
 /**
- * Unit tests for [estimateReadTime] and [decodeGlobalId] utility functions.
+ * Unit tests for [estimateReadTime].
  *
- * These helpers are shared across all analytics resolvers, so a change to
- * the read-time heuristic or the global-ID decoding logic would affect every
- * viewCount / readTime field in the API.  Tests are pure — no DB or Koin.
+ * The heuristic is shared across all analytics resolvers, so a change to it would affect every
+ * readTime field in the API. Tests are pure — no DB or Koin.
+ *
+ * Global-ID decoding used to be tested here too; it now lives in :modules:resolverkit, which is
+ * where the function moved when its duplicate in the root project was removed.
  */
 class AnalyticsUtilsTest {
 
@@ -59,54 +58,5 @@ class AnalyticsUtilsTest {
         val manyWords = List(300) { "word" }.joinToString(" ")
         val result = estimateReadTime(manyWords)
         assertTrue(result > 0.5)
-    }
-
-    // ── decodeGlobalId ────────────────────────────────────────────────────────
-
-    @Test
-    fun `decodeGlobalId extracts the UUID from a valid BlogPost global ID`() {
-        val uuid = UUID.randomUUID()
-        val encoded = Base64.getEncoder().encodeToString("BlogPost:$uuid".toByteArray())
-
-        assertEquals(uuid, decodeGlobalId(encoded))
-    }
-
-    @Test
-    fun `decodeGlobalId works for CheckedListPost type prefix`() {
-        val uuid = UUID.randomUUID()
-        val encoded = Base64.getEncoder().encodeToString("CheckedListPost:$uuid".toByteArray())
-
-        assertEquals(uuid, decodeGlobalId(encoded))
-    }
-
-    @Test
-    fun `decodeGlobalId works for arbitrary type prefixes`() {
-        val uuid = UUID.randomUUID()
-        val encoded = Base64.getEncoder().encodeToString("User:$uuid".toByteArray())
-
-        assertEquals(uuid, decodeGlobalId(encoded))
-    }
-
-    @Test
-    fun `decodeGlobalId throws IllegalArgumentException for non-base64 input`() {
-        assertThrows<IllegalArgumentException> { decodeGlobalId("not-valid-base64!!!") }
-    }
-
-    @Test
-    fun `decodeGlobalId throws IllegalArgumentException when there is no colon separator`() {
-        // Valid base64 but no ':' in the decoded string
-        val encoded = Base64.getEncoder().encodeToString("nocolonhere".toByteArray())
-        assertThrows<IllegalArgumentException> { decodeGlobalId(encoded) }
-    }
-
-    @Test
-    fun `decodeGlobalId throws IllegalArgumentException when UUID part is not a valid UUID`() {
-        val encoded = Base64.getEncoder().encodeToString("BlogPost:not-a-real-uuid".toByteArray())
-        assertThrows<IllegalArgumentException> { decodeGlobalId(encoded) }
-    }
-
-    @Test
-    fun `decodeGlobalId throws IllegalArgumentException for an empty string`() {
-        assertThrows<IllegalArgumentException> { decodeGlobalId("") }
     }
 }

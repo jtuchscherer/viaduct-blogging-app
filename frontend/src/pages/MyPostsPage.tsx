@@ -1,34 +1,11 @@
 import { useState } from 'react';
-import { gql } from '@apollo/client';
 import { useQuery } from '@apollo/client/react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { getHtmlPreview } from '../utils/content';
 import { DraftBadge } from '../components/DraftIndicators';
 import type { Post, CheckedListPost, PostStatus } from '../types';
-
-const GET_MY_POSTS = gql`
-  query GetMyPosts {
-    myPosts {
-      id
-      title
-      content
-      status
-      createdAt
-      likeCount
-      commentCount
-    }
-    myCheckedListPosts {
-      id
-      title
-      description
-      status
-      createdAt
-      likeCount
-      commentCount
-    }
-  }
-`;
+import { GET_MY_POSTS } from '../graphql/posts';
 
 type MyBlogPost = Pick<Post, 'id' | 'title' | 'content' | 'status' | 'createdAt' | 'likeCount' | 'commentCount'> & { __typename?: 'BlogPost' };
 type MyCheckedListPost = Pick<CheckedListPost, 'id' | 'title' | 'description' | 'status' | 'createdAt' | 'likeCount' | 'commentCount'> & { __typename?: 'CheckedListPost' };

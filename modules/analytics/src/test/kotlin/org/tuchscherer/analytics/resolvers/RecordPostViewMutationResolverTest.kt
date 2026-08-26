@@ -6,7 +6,7 @@ import io.mockk.every
 import io.mockk.justRun
 import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
-import org.tuchscherer.analytics.decodeGlobalId
+import org.tuchscherer.resolverkit.decodeGlobalId
 import org.tuchscherer.analytics.repositories.PostViewRepository
 import org.tuchscherer.viadapp.analytics.resolvers.RecordPostViewMutationResolver
 import org.tuchscherer.viadapp.analytics.resolverbases.MutationResolvers

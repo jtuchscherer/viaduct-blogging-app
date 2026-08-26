@@ -14,6 +14,7 @@ dependencies {
     implementation(libs.exposed.jdbc)
     implementation(libs.exposed.java.time)
     implementation(libs.koin.core)
+    implementation(project(":modules:resolverkit"))
 
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.junit.jupiter.engine)

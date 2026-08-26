@@ -2,37 +2,14 @@ import { describe, it, expect } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { MockedProvider } from '@apollo/client/testing/react'
 import { MemoryRouter } from 'react-router-dom'
-import { gql } from '@apollo/client'
 import MyPostsPage from '../../src/pages/MyPostsPage'
+import { GET_MY_POSTS } from '../../src/graphql/posts'
 import { AuthProvider } from '../../src/contexts/AuthContext'
 
 /**
  * My Posts is the only place an author sees their own drafts alongside their published work
  * (Phase 28), so it needs both a marker telling the two apart and a way to narrow to one of them.
  */
-
-const GET_MY_POSTS = gql`
-  query GetMyPosts {
-    myPosts {
-      id
-      title
-      content
-      status
-      createdAt
-      likeCount
-      commentCount
-    }
-    myCheckedListPosts {
-      id
-      title
-      description
-      status
-      createdAt
-      likeCount
-      commentCount
-    }
-  }
-`
 
 const blogPost = (id: string, title: string, status: 'DRAFT' | 'PUBLISHED') => ({
   __typename: 'BlogPost',

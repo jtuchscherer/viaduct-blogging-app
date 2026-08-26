@@ -4,6 +4,7 @@ import { MockedProvider } from '@apollo/client/testing/react'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import { gql } from '@apollo/client'
 import PostDetailPage from '../../src/pages/PostDetailPage'
+import { GET_NODE, RECORD_POST_VIEW } from '../../src/graphql/posts'
 import { AuthProvider } from '../../src/contexts/AuthContext'
 import type { AIHealth } from '../../src/types'
 
@@ -14,49 +15,6 @@ vi.mock('../../src/hooks/useAIHealth', () => ({
 import { useAIHealth } from '../../src/hooks/useAIHealth'
 
 // Queries/mutations must match the component's gql documents exactly for MockedProvider matching.
-
-const GET_NODE = gql`
-  query GetNode($id: ID!) {
-    node(id: $id) {
-      __typename
-      ... on BlogPost {
-        id
-        title
-        content
-        status
-        publishedAt
-        author { id name username }
-        createdAt
-        likeCount
-        isLikedByMe
-        viewCount
-        readTimeMinutes
-        comments { id content author { id name username } createdAt }
-      }
-      ... on CheckedListPost {
-        id
-        title
-        description
-        status
-        publishedAt
-        author { id name username }
-        createdAt
-        likeCount
-        isLikedByMe
-        viewCount
-        readTimeMinutes
-        items { id text checked position createdAt }
-        comments { id content author { id name username } createdAt }
-      }
-    }
-  }
-`
-
-const RECORD_POST_VIEW = gql`
-  mutation RecordPostView($postId: ID!) {
-    recordPostView(postId: $postId)
-  }
-`
 
 const SUGGEST_CHECKLIST_ITEM = gql`
   mutation SuggestChecklistItem($existingItems: [String!]!) {

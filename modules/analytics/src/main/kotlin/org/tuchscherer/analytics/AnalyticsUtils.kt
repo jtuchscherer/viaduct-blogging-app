@@ -2,7 +2,6 @@ package org.tuchscherer.analytics
 
 import org.tuchscherer.analytics.repositories.PostViewRepository
 import viaduct.api.FieldValue
-import java.util.Base64
 import java.util.UUID
 
 // ── Read time estimation ──────────────────────────────────────────────────────
@@ -36,22 +35,4 @@ fun estimateReadTime(content: String): Double {
 fun resolveViewCounts(postIds: List<UUID>, repository: PostViewRepository): List<FieldValue<Int>> {
     val viewCounts = repository.bulkGetViewCounts(postIds)
     return postIds.map { postId -> FieldValue.ofValue((viewCounts[postId] ?: 0L).toInt()) }
-}
-
-// ── Global ID decoding ────────────────────────────────────────────────────────
-
-/**
- * Decodes a Viaduct global ID string (base64 `TypeName:uuid`) into its UUID component.
- * The type name prefix is discarded — the caller is responsible for knowing the type.
- *
- * Throws [IllegalArgumentException] if [encodedId] is not a valid Viaduct global ID.
- */
-fun decodeGlobalId(encodedId: String): UUID {
-    val decoded = runCatching { String(Base64.getDecoder().decode(encodedId)) }
-        .getOrElse { throw IllegalArgumentException("Invalid post ID: $encodedId") }
-    val colonIdx = decoded.indexOf(':')
-    require(colonIdx > 0) { "Invalid post ID format: $encodedId" }
-    val internalId = decoded.substring(colonIdx + 1)
-    return runCatching { UUID.fromString(internalId) }
-        .getOrElse { throw IllegalArgumentException("Invalid UUID in post ID: $internalId") }
 }

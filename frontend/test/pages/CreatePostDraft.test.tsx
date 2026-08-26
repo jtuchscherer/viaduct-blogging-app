@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { MockedProvider } from '@apollo/client/testing/react'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
-import { gql } from '@apollo/client'
 import CreatePostPage from '../../src/pages/CreatePostPage'
+import { CREATE_BLOG_POST, CREATE_CHECKLIST_POST } from '../../src/graphql/posts'
 import { AuthProvider } from '../../src/contexts/AuthContext'
 
 /**
@@ -29,27 +29,6 @@ vi.mock('../../src/components/RichTextEditor', () => ({
     />
   ),
 }))
-
-const CREATE_BLOG_POST = gql`
-  mutation CreatePost($input: CreatePostInput!) {
-    createPost(input: $input) {
-      id
-      title
-      content
-      status
-    }
-  }
-`
-
-const CREATE_CHECKLIST_POST = gql`
-  mutation CreateCheckedListPost($input: CreateCheckedListPostInput!) {
-    createCheckedListPost(input: $input) {
-      id
-      title
-      status
-    }
-  }
-`
 
 const NEW_POST_ID = btoa('BlogPost:00000000-0000-0000-0000-000000000009')
 

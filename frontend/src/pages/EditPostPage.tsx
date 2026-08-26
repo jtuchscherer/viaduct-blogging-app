@@ -1,6 +1,5 @@
 import { useState, type FormEvent } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { gql } from '@apollo/client';
 import { useQuery, useMutation } from '@apollo/client/react';
 import RichTextEditor from '../components/RichTextEditor';
 import RephraseControls from '../components/RephraseControls';
@@ -10,82 +9,7 @@ import { useRephrase } from '../hooks/useRephrase';
 import { renderPostQueryState } from '../components/PostQueryState';
 import { DraftBanner } from '../components/DraftIndicators';
 import type { PostStatus } from '../types';
-
-// ── Queries & Mutations ───────────────────────────────────────────────────────
-
-/**
- * Uses node(id) to support editing both BlogPost and CheckedListPost from the
- * same route. __typename drives the form variant below.
- */
-const GET_NODE_FOR_EDIT = gql`
-  query GetNodeForEdit($id: ID!) {
-    node(id: $id) {
-      __typename
-      ... on BlogPost {
-        id
-        title
-        content
-        status
-        author {
-          id
-        }
-      }
-      ... on CheckedListPost {
-        id
-        title
-        description
-        status
-        author {
-          id
-        }
-      }
-    }
-  }
-`;
-
-/**
- * Both transitions take a bare `ID!` and return the `Post` interface, so one pair of documents
- * covers blog posts and checklists alike.
- */
-const PUBLISH_POST = gql`
-  mutation PublishPost($postId: ID!) {
-    publishPost(postId: $postId) {
-      id
-      status
-      publishedAt
-    }
-  }
-`;
-
-const UNPUBLISH_POST = gql`
-  mutation UnpublishPost($postId: ID!) {
-    unpublishPost(postId: $postId) {
-      id
-      status
-      publishedAt
-    }
-  }
-`;
-
-const UPDATE_BLOG_POST = gql`
-  mutation UpdatePost($input: UpdatePostInput!) {
-    updatePost(input: $input) {
-      id
-      title
-      content
-    }
-  }
-`;
-
-const UPDATE_CHECKLIST_POST = gql`
-  mutation UpdateCheckedListPost($input: UpdateCheckedListPostInput!) {
-    updateCheckedListPost(input: $input) {
-      id
-      title
-      description
-    }
-  }
-`;
+import { GET_NODE_FOR_EDIT, PUBLISH_POST, UNPUBLISH_POST, UPDATE_BLOG_POST, UPDATE_CHECKLIST_POST } from '../graphql/posts';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 

@@ -9,6 +9,7 @@ import org.tuchscherer.database.PostStatus
 import org.tuchscherer.database.PostType
 import org.tuchscherer.database.Posts
 import org.tuchscherer.database.Users
+import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.jetbrains.exposed.v1.core.eq
@@ -21,6 +22,16 @@ import java.util.UUID
  * Exposed ORM implementation of PostRepository.
  */
 class ExposedPostRepository : PostRepository {
+
+    /**
+     * What the public blog feed consists of: published blog posts.
+     *
+     * Named once because [findAll], [findPage] and [count] must all agree — if `count` counted
+     * rows that `findPage` will not return, `totalCount` would advertise drafts the caller cannot
+     * fetch. Three copies of the same predicate is how that drifts.
+     */
+    private val publishedBlogPosts
+        get() = (Posts.postType eq PostType.BLOG_POST) and (Posts.status eq PostStatus.PUBLISHED)
 
     override fun findById(id: UUID): Post? = transaction {
         Post.findById(id)
@@ -40,9 +51,7 @@ class ExposedPostRepository : PostRepository {
     // Published only: the public feed must never surface a draft, and filtering here means a
     // draft is not loaded at all rather than filtered out later.
     override fun findAll(): List<Post> = transaction {
-        Post.find {
-            (Posts.postType eq PostType.BLOG_POST) and (Posts.status eq PostStatus.PUBLISHED)
-        }.toList()
+        Post.find { publishedBlogPosts }.toList()
     }
 
     override fun create(
@@ -109,22 +118,17 @@ class ExposedPostRepository : PostRepository {
     }
 
     override fun findPage(limit: Int, offset: Int): List<Post> = transaction {
-        Post.find {
-            (Posts.postType eq PostType.BLOG_POST) and (Posts.status eq PostStatus.PUBLISHED)
-        }
+        Post.find { publishedBlogPosts }
             // Ordered by publication rather than creation, so a long-held draft appears as new
             // when it is finally published.
-            .orderBy(Posts.publishedAt to org.jetbrains.exposed.v1.core.SortOrder.DESC)
+            .orderBy(Posts.publishedAt to SortOrder.DESC)
             .limit(limit)
             .offset(offset.toLong())
             .toList()
     }
 
-    // Must agree with findPage, or totalCount would advertise drafts the caller cannot fetch.
     override fun count(): Long = transaction {
-        Post.find {
-            (Posts.postType eq PostType.BLOG_POST) and (Posts.status eq PostStatus.PUBLISHED)
-        }.count()
+        Post.find { publishedBlogPosts }.count()
     }
 
     override fun getAuthorIdsByPostIds(postIds: List<UUID>): Map<UUID, UUID> = transaction {
