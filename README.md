@@ -156,7 +156,7 @@ docker compose down -v        # also remove the postgres data volume (wipes the 
 
 ### `e2e.sh` — full browser E2E test suite
 
-Starts the backend and frontend, waits for them to be ready, runs the full Playwright test suite across Chromium, Firefox, and WebKit (120 test runs), then shuts everything down. Suitable for CI and pre-push checks.
+Starts the backend and frontend, waits for them to be ready, runs the full Playwright test suite across Chromium, Firefox, and WebKit, then shuts everything down. Suitable for CI and pre-push checks.
 
 ```bash
 ./e2e.sh
@@ -164,10 +164,9 @@ Starts the backend and frontend, waits for them to be ready, runs the full Playw
 
 ### `query-tests.sh` — API E2E tests
 
-Runs 38 curl-based tests against the live GraphQL and auth endpoints. The backend must already be running before calling this script.
+Runs curl-based tests against the GraphQL and auth endpoints. Starts its own backend on a free port against a throwaway SQLite database, then shuts it down — so it needs nothing running beforehand and will not touch your development data.
 
 ```bash
-./gradlew run &   # start backend first
 ./query-tests.sh
 ```
 

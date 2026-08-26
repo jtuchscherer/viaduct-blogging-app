@@ -1835,7 +1835,7 @@ DRAFT_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer $USER1_TOKEN" \
     -d '{"query": "mutation { createPost(input: { title: \"Draft Post\", content: \"Not ready yet\", status: DRAFT }) { id status publishedAt } }"}')
-DRAFT_POST_ID=$(echo $DRAFT_RESPONSE | grep -o '"id":"[^"]*' | head -1 | sed 's/"id":"//')
+DRAFT_POST_ID=$(echo $DRAFT_RESPONSE | jq -r '.data.createPost.id // empty')
 
 if [ -n "$DRAFT_POST_ID" ]; then
     print_success "Captured the draft post id"
@@ -2146,7 +2146,7 @@ DRAFT_CL_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer $USER1_TOKEN" \
     -d '{"query": "mutation { createCheckedListPost(input: { title: \"Draft Checklist\", items: [\"one\", \"two\"], status: DRAFT }) { id status } }"}')
-DRAFT_CL_ID=$(echo $DRAFT_CL_RESPONSE | grep -o '"id":"[^"]*' | head -1 | sed 's/"id":"//')
+DRAFT_CL_ID=$(echo $DRAFT_CL_RESPONSE | jq -r '.data.createCheckedListPost.id // empty')
 
 if [ -n "$DRAFT_CL_ID" ]; then
     print_success "Captured the draft checklist id"
