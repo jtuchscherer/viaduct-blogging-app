@@ -207,21 +207,14 @@ If the database already has data it will prompt before clearing it.
 ## Running Tests
 
 ```bash
-./gradlew test                    # 196 backend unit + integration tests
-cd frontend && npm test           # 26 frontend unit tests (Vitest, runs in <1s)
-./query-tests.sh                  # 38 API E2E tests (backend must be running)
-./e2e.sh                          # 120 Playwright browser tests (starts servers automatically)
+./gradlew test                    # backend unit + integration tests
+cd frontend && npm test           # frontend unit tests (Vitest)
+./query-tests.sh                  # API E2E tests (starts its own server)
+./e2e.sh                          # Playwright browser tests (starts its own servers)
 cd frontend && npm run test:e2e   # Playwright only (servers must already be running)
 ```
 
-### Test statistics
-
-| Suite | Count | Status |
-|---|---|---|
-| Unit + Integration (`./gradlew test`) | 196 | All passing |
-| Frontend unit tests (`npm test`) | 26 | All passing |
-| API E2E (`./query-tests.sh`) | 38 | All passing |
-| Browser E2E (Playwright, 40 tests × 3 browsers) | 120 runs | All passing |
+Current counts live in `TODO.md`, which is updated as part of finishing a phase.
 
 ---
 
@@ -233,10 +226,7 @@ Project overview, requirements, script reference, and links to other docs.
 
 ### `TODO.md` — feature phases and roadmap
 
-Tracks every implementation phase with task checklists, technical approaches, and success criteria. Phases 1–19 are complete. Currently tracks:
-
-- **Phase 20** (next): Analytics frontend — view tracking UI, trending sort, admin analytics dashboard
-- **Phases 21–23**: CheckedList frontend
+Tracks every implementation phase with task checklists, technical approaches, and success criteria, along with the current test counts. Which phases are done and which is next is recorded there rather than repeated here.
 
 ### `CLAUDE.md` — AI assistant instructions
 
