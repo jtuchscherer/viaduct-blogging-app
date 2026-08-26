@@ -25,6 +25,10 @@ async function fillBlogForm(page: Page, title: string, body: string) {
   await page.fill('input#title', title);
   await page.click('[data-testid="rich-text-editor"]');
   await page.keyboard.type(body);
+  // Lexical hydrates asynchronously, and keystrokes sent before it is ready are dropped. Without
+  // this the form would fail its own content validation instead of saving, which reads as a
+  // mysterious failure to navigate rather than as the race it is.
+  await expect(page.locator('[data-testid="rich-text-editor"]')).toContainText(body);
   return title;
 }
 
@@ -109,6 +113,10 @@ test.describe('Drafts — visibility to others', () => {
 
     await expect(otherPage.locator('main')).toContainText('Post not found');
     await expect(otherPage.locator('main')).not.toContainText(title);
+    // The backend's own message contains "Post not found", so the assertion above would pass on a
+    // raw error page too. This is what makes it a real check.
+    await expect(otherPage.locator('main')).not.toContainText('Exception while fetching');
+    await expect(otherPage.locator('.error-message')).toHaveCount(0);
     await otherContext.close();
   });
 
@@ -123,6 +131,8 @@ test.describe('Drafts — visibility to others', () => {
     await anonPage.goto(draftUrl);
 
     await expect(anonPage.locator('main')).toContainText('Post not found');
+    await expect(anonPage.locator('main')).not.toContainText('Exception while fetching');
+    await expect(anonPage.locator('.error-message')).toHaveCount(0);
     await anonContext.close();
   });
 });

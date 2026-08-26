@@ -8,6 +8,7 @@ import { isContentEmpty } from '../utils/content';
 import { useAIHealth } from '../hooks/useAIHealth';
 import { useRephrase } from '../hooks/useRephrase';
 import { useSuggestItem } from '../hooks/useSuggestItem';
+import type { PostStatus } from '../types';
 
 // ── Mutations ─────────────────────────────────────────────────────────────────
 
@@ -17,6 +18,7 @@ const CREATE_BLOG_POST = gql`
       id
       title
       content
+      status
     }
   }
 `;
@@ -26,6 +28,7 @@ const CREATE_CHECKLIST_POST = gql`
     createCheckedListPost(input: $input) {
       id
       title
+      status
     }
   }
 `;
@@ -33,6 +36,40 @@ const CREATE_CHECKLIST_POST = gql`
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type PostType = 'blog' | 'checklist';
+
+// ── Shared form actions ───────────────────────────────────────────────────────
+
+/**
+ * The submit / save-draft / cancel row, shared by both create forms.
+ *
+ * Publishing is the primary action and drafting the secondary one, so the two are one row rather
+ * than a mode the author picks up front: most posts are written to be published.
+ */
+function CreateFormActions({
+  loading,
+  publishLabel,
+  onSaveDraft,
+  onCancel,
+}: {
+  loading: boolean;
+  publishLabel: string;
+  onSaveDraft: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="form-actions">
+      <button type="submit" className="btn-primary" disabled={loading}>
+        {loading ? 'Creating...' : publishLabel}
+      </button>
+      <button type="button" className="btn-secondary" onClick={onSaveDraft} disabled={loading}>
+        Save draft
+      </button>
+      <button type="button" className="btn-secondary" onClick={onCancel} disabled={loading}>
+        Cancel
+      </button>
+    </div>
+  );
+}
 
 // ── Blog post form ────────────────────────────────────────────────────────────
 
@@ -54,14 +91,22 @@ function BlogPostForm() {
     onError: (err) => setError(err.message),
   });
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+  /**
+   * A draft is validated exactly like a published post, because the backend validates both the
+   * same way: `createPost` requires a non-blank title and non-blank content whatever the status.
+   */
+  const create = async (status: PostStatus) => {
     setError('');
     if (!title.trim() || isContentEmpty(content)) {
       setError('Title and content are required');
       return;
     }
-    await createPost({ variables: { input: { title: title.trim(), content } } });
+    await createPost({ variables: { input: { title: title.trim(), content, status } } });
+  };
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    await create('PUBLISHED');
   };
 
   return (
@@ -104,19 +149,12 @@ function BlogPostForm() {
         />
       </div>
 
-      <div style={{ display: 'flex', gap: '1rem' }}>
-        <button type="submit" className="btn-primary" disabled={loading}>
-          {loading ? 'Creating...' : 'Create Post'}
-        </button>
-        <button
-          type="button"
-          onClick={() => navigate('/')}
-          disabled={loading}
-          className="btn-secondary"
-        >
-          Cancel
-        </button>
-      </div>
+      <CreateFormActions
+        loading={loading}
+        publishLabel="Create Post"
+        onSaveDraft={() => void create('DRAFT')}
+        onCancel={() => navigate('/')}
+      />
     </form>
   );
 }
@@ -157,8 +195,7 @@ function ChecklistForm() {
     setItems(items.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+  const create = async (status: PostStatus) => {
     setError('');
     if (!title.trim()) {
       setError('Title is required');
@@ -171,9 +208,15 @@ function ChecklistForm() {
           title: title.trim(),
           description: description.trim() || undefined,
           items: validItems,
+          status,
         },
       },
     });
+  };
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    await create('PUBLISHED');
   };
 
   return (
@@ -257,19 +300,12 @@ function ChecklistForm() {
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: '1rem' }}>
-        <button type="submit" className="btn-primary" disabled={loading}>
-          {loading ? 'Creating...' : 'Create Checklist'}
-        </button>
-        <button
-          type="button"
-          onClick={() => navigate('/')}
-          disabled={loading}
-          className="btn-secondary"
-        >
-          Cancel
-        </button>
-      </div>
+      <CreateFormActions
+        loading={loading}
+        publishLabel="Create Checklist"
+        onSaveDraft={() => void create('DRAFT')}
+        onCancel={() => navigate('/')}
+      />
     </form>
   );
 }

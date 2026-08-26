@@ -11,11 +11,17 @@ export interface Comment {
   createdAt: string;
 }
 
+/** Mirrors the GraphQL PostStatus enum. A draft is visible only to its author and to admins. */
+export type PostStatus = 'DRAFT' | 'PUBLISHED';
+
 export interface Post {
   id: string;
   title: string;
   content: string;
   author: Author;
+  status: PostStatus;
+  /** Null while a draft; cleared again if the post is unpublished. */
+  publishedAt?: string | null;
   createdAt: string;
   updatedAt?: string;
   likeCount: number;
@@ -40,6 +46,8 @@ export interface CheckedListPost {
   title: string;
   description: string;
   author: Author;
+  status: PostStatus;
+  publishedAt?: string | null;
   createdAt: string;
   updatedAt: string;
   likeCount: number;
