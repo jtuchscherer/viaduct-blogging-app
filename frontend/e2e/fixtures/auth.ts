@@ -1,10 +1,22 @@
 import { type Page } from '@playwright/test';
+import { createHmac } from 'node:crypto';
 
 // Use 127.0.0.1 instead of localhost: Node.js resolves localhost → ::1 (IPv6) on macOS,
 // but the Ktor backend only binds to IPv4 (127.0.0.1:8080).
 export const API_URL = process.env.API_URL ?? 'http://127.0.0.1:8080';
 export const GRAPHQL_URL = `${API_URL}/graphql`;
 const AUTH_URL = API_URL;
+
+/** Re-sign an issued token with a chosen expiration to exercise real API verification. */
+export function withTokenExpiration(token: string, expiresAt: number): string {
+  const [header, encodedPayload] = token.split('.');
+  const payload = JSON.parse(Buffer.from(encodedPayload, 'base64url').toString());
+  payload.exp = expiresAt;
+  const unsignedToken = `${header}.${Buffer.from(JSON.stringify(payload)).toString('base64url')}`;
+  const signature = createHmac('sha256', process.env.JWT_SECRET ?? 'your-secret-key')
+    .update(unsignedToken).digest('base64url');
+  return `${unsignedToken}.${signature}`;
+}
 
 /**
  * Register a new user via the API and return token + user. Unique username per call.

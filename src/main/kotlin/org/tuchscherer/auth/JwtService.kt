@@ -1,12 +1,14 @@
 package org.tuchscherer.auth
 
 import com.auth0.jwt.JWT
+import com.auth0.jwt.JWTVerifier
 import com.auth0.jwt.algorithms.Algorithm
 import com.auth0.jwt.exceptions.JWTVerificationException
 import org.tuchscherer.config.JwtConfig
 import org.tuchscherer.database.User
 import org.tuchscherer.database.repositories.UserRepository
-import java.util.Date
+import java.time.Clock
+import java.time.temporal.ChronoUnit
 
 /**
  * Service for JWT token generation and validation.
@@ -14,9 +16,13 @@ import java.util.Date
  */
 class JwtService(
     private val config: JwtConfig,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val clock: Clock = Clock.systemUTC()
 ) {
     private val jwtAlgorithm = Algorithm.HMAC256(config.secret)
+    // Auth0 exposes clock injection on its concrete verification builder.
+    private val jwtVerifier = (JWT.require(jwtAlgorithm)
+        .withIssuer(config.issuer) as JWTVerifier.BaseVerification).build(clock)
 
     /**
      * Generate a JWT token for a user.
@@ -26,7 +32,7 @@ class JwtService(
             .withIssuer(config.issuer)
             .withClaim("username", username)
             .withClaim("userId", userId)
-            .withExpiresAt(Date(System.currentTimeMillis() + config.expirationHours * 60 * 60 * 1000))
+            .withExpiresAt(clock.instant().plus(config.expirationHours, ChronoUnit.HOURS))
             .sign(jwtAlgorithm)
     }
 
@@ -35,11 +41,7 @@ class JwtService(
      */
     fun verifyToken(token: String): TokenPayload? {
         return try {
-            val verifier = JWT.require(jwtAlgorithm)
-                .withIssuer(config.issuer)
-                .build()
-
-            val decodedJWT = verifier.verify(token)
+            val decodedJWT = jwtVerifier.verify(token)
             TokenPayload(
                 username = decodedJWT.getClaim("username").asString(),
                 userId = decodedJWT.getClaim("userId").asString()

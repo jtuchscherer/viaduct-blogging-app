@@ -34,6 +34,7 @@ import org.koin.dsl.module
 import viaduct.service.ViaductBuilder
 import viaduct.service.api.Viaduct
 import viaduct.service.api.spi.SharedTenantModuleInjectorFactory
+import java.time.Clock
 
 /**
  * Koin module for application configuration.
@@ -64,8 +65,9 @@ val repositoryModule = module {
  * Provides authentication and JWT services with their dependencies.
  */
 val serviceModule = module {
+    single<Clock> { Clock.systemUTC() }
     single { PasswordService() }
-    single { JwtService(get(), get()) }
+    single { JwtService(get(), get(), get()) }
     single { AuthenticationService(get(), get()) }
 }
 

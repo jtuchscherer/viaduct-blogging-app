@@ -22,6 +22,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/test-lib.sh"
 RUN_ID=$$
 GRAPHQL_PORT=${GRAPHQL_PORT:-$(find_free_port $((8100 + RUN_ID % 300)))}
 DB_FILE=${DB_FILE:-blog-query-${RUN_ID}.db}
+export JWT_SECRET="${JWT_SECRET:-viaduct-query-test-secret}"
 
 AUTH_URL="http://localhost:${GRAPHQL_PORT}"
 GRAPHQL_URL="http://localhost:${GRAPHQL_PORT}/graphql"
@@ -187,6 +188,40 @@ if echo $ME_RESPONSE | grep -q "alice"; then
     print_success "/auth/me endpoint works"
 else
     print_error "/auth/me endpoint failed"
+fi
+
+# Check both verification paths with correctly signed expired tokens. A valid
+# re-signed token is the positive control, so a wrong signing key cannot pass.
+TEST_TOKENS=$(jwt_expiration_test_tokens "$USER1_TOKEN")
+VALID_TEST_TOKEN=$(echo "$TEST_TOKENS" | jq -r '.valid')
+EXPIRED_TEST_TOKEN=$(echo "$TEST_TOKENS" | jq -r '.expired')
+
+VALID_TOKEN_STATUS=$(curl -s -o /dev/null -w '%{http_code}' "$AUTH_URL/auth/me" \
+    -H "Authorization: Bearer $VALID_TEST_TOKEN")
+if [ "$VALID_TOKEN_STATUS" = "200" ]; then
+    print_success "Correctly re-signed unexpired token authenticates"
+else
+    print_error "Unexpired token fixture failed authentication (HTTP $VALID_TOKEN_STATUS)"
+fi
+
+EXPIRED_TOKEN_STATUS=$(curl -s -o /dev/null -w '%{http_code}' "$AUTH_URL/auth/me" \
+    -H "Authorization: Bearer $EXPIRED_TEST_TOKEN")
+if [ "$EXPIRED_TOKEN_STATUS" = "401" ]; then
+    print_success "/auth/me rejects a correctly signed expired token (401)"
+else
+    print_error "/auth/me accepted an expired token (HTTP $EXPIRED_TOKEN_STATUS)"
+fi
+
+EXPIRED_MUTATION_RESPONSE=$(curl -s -X POST "$GRAPHQL_URL" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $EXPIRED_TEST_TOKEN" \
+    -d '{"query":"mutation { createPost(input: {title: \"Expired token post\", content: \"Forbidden\"}) { id } }"}')
+if echo "$EXPIRED_MUTATION_RESPONSE" | jq -e \
+    '(.data.createPost == null) and any(.errors[]?; .message | contains("Authentication required"))' > /dev/null; then
+    print_success "GraphQL createPost rejects a correctly signed expired token"
+else
+    print_error "GraphQL createPost did not reject an expired token"
+    echo "Response: $EXPIRED_MUTATION_RESPONSE"
 fi
 
 # Step 5: Test Post Operations
