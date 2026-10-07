@@ -24,3 +24,29 @@ find_free_port() {
     echo "No free port found in range ${base}-$((base + 199))" >&2
     return 1
 }
+
+# Re-sign an issued token with future/past expirations, preserving its user and
+# issuer. JWT_SECRET must match the isolated test server. Requires Python 3.
+jwt_expiration_test_tokens() {
+    TEST_JWT_TOKEN="$1" python3 - <<'PY'
+import base64
+import hashlib
+import hmac
+import json
+import os
+import time
+
+header, encoded_payload, _ = os.environ['TEST_JWT_TOKEN'].split('.')
+payload = json.loads(base64.urlsafe_b64decode(encoded_payload + '=' * (-len(encoded_payload) % 4)))
+
+def with_expiration(expiration):
+    claims = dict(payload, exp=expiration)
+    encoded = base64.urlsafe_b64encode(json.dumps(claims).encode()).rstrip(b'=').decode()
+    unsigned = f'{header}.{encoded}'
+    signature = hmac.new(os.environ['JWT_SECRET'].encode(), unsigned.encode(), hashlib.sha256).digest()
+    return unsigned + '.' + base64.urlsafe_b64encode(signature).rstrip(b'=').decode()
+
+now = int(time.time())
+print(json.dumps({'valid': with_expiration(now + 3600), 'expired': with_expiration(now - 3600)}))
+PY
+}

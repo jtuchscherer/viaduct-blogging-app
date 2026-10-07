@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { registerUser, loginViaUI, registerAndLogin, API_URL } from './fixtures/auth';
+import { registerUser, loginViaUI, registerAndLogin, withTokenExpiration, API_URL, GRAPHQL_URL } from './fixtures/auth';
 
 test.describe('Authentication', () => {
   test('register page renders correctly', async ({ page }) => {
@@ -116,5 +116,43 @@ test.describe('Authentication', () => {
     expect(response.status()).toBe(200);
     const body = await response.json();
     expect(body.username).toBe(creds.username);
+  });
+
+  test('expired tokens cannot authenticate REST requests or create posts', async ({ page }) => {
+    const creds = await registerUser(page, `expired_${Date.now()}`);
+    const now = Math.floor(Date.now() / 1000);
+    const validToken = withTokenExpiration(creds.token, now + 3600);
+    const expiredToken = withTokenExpiration(creds.token, now - 3600);
+
+    // Positive control: prove the fixture uses the server's signing key and issuer.
+    const validResponse = await page.request.get(`${API_URL}/auth/me`, {
+      headers: { Authorization: `Bearer ${validToken}` },
+    });
+    expect(validResponse.status()).toBe(200);
+    expect((await validResponse.json()).username).toBe(creds.username);
+
+    const expiredResponse = await page.request.get(`${API_URL}/auth/me`, {
+      headers: { Authorization: `Bearer ${expiredToken}` },
+    });
+    expect(expiredResponse.status()).toBe(401);
+
+    const mutationResponse = await page.request.post(GRAPHQL_URL, {
+      headers: { Authorization: `Bearer ${expiredToken}` },
+      data: { query: 'mutation { createPost(input: { title: "Expired token post", content: "Forbidden" }) { id } }' },
+    });
+    expect(mutationResponse.status()).toBe(200);
+    const body = await mutationResponse.json();
+    expect(body.errors).toEqual(expect.arrayContaining([
+      expect.objectContaining({ message: expect.stringContaining('Authentication required') }),
+    ]));
+    expect(body.data?.createPost).toBeFalsy();
+
+    const postsResponse = await page.request.post(GRAPHQL_URL, {
+      headers: { Authorization: `Bearer ${validToken}` },
+      data: { query: '{ myPosts { id } }' },
+    });
+    const posts = await postsResponse.json();
+    expect(posts.errors).toBeUndefined();
+    expect(posts.data.myPosts).toEqual([]);
   });
 });

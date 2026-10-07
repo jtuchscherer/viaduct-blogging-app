@@ -22,6 +22,8 @@ RUN_ID=$$
 GRAPHQL_PORT=${GRAPHQL_PORT:-$(find_free_port $((8400 + RUN_ID % 300)))}
 FRONTEND_PORT=${FRONTEND_PORT:-$(find_free_port $((5300 + RUN_ID % 300)))}
 DB_FILE=${DB_FILE:-blog-e2e-${RUN_ID}.db}
+# Shared by the isolated backend and the fixtures that sign test tokens.
+export JWT_SECRET="${JWT_SECRET:-viaduct-e2e-test-secret}"
 
 SERVER_PID=""
 FRONTEND_PID=""

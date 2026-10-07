@@ -14,6 +14,10 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import java.time.Clock
+import java.time.Duration
+import java.time.Instant
+import java.time.ZoneOffset
 
 /**
  * Integration tests for the authentication flow.
@@ -131,6 +135,20 @@ class AuthFlowIntegrationTest {
     @Test
     fun `getUserFromToken returns null for invalid token`() {
         assertNull(jwtService.getUserFromToken("not.a.valid.token"))
+    }
+
+    @Test
+    fun `an expired token no longer resolves an existing user`() {
+        val user = authService.createUser("eve", "eve@example.com", "Eve", "pass")
+        val clock = Clock.fixed(Instant.parse("2026-10-07T12:34:56Z"), ZoneOffset.UTC)
+        val issuingService = JwtService(jwtConfig, userRepository, clock)
+        val token = issuingService.generateToken(user.username, user.id.value.toString())
+
+        assertEquals(user.id, issuingService.getUserFromToken(token)?.id)
+
+        val expiredService = JwtService(jwtConfig, userRepository, Clock.offset(clock, Duration.ofHours(1)))
+        assertNull(expiredService.getUserFromToken(token))
+        assertNotNull(userRepository.findByUsername("eve"))
     }
 
     @Test

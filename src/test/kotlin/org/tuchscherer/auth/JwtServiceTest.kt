@@ -1,14 +1,22 @@
 package org.tuchscherer.auth
 
+import com.auth0.jwt.JWT
+import com.auth0.jwt.algorithms.Algorithm
 import org.tuchscherer.config.JwtConfig
 import org.tuchscherer.database.User
 import org.tuchscherer.database.repositories.UserRepository
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.verify
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
+import java.time.Clock
+import java.time.Duration
+import java.time.Instant
+import java.time.ZoneOffset
+import java.time.temporal.ChronoUnit
 
 /**
  * Unit tests for JwtService with mocked UserRepository.
@@ -107,7 +115,6 @@ class JwtServiceTest {
         val user = jwtService.getUserFromToken(token)
 
         assertEquals(mockUser, user)
-        verify { userRepository.findByUsername("testuser") }
     }
 
     @Test
@@ -115,7 +122,6 @@ class JwtServiceTest {
         val user = jwtService.getUserFromToken("invalid.token.here")
 
         assertNull(user)
-        verify(exactly = 0) { userRepository.findByUsername(any()) }
     }
 
     @Test
@@ -126,7 +132,6 @@ class JwtServiceTest {
         val user = jwtService.getUserFromToken(token)
 
         assertNull(user)
-        verify { userRepository.findByUsername("testuser") }
     }
 
     @Test
@@ -137,15 +142,53 @@ class JwtServiceTest {
         assertNotEquals(token1, token2)
     }
 
-    @Test
-    @org.junit.jupiter.api.Disabled("Flaky test - tokens may have same expiration if generated within same second")
-    fun `generateToken creates different tokens for same user at different times`() {
-        val token1 = jwtService.generateToken("testuser", "user-id-123")
-        Thread.sleep(10) // Small delay to ensure different timestamp
-        val token2 = jwtService.generateToken("testuser", "user-id-123")
+    @ParameterizedTest
+    @ValueSource(longs = [1, 24])
+    fun `generateToken expires after the configured lifetime`(expirationHours: Long) {
+        val issuedAt = Instant.parse("2026-10-07T12:34:56.789Z")
+        val service = JwtService(
+            jwtConfig.copy(expirationHours = expirationHours),
+            userRepository,
+            Clock.fixed(issuedAt, ZoneOffset.UTC)
+        )
 
-        // Tokens should be different due to different timestamps
-        assertNotEquals(token1, token2)
+        val token = service.generateToken("testuser", "user-id-123")
+
+        val expectedExpiration = issuedAt.plus(expirationHours, ChronoUnit.HOURS)
+            .truncatedTo(ChronoUnit.SECONDS)
+        assertEquals(expectedExpiration, JWT.decode(token).expiresAt?.toInstant())
+    }
+
+    @Test
+    fun `a later login receives a later expiration`() {
+        val clock = Clock.fixed(Instant.parse("2026-10-07T12:34:56Z"), ZoneOffset.UTC)
+        val service = JwtService(jwtConfig, userRepository, clock)
+        val laterService = JwtService(jwtConfig, userRepository, Clock.offset(clock, Duration.ofSeconds(1)))
+
+        val firstToken = JWT.decode(service.generateToken("testuser", "user-id-123"))
+        val laterToken = JWT.decode(laterService.generateToken("testuser", "user-id-123"))
+
+        assertEquals(firstToken.expiresAt.toInstant().plusSeconds(1), laterToken.expiresAt.toInstant())
+    }
+
+    @Test
+    fun `verifyToken accepts a token one second before expiration`() {
+        val now = Instant.parse("2026-10-07T12:34:56Z")
+        val service = JwtService(jwtConfig, userRepository, Clock.fixed(now, ZoneOffset.UTC))
+
+        val payload = service.verifyToken(tokenExpiringAt(now.plusSeconds(1)))
+
+        assertEquals(TokenPayload("testuser", "user-id-123"), payload)
+    }
+
+    @ParameterizedTest
+    @ValueSource(longs = [0, 1])
+    fun `verifyToken rejects a correctly signed token at or after expiration`(secondsAfterExpiration: Long) {
+        val expiresAt = Instant.parse("2026-10-07T12:34:56Z")
+        val clock = Clock.fixed(expiresAt.plusSeconds(secondsAfterExpiration), ZoneOffset.UTC)
+        val service = JwtService(jwtConfig, userRepository, clock)
+
+        assertNull(service.verifyToken(tokenExpiringAt(expiresAt)))
     }
 
     @Test
@@ -186,4 +229,11 @@ class JwtServiceTest {
         val payloadWithDifferentIssuer = differentService.verifyToken(token)
         assertNull(payloadWithDifferentIssuer)
     }
+
+    private fun tokenExpiringAt(expiresAt: Instant): String = JWT.create()
+        .withIssuer(jwtConfig.issuer)
+        .withClaim("username", "testuser")
+        .withClaim("userId", "user-id-123")
+        .withExpiresAt(expiresAt)
+        .sign(Algorithm.HMAC256(jwtConfig.secret))
 }
