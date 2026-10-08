@@ -12,6 +12,14 @@ pluginManagement {
     }
 }
 
+buildscript {
+    // This graph is separate from project plugin classpaths; both need the security patch.
+    val buildToolJacksonVersion: String by settings
+    configurations.all {
+        resolutionStrategy.force("com.fasterxml.jackson:jackson-bom:$buildToolJacksonVersion")
+    }
+}
+
 plugins {
     id("com.airbnb.viaduct.settings-gradle-plugin")
 }
