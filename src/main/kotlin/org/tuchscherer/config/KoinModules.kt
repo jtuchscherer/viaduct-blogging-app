@@ -27,8 +27,63 @@ import org.tuchscherer.web.AuthDependencies
 import org.tuchscherer.web.GraphQLServer
 import org.tuchscherer.web.SchemaRoutingExecutor
 import org.tuchscherer.web.ObservabilityDependencies
-import org.tuchscherer.database.repositories.*
-import org.tuchscherer.viadapp.resolvers.*
+import org.tuchscherer.database.repositories.CommentRepository
+import org.tuchscherer.database.repositories.DatabaseMaintenanceRepository
+import org.tuchscherer.database.repositories.ExposedDatabaseMaintenanceRepository
+import org.tuchscherer.database.repositories.ExposedCommentRepository
+import org.tuchscherer.database.repositories.ExposedLikeRepository
+import org.tuchscherer.database.repositories.ExposedPostRepository
+import org.tuchscherer.database.repositories.ExposedUserRepository
+import org.tuchscherer.database.repositories.LikeRepository
+import org.tuchscherer.database.repositories.PostRepository
+import org.tuchscherer.database.repositories.UserRepository
+import org.tuchscherer.viadapp.resolvers.AdminCommentsResolver
+import org.tuchscherer.viadapp.resolvers.AdminDeleteCommentResolver
+import org.tuchscherer.viadapp.resolvers.AdminDeletePostResolver
+import org.tuchscherer.viadapp.resolvers.AdminDeleteUserResolver
+import org.tuchscherer.viadapp.resolvers.AdminPostResolver
+import org.tuchscherer.viadapp.resolvers.AdminPostsResolver
+import org.tuchscherer.viadapp.resolvers.AdminStatsResolver
+import org.tuchscherer.viadapp.resolvers.AdminStatsTopPostsResolver
+import org.tuchscherer.viadapp.resolvers.AdminStatsTotalViewsResolver
+import org.tuchscherer.viadapp.resolvers.AdminUpdatePostResolver
+import org.tuchscherer.viadapp.resolvers.AdminUpdateUserResolver
+import org.tuchscherer.viadapp.resolvers.AdminUserContentCountsResolver
+import org.tuchscherer.viadapp.resolvers.AdminUserResolver
+import org.tuchscherer.viadapp.resolvers.AdminUsersResolver
+import org.tuchscherer.viadapp.resolvers.BlogPostNodeResolver
+import org.tuchscherer.viadapp.resolvers.CommentAuthorResolver
+import org.tuchscherer.viadapp.resolvers.CommentNodeResolver
+import org.tuchscherer.viadapp.resolvers.CommentPostResolver
+import org.tuchscherer.viadapp.resolvers.CreateCommentResolver
+import org.tuchscherer.viadapp.resolvers.CreatePostResolver
+import org.tuchscherer.viadapp.resolvers.DeleteCommentResolver
+import org.tuchscherer.viadapp.resolvers.DeletePostResolver
+import org.tuchscherer.viadapp.resolvers.LikeNodeResolver
+import org.tuchscherer.viadapp.resolvers.LikePostMutationResolver
+import org.tuchscherer.viadapp.resolvers.LikePostResolver
+import org.tuchscherer.viadapp.resolvers.LikeUserResolver
+import org.tuchscherer.viadapp.resolvers.MeResolver
+import org.tuchscherer.viadapp.resolvers.MyPostsResolver
+import org.tuchscherer.viadapp.resolvers.PostAuthorResolver
+import org.tuchscherer.viadapp.resolvers.PostCommentCountResolver
+import org.tuchscherer.viadapp.resolvers.PostCommentsFieldResolver
+import org.tuchscherer.viadapp.resolvers.PostCommentsResolver
+import org.tuchscherer.viadapp.resolvers.PostIsLikedByMeResolver
+import org.tuchscherer.viadapp.resolvers.PostLikeCountResolver
+import org.tuchscherer.viadapp.resolvers.PostLikesResolver
+import org.tuchscherer.viadapp.resolvers.PostResolver
+import org.tuchscherer.viadapp.resolvers.PostsConnectionResolver
+import org.tuchscherer.viadapp.resolvers.PostsResolver
+import org.tuchscherer.viadapp.resolvers.PublishPostResolver
+import org.tuchscherer.viadapp.resolvers.RephraseContentResolver
+import org.tuchscherer.viadapp.resolvers.SuggestChecklistItemMutationResolver
+import org.tuchscherer.viadapp.resolvers.UnlikePostResolver
+import org.tuchscherer.viadapp.resolvers.UnpublishPostResolver
+import org.tuchscherer.viadapp.resolvers.UpdatePostResolver
+import org.tuchscherer.viadapp.resolvers.UserIsAdminResolver
+import org.tuchscherer.viadapp.resolvers.UserNodeResolver
+import org.tuchscherer.viadapp.resolvers.UserPostsResolver
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 import viaduct.service.ViaductBuilder
@@ -46,7 +101,7 @@ val configModule = module {
     single { get<AppConfig>().database }
     single { get<AppConfig>().server }
     single { get<AppConfig>().ollama }
-    single { DatabaseFactory(get(), get()) }
+    single { DatabaseFactory(get(), get(), get()) }
 }
 
 /**
@@ -54,6 +109,7 @@ val configModule = module {
  * Provides all repository interfaces with their Exposed implementations.
  */
 val repositoryModule = module {
+    single<DatabaseMaintenanceRepository> { ExposedDatabaseMaintenanceRepository() }
     single<UserRepository> { ExposedUserRepository() }
     single<PostRepository> { ExposedPostRepository() }
     single<CommentRepository> { ExposedCommentRepository() }

@@ -71,7 +71,7 @@ data class AppConfig(
             environment = Environment.PROD,
             jwt = JwtConfig(
                 secret = System.getenv("JWT_SECRET")
-                    ?: throw IllegalStateException("JWT_SECRET must be set in production"),
+                    ?: error("JWT_SECRET must be set in production"),
                 issuer = "blog-app",
                 expirationHours = 24
             ),
@@ -89,7 +89,7 @@ data class AppConfig(
                 authPort = System.getenv("AUTH_PORT")?.toIntOrNull() ?: 8081,
                 viaductPackagePrefix = "org.tuchscherer.viadapp",
                 corsOrigin = System.getenv("CORS_ORIGIN")
-                    ?: throw IllegalStateException("CORS_ORIGIN must be set in production")
+                    ?: error("CORS_ORIGIN must be set in production")
             )
         )
     }

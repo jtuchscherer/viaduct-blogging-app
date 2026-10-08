@@ -22,7 +22,7 @@ class CreateCommentResolver(
         val user = requireAuth(ctx.requestContext)
 
         require(input.content.isNotBlank()) { "Content cannot be blank" }
-        require(input.content.length <= 10_000) { "Content cannot exceed 10,000 characters" }
+        require(input.content.length <= MAX_COMMENT_LENGTH) { "Content cannot exceed 10,000 characters" }
 
         val postId = UUID.fromString(input.postId.internalID)
         val post = postRepository.findById(postId)
@@ -69,3 +69,5 @@ class PostCommentsResolver(
         return commentRepository.findByPostId(postId).map { it.toViaductComment(ctx) }
     }
 }
+
+private const val MAX_COMMENT_LENGTH = 10_000

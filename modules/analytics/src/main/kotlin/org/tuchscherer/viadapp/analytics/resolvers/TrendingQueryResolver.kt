@@ -39,8 +39,10 @@ class TrendingQueryResolver : QueryResolvers.Trending() {
         const val OVER_FETCH_FACTOR = 3
     }
 
+    // Empty candidate and published sets short-circuit before node construction.
+    @Suppress("ReturnCount")
     override suspend fun resolve(ctx: Context): List<ViaductPost> {
-        val limit = ctx.arguments.limit ?: 10
+        val limit = ctx.arguments.limit ?: DEFAULT_TRENDING_LIMIT
 
         // A post keeps the views it earned while published, so unpublishing it would otherwise
         // leave it sitting in trending. Filter by current status, not by view history.
@@ -64,3 +66,5 @@ class TrendingQueryResolver : QueryResolvers.Trending() {
         }
     }
 }
+
+private const val DEFAULT_TRENDING_LIMIT = 10

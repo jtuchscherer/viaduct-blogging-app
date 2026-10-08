@@ -23,7 +23,7 @@ class ViaductPostTypeLookupPortTest {
     private val postRepository = mockk<PostRepository>()
     private val port = ViaductPostTypeLookupPort(postRepository)
 
-    private fun mockPost(id: UUID, postType: String): Post {
+    private fun mockPost(postType: String): Post {
         val post = mockk<Post>()
         every { post.postType } returns postType
         return post
@@ -32,7 +32,7 @@ class ViaductPostTypeLookupPortTest {
     @Test
     fun `getPostTypes returns BLOG_POST for a post with BLOG_POST type`() {
         val id = UUID.randomUUID()
-        every { postRepository.findByIds(listOf(id)) } returns mapOf(id to mockPost(id, PostType.BLOG_POST))
+        every { postRepository.findByIds(listOf(id)) } returns mapOf(id to mockPost(PostType.BLOG_POST))
 
         val result = port.getPostTypes(listOf(id))
 
@@ -42,7 +42,7 @@ class ViaductPostTypeLookupPortTest {
     @Test
     fun `getPostTypes returns CHECKLIST_POST for a post with CHECKED_LIST type`() {
         val id = UUID.randomUUID()
-        every { postRepository.findByIds(listOf(id)) } returns mapOf(id to mockPost(id, PostType.CHECKED_LIST))
+        every { postRepository.findByIds(listOf(id)) } returns mapOf(id to mockPost(PostType.CHECKED_LIST))
 
         val result = port.getPostTypes(listOf(id))
 
@@ -54,8 +54,8 @@ class ViaductPostTypeLookupPortTest {
         val blogId = UUID.randomUUID()
         val checklistId = UUID.randomUUID()
         every { postRepository.findByIds(listOf(blogId, checklistId)) } returns mapOf(
-            blogId to mockPost(blogId, PostType.BLOG_POST),
-            checklistId to mockPost(checklistId, PostType.CHECKED_LIST),
+            blogId to mockPost(PostType.BLOG_POST),
+            checklistId to mockPost(PostType.CHECKED_LIST),
         )
 
         val result = port.getPostTypes(listOf(blogId, checklistId))
@@ -88,7 +88,7 @@ class ViaductPostTypeLookupPortTest {
         val existingId = UUID.randomUUID()
         val missingId = UUID.randomUUID()
         every { postRepository.findByIds(listOf(existingId, missingId)) } returns
-            mapOf(existingId to mockPost(existingId, PostType.BLOG_POST))
+            mapOf(existingId to mockPost(PostType.BLOG_POST))
 
         val result = port.getPostTypes(listOf(existingId, missingId))
 

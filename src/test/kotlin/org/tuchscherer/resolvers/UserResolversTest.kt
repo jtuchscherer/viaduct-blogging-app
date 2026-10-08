@@ -33,14 +33,6 @@ class UserResolversTest : ResolverTestBase() {
 
     private fun queryObj() = Query.Builder(context).build()
 
-    private fun userObj(id: UUID = userId) = ViaductUser.Builder(context)
-        .id(globalIDFor(ViaductUser.Reflection, id.toString()))
-        .username("testuser")
-        .email("test@example.com")
-        .name("Test User")
-        .createdAt("2025-01-01T10:00:00")
-        .build()
-
     @BeforeEach
     fun setup() {
         userRepository = mockk()

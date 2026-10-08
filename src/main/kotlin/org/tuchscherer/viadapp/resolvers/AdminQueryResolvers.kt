@@ -41,7 +41,7 @@ class AdminUsersResolver(
     private val userRepository: UserRepository
 ) : AdminQueriesResolvers.Users() {
     override suspend fun resolve(ctx: Context): AdminUsersPage {
-        val limit = ctx.arguments.limit ?: 10
+        val limit = ctx.arguments.limit ?: DEFAULT_ADMIN_PAGE_SIZE
         val offset = ctx.arguments.offset ?: 0
         val users = userRepository.findPage(limit, offset).map { it.toViaductUser(ctx) }
         return AdminUsersPage.of(ctx) {
@@ -83,7 +83,7 @@ class AdminPostsResolver(
     private val postRepository: PostRepository
 ) : AdminQueriesResolvers.Posts() {
     override suspend fun resolve(ctx: Context): AdminPostsPage {
-        val limit = ctx.arguments.limit ?: 10
+        val limit = ctx.arguments.limit ?: DEFAULT_ADMIN_PAGE_SIZE
         val offset = ctx.arguments.offset ?: 0
         val posts = postRepository.findPage(limit, offset).map { it.toViaductBlogPost(ctx) }
         return AdminPostsPage.of(ctx) {
@@ -108,7 +108,7 @@ class AdminCommentsResolver(
     private val commentRepository: CommentRepository
 ) : AdminQueriesResolvers.Comments() {
     override suspend fun resolve(ctx: Context): AdminCommentsPage {
-        val limit = ctx.arguments.limit ?: 10
+        val limit = ctx.arguments.limit ?: DEFAULT_ADMIN_PAGE_SIZE
         val offset = ctx.arguments.offset ?: 0
         val comments = commentRepository.findPage(limit, offset).map { it.toViaductComment(ctx) }
         return AdminCommentsPage.of(ctx) {
@@ -145,3 +145,5 @@ class AdminStatsTopPostsResolver(
         }
     }
 }
+
+private const val DEFAULT_ADMIN_PAGE_SIZE = 10

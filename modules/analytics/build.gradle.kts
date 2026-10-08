@@ -1,6 +1,7 @@
 plugins {
     `java-library`
     alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.detekt)
     alias(libs.plugins.ksp)
     alias(libs.plugins.viaduct.module)
     jacoco

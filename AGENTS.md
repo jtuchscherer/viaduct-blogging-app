@@ -54,7 +54,7 @@ src/main/kotlin/org/tuchscherer/
 │   ├── Models.kt   Exposed DAO entities (User, Post, Comment, Like)
 │   ├── Tables.kt   Exposed table definitions
 │   └── repositories/  Interfaces + ExposedXxxRepository implementations
-├── resolvers/      GraphQL resolvers (one file per concern)
+├── viadapp/resolvers/  GraphQL resolvers (one file per concern)
 └── web/            GraphQLServer (Ktor, hosts both GraphQL and auth routes)
 src/main/viaduct/schema/schema.graphqls   — GraphQL schema (source of truth)
 ```

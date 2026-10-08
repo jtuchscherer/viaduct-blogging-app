@@ -8,7 +8,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.assertThrows
-import java.time.LocalDateTime
 import java.util.*
 
 /**
@@ -126,7 +125,6 @@ class AuthenticationServiceTest {
     @Test
     fun `authenticateUser returns null when password is incorrect`() {
         val username = "testuser"
-        val correctPassword = "correctpassword"
         val wrongPassword = "wrongpassword"
         val salt = "user-salt"
         val passwordHash = "hashed-password"

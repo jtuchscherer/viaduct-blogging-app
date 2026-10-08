@@ -32,7 +32,7 @@ class CreateCheckedListPostMutationResolver : MutationResolvers.CreateCheckedLis
 
         validateTitle(input.title)
         val itemTexts = input.items
-        require(itemTexts.size <= 100) { "A checklist may have at most 100 items" }
+        require(itemTexts.size <= MAX_CHECKLIST_ITEMS) { "A checklist may have at most 100 items" }
         itemTexts.forEach { validateItemText(it) }
 
         val description = input.description ?: ""
@@ -141,7 +141,7 @@ class UpdateCheckedListPostMutationResolver : MutationResolvers.UpdateCheckedLis
         val postId = UUID.fromString(input.id.internalID)
         input.title?.let { validateTitle(it) }
         input.description?.let { desc ->
-            require(desc.length <= 10_000) { "Description must be 10,000 characters or fewer" }
+            require(desc.length <= MAX_DESCRIPTION_LENGTH) { "Description must be 10,000 characters or fewer" }
         }
 
         val postData = postCreationPort.updateCheckedListPost(
@@ -203,10 +203,15 @@ class UpdateCheckedListItemMutationResolver : MutationResolvers.UpdateCheckedLis
 
 internal fun validateTitle(title: String) {
     require(title.isNotBlank()) { "Title must not be blank" }
-    require(title.length <= 500) { "Title must be 500 characters or fewer" }
+    require(title.length <= MAX_TITLE_LENGTH) { "Title must be 500 characters or fewer" }
 }
 
 internal fun validateItemText(text: String) {
     require(text.isNotBlank()) { "Item text must not be blank" }
-    require(text.length <= 1000) { "Item text must be 1000 characters or fewer" }
+    require(text.length <= MAX_ITEM_TEXT_LENGTH) { "Item text must be 1000 characters or fewer" }
 }
+
+private const val MAX_CHECKLIST_ITEMS = 100
+private const val MAX_DESCRIPTION_LENGTH = 10_000
+private const val MAX_TITLE_LENGTH = 500
+private const val MAX_ITEM_TEXT_LENGTH = 1000

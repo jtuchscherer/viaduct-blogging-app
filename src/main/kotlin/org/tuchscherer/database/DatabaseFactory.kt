@@ -6,12 +6,12 @@ import com.zaxxer.hikari.metrics.micrometer.MicrometerMetricsTrackerFactory
 import io.micrometer.core.instrument.MeterRegistry
 import org.flywaydb.core.Flyway
 import org.jetbrains.exposed.v1.jdbc.Database
-import org.jetbrains.exposed.v1.jdbc.SchemaUtils
-import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.tuchscherer.database.repositories.DatabaseMaintenanceRepository
 
 class DatabaseFactory(
     private val config: org.tuchscherer.config.DatabaseConfig,
     private val meterRegistry: MeterRegistry,
+    private val maintenanceRepository: DatabaseMaintenanceRepository,
 ) {
 
     fun initialize() {
@@ -31,9 +31,9 @@ class DatabaseFactory(
                 password = config.password
                 maximumPoolSize = config.poolSize
                 minimumIdle = 2
-                connectionTimeout = 30_000
-                idleTimeout = 600_000
-                maxLifetime = 1_800_000
+                connectionTimeout = CONNECTION_TIMEOUT_MS
+                idleTimeout = IDLE_TIMEOUT_MS
+                maxLifetime = MAX_CONNECTION_LIFETIME_MS
                 isAutoCommit = false
                 transactionIsolation = "TRANSACTION_READ_COMMITTED"
                 metricsTrackerFactory = MicrometerMetricsTrackerFactory(meterRegistry)
@@ -46,16 +46,13 @@ class DatabaseFactory(
         }
 
         if (!config.useFlyway) {
-            transaction {
-                SchemaUtils.createMissingTablesAndColumns(Users, Posts, Comments, Likes)
-            }
+            maintenanceRepository.initializeSchema()
         }
     }
 
-    fun healthCheck(): Boolean = try {
-        transaction { exec("SELECT 1") { true } ?: true }
-        true
-    } catch (e: Exception) {
-        false
-    }
+    fun healthCheck(): Boolean = maintenanceRepository.healthCheck()
 }
+
+private const val CONNECTION_TIMEOUT_MS = 30_000L
+private const val IDLE_TIMEOUT_MS = 600_000L
+private const val MAX_CONNECTION_LIFETIME_MS = 1_800_000L

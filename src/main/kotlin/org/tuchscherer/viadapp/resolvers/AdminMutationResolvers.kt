@@ -1,6 +1,7 @@
 package org.tuchscherer.viadapp.resolvers
 
 import org.tuchscherer.auth.NotFoundException
+import org.tuchscherer.auth.UserInputLimits
 import org.tuchscherer.database.repositories.CommentRepository
 import org.tuchscherer.database.repositories.LikeRepository
 import org.tuchscherer.database.repositories.PostRepository
@@ -20,8 +21,12 @@ class AdminUpdateUserResolver(
         val input = ctx.arguments.input
         val userId = UUID.fromString(input.id.internalID)
 
-        input.name?.let { require(it.length <= 255) { "Name cannot exceed 255 characters" } }
-        input.email?.let { require(it.length <= 255) { "Email cannot exceed 255 characters" } }
+        input.name?.let {
+            require(it.length <= UserInputLimits.MAX_NAME_LENGTH) { "Name cannot exceed 255 characters" }
+        }
+        input.email?.let {
+            require(it.length <= UserInputLimits.MAX_EMAIL_LENGTH) { "Email cannot exceed 255 characters" }
+        }
 
         val user = userRepository.updateFields(
             id = userId,

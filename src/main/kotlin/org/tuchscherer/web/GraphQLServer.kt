@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory
 import org.tuchscherer.ai.AIService
 import org.tuchscherer.auth.AuthenticationService
 import org.tuchscherer.auth.JwtService
+import org.tuchscherer.auth.RequestContext
 import org.tuchscherer.config.JwtConfig
 import org.tuchscherer.config.ServerConfig
 import org.tuchscherer.database.DatabaseFactory
@@ -32,6 +33,7 @@ import viaduct.service.api.ExecutionInput
 import viaduct.service.wiring.graphiql.GraphiQLHtmlConfig
 import viaduct.service.wiring.graphiql.graphiQLHtml
 import java.util.UUID
+import kotlin.coroutines.cancellation.CancellationException
 
 data class GraphQLRequest(
     val query: String,
@@ -74,169 +76,202 @@ class GraphQLServer(
 ) {
 
     private val logger = LoggerFactory.getLogger(GraphQLServer::class.java)
+    private val mapper = jacksonObjectMapper()
     private val jwtAlgorithm by lazy { Algorithm.HMAC256(authDeps.jwtConfig.secret) }
 
     fun start() {
         embeddedServer(Netty, port = serverConfig.graphqlPort) {
-            install(ContentNegotiation) {
-                jackson()
-            }
-
-            install(CORS) {
-                allowHost(serverConfig.corsOrigin)
-                allowHeader(HttpHeaders.ContentType)
-                allowHeader(HttpHeaders.Authorization)
-                allowHeader("X-Schema")
-                allowMethod(HttpMethod.Get)
-                allowMethod(HttpMethod.Post)
-                allowMethod(HttpMethod.Put)
-                allowMethod(HttpMethod.Delete)
-                allowMethod(HttpMethod.Options)
-                allowCredentials = true
-            }
-
-            install(CallId) {
-                generate { UUID.randomUUID().toString() }
-                replyToHeader(HttpHeaders.XRequestId)
-            }
-
-            install(CallLogging) {
-                mdc("requestId") { it.callId }
-                filter { call -> call.request.path() != "/health" }
-            }
-
-            install(MicrometerMetrics) {
-                registry = observability.meterRegistry
-            }
-
-            install(Authentication) {
-                jwt("auth-jwt") {
-                    verifier(
-                        JWT.require(jwtAlgorithm)
-                            .withIssuer(authDeps.jwtConfig.issuer)
-                            .build()
-                    )
-                    validate { credential ->
-                        if (credential.payload.getClaim("username").asString() != null) {
-                            JWTPrincipal(credential.payload)
-                        } else null
-                    }
-                }
-            }
-
+            installServerPlugins()
             routing {
-                post("/graphql") {
-                    try {
-                        val graphqlRequest = call.receive<GraphQLRequest>()
-                        val operationName = graphqlRequest.operationName ?: "anonymous"
-
-                        val authHeader = call.request.headers["Authorization"]
-                        val token = authHeader?.removePrefix("Bearer ")?.trim()
-                        val user = token?.let { authDeps.jwtService.getUserFromToken(it) }
-                        val requestContext = user?.let { org.tuchscherer.auth.RequestContext(user = it) }
-
-                        if (call.request.headers["X-Schema"] == "admin" && (user == null || !user.isAdmin)) {
-                            call.respond(HttpStatusCode.Forbidden, mapOf("error" to "Admin access required"))
-                            return@post
-                        }
-
-                        val audience = when (call.request.headers["X-Schema"]) {
-                            "admin" -> SchemaRoutingExecutor.Audience.ADMIN
-                            else -> SchemaRoutingExecutor.Audience.PUBLIC
-                        }
-
-                        val executionInput = ExecutionInput.create(
-                            operationText = graphqlRequest.query,
-                            variables = graphqlRequest.variables ?: emptyMap(),
-                            requestContext = requestContext
-                        )
-
-                        val startMs = System.currentTimeMillis()
-                        val result = executor.execute(executionInput, audience)
-                        val durationMs = System.currentTimeMillis() - startMs
-
-                        val hasErrors = result.toSpecification()["errors"] != null
-                        if (hasErrors) {
-                            logger.warn("GraphQL operation='{}' duration={}ms errors=true", operationName, durationMs)
-                        } else {
-                            logger.info("GraphQL operation='{}' duration={}ms", operationName, durationMs)
-                        }
-
-                        val mapper = jacksonObjectMapper()
-                        call.respondText(mapper.writeValueAsString(result.toSpecification()), ContentType.Application.Json)
-
-                    } catch (e: Exception) {
-                        logger.error("GraphQL execution error", e)
-                        call.respond(
-                            HttpStatusCode.InternalServerError,
-                            mapOf("errors" to listOf(mapOf("message" to e.message)))
-                        )
-                    }
-                }
-
-                get("/graphiql") {
-                    call.respondText(
-                        graphiQLHtml(
-                            GraphiQLHtmlConfig(
-                                title = "Blogging App",
-                                defaultQuery = """
-                                    query {
-                                      posts {
-                                        id
-                                        title
-                                        author { username }
-                                        likeCount
-                                      }
-                                    }
-                                """.trimIndent(),
-                                storageKey = "viaduct-blogging-app",
-                            )
-                        ),
-                        ContentType.Text.Html,
-                    )
-                }
-
-                get("/health") {
-                    val dbUp = observability.databaseFactory.healthCheck()
-                    val version = System.getenv("APP_VERSION") ?: "unknown"
-                    val status = if (dbUp) "UP" else "DOWN"
-                    val response = mapOf(
-                        "status" to status,
-                        "db" to if (dbUp) "UP" else "DOWN",
-                        "version" to version
-                    )
-                    if (dbUp) {
-                        call.respond(HttpStatusCode.OK, response)
-                    } else {
-                        logger.warn("Health check failed: database is unreachable")
-                        call.respond(HttpStatusCode.ServiceUnavailable, response)
-                    }
-                }
-
-                get("/health/ai") {
-                    val reachable = aiService.isReachable()
-                    val models = aiService.modelConfig()
-                    val response = mapOf(
-                        "ollamaReachable" to reachable,
-                        "chatModel" to models.chatModel,
-                        "embeddingModel" to models.embeddingModel,
-                    )
-                    if (reachable) {
-                        call.respond(HttpStatusCode.OK, response)
-                    } else {
-                        logger.warn("AI health check failed: Ollama is unreachable")
-                        call.respond(HttpStatusCode.ServiceUnavailable, response)
-                    }
-                }
-
-                get("/metrics") {
-                    val prometheusRegistry = observability.meterRegistry as? PrometheusMeterRegistry
-                        ?: return@get call.respond(HttpStatusCode.NotFound, "Prometheus registry not configured")
-                    call.respondText(prometheusRegistry.scrape(), ContentType.Text.Plain)
-                }
-
+                post("/graphql") { handleGraphQL(call) }
+                graphiqlRoute()
+                databaseHealthRoute()
+                aiHealthRoute()
+                metricsRoute()
                 authRoutes(authDeps.jwtService, authDeps.authService, authDeps.userRepository)
             }
         }.start(wait = false)
+    }
+
+    private fun Application.installServerPlugins() {
+        install(ContentNegotiation) {
+            jackson()
+        }
+
+        install(CORS) {
+            allowHost(serverConfig.corsOrigin)
+            allowHeader(HttpHeaders.ContentType)
+            allowHeader(HttpHeaders.Authorization)
+            allowHeader("X-Schema")
+            allowMethod(HttpMethod.Get)
+            allowMethod(HttpMethod.Post)
+            allowMethod(HttpMethod.Put)
+            allowMethod(HttpMethod.Delete)
+            allowMethod(HttpMethod.Options)
+            allowCredentials = true
+        }
+
+        install(CallId) {
+            generate { UUID.randomUUID().toString() }
+            replyToHeader(HttpHeaders.XRequestId)
+        }
+
+        install(CallLogging) {
+            mdc("requestId") { it.callId }
+            filter { call -> call.request.path() != "/health" }
+        }
+
+        install(MicrometerMetrics) {
+            registry = observability.meterRegistry
+        }
+
+        install(Authentication) {
+            jwt("auth-jwt") {
+                verifier(
+                    JWT.require(jwtAlgorithm)
+                        .withIssuer(authDeps.jwtConfig.issuer)
+                        .build()
+                )
+                validate { credential ->
+                    if (credential.payload.getClaim("username").asString() != null) {
+                        JWTPrincipal(credential.payload)
+                    } else null
+                }
+            }
+        }
+    }
+
+    // This is the final HTTP error boundary for failures from execution, serialization, or auth.
+    // Keep the full cause in logs and let coroutine cancellation propagate to Ktor.
+    @Suppress("TooGenericExceptionCaught")
+    internal suspend fun handleGraphQL(call: ApplicationCall) {
+        try {
+            val graphqlRequest = call.receive<GraphQLRequest>()
+
+            val authHeader = call.request.headers["Authorization"]
+            val token = authHeader?.removePrefix("Bearer ")?.trim()
+            val user = token?.let { authDeps.jwtService.getUserFromToken(it) }
+            val requestContext = user?.let { RequestContext(user = it) }
+
+            if (call.request.headers["X-Schema"] == "admin" && (user == null || !user.isAdmin)) {
+                call.respond(HttpStatusCode.Forbidden, mapOf("error" to "Admin access required"))
+                return
+            }
+
+            val audience = when (call.request.headers["X-Schema"]) {
+                "admin" -> SchemaRoutingExecutor.Audience.ADMIN
+                else -> SchemaRoutingExecutor.Audience.PUBLIC
+            }
+
+            val specification = executeGraphQL(graphqlRequest, audience, requestContext)
+            call.respondText(
+                mapper.writeValueAsString(specification),
+                ContentType.Application.Json,
+            )
+
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            logger.error("GraphQL execution error", e)
+            call.respond(
+                HttpStatusCode.InternalServerError,
+                mapOf("errors" to listOf(mapOf("message" to e.message)))
+            )
+        }
+    }
+
+    private suspend fun executeGraphQL(
+        request: GraphQLRequest,
+        audience: SchemaRoutingExecutor.Audience,
+        requestContext: RequestContext?,
+    ): Map<String, Any?> {
+        val executionInput = ExecutionInput.create(
+            operationText = request.query,
+            variables = request.variables ?: emptyMap(),
+            requestContext = requestContext
+        )
+
+        val startMs = System.currentTimeMillis()
+        val result = executor.execute(executionInput, audience)
+        val durationMs = System.currentTimeMillis() - startMs
+
+        val specification = result.toSpecification()
+        val operationName = request.operationName ?: "anonymous"
+        val hasErrors = specification["errors"] != null
+        if (hasErrors) {
+            logger.warn("GraphQL operation='{}' duration={}ms errors=true", operationName, durationMs)
+        } else {
+            logger.info("GraphQL operation='{}' duration={}ms", operationName, durationMs)
+        }
+        return specification
+    }
+
+    private fun Route.graphiqlRoute() {
+        get("/graphiql") {
+            call.respondText(
+                graphiQLHtml(
+                    GraphiQLHtmlConfig(
+                        title = "Blogging App",
+                        defaultQuery = """
+                            query {
+                              posts {
+                                id
+                                title
+                                author { username }
+                                likeCount
+                              }
+                            }
+                        """.trimIndent(),
+                        storageKey = "viaduct-blogging-app",
+                    )
+                ),
+                ContentType.Text.Html,
+            )
+        }
+    }
+
+    private fun Route.databaseHealthRoute() {
+        get("/health") {
+            val dbUp = observability.databaseFactory.healthCheck()
+            val version = System.getenv("APP_VERSION") ?: "unknown"
+            val status = if (dbUp) "UP" else "DOWN"
+            val response = mapOf(
+                "status" to status,
+                "db" to if (dbUp) "UP" else "DOWN",
+                "version" to version
+            )
+            if (dbUp) {
+                call.respond(HttpStatusCode.OK, response)
+            } else {
+                logger.warn("Health check failed: database is unreachable")
+                call.respond(HttpStatusCode.ServiceUnavailable, response)
+            }
+        }
+    }
+
+    private fun Route.aiHealthRoute() {
+        get("/health/ai") {
+            val reachable = aiService.isReachable()
+            val models = aiService.modelConfig()
+            val response = mapOf(
+                "ollamaReachable" to reachable,
+                "chatModel" to models.chatModel,
+                "embeddingModel" to models.embeddingModel,
+            )
+            if (reachable) {
+                call.respond(HttpStatusCode.OK, response)
+            } else {
+                logger.warn("AI health check failed: Ollama is unreachable")
+                call.respond(HttpStatusCode.ServiceUnavailable, response)
+            }
+        }
+    }
+
+    private fun Route.metricsRoute() {
+        get("/metrics") {
+            val prometheusRegistry = observability.meterRegistry as? PrometheusMeterRegistry
+                ?: return@get call.respond(HttpStatusCode.NotFound, "Prometheus registry not configured")
+            call.respondText(prometheusRegistry.scrape(), ContentType.Text.Plain)
+        }
     }
 }

@@ -1,6 +1,8 @@
 package org.tuchscherer.complexity
 
 import graphql.analysis.QueryComplexityCalculator
+import graphql.GraphQLException
+import graphql.GraphQLError as JavaGraphQLError
 import graphql.execution.CoercedVariables
 import graphql.language.Document
 import graphql.language.Field
@@ -10,13 +12,16 @@ import graphql.language.InlineFragment
 import graphql.language.OperationDefinition
 import graphql.language.SelectionSet
 import graphql.parser.Parser
+import graphql.parser.InvalidSyntaxException
 import graphql.schema.GraphQLSchema
 import graphql.schema.idl.RuntimeWiring
 import graphql.schema.idl.SchemaGenerator
 import graphql.schema.idl.SchemaParser
+import graphql.validation.Validator
 import org.slf4j.LoggerFactory
 import viaduct.service.api.GraphQLError
 import java.io.File
+import java.util.Locale
 
 /**
  * Pre-execution check that scores incoming GraphQL queries with [QueryFieldComplexityCalculator]
@@ -51,10 +56,12 @@ class QueryComplexityGuard(
      * @param variables the operation's variables, needed so [QueryComplexityCalculator] can
      *        resolve NonNull arguments without throwing (e.g. `mutation($input: CreatePostInput!)`).
      */
+    // Parsing, introspection, depth and score checks read naturally as independent early exits.
+    @Suppress("ReturnCount")
     fun check(query: String, variables: Map<String, Any?> = emptyMap()): GraphQLError? {
         val doc = try {
             Parser.parse(query)
-        } catch (_: Exception) {
+        } catch (_: InvalidSyntaxException) {
             // Invalid syntax — let Viaduct produce its own (better-formatted) parse error.
             return null
         }
@@ -67,7 +74,23 @@ class QueryComplexityGuard(
             return abortError("maximum query depth exceeded $depth > $maxDepth")
         }
 
-        val score = try {
+        val score = calculateScore(doc, variables) ?: return null
+        if (score > maxComplexity) {
+            logger.warn("query rejected: complexity $score > $maxComplexity")
+            return abortError("maximum query complexity exceeded $score > $maxComplexity")
+        }
+
+        return null
+    }
+
+    // GraphQL's client-error classification is an interface, which Kotlin cannot catch directly.
+    @Suppress("InstanceOfCheckForException")
+    private fun calculateScore(doc: Document, variables: Map<String, Any?>): Int? {
+        // Invalid documents belong to Viaduct's validator. Schema loading and unexpected
+        // calculator failures must propagate rather than silently bypassing the guard.
+        if (Validator().validateDocument(schema, doc, Locale.ROOT).isNotEmpty()) return null
+
+        return try {
             QueryComplexityCalculator.newCalculator()
                 .schema(schema)
                 .document(doc)
@@ -75,19 +98,13 @@ class QueryComplexityGuard(
                 .variables(CoercedVariables.of(variables as Map<String, Any>))
                 .build()
                 .calculate()
-        } catch (e: Exception) {
-            // The calculator can throw on schema mismatches the validator would catch (unknown
-            // fields, wrong arg types, etc). Let Viaduct produce the canonical validation error
-            // rather than masking it as a complexity failure.
-            logger.debug("complexity calc skipped: ${e.message}")
-            return null
+        } catch (e: GraphQLException) {
+            // Only client-facing GraphQL errors (e.g. invalid arguments or operation selection)
+            // delegate to Viaduct. Internal assertions and programming errors remain failures.
+            if (e !is JavaGraphQLError) throw e
+            logger.debug("Complexity calculation deferred to GraphQL validation", e)
+            null
         }
-        if (score > maxComplexity) {
-            logger.warn("query rejected: complexity $score > $maxComplexity")
-            return abortError("maximum query complexity exceeded $score > $maxComplexity")
-        }
-
-        return null
     }
 
     private fun abortError(message: String): GraphQLError =

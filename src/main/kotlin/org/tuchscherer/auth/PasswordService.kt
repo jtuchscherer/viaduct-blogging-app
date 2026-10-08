@@ -15,7 +15,7 @@ class PasswordService {
      * Returns a 32-character hex string (16 bytes).
      */
     fun generateSalt(): String {
-        val salt = ByteArray(16)
+        val salt = ByteArray(SALT_BYTES)
         random.nextBytes(salt)
         return salt.joinToString("") { "%02x".format(it) }
     }
@@ -38,3 +38,5 @@ class PasswordService {
         return hashPassword(password, salt) == hashedPassword
     }
 }
+
+private const val SALT_BYTES = 16

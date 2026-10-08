@@ -6,7 +6,6 @@ import org.tuchscherer.database.repositories.PostRepository
 import org.tuchscherer.viadapp.resolvers.resolverbases.BlogPostResolvers
 import viaduct.api.FieldValue
 import viaduct.api.resolver.Resolver
-import viaduct.api.grts.BlogPost as ViaductBlogPost
 import viaduct.api.grts.Comment as ViaductComment
 import viaduct.api.grts.User as ViaductUser
 import java.util.UUID
