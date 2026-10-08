@@ -6,7 +6,7 @@ import org.tuchscherer.database.repositories.CommentRepository
 import org.tuchscherer.database.repositories.LikeRepository
 import org.tuchscherer.database.repositories.PostRepository
 import org.tuchscherer.database.repositories.UserRepository
-import org.tuchscherer.resolverkit.batchNodeResolve
+import org.tuchscherer.shared.batchNodeResolve
 import org.tuchscherer.viadapp.resolvers.resolverbases.NodeResolvers
 import viaduct.api.FieldValue
 import viaduct.api.resolver.Resolver

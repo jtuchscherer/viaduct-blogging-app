@@ -1,4 +1,4 @@
-package org.tuchscherer.resolverkit
+package org.tuchscherer.shared
 
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test

@@ -1,7 +1,7 @@
 package org.tuchscherer.viadapp.checkedlist.resolvers
 
 import org.tuchscherer.checkedlist.repositories.CheckedListItemRepository
-import org.tuchscherer.resolverkit.batchNodeResolve
+import org.tuchscherer.shared.batchNodeResolve
 import org.tuchscherer.viadapp.checkedlist.resolverbases.NodeResolvers
 import org.koin.java.KoinJavaComponent.inject
 import viaduct.api.FieldValue

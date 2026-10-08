@@ -1,4 +1,4 @@
-package org.tuchscherer.resolverkit
+package org.tuchscherer.shared
 
 import viaduct.api.FieldValue
 import java.util.UUID
