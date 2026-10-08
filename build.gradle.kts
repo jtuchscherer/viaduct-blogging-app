@@ -4,17 +4,14 @@
 // settings.gradle.kts) and trigger Dependabot alerts even though they are
 // only used during the build, not at runtime.
 //
-// NOTE: this mechanism does NOT reach dependencies pulled in via the plugins{} DSL
-// (resolved through pluginManagement, a separate graph from buildscript.configurations).
-// The Viaduct plugin also transitively depends on jackson-module-kotlin 2.17.3 (CVE, fixed
-// in 2.22.1) via com.airbnb.viaduct.gradle:common — forcing it here looked like it worked
-// (`./gradlew buildEnvironment` reported it as forced) but the live dependency-submission
-// SBOM kept showing the unforced 2.17.3, and the corresponding Dependabot alerts never
-// cleared. Removed rather than left in place; see #36's follow-up discussion. The real fix
-// is upstream, in Viaduct's own gradle:common module bumping jackson-module-kotlin.
+// Viaduct also brings Jackson 2.17.3 into both the settings and project plugin classpaths.
+// Patch both graphs: a project-only override leaves the settings-plugin copy vulnerable.
+// Use the Jackson BOM to keep core, databind, annotations, and the Kotlin module aligned.
 buildscript {
+    val buildToolJacksonVersion: String by project
     configurations.all {
         resolutionStrategy.force(
+            "com.fasterxml.jackson:jackson-bom:$buildToolJacksonVersion",
             "io.netty:netty-codec-http:4.1.132.Final",
             "io.netty:netty-codec-http2:4.1.132.Final",
             "io.netty:netty-codec:4.1.132.Final",
@@ -55,6 +52,8 @@ dependencies {
 
     implementation(libs.jackson.databind)
     implementation(libs.jackson.module.kotlin)
+    // logstash-logback-encoder uses Jackson 3; align its core and databind patches together.
+    implementation(platform(libs.jackson3.bom))
 
     // Database dependencies
     implementation(libs.sqlite.jdbc)
@@ -106,6 +105,16 @@ dependencies {
     testImplementation(libs.h2)
     testImplementation(libs.assertj.core)
     testImplementation(libs.kotest.property)
+
+    constraints {
+        // Ktor's test host brings the Apache client; patch HTTP/1 and HTTP/2 together.
+        testImplementation(libs.httpcore5) {
+            because("Reject oversized HTTP/1 headers (GHSA-hf6x-8p5f-cgmf)")
+        }
+        testImplementation(libs.httpcore5.h2) {
+            because("Enforce HTTP/2 header limits before SETTINGS ACK (GHSA-v3jc-474w-2wm6)")
+        }
+    }
 }
 
 application {
@@ -122,7 +131,7 @@ application {
 //   - kotlinBouncyCastleConfiguration ("Bouncy Castle dependencies used internally for
 //     library publishing validation tasks. Not used during compilation.", per its own
 //     description) transitively depends on bouncycastle 1.80/1.80.2 — the same CVEs
-//     already forced below for our own runtime dependencies, fixed in 1.84.
+//     patched to 1.85 for the ASN.1 depth and certificate Name Constraints fixes.
 // Both are per-project configurations the Kotlin plugin creates on every project, so this
 // needs allprojects rather than the root-only configurations.all block below.
 val opentelemetryVersion: String = libs.versions.opentelemetry.get()
@@ -147,12 +156,9 @@ allprojects {
 }
 
 // Force patched dependency versions to address CVEs.
-val viaductVersion: String = libs.versions.viaduct.get()
 val nettyVersion: String = libs.versions.netty.get()
-val jacksonCore3Version: String = libs.versions.jackson3.get()
 configurations.all {
     resolutionStrategy.force(
-        "tools.jackson.core:jackson-core:$jacksonCore3Version",
         "io.netty:netty-codec-http:$nettyVersion",
         "io.netty:netty-codec-http2:$nettyVersion",
         "io.netty:netty-codec-compression:$nettyVersion",
