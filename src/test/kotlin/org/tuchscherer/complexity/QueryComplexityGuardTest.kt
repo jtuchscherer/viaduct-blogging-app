@@ -3,11 +3,49 @@ package org.tuchscherer.complexity
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.assertSame
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
+import io.mockk.every
+import io.mockk.mockk
+import graphql.AssertException
+import kotlin.coroutines.cancellation.CancellationException
 
 class QueryComplexityGuardTest {
 
     private val guard = QueryComplexityGuard(QueryFieldComplexityCalculator())
+
+    @Test
+    fun `unexpected calculator failures are not silently accepted`() {
+        val failure = IllegalStateException("calculator failed")
+        val checkedGuard = failingGuard(failure)
+        assertSame(failure, assertThrows(IllegalStateException::class.java) {
+            checkedGuard.check("{ posts { id } }")
+        })
+    }
+
+    @Test
+    fun `internal GraphQL assertions are not mistaken for validation errors`() {
+        val failure = AssertException("internal invariant failed")
+        val checkedGuard = failingGuard(failure)
+        assertSame(failure, assertThrows(AssertException::class.java) {
+            checkedGuard.check("{ posts { id } }")
+        })
+    }
+
+    @Test
+    fun `calculator cancellation propagates`() {
+        val cancellation = CancellationException("cancelled")
+        val checkedGuard = failingGuard(cancellation)
+        assertSame(cancellation, assertThrows(CancellationException::class.java) {
+            checkedGuard.check("{ posts { id } }")
+        })
+    }
+
+    @Test
+    fun `invalid argument types delegate to Viaduct validation`() {
+        assertNull(guard.check("""{ postsConnection(first: "invalid") { edges { node { id } } } }"""))
+    }
 
     @Test
     fun `simple healthy query passes the guard`() {
@@ -96,4 +134,10 @@ class QueryComplexityGuardTest {
         // it's within limits, NOT because it was treated as introspection.
         assertNull(guard.check(query))
     }
+    private fun failingGuard(failure: Exception): QueryComplexityGuard {
+        val calculator = mockk<QueryFieldComplexityCalculator>()
+        every { calculator.calculate(any(), any()) } throws failure
+        return QueryComplexityGuard(calculator)
+    }
+
 }

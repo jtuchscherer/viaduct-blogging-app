@@ -16,6 +16,8 @@ import graphql.analysis.FieldComplexityEnvironment
  */
 class QueryFieldComplexityCalculator : FieldComplexityCalculator {
 
+    // Each field category selects its multiplier with an early return; avoid nested branches.
+    @Suppress("ReturnCount")
     override fun calculate(env: FieldComplexityEnvironment, childComplexity: Int): Int {
         val name = env.field.name
         val parent = env.parentType.name

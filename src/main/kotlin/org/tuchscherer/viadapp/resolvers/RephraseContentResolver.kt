@@ -18,11 +18,9 @@ class RephraseContentResolver(
         val content = ctx.arguments.content
         val tone = ctx.arguments.tone
 
-        if (content.isBlank()) {
-            throw IllegalArgumentException("Content must not be blank")
-        }
-        if (content.length > 50_000) {
-            throw IllegalArgumentException("Content is too long (max 50,000 characters)")
+        require(content.isNotBlank()) { "Content must not be blank" }
+        require(content.length <= MAX_REPHRASE_CONTENT_LENGTH) {
+            "Content is too long (max 50,000 characters)"
         }
 
         val serviceTone = when (tone) {
@@ -38,3 +36,5 @@ class RephraseContentResolver(
         }
     }
 }
+
+private const val MAX_REPHRASE_CONTENT_LENGTH = 50_000

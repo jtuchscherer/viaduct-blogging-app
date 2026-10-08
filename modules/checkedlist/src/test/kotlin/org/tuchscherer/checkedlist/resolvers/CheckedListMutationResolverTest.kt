@@ -5,7 +5,6 @@ import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
 import org.tuchscherer.checkedlist.port.CheckedListCurrentUserProvider
 import org.tuchscherer.checkedlist.port.PostCreationPort
-import org.tuchscherer.checkedlist.repositories.CheckedListItemData
 import org.tuchscherer.checkedlist.repositories.CheckedListItemRepository
 import org.tuchscherer.checkedlist.port.PostData
 import org.tuchscherer.viadapp.checkedlist.resolvers.AddCheckedListItemMutationResolver
@@ -41,11 +40,6 @@ class CheckedListMutationResolverTest {
         id = postId, title = "Test Post", description = "",
         authorId = authorId, status = "PUBLISHED", publishedAt = "2024-01-01T00:00:00",
         createdAt = "2024-01-01T00:00:00", updatedAt = "2024-01-01T00:00:00",
-    )
-
-    private fun makeItemData() = CheckedListItemData(
-        id = itemId, postId = postId, text = "Test item",
-        checked = false, position = 0, createdAt = "2024-01-01T00:00:00",
     )
 
     @BeforeEach

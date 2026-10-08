@@ -34,6 +34,7 @@ buildscript {
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.detekt)
     alias(libs.plugins.viaduct.application)
     alias(libs.plugins.viaduct.module)
     application
@@ -100,6 +101,7 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.koin.test)
     testImplementation(libs.koin.test.junit5)
+    testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.mockk)
     testImplementation(libs.h2)
     testImplementation(libs.assertj.core)
@@ -126,6 +128,12 @@ application {
 val opentelemetryVersion: String = libs.versions.opentelemetry.get()
 val bouncyCastleVersion: String = libs.versions.bouncycastle.get()
 allprojects {
+    plugins.withId("io.gitlab.arturbosch.detekt") {
+        extensions.configure<io.gitlab.arturbosch.detekt.extensions.DetektExtension> {
+            buildUponDefaultConfig = true
+            config.setFrom(rootProject.file("detekt.yml"))
+        }
+    }
     configurations.all {
         resolutionStrategy.force(
             "io.opentelemetry:opentelemetry-api:$opentelemetryVersion",
@@ -181,7 +189,6 @@ tasks.jacocoTestReport {
                     "**/viadapp/ViaductApplication*",
                     "**/viadapp/resolvers/resolverbases/**",
                     "**/config/KoinTenantCodeInjector*",
-                    "**/config/ViaductConfig*",
                 )
             }
         })

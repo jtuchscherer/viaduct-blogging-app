@@ -13,7 +13,7 @@ class NoOpAIService : AIService {
         "Item ${existingItems.size + 1}"
 
     override fun generateEmbedding(text: String): FloatArray =
-        FloatArray(384) { it.toFloat() / 384f }
+        FloatArray(EMBEDDING_DIMENSION) { it.toFloat() / EMBEDDING_DIMENSION }
 
     override fun isReachable(): Boolean = true
 
@@ -22,3 +22,5 @@ class NoOpAIService : AIService {
         embeddingModel = "nomic-embed-text",
     )
 }
+
+private const val EMBEDDING_DIMENSION = 384

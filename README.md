@@ -217,6 +217,19 @@ Current counts live in `TODO.md`, which is updated as part of finishing a phase.
 
 ---
 
+## Kotlin Static Analysis
+
+Detekt 1.23.8 analyzes Kotlin production and test sources in the application and all four modules. It inherits its bundled defaults and applies the shared [detekt.yml](detekt.yml). It is part of Gradle's `check` task, so `./gradlew build` runs it automatically and fails on findings.
+
+The configuration permits test/Ktor wildcard imports, long test lines, schema column widths, cohesive repository APIs, and guard clauses. Other default checks and thresholds remain active. A few method-level exceptions explain guard clauses and adapter error boundaries that the analyzer cannot distinguish. The original 229 findings and their rationale are recorded in [DETEKT_AUDIT.md](DETEKT_AUDIT.md); there is no baseline or ignored-failure setting.
+
+```bash
+./gradlew detekt                  # static analysis across all Kotlin projects
+./gradlew build                   # compile, test, and run static analysis
+```
+
+Reports are written to each project's `build/reports/detekt/` directory, including `detekt.html` and `detekt.sarif`.
+
 ## Markdown Files
 
 ### `README.md` — this file

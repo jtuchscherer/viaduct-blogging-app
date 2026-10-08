@@ -46,7 +46,7 @@ class JwtService(
                 username = decodedJWT.getClaim("username").asString(),
                 userId = decodedJWT.getClaim("userId").asString()
             )
-        } catch (e: JWTVerificationException) {
+        } catch (_: JWTVerificationException) {
             null
         }
     }

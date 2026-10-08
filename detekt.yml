@@ -1,0 +1,64 @@
+# All other rules and thresholds inherit Detekt's defaults.
+complexity:
+  LongParameterList:
+    # Optional timestamps/status do not complicate the common call sites.
+    ignoreDefaultParameters: true
+  TooManyFunctions:
+    # Persistence operations for one entity remain cohesive in one repository.
+    excludes:
+      - '**/repositories/*Repository.kt'
+      - '**/test/**'
+      - '**/androidTest/**'
+      - '**/commonTest/**'
+      - '**/jvmTest/**'
+      - '**/androidUnitTest/**'
+      - '**/androidInstrumentedTest/**'
+      - '**/jsTest/**'
+      - '**/iosTest/**'
+
+naming:
+  MatchingDeclarationName:
+    # Grouping files and the stable JVM launcher name are intentional.
+    excludes:
+      - '**/viadapp/ViaductApplication.kt'
+      - '**/analytics/AnalyticsTables.kt'
+      - '**/checkedlist/database/CheckedListTables.kt'
+      - '**/checkedlist/resolvers/CheckedListFragments.kt'
+
+style:
+  WildcardImport:
+    # Tests and Ktor DSLs commonly combine many extensions from one package.
+    excludes: &testPaths
+      - '**/test/**'
+      - '**/androidTest/**'
+      - '**/commonTest/**'
+      - '**/jvmTest/**'
+      - '**/androidUnitTest/**'
+      - '**/androidInstrumentedTest/**'
+      - '**/jsTest/**'
+      - '**/iosTest/**'
+    excludeImports:
+      - 'java.util.*'
+      - 'io.ktor.*'
+  MaxLineLength:
+    # Preserve descriptive test names and generated GraphQL builder chains.
+    excludes: *testPaths
+  MagicNumber:
+    # Column widths alongside named columns are readable schema declarations.
+    excludes:
+      - '**/test/**'
+      - '**/androidTest/**'
+      - '**/commonTest/**'
+      - '**/jvmTest/**'
+      - '**/androidUnitTest/**'
+      - '**/androidInstrumentedTest/**'
+      - '**/jsTest/**'
+      - '**/iosTest/**'
+      - '**/*.kts'
+      - '**/org/tuchscherer/database/Tables.kt'
+      - '**/org/tuchscherer/analytics/AnalyticsTables.kt'
+      - '**/org/tuchscherer/checkedlist/database/CheckedListTables.kt'
+  ReturnCount:
+    excludeGuardClauses: true
+  ThrowsCount:
+    excludeGuardClauses: true
