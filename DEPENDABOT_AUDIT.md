@@ -2,6 +2,9 @@
 
 **Last Updated**: 2026-10-07
 
+The original audit below records PR #66. Subsequent backend maintenance and its
+compatibility checks are documented in the final section.
+
 Audited all 55 open alerts after PR #65 merged: **2 critical, 24 high, 23 medium,
 6 low**. These changes remove the affected dependency versions for **all 26
 critical/high alerts**, plus 17 medium and 3 low alerts, without application code
@@ -122,8 +125,9 @@ removed by the same upgrades. Nine remain: six medium and three low alerts.
 Remaining alerts are in HttpClient's test dependency (#194), frontend development
 tools (#155, #159, #160), DOMPurify (#186, #191), the Kotlin Gradle plugin (#153),
 and Guava in Viaduct's settings-plugin/Guice dependency graph (#3, #4). The Kotlin
-advisory's first published fix is **2.4.20-Beta1**; adopting it would require a
-coordinated Kotlin/KSP upgrade and prerelease tooling, outside this focused change.
+advisory's first published fix is **2.4.20-Beta1**, and stable **2.4.20** is now
+available. A coordinated Kotlin/KSP upgrade was outside PR #66; the follow-up
+below records the Viaduct compatibility check.
 The other remaining medium/low dependencies can be handled separately.
 
 Additional npm-audit advisories GHSA-qhr7-859c-m2p7 and GHSA-6j4f-fj2g-mc7p
@@ -194,3 +198,90 @@ using fresh browser contexts:
 ```
 
 No browser assertions failed after retry, and no tests were skipped.
+
+## Backend maintenance follow-up — 2026-10-07
+
+After PR #66 merged, GitHub confirmed that all 26 critical/high alerts were fixed,
+with nine medium/low alerts remaining. This follow-up updates compatible backend
+dependencies without changing application behavior:
+
+| Dependency | Before → after |
+|---|---|
+| Ktor | 3.5.1 → 3.6.0 |
+| Netty | 4.2.17.Final → 4.2.19.Final |
+| PostgreSQL JDBC | 42.7.13 → 42.7.14 |
+| SQLite JDBC | 3.53.2.0 → 3.53.4.0 |
+| HikariCP | 6.3.0 → 6.3.3 |
+| Micrometer | 1.17.0 → 1.17.1 |
+| Logback | 1.5.37 → 1.5.38 |
+| JUnit Jupiter and Platform | 6.1.1 → 6.1.3 |
+| Gradle wrapper | 8.14.3 → 8.14.5, with official distribution SHA-256 |
+| Guava in settings/project plugin classpaths | 31.0.1-jre / 33.3.1-jre → 33.7.2-jre |
+| Apache HttpClient, via Ktor test host | 5.5.1 → 5.6.4 |
+
+[Ktor 3.6.0](https://github.com/ktorio/ktor/releases/tag/3.6.0) brings the patched
+HttpClient and fixes its gzip compatibility issue (KTOR-9832). HttpClient is not
+independently forced into older Ktor. The Netty enforced BOM replaces the manual
+module list and aligns the new HTTP/3 and QUIC dependencies as well. Obsolete
+Netty/Logback buildscript overrides were removed after confirming that neither
+settings nor project plugin classpaths actually resolve those packages.
+
+The app and AI module also use Ktor's BOM. Koin and Tracy otherwise retain Ktor
+3.4.0/3.3.0 components alongside the upgraded server. Runtime and test graphs
+now consistently select Ktor 3.6.0, including DI, client engines, and serializers.
+
+Guava is patched in both independent plugin graphs, with one shared property.
+Application Guava resolves to 33.6.0-jre through Ktor; it was already outside the
+affected ranges. The targeted remaining alerts are Guava **#3/#4** and HttpClient
+**#194**. Their closure still requires default-branch dependency submission after
+merge.
+
+Stable [Kotlin 2.4.20](https://github.com/JetBrains/kotlin/releases/tag/v2.4.20)
+and [KSP 2.3.12](https://github.com/google/ksp/releases/tag/2.3.12) were tried
+together. Viaduct 2.0.0 rejected the build during configuration:
+
+> Viaduct requires Kotlin version in the range [1.9, 2.2] for KSP1 support.
+> Found: 2.4.20. Kotlin 2.3+ requires KSP2 which is not yet supported by Viaduct.
+
+Kotlin 2.2.21 and KSP 2.2.21-2.0.5 are therefore retained. Kotlin alert **#153**
+remains pending a Viaduct release supporting KSP2. No compatibility checks were
+bypassed, and stable Detekt 1.23.8 is retained.
+
+The test audit covered backend unit/integration, frontend unit, API/query, and
+browser E2E layers. Existing tests exercise the affected application behavior;
+no version-string tests or new application logic were added. Repository tests
+use H2, and API/browser tests use SQLite; this does not validate a live PostgreSQL
+deployment.
+
+GitHub Dependency Graph Gradle Plugin 1.4.1 produced a local-only snapshot of
+**425 resolved Maven coordinates**. It contains only Ktor 3.6.0 and Netty
+4.2.19.Final, Guava 33.6.0-jre/33.7.2-jre, and HttpClient 5.6.4. The Jackson,
+Bouncy Castle, and HttpCore patches from PR #66 remain intact. No snapshot was
+submitted to GitHub from this branch.
+
+| Verification | Before build-file cleanup | Final dependency alignment |
+|---|---|---|
+| Backend unit/integration | 590 passed, 0 skipped | 590 passed, 0 skipped |
+| Frontend type-check, lint, unit | All checks passed; 131 tests | All checks passed; 131 tests |
+| API/query | 156 passed | 156 passed |
+| Browser E2E | 413 passed first try, 1 passed on retry | 412 passed first try, 2 passed on retry |
+
+Both full suite sequences exited successfully. The final Gradle build and all
+five Detekt tasks passed, the frontend production build passed, and the public
+schema still matches its committed snapshot of 159 entries. A clean backend
+rebuild verified Viaduct code generation with the supported Kotlin/KSP versions.
+
+The checklist WebKit retry reproduced the earlier `/login` navigation and
+context-teardown timeout. The final round also retried `posts.spec.ts:23`,
+`user can create a post via the UI and is redirected to post detail`: the failure
+snapshot showed an empty required title field, and the page stayed on `/create`.
+Its retry passed. Both cases then passed five isolated repetitions each with
+retries disabled (**10 passed**):
+
+```bash
+./e2e.sh --project=webkit --grep 'checklist post appears on the My Posts page|user can create a post via the UI and is redirected to post detail' --repeat-each=5 --retries=0
+```
+
+These successful isolated runs do not eliminate the browser-suite flakiness;
+the retries remain documented rather than treating the full runs as failure-free.
+No tests were skipped.

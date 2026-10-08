@@ -6,6 +6,9 @@ plugins {
 }
 
 dependencies {
+    // Tracy uses Ktor clients; align this module's runtime and tests with the application.
+    implementation(platform(libs.ktor.bom))
+
     // tracy-core (AI observability) pulls a full OpenTelemetry 1.51.0 set transitively; this BOM
     // forces the whole set to a patched version together to avoid version skew (CVE fix, #36).
     implementation(platform(libs.opentelemetry.bom))

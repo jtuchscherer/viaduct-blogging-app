@@ -15,8 +15,12 @@ pluginManagement {
 buildscript {
     // This graph is separate from project plugin classpaths; both need the security patch.
     val buildToolJacksonVersion: String by settings
+    val buildToolGuavaVersion: String by settings
     configurations.all {
-        resolutionStrategy.force("com.fasterxml.jackson:jackson-bom:$buildToolJacksonVersion")
+        resolutionStrategy.force(
+            "com.fasterxml.jackson:jackson-bom:$buildToolJacksonVersion",
+            "com.google.guava:guava:$buildToolGuavaVersion",
+        )
     }
 }
 

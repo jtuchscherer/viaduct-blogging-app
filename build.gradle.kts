@@ -1,29 +1,13 @@
-// Force patched versions in the Gradle plugin classpath.
-// The Viaduct plugin pulls in Netty 4.1.x and older Logback as build-time
-// dependencies; these show up in GitHub's dependency graph (attributed to
-// settings.gradle.kts) and trigger Dependabot alerts even though they are
-// only used during the build, not at runtime.
-//
-// Viaduct also brings Jackson 2.17.3 into both the settings and project plugin classpaths.
+// Viaduct brings older Jackson and Guava into separate settings and project plugin graphs.
 // Patch both graphs: a project-only override leaves the settings-plugin copy vulnerable.
 // Use the Jackson BOM to keep core, databind, annotations, and the Kotlin module aligned.
 buildscript {
     val buildToolJacksonVersion: String by project
+    val buildToolGuavaVersion: String by project
     configurations.all {
         resolutionStrategy.force(
             "com.fasterxml.jackson:jackson-bom:$buildToolJacksonVersion",
-            "io.netty:netty-codec-http:4.1.132.Final",
-            "io.netty:netty-codec-http2:4.1.132.Final",
-            "io.netty:netty-codec:4.1.132.Final",
-            "io.netty:netty-handler:4.1.132.Final",
-            "io.netty:netty-common:4.1.132.Final",
-            "io.netty:netty-buffer:4.1.132.Final",
-            "io.netty:netty-transport:4.1.132.Final",
-            "io.netty:netty-resolver:4.1.132.Final",
-            "io.netty:netty-transport-native-epoll:4.1.132.Final",
-            "io.netty:netty-transport-native-kqueue:4.1.132.Final",
-            "ch.qos.logback:logback-classic:1.5.37",
-            "ch.qos.logback:logback-core:1.5.37"
+            "com.google.guava:guava:$buildToolGuavaVersion",
         )
     }
 }
@@ -46,6 +30,10 @@ dependencies {
 
     implementation(libs.viaduct.api)
     implementation(libs.viaduct.runtime)
+    // Align every Netty module, including Ktor's HTTP/3 and QUIC dependencies.
+    implementation(enforcedPlatform(libs.netty.bom))
+    // Koin and AI tracing also bring Ktor modules; keep them on the server's version.
+    implementation(platform(libs.ktor.bom))
     implementation("javax.inject:javax.inject:1")
     implementation(libs.logback.classic)
     implementation(libs.kotlinx.coroutines.core)
@@ -153,27 +141,6 @@ allprojects {
             "org.bouncycastle:bcutil-jdk18on:$bouncyCastleVersion",
         )
     }
-}
-
-// Force patched dependency versions to address CVEs.
-val nettyVersion: String = libs.versions.netty.get()
-configurations.all {
-    resolutionStrategy.force(
-        "io.netty:netty-codec-http:$nettyVersion",
-        "io.netty:netty-codec-http2:$nettyVersion",
-        "io.netty:netty-codec-compression:$nettyVersion",
-        "io.netty:netty-codec-base:$nettyVersion",
-        "io.netty:netty-codec:$nettyVersion",
-        "io.netty:netty-handler:$nettyVersion",
-        "io.netty:netty-common:$nettyVersion",
-        "io.netty:netty-buffer:$nettyVersion",
-        "io.netty:netty-transport:$nettyVersion",
-        "io.netty:netty-resolver:$nettyVersion",
-        "io.netty:netty-transport-classes-epoll:$nettyVersion",
-        "io.netty:netty-transport-classes-kqueue:$nettyVersion",
-        "io.netty:netty-transport-native-epoll:$nettyVersion",
-        "io.netty:netty-transport-native-kqueue:$nettyVersion"
-    )
 }
 
 tasks.test {
