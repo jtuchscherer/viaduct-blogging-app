@@ -8,7 +8,7 @@ plugins {
 }
 
 dependencies {
-    implementation(project(":modules:resolverkit"))
+    implementation(project(":modules:shared"))
 
     api(libs.viaduct.api)
     implementation(libs.viaduct.runtime)

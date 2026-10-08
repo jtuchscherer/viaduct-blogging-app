@@ -32,7 +32,7 @@ rootProject.name = "viaduct-blogging-app"
 
 // Plain Gradle modules — they carry no Viaduct resolvers, so they stay outside the topology.
 include(":modules:ai")
-include(":modules:resolverkit")
+include(":modules:shared")
 
 // The root project is both the application and a Viaduct module, so it appears twice below.
 includeViaductApplication {

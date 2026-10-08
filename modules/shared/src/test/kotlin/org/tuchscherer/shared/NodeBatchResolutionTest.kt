@@ -1,4 +1,4 @@
-package org.tuchscherer.resolverkit
+package org.tuchscherer.shared
 
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -85,7 +85,7 @@ class NodeBatchResolutionTest {
     }
 
     @Test
-    fun `returns an empty map for an empty batch without calling findByIds`() {
+    fun `returns an empty map for an empty batch`() {
         var findByIdsCallCount = 0
 
         val results = batchNodeResolve<UUID, Entity, String>(

@@ -2,15 +2,15 @@
 
 **Status**: 🚀 In Progress — Phases 1–26 and 28 complete; Phase 27 (recommendations) on hold
 
-**Last Updated**: 2026-08-26
+**Last Updated**: 2026-10-07
 
 ## Test Statistics
 
 | Suite | Count | Status |
 |---|---|---|
-| Unit + Integration tests (`./gradlew test`) | 553 | ✅ All passing |
-| API E2E tests (`./query-tests.sh`) | 153 | ✅ All passing |
-| Browser E2E tests (Playwright, 137 tests × 3 browsers) | 411 runs | ✅ All passing |
+| Unit + Integration tests (`./gradlew test`) | 590 | ✅ All passing |
+| API E2E tests (`./query-tests.sh`) | 156 | ✅ All passing |
+| Browser E2E tests (Playwright, 138 tests × 3 browsers) | 414 runs | ✅ All passing |
 | Frontend unit tests (`npm test`) | 131 | ✅ All passing |
 
 ## Completed Phases
@@ -37,7 +37,7 @@
 | AI suggestion (Phase 26) | `suggestChecklistItem` mutation; `SuggestChecklistItemMutationResolver`; `useSuggestItem` hook; ✨ Suggest button on Create + Detail pages; ≥ 3 item guard; full test coverage |
 | Drafts (Phase 28) | `PostStatus` enum, `status`/`published_at` columns with a backfilling Flyway migration, `publishPost`/`unpublishPost` mutations; `PostVisibility` as the single read predicate; drafts excluded from every public read path (`posts`, `postsConnection` and its `totalCount`, `checkedListPosts`, `trending`) and from comments, likes and view counts; own drafts kept in `myPosts`/`myCheckedListPosts`; "Save draft" on both create forms, publish/unpublish on the edit page, draft badge and status filter on My Posts, draft banner on the detail page |
 | Bug fixes | Dark mode post type toggle; CheckedList like button; author-only item toggle enforcement (backend + frontend) |
-| Code quality | Domain exceptions, `requireAuth()`/`optionalAuth()` helpers, `useLikeToggle` hook, `PaginationControls` component, `UserRepository.updateFields()`, `.btn-secondary` CSS class, Ports and Adapters documentation, `:modules:resolverkit` — shared `batchNodeResolve` helper deduplicating the Node batch-resolver shape across the root app and `:modules:checkedlist`; also adds `CheckedListItemRepository.findByIds()`, fixing an N+1 lookup |
+| Code quality | Domain exceptions, `requireAuth()`/`optionalAuth()` helpers, `useLikeToggle` hook, `PaginationControls` component, `UserRepository.updateFields()`, `.btn-secondary` CSS class, Ports and Adapters documentation, `:modules:shared` — shared `batchNodeResolve` helper deduplicating the Node batch-resolver shape across the root app and `:modules:checkedlist`; also adds `CheckedListItemRepository.findByIds()`, fixing an N+1 lookup |
 
 ## Next Steps
 

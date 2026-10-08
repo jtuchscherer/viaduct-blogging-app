@@ -5,8 +5,8 @@ plugins {
     jacoco
 }
 
-// Plain Gradle module (like :modules:ai): it holds a generic helper shared by resolvers
-// in other modules, not resolvers itself, so it stays outside the Viaduct topology.
+// Shared application utilities, with no schema or resolvers of its own.
+// This is a plain Gradle library and stays outside the Viaduct tenant topology.
 dependencies {
     api(libs.viaduct.api)
 

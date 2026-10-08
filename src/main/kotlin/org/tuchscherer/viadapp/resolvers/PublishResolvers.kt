@@ -7,7 +7,7 @@ import org.tuchscherer.auth.requireAuth
 import org.tuchscherer.database.Post
 import org.tuchscherer.database.PostStatus
 import org.tuchscherer.database.repositories.PostRepository
-import org.tuchscherer.resolverkit.decodeGlobalId
+import org.tuchscherer.shared.decodeGlobalId
 import org.tuchscherer.viadapp.resolvers.resolverbases.MutationResolvers
 import viaduct.api.resolver.Resolver
 import viaduct.api.grts.Post as ViaductPost

@@ -1,4 +1,4 @@
-package org.tuchscherer.resolverkit
+package org.tuchscherer.shared
 
 import java.util.Base64
 import java.util.UUID

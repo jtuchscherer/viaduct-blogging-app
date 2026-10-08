@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test
  * The heuristic is shared across all analytics resolvers, so a change to it would affect every
  * readTime field in the API. Tests are pure — no DB or Koin.
  *
- * Global-ID decoding used to be tested here too; it now lives in :modules:resolverkit, which is
+ * Global-ID decoding used to be tested here too; it now lives in :modules:shared, which is
  * where the function moved when its duplicate in the root project was removed.
  */
 class AnalyticsUtilsTest {
