@@ -25,7 +25,6 @@ import viaduct.api.grts.Comment as ViaductComment
 import viaduct.api.grts.CreateCommentInput
 import viaduct.api.grts.Mutation_CreateComment_Arguments
 import viaduct.api.grts.BlogPost as ViaductBlogPost
-import viaduct.api.grts.Query
 import viaduct.api.testing.ResolverTestBase
 import java.time.LocalDateTime
 import java.util.UUID
@@ -40,8 +39,6 @@ class CreateCommentResolverTest : ResolverTestBase() {
     private val userId = UUID.randomUUID()
     private val postId = UUID.randomUUID()
     private val commentId = UUID.randomUUID()
-
-    private fun queryObj() = Query.Builder(context).build()
 
     @BeforeEach
     fun setup() {
@@ -90,14 +87,13 @@ class CreateCommentResolverTest : ResolverTestBase() {
         } returns mockComment
 
         val result = runMutationFieldResolver(resolver) {
-            queryValue = queryObj()
             arguments = args
             requestContext = RequestContext(user = mockUser)
             }
 
         assertNotNull(result)
-        assertEquals(commentId.toString(), result.getId().internalID)
-        assertEquals("Test comment content", result.getContent())
+        assertEquals(commentId.toString(), result.getIdOrThrow().internalID)
+        assertEquals("Test comment content", result.getContentOrThrow())
     }
 
     @Test
@@ -108,7 +104,6 @@ class CreateCommentResolverTest : ResolverTestBase() {
 
         assertThrows<AuthenticationException> {
             runMutationFieldResolver(resolver) {
-                queryValue = queryObj()
                 arguments = args
                 requestContext = RequestContext()
                 }
@@ -126,7 +121,6 @@ class CreateCommentResolverTest : ResolverTestBase() {
 
         assertThrows<NotFoundException> {
             runMutationFieldResolver(resolver) {
-                queryValue = queryObj()
                 arguments = args
                 requestContext = RequestContext(user = mockUser)
                 }
@@ -144,7 +138,6 @@ class CreateCommentResolverTest : ResolverTestBase() {
 
         assertThrows<IllegalArgumentException> {
             runMutationFieldResolver(resolver) {
-                queryValue = queryObj()
                 arguments = args
                 requestContext = RequestContext(user = mockUser)
                 }
@@ -159,7 +152,6 @@ class CreateCommentResolverTest : ResolverTestBase() {
 
         assertThrows<IllegalArgumentException> {
             runMutationFieldResolver(resolver) {
-                queryValue = queryObj()
                 arguments = args
                 requestContext = RequestContext(user = mockUser)
                 }

@@ -81,9 +81,9 @@ class LikeObjectFieldResolversTest : ResolverTestBase() {
             arguments = NoArguments
             }
 
-        assertEquals(userId.toString(), result.getId().internalID)
-        assertEquals("testuser", result.getUsername())
-        assertEquals("test@example.com", result.getEmail())
+        assertEquals(userId.toString(), result.getIdOrThrow().internalID)
+        assertEquals("testuser", result.getUsernameOrThrow())
+        assertEquals("test@example.com", result.getEmailOrThrow())
     }
 
     @Test
@@ -114,9 +114,9 @@ class LikeObjectFieldResolversTest : ResolverTestBase() {
             }
 
         val blogPost = result as ViaductBlogPost
-        assertEquals(postId.toString(), blogPost.getId().internalID)
-        assertEquals("Test Post", blogPost.getTitle())
-        assertEquals("Test content", blogPost.getContent())
+        assertEquals(postId.toString(), blogPost.getIdOrThrow().internalID)
+        assertEquals("Test Post", blogPost.getTitleOrThrow())
+        assertEquals("Test content", blogPost.getContentOrThrow())
     }
 
     @Test

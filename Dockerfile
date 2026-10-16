@@ -1,16 +1,11 @@
 # Viaduct Blogging App — Runtime Image
 #
-# The Viaduct framework uses Airbnb-internal Maven artifacts that are not
-# published to Maven Central, so the distribution must be built on the host
-# before building the image:
+# Build the Java 25 distribution on the host before building the runtime image:
 #
 #   ./gradlew installDist -x test
 #   docker compose up --build
 #
-# A fully self-contained multi-stage build would be possible if Viaduct
-# artifacts are published to an accessible registry (Phase 16 / CI setup).
-
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:25-jre-alpine
 WORKDIR /app
 
 COPY build/install/viaduct-blogging-app/ .

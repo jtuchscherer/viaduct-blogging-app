@@ -202,10 +202,10 @@ class AdminMutationResolversTest : ResolverTestBase() {
         val result = runOnAdminMutations(resolver, args, RequestContext(user = mockAdminUser))
 
         assertNotNull(result)
-        assertTrue(result.getSuccess())
-        assertEquals(2, result.getPostsDeleted())
-        assertEquals(3, result.getCommentsDeleted())
-        assertEquals(5, result.getLikesDeleted())
+        assertTrue(result.getSuccessOrThrow())
+        assertEquals(2, result.getPostsDeletedOrThrow())
+        assertEquals(3, result.getCommentsDeletedOrThrow())
+        assertEquals(5, result.getLikesDeletedOrThrow())
     }
 
     @Test
@@ -240,8 +240,8 @@ class AdminMutationResolversTest : ResolverTestBase() {
         val result = runOnAdminMutations(resolver, args, RequestContext(user = mockAdminUser))
 
         assertNotNull(result)
-        assertEquals(targetUserId.toString(), result.getId().internalID)
-        assertEquals("Updated Name", result.getName())
+        assertEquals(targetUserId.toString(), result.getIdOrThrow().internalID)
+        assertEquals("Updated Name", result.getNameOrThrow())
     }
 
     @Test
@@ -299,9 +299,9 @@ class AdminMutationResolversTest : ResolverTestBase() {
         val result = runOnAdminMutations(resolver, args, RequestContext(user = mockAdminUser))
 
         assertNotNull(result)
-        assertEquals(postId.toString(), result.getId().internalID)
-        assertEquals("New Title", result.getTitle())
-        assertEquals("New content", result.getContent())
+        assertEquals(postId.toString(), result.getIdOrThrow().internalID)
+        assertEquals("New Title", result.getTitleOrThrow())
+        assertEquals("New content", result.getContentOrThrow())
     }
 
     @Test

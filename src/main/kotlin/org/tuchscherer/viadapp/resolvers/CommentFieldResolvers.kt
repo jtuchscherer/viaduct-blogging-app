@@ -13,7 +13,7 @@ class CommentAuthorResolver(
     private val commentRepository: CommentRepository,
 ) : CommentResolvers.Author() {
     override suspend fun resolve(ctx: Context): ViaductUser {
-        val commentId = UUID.fromString(ctx.getObjectValue().getId().internalID)
+        val commentId = UUID.fromString(ctx.getObjectValue().getIdOrThrow().internalID)
         val author = commentRepository.getAuthorForComment(commentId)
             ?: throw NotFoundException("Comment not found")
         return author.toViaductUser(ctx)
@@ -25,7 +25,7 @@ class CommentPostResolver(
     private val commentRepository: CommentRepository,
 ) : CommentResolvers.Post() {
     override suspend fun resolve(ctx: Context): ViaductPost {
-        val commentId = UUID.fromString(ctx.getObjectValue().getId().internalID)
+        val commentId = UUID.fromString(ctx.getObjectValue().getIdOrThrow().internalID)
         val post = commentRepository.getPostForComment(commentId)
             ?: throw NotFoundException("Comment not found")
         return post.toViaductPost(ctx)

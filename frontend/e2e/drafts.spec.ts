@@ -158,7 +158,9 @@ test.describe('Drafts — publish and unpublish', () => {
     const postId = draftUrl.split('/post/')[1];
 
     await page.goto(`/edit/${postId}`);
-    await page.click('button:has-text("Publish")');
+    await page.getByRole('button', { name: 'Publish', exact: true }).click();
+    // Wait for the mutation and cache update before navigation can abort the request.
+    await expect(page.getByRole('button', { name: 'Unpublish', exact: true })).toBeEnabled();
 
     await page.goto('/');
     await expect(page.locator('main')).toContainText(title);
@@ -176,9 +178,11 @@ test.describe('Drafts — publish and unpublish', () => {
     await expect(page.locator('main')).toContainText(title);
 
     await page.goto(`/edit/${postId}`);
-    await page.click('button:has-text("Unpublish")');
+    await page.getByRole('button', { name: 'Unpublish', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Publish', exact: true })).toBeEnabled();
 
     await page.goto('/');
+    await expect(page.locator('main').locator('.posts-list, .empty-state')).toBeVisible();
     await expect(page.locator('main')).not.toContainText(title);
   });
 });

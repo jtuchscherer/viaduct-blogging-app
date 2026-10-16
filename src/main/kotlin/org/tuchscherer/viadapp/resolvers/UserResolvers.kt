@@ -26,7 +26,7 @@ class UserPostsResolver(
     private val postRepository: PostRepository
 ) : UserResolvers.Posts() {
     override suspend fun resolve(ctx: Context): List<ViaductBlogPost> {
-        val userId = UUID.fromString(ctx.getObjectValue().getId().internalID)
+        val userId = UUID.fromString(ctx.getObjectValue().getIdOrThrow().internalID)
         return postRepository.findByAuthorId(userId).map { it.toViaductBlogPost(ctx) }
     }
 }
@@ -36,7 +36,7 @@ class UserIsAdminResolver(
     private val userRepository: UserRepository
 ) : UserResolvers.IsAdmin() {
     override suspend fun batchResolve(contexts: List<Context>): List<FieldValue<Boolean>> {
-        val ids = contexts.map { UUID.fromString(it.getObjectValue().getId().internalID) }
+        val ids = contexts.map { UUID.fromString(it.getObjectValue().getIdOrThrow().internalID) }
         val usersById = userRepository.findByIds(ids)
         return ids.map { id ->
             usersById[id]?.let { FieldValue.ofValue(it.isAdmin) }

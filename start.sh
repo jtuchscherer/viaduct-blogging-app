@@ -42,7 +42,7 @@ trap cleanup SIGINT SIGTERM EXIT
 echo -e "${BLUE}Checking prerequisites...${NC}"
 
 if ! command -v java &> /dev/null; then
-    echo "❌ Java is not installed. Please install Java 11 or higher."
+    echo "❌ Java is not installed. Please install JDK 25."
     exit 1
 fi
 

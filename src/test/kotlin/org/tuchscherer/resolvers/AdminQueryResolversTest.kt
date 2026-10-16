@@ -113,9 +113,9 @@ class AdminQueryResolversTest : ResolverTestBase() {
             requestContext = RequestContext(user = mockAdminUser)
             }
 
-        assertEquals(1, result.getTotalCount())
-        assertEquals(1, result.getUsers().size)
-        assertEquals(dbUserId.toString(), result.getUsers()[0].getId().internalID)
+        assertEquals(1, result.getTotalCountOrThrow())
+        assertEquals(1, result.getUsersOrThrow().size)
+        assertEquals(dbUserId.toString(), result.getUsersOrThrow()[0].getIdOrThrow().internalID)
     }
 
     @Test
@@ -133,8 +133,8 @@ class AdminQueryResolversTest : ResolverTestBase() {
             requestContext = RequestContext(user = mockAdminUser)
             }
 
-        assertEquals(11, result.getTotalCount())
-        assertEquals(1, result.getUsers().size)
+        assertEquals(11, result.getTotalCountOrThrow())
+        assertEquals(1, result.getUsersOrThrow().size)
     }
 
     @Test
@@ -171,9 +171,9 @@ class AdminQueryResolversTest : ResolverTestBase() {
             requestContext = RequestContext(user = mockAdminUser)
             }
 
-        assertEquals(1, result.getTotalCount())
-        assertEquals(1, result.getPosts().size)
-        assertEquals(postId.toString(), result.getPosts()[0].getId().internalID)
+        assertEquals(1, result.getTotalCountOrThrow())
+        assertEquals(1, result.getPostsOrThrow().size)
+        assertEquals(postId.toString(), result.getPostsOrThrow()[0].getIdOrThrow().internalID)
     }
 
     @Test
@@ -191,8 +191,8 @@ class AdminQueryResolversTest : ResolverTestBase() {
             requestContext = RequestContext(user = mockAdminUser)
             }
 
-        assertEquals(15, result.getTotalCount())
-        assertEquals(1, result.getPosts().size)
+        assertEquals(15, result.getTotalCountOrThrow())
+        assertEquals(1, result.getPostsOrThrow().size)
     }
 
     @Test
@@ -229,9 +229,9 @@ class AdminQueryResolversTest : ResolverTestBase() {
             requestContext = RequestContext(user = mockAdminUser)
             }
 
-        assertEquals(1, result.getTotalCount())
-        assertEquals(1, result.getComments().size)
-        assertEquals(commentId.toString(), result.getComments()[0].getId().internalID)
+        assertEquals(1, result.getTotalCountOrThrow())
+        assertEquals(1, result.getCommentsOrThrow().size)
+        assertEquals(commentId.toString(), result.getCommentsOrThrow()[0].getIdOrThrow().internalID)
     }
 
     @Test
@@ -249,8 +249,8 @@ class AdminQueryResolversTest : ResolverTestBase() {
             requestContext = RequestContext(user = mockAdminUser)
             }
 
-        assertEquals(20, result.getTotalCount())
-        assertEquals(1, result.getComments().size)
+        assertEquals(20, result.getTotalCountOrThrow())
+        assertEquals(1, result.getCommentsOrThrow().size)
     }
 
     @Test
@@ -288,10 +288,10 @@ class AdminQueryResolversTest : ResolverTestBase() {
             requestContext = RequestContext(user = mockAdminUser)
             }
 
-        assertEquals(5, result.getUserCount())
-        assertEquals(10, result.getPostCount())
-        assertEquals(20, result.getCommentCount())
-        assertEquals(30, result.getLikeCount())
+        assertEquals(5, result.getUserCountOrThrow())
+        assertEquals(10, result.getPostCountOrThrow())
+        assertEquals(20, result.getCommentCountOrThrow())
+        assertEquals(30, result.getLikeCountOrThrow())
     }
 
     // Overflow guards — each test pins one toCountInt() call site. If any site
@@ -388,8 +388,8 @@ class AdminQueryResolversTest : ResolverTestBase() {
             }
 
         assertNotNull(result)
-        assertEquals(dbUserId.toString(), result!!.getId().internalID)
-        assertEquals("dbuser", result.getUsername())
+        assertEquals(dbUserId.toString(), result!!.getIdOrThrow().internalID)
+        assertEquals("dbuser", result.getUsernameOrThrow())
     }
 
     @Test
@@ -431,9 +431,9 @@ class AdminQueryResolversTest : ResolverTestBase() {
             requestContext = RequestContext(user = mockAdminUser)
             }
 
-        assertEquals(3, result.getPostCount())
-        assertEquals(7, result.getCommentCount())
-        assertEquals(15, result.getLikeCount())
+        assertEquals(3, result.getPostCountOrThrow())
+        assertEquals(7, result.getCommentCountOrThrow())
+        assertEquals(15, result.getLikeCountOrThrow())
     }
 
     @Test
@@ -515,8 +515,8 @@ class AdminQueryResolversTest : ResolverTestBase() {
             }
 
         assertNotNull(result)
-        assertEquals(postId.toString(), result!!.getId().internalID)
-        assertEquals("Test Post", result.getTitle())
+        assertEquals(postId.toString(), result!!.getIdOrThrow().internalID)
+        assertEquals("Test Post", result.getTitleOrThrow())
     }
 
     @Test

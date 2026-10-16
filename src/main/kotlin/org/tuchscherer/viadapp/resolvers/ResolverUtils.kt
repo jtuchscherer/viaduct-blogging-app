@@ -64,7 +64,7 @@ internal fun User.toViaductUser(ctx: ExecutionContext) =
 internal fun Post.toViaductPost(ctx: ResolverExecutionContext<*>): ViaductPost =
     when (postType) {
         PostType.CHECKED_LIST ->
-            ctx.nodeRef(ctx.globalIDFor(ViaductCheckedListPost.Reflection, id.value.toString()))
+            ctx.ref(ctx.globalIDFor(ViaductCheckedListPost.Reflection, id.value.toString()))
         else -> toViaductBlogPost(ctx)
     }
 

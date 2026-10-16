@@ -66,8 +66,8 @@ class PostResolverTest : ResolverTestBase() {
             }
 
         assertNotNull(result)
-        assertEquals(postId.toString(), result?.getId()?.internalID)
-        assertEquals("Test Post", result?.getTitle())
+        assertEquals(postId.toString(), result?.getIdOrThrow()?.internalID)
+        assertEquals("Test Post", result?.getTitleOrThrow())
     }
 
     @Test

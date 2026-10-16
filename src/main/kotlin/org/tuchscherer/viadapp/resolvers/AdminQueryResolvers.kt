@@ -140,7 +140,7 @@ class AdminStatsTopPostsResolver(
         val typeByPostId = postTypeLookupPort.getPostTypes(topIds)
         return topIds.mapNotNull { postId ->
             if (typeByPostId[postId] != PostKind.CHECKLIST_POST) {
-                ctx.nodeRef(ctx.globalIDFor(ViaductBlogPost.Reflection, postId.toString()))
+                ctx.ref(ctx.globalIDFor(ViaductBlogPost.Reflection, postId.toString()))
             } else null
         }
     }

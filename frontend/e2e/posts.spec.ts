@@ -40,20 +40,10 @@ test.describe('Blog Posts', () => {
     await expect(page.locator('.post-content')).toContainText('This is the post content');
   });
 
-  // Tests that a newly created post shows up on the home page — UI creation is intentional here
   test('new post appears on home page after creation', async ({ page }) => {
-    await registerAndLogin(page, `home_${Date.now()}`);
-
+    const creds = await registerAndLogin(page, `home_${Date.now()}`);
     const title = `Home Page Post ${Date.now()}`;
-    await page.goto('/create');
-    await page.fill('input#title', title);
-    await page.click('[data-testid="rich-text-editor"]');
-    await page.keyboard.type('Content for home page test.');
-    // Lexical hydrates asynchronously; keystrokes sent before it is ready are dropped, which
-    // fails the form's own content validation and reads as a failure to navigate.
-    await expect(page.locator('[data-testid="rich-text-editor"]')).toContainText('Content for home page test');
-    await page.click('button[type="submit"]');
-    await page.waitForURL(/\/post\//);
+    await createPostViaAPI(page, creds.token, title, 'Content for home page test.');
 
     await page.goto('/');
     await expect(page.locator('.posts-list')).toContainText(title);

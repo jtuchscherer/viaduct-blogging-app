@@ -18,7 +18,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.koin.core.context.GlobalContext
 import viaduct.api.grts.Mutation_SuggestChecklistItem_Arguments
-import viaduct.api.grts.Query
 import viaduct.api.testing.ResolverTestBase
 import java.util.UUID
 
@@ -26,8 +25,6 @@ class SuggestChecklistItemResolverTest : ResolverTestBase() {
 
     private lateinit var mockUser: User
     private val userId = UUID.randomUUID()
-
-    private fun queryObj() = Query.Builder(context).build()
 
     @BeforeEach
     fun setup() {
@@ -46,14 +43,13 @@ class SuggestChecklistItemResolverTest : ResolverTestBase() {
             .build()
 
         val result = runMutationFieldResolver(resolver) {
-            queryValue = queryObj()
             arguments = args
             requestContext = RequestContext(user = mockUser)
         }
 
         assertNotNull(result)
         // NoOpAIService returns "Item ${size + 1}"
-        assertEquals("Item 4", result.getSuggestedText())
+        assertEquals("Item 4", result.getSuggestedTextOrThrow())
     }
 
     @Test
@@ -64,13 +60,12 @@ class SuggestChecklistItemResolverTest : ResolverTestBase() {
             .build()
 
         val result = runMutationFieldResolver(resolver) {
-            queryValue = queryObj()
             arguments = args
             requestContext = RequestContext(user = mockUser)
         }
 
         assertNotNull(result)
-        assertEquals("Item 4", result.getSuggestedText())
+        assertEquals("Item 4", result.getSuggestedTextOrThrow())
     }
 
     @Test
@@ -108,7 +103,6 @@ class SuggestChecklistItemResolverTest : ResolverTestBase() {
         assertThrows<AuthenticationException> {
             runBlocking {
                 runMutationFieldResolver(resolver) {
-                    queryValue = queryObj()
                     arguments = args
                     requestContext = RequestContext()
                 }
@@ -160,13 +154,12 @@ class SuggestChecklistItemResolverTest : ResolverTestBase() {
             .build()
 
         val result = runMutationFieldResolver(resolver) {
-            queryValue = queryObj()
             arguments = args
             requestContext = RequestContext(user = mockUser)
         }
 
         // NoOpAIService returns "Item ${size + 1}"
-        assertEquals("Item 101", result.getSuggestedText())
+        assertEquals("Item 101", result.getSuggestedTextOrThrow())
     }
 
     @Test

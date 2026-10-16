@@ -3,7 +3,9 @@ package org.tuchscherer.viadapp.resolvers
 import org.tuchscherer.auth.AuthorizationException
 import org.tuchscherer.auth.NotFoundException
 import org.tuchscherer.auth.requireAuth
+import org.tuchscherer.database.Post
 import org.tuchscherer.database.PostStatus
+import org.tuchscherer.database.User
 import org.tuchscherer.database.repositories.PostRepository
 import org.tuchscherer.viadapp.resolvers.resolverbases.MutationResolvers
 import viaduct.api.resolver.Resolver
@@ -56,9 +58,7 @@ class UpdatePostResolver(
         val existingPost = postRepository.findById(postId)
             ?: throw NotFoundException("Post not found")
 
-        if (existingPost.authorId != user.id) {
-            throw AuthorizationException("You are not authorized to update this post")
-        }
+        existingPost.requireAuthor(user, "update")
 
         val updatedPost = postRepository.updateById(
             id = postId,
@@ -81,10 +81,14 @@ class DeletePostResolver(
         val post = postRepository.findById(postId)
             ?: throw NotFoundException("Post not found")
 
-        if (post.authorId != user.id) {
-            throw AuthorizationException("You are not authorized to delete this post")
-        }
+        post.requireAuthor(user, "delete")
 
         return postRepository.delete(postId)
+    }
+}
+
+private fun Post.requireAuthor(user: User, action: String) {
+    if (authorId != user.id) {
+        throw AuthorizationException("You are not authorized to $action this post")
     }
 }

@@ -15,5 +15,5 @@ import viaduct.api.resolver.Resolver
 class BlogPostReadTimeMinutesBatchResolver : BlogPostResolvers.ReadTimeMinutes() {
 
     override suspend fun batchResolve(contexts: List<Context>): List<FieldValue<Double>> =
-        contexts.map { ctx -> FieldValue.ofValue(estimateReadTime(ctx.getObjectValue().getContent())) }
+        contexts.map { ctx -> FieldValue.ofValue(estimateReadTime(ctx.getObjectValue().getContentOrThrow())) }
 }

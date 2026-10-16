@@ -66,8 +66,8 @@ class PostCommentsResolverTest : ResolverTestBase() {
             }
 
         assertEquals(1, result.size)
-        assertEquals(commentId.toString(), result[0].getId().internalID)
-        assertEquals("Test comment content", result[0].getContent())
+        assertEquals(commentId.toString(), result[0].getIdOrThrow().internalID)
+        assertEquals("Test comment content", result[0].getContentOrThrow())
     }
 
     @Test

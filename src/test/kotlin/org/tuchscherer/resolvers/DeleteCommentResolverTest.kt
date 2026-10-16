@@ -35,8 +35,6 @@ class DeleteCommentResolverTest : ResolverTestBase() {
     private val postId = UUID.randomUUID()
     private val commentId = UUID.randomUUID()
 
-    private fun queryObj() = Query.Builder(context).build()
-
     @BeforeEach
     fun setup() {
         commentRepository = mockk<CommentRepository>()
@@ -72,7 +70,6 @@ class DeleteCommentResolverTest : ResolverTestBase() {
         every { commentRepository.delete(commentId) } returns true
 
         val result = runMutationFieldResolver(resolver) {
-            queryValue = queryObj()
             arguments = args
             requestContext = RequestContext(user = mockUser)
             }
@@ -89,7 +86,6 @@ class DeleteCommentResolverTest : ResolverTestBase() {
 
         assertThrows<AuthenticationException> {
             runMutationFieldResolver(resolver) {
-                queryValue = queryObj()
                 arguments = args
                 requestContext = RequestContext()
                 }
@@ -110,7 +106,6 @@ class DeleteCommentResolverTest : ResolverTestBase() {
 
         assertThrows<NotFoundException> {
             runMutationFieldResolver(resolver) {
-                queryValue = queryObj()
                 arguments = args
                 requestContext = RequestContext(user = mockUser)
                 }
@@ -132,7 +127,6 @@ class DeleteCommentResolverTest : ResolverTestBase() {
 
         assertThrows<AuthorizationException> {
             runMutationFieldResolver(resolver) {
-                queryValue = queryObj()
                 arguments = args
                 requestContext = RequestContext(user = mockUser)
                 }

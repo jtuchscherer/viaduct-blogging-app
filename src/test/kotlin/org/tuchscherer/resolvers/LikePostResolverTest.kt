@@ -24,7 +24,6 @@ import org.koin.dsl.module
 import viaduct.api.grts.Like as ViaductLike
 import viaduct.api.grts.Mutation_LikePost_Arguments
 import viaduct.api.grts.BlogPost as ViaductBlogPost
-import viaduct.api.grts.Query
 import viaduct.api.testing.ResolverTestBase
 import java.time.LocalDateTime
 import java.util.UUID
@@ -39,8 +38,6 @@ class LikePostResolverTest : ResolverTestBase() {
     private val userId = UUID.randomUUID()
     private val postId = UUID.randomUUID()
     private val likeId = UUID.randomUUID()
-
-    private fun queryObj() = Query.Builder(context).build()
 
     @BeforeEach
     fun setup() {
@@ -83,13 +80,12 @@ class LikePostResolverTest : ResolverTestBase() {
         } returns mockLike
 
         val result = runMutationFieldResolver(resolver) {
-            queryValue = queryObj()
             arguments = args
             requestContext = RequestContext(user = mockUser)
             }
 
         assertNotNull(result)
-        assertEquals(likeId.toString(), result.getId().internalID)
+        assertEquals(likeId.toString(), result.getIdOrThrow().internalID)
     }
 
     @Test
@@ -101,13 +97,12 @@ class LikePostResolverTest : ResolverTestBase() {
         every { likeRepository.findByPostAndUser(mockPost.id.value, mockUser.id.value) } returns mockLike
 
         val result = runMutationFieldResolver(resolver) {
-            queryValue = queryObj()
             arguments = args
             requestContext = RequestContext(user = mockUser)
             }
 
         assertNotNull(result)
-        assertEquals(likeId.toString(), result.getId().internalID)
+        assertEquals(likeId.toString(), result.getIdOrThrow().internalID)
         verify(exactly = 0) { likeRepository.create(any(), any(), any()) }
     }
 
@@ -118,7 +113,6 @@ class LikePostResolverTest : ResolverTestBase() {
 
         assertThrows<AuthenticationException> {
             runMutationFieldResolver(resolver) {
-                queryValue = queryObj()
                 arguments = args
                 requestContext = RequestContext()
                 }
@@ -136,7 +130,6 @@ class LikePostResolverTest : ResolverTestBase() {
 
         assertThrows<NotFoundException> {
             runMutationFieldResolver(resolver) {
-                queryValue = queryObj()
                 arguments = args
                 requestContext = RequestContext(user = mockUser)
                 }

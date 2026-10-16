@@ -2,14 +2,28 @@
 
 A full-stack blogging application with a Kotlin/Viaduct GraphQL backend and a React/TypeScript frontend.
 
+The backend uses Viaduct **3.0.0-rc.1**, Java **25**, Kotlin **2.3.21**, and the Gradle **9.3.1** wrapper.
+Viaduct's settings plugin version in `gradle.properties` must match the version in
+`gradle/libs.versions.toml`, which also aligns the application/module plugins, API, runtime, and test fixtures.
+See [Viaduct 3 upgrade notes](VIADUCT_3_UPGRADE.md) for compatibility changes and recommended follow-ups.
+
 ## Requirements
 
-- Java JDK 21
+- Java JDK 25 (used to compile, test, and run all backend modules)
 - Node.js + npm
 - `jq` — used by `query-tests.sh` to read JSON responses
 - (Optional) Podman + `podman compose` — for containerised deployment
 - (Optional) `psql` — only needed to run `seed-database.sh` manually
 - (Optional) Ollama — for AI features (rephrase, content suggestions)
+
+Set `JAVA_HOME` to your JDK 25 installation. On macOS, after installing a JDK:
+
+```bash
+export JAVA_HOME=$(/usr/libexec/java_home -v 25)
+export PATH="$JAVA_HOME/bin:$PATH"
+```
+
+The shared Gradle toolchain selects Java 25 for compilation, tests, and the application.
 
 ## Quick Start
 
@@ -219,7 +233,9 @@ Current counts live in `TODO.md`, which is updated as part of finishing a phase.
 
 ## Kotlin Static Analysis
 
-Detekt 1.23.8 analyzes Kotlin production and test sources in the application and all four modules. It inherits its bundled defaults and applies the shared [detekt.yml](detekt.yml). It is part of Gradle's `check` task, so `./gradlew build` runs it automatically and fails on findings.
+Detekt 2.0.0-alpha.3 analyzes Kotlin production and test sources in the application and all four modules. This version supports Java 25 and Kotlin 2.3.21; Detekt 1.23.8's bundled compiler cannot run on Java 25.
+
+It inherits its bundled defaults and applies the shared [detekt.yml](detekt.yml). It is part of Gradle's `check` task, so `./gradlew build` runs it automatically and fails on findings.
 
 The configuration permits test/Ktor wildcard imports, long test lines, schema column widths, cohesive repository APIs, and guard clauses. Other default checks and thresholds remain active. A few method-level exceptions explain guard clauses and adapter error boundaries that the analyzer cannot distinguish. The original 229 findings and their rationale are recorded in [DETEKT_AUDIT.md](DETEKT_AUDIT.md); there is no baseline or ignored-failure setting.
 

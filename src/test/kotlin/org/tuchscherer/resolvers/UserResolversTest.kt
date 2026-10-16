@@ -67,10 +67,10 @@ class UserResolversTest : ResolverTestBase() {
             }
 
         assertNotNull(result)
-        assertEquals(userId.toString(), result!!.getId().internalID)
-        assertEquals("testuser", result.getUsername())
-        assertEquals("test@example.com", result.getEmail())
-        assertEquals("Test User", result.getName())
+        assertEquals(userId.toString(), result!!.getIdOrThrow().internalID)
+        assertEquals("testuser", result.getUsernameOrThrow())
+        assertEquals("test@example.com", result.getEmailOrThrow())
+        assertEquals("Test User", result.getNameOrThrow())
     }
 
     @Test
@@ -106,7 +106,7 @@ class UserResolversTest : ResolverTestBase() {
     private fun batchCtx(id: UUID = userId): UserResolvers.IsAdmin.Context {
         val ctx = mockk<UserResolvers.IsAdmin.Context>(relaxed = true)
         val globalId = this@UserResolversTest.globalIDFor(ViaductUser.Reflection, id.toString())
-        coEvery { ctx.getObjectValue().getId() } returns globalId
+        coEvery { ctx.getObjectValue().getIdOrThrow() } returns globalId
         return ctx
     }
 

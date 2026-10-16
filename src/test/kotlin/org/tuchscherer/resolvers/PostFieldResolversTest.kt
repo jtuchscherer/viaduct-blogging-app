@@ -3,8 +3,7 @@
 package org.tuchscherer.resolvers
 
 import org.tuchscherer.database.Comment
-import org.tuchscherer.database.Posts
-import org.tuchscherer.database.User
+import org.tuchscherer.auth.NotFoundException
 import org.tuchscherer.database.repositories.CommentRepository
 import org.tuchscherer.database.repositories.PostRepository
 import org.tuchscherer.viadapp.resolvers.PostAuthorResolver
@@ -20,7 +19,7 @@ import org.koin.core.context.GlobalContext
 import org.koin.dsl.module
 import viaduct.api.grts.*
 import viaduct.api.grts.BlogPost as ViaductBlogPost
-import viaduct.api.grts.Comment as ViaductComment
+import viaduct.api.grts.User as ViaductUser
 import viaduct.api.types.Arguments.NoArguments
 import viaduct.api.testing.ResolverTestBase
 import java.time.LocalDateTime
@@ -30,7 +29,6 @@ class PostFieldResolversTest : ResolverTestBase() {
 
     private lateinit var postRepository: PostRepository
     private lateinit var commentRepository: CommentRepository
-    private lateinit var mockUser: User
     private lateinit var mockComment: Comment
     private val userId = UUID.randomUUID()
     private val postId = UUID.randomUUID()
@@ -51,18 +49,9 @@ class PostFieldResolversTest : ResolverTestBase() {
         postRepository = mockk<PostRepository>()
         commentRepository = mockk<CommentRepository>()
 
-        mockUser = mockk<User>(relaxed = true)
-        every { mockUser.id } returns EntityID(userId, mockk())
-        every { mockUser.username } returns "testuser"
-        every { mockUser.email } returns "test@example.com"
-        every { mockUser.name } returns "Test User"
-        every { mockUser.createdAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
-
-        mockComment = mockk<Comment>(relaxed = true)
+        mockComment = mockk<Comment>()
         every { mockComment.id } returns EntityID(commentId, mockk())
         every { mockComment.content } returns "Test comment"
-        every { mockComment.postId } returns EntityID(postId, Posts)
-        every { mockComment.authorId } returns EntityID(userId, mockk())
         every { mockComment.createdAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
 
         GlobalContext.getOrNull()?.let { GlobalContext.stopKoin() }
@@ -77,17 +66,20 @@ class PostFieldResolversTest : ResolverTestBase() {
     // ── PostAuthorResolver ──────────────────────────────────────────────
 
     @Test
-    fun `PostAuthorResolver calls getAuthorIdsByPostIds in batch for found posts`() = runBlocking {
+    fun `PostAuthorResolver returns the post author reference`() = runBlocking {
         val resolver = PostAuthorResolver(postRepository)
         every { postRepository.getAuthorIdsByPostIds(listOf(postId)) } returns mapOf(postId to userId)
 
-        val ctx = mockk<BlogPostResolvers.Author.Context>(relaxed = true)
-        coEvery { ctx.getObjectValue().getId() } returns globalIDFor(ViaductBlogPost.Reflection, postId.toString())
+        val authorId = globalIDFor(ViaductUser.Reflection, userId.toString())
+        val author = ViaductUser.Builder(context).id(authorId).build()
+        val ctx = mockk<BlogPostResolvers.Author.Context>()
+        coEvery { ctx.getObjectValue() } returns postObj()
+        every { ctx.globalIDFor(ViaductUser.Reflection, userId.toString()) } returns authorId
+        every { ctx.ref(authorId) } returns author
 
-        // ctx.nodeRef requires a real framework InternalContext — refetch is verified via
-        // integration tests. Here we confirm the batch repository method is called.
-        runCatching { resolver.batchResolve(listOf(ctx)) }
-        verify { postRepository.getAuthorIdsByPostIds(listOf(postId)) }
+        val results = resolver.batchResolve(listOf(ctx))
+
+        assertEquals(authorId, results.single().get().getIdOrThrow())
     }
 
     @Test
@@ -95,13 +87,14 @@ class PostFieldResolversTest : ResolverTestBase() {
         val resolver = PostAuthorResolver(postRepository)
         every { postRepository.getAuthorIdsByPostIds(listOf(postId)) } returns emptyMap()
 
-        val ctx = mockk<BlogPostResolvers.Author.Context>(relaxed = true)
-        coEvery { ctx.getObjectValue().getId() } returns globalIDFor(ViaductBlogPost.Reflection, postId.toString())
+        val ctx = mockk<BlogPostResolvers.Author.Context>()
+        coEvery { ctx.getObjectValue() } returns postObj()
 
         val results = resolver.batchResolve(listOf(ctx))
 
         assertEquals(1, results.size)
-        assertTrue(results[0].isError)
+        val error = assertThrows(NotFoundException::class.java) { results.single().get() }
+        assertEquals("Post not found: $postId", error.message)
     }
 
     // ── PostCommentsFieldResolver ───────────────────────────────────────
@@ -118,8 +111,8 @@ class PostFieldResolversTest : ResolverTestBase() {
             }
 
         assertEquals(1, result.size)
-        assertEquals(commentId.toString(), result[0].getId().internalID)
-        assertEquals("Test comment", result[0].getContent())
+        assertEquals(commentId.toString(), result[0].getIdOrThrow().internalID)
+        assertEquals("Test comment", result[0].getContentOrThrow())
     }
 
     @Test
