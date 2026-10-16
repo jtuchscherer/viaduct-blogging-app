@@ -49,6 +49,13 @@ disappearing during update, using strict mocks. Clean code generation, applicati
 class-file versions, coverage reporting, and static analysis are additional
 compatibility checks.
 
+Review also found six existing exception tests in `UpdatePostResolverTest` whose
+inferred return types prevented JUnit discovery. Explicit `runBlocking<Unit>`
+return types make all eight tests in that class execute. Removed setup consisted
+of unused mock property stubs and unused global Koin initialization; the resolver
+receives its repository directly, and its successful result uses a separate
+updated-post mock.
+
 The Java 25 browser rerun exposed an intermittent WebKit failure during unnecessary
 UI setup in the home-feed test. That test now creates its post through the API
 fixture, following the repository's test convention. The dedicated create-post UI
@@ -93,7 +100,7 @@ the home-feed test setup, the final complete browser run passed with retries dis
 
 | Check | Final result |
 | --- | --- |
-| Backend unit/integration tests, including all modules | 591 passed; no failures, errors, or skips |
+| Backend unit/integration tests, including all modules | 597 passed; no failures, errors, or skips |
 | Frontend type-check and ESLint | Passed |
 | Frontend unit tests | 131 passed |
 | GraphQL query checks | 158 passed |
