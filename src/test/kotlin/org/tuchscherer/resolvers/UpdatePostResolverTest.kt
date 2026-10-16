@@ -44,7 +44,7 @@ class UpdatePostResolverTest : ResolverTestBase() {
     }
 
     @Test
-    fun `UpdatePostResolver updates post and returns updated title and content`() = runBlocking {
+    fun `UpdatePostResolver updates post and returns updated title and content`() = runBlocking<Unit> {
         val resolver = UpdatePostResolver(postRepository)
         val input = UpdatePostInput.Builder(context)
             .id(globalIDFor(ViaductBlogPost.Reflection, postId.toString()))
@@ -75,7 +75,7 @@ class UpdatePostResolverTest : ResolverTestBase() {
     }
 
     @Test
-    fun `UpdatePostResolver throws NotFoundException when post does not exist`() = runBlocking {
+    fun `UpdatePostResolver throws NotFoundException when post does not exist`() = runBlocking<Unit> {
         val resolver = UpdatePostResolver(postRepository)
         val input = UpdatePostInput.Builder(context).id(globalIDFor(ViaductBlogPost.Reflection, postId.toString())).title("Updated Title").build()
         val args = Mutation_UpdatePost_Arguments.Builder(context).input(input).build()
@@ -91,7 +91,7 @@ class UpdatePostResolverTest : ResolverTestBase() {
     }
 
     @Test
-    fun `UpdatePostResolver reports a post that disappears during update`() = runBlocking {
+    fun `UpdatePostResolver reports a post that disappears during update`() = runBlocking<Unit> {
         val resolver = UpdatePostResolver(postRepository)
         val input = UpdatePostInput.Builder(context)
             .id(globalIDFor(ViaductBlogPost.Reflection, postId.toString()))
@@ -112,7 +112,7 @@ class UpdatePostResolverTest : ResolverTestBase() {
     }
 
     @Test
-    fun `UpdatePostResolver throws AuthorizationException when user is not author`() = runBlocking {
+    fun `UpdatePostResolver throws AuthorizationException when user is not author`() = runBlocking<Unit> {
         val resolver = UpdatePostResolver(postRepository)
         val input = UpdatePostInput.Builder(context).id(globalIDFor(ViaductBlogPost.Reflection, postId.toString())).title("Updated Title").build()
         val args = Mutation_UpdatePost_Arguments.Builder(context).input(input).build()
@@ -129,7 +129,7 @@ class UpdatePostResolverTest : ResolverTestBase() {
     }
 
     @Test
-    fun `UpdatePostResolver throws IllegalArgumentException for blank title`() = runBlocking {
+    fun `UpdatePostResolver throws IllegalArgumentException for blank title`() = runBlocking<Unit> {
         val resolver = UpdatePostResolver(postRepository)
         val input = UpdatePostInput.Builder(context).id(globalIDFor(ViaductBlogPost.Reflection, postId.toString())).title("   ").build()
         val args = Mutation_UpdatePost_Arguments.Builder(context).input(input).build()
@@ -143,7 +143,7 @@ class UpdatePostResolverTest : ResolverTestBase() {
     }
 
     @Test
-    fun `UpdatePostResolver throws IllegalArgumentException for title exceeding 500 characters`() = runBlocking {
+    fun `UpdatePostResolver throws IllegalArgumentException for title exceeding 500 characters`() = runBlocking<Unit> {
         val resolver = UpdatePostResolver(postRepository)
         val input = UpdatePostInput.Builder(context).id(globalIDFor(ViaductBlogPost.Reflection, postId.toString())).title("a".repeat(501)).build()
         val args = Mutation_UpdatePost_Arguments.Builder(context).input(input).build()
@@ -157,7 +157,7 @@ class UpdatePostResolverTest : ResolverTestBase() {
     }
 
     @Test
-    fun `UpdatePostResolver throws IllegalArgumentException for blank content`() = runBlocking {
+    fun `UpdatePostResolver throws IllegalArgumentException for blank content`() = runBlocking<Unit> {
         val resolver = UpdatePostResolver(postRepository)
         val input = UpdatePostInput.Builder(context).id(globalIDFor(ViaductBlogPost.Reflection, postId.toString())).content("   ").build()
         val args = Mutation_UpdatePost_Arguments.Builder(context).input(input).build()
@@ -171,7 +171,7 @@ class UpdatePostResolverTest : ResolverTestBase() {
     }
 
     @Test
-    fun `UpdatePostResolver throws IllegalArgumentException for content exceeding 100000 characters`() = runBlocking {
+    fun `UpdatePostResolver throws IllegalArgumentException for content exceeding 100000 characters`() = runBlocking<Unit> {
         val resolver = UpdatePostResolver(postRepository)
         val input = UpdatePostInput.Builder(context).id(globalIDFor(ViaductBlogPost.Reflection, postId.toString())).content("a".repeat(100_001)).build()
         val args = Mutation_UpdatePost_Arguments.Builder(context).input(input).build()
