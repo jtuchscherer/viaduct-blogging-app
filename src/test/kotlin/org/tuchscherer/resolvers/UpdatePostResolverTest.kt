@@ -17,11 +17,8 @@ import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.koin.core.context.GlobalContext
-import org.koin.dsl.module
 import viaduct.api.grts.Mutation_UpdatePost_Arguments
 import viaduct.api.grts.BlogPost as ViaductBlogPost
-import viaduct.api.grts.Query
 import viaduct.api.grts.UpdatePostInput
 import viaduct.api.testing.ResolverTestBase
 import java.time.LocalDateTime
@@ -35,29 +32,15 @@ class UpdatePostResolverTest : ResolverTestBase() {
     private val userId = UUID.randomUUID()
     private val postId = UUID.randomUUID()
 
-    private fun queryObj() = Query.Builder(context).build()
-
     @BeforeEach
     fun setup() {
         postRepository = mockk()
 
-        mockUser = mockk(relaxed = true)
+        mockUser = mockk()
         every { mockUser.id } returns EntityID(userId, mockk())
-        every { mockUser.username } returns "testuser"
 
-        mockPost = mockk(relaxed = true)
-        every { mockPost.id } returns EntityID(postId, mockk())
-        every { mockPost.title } returns "Test Post"
-        every { mockPost.content } returns "Test content"
-        every { mockPost.authorId } returns EntityID(userId, mockk())
-        every { mockPost.createdAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
-        every { mockPost.updatedAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
-        every { mockPost.status } returns PostStatus.PUBLISHED
-
-        GlobalContext.getOrNull()?.let { GlobalContext.stopKoin() }
-        org.koin.core.context.startKoin {
-            modules(module { single { postRepository } })
-        }
+        mockPost = mockk()
+        every { mockPost.authorId } returns mockUser.id
     }
 
     @Test
@@ -71,26 +54,24 @@ class UpdatePostResolverTest : ResolverTestBase() {
         val args = Mutation_UpdatePost_Arguments.Builder(context).input(input).build()
 
         every { postRepository.findById(postId) } returns mockPost
-        every { mockPost.authorId } returns mockUser.id
-
-        val updatedPost = mockk<Post>(relaxed = true)
+        val updatedPost = mockk<Post>()
         every { updatedPost.id } returns EntityID(postId, mockk())
         every { updatedPost.title } returns "Updated Title"
         every { updatedPost.content } returns "Updated content"
         every { updatedPost.createdAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
         every { updatedPost.updatedAt } returns LocalDateTime.of(2025, 1, 1, 12, 0)
         every { updatedPost.status } returns PostStatus.PUBLISHED
+        every { updatedPost.publishedAt } returns null
         every { postRepository.updateById(postId, "Updated Title", "Updated content") } returns updatedPost
 
         val result = runMutationFieldResolver(resolver) {
-            queryValue = queryObj()
             arguments = args
             requestContext = RequestContext(user = mockUser)
-            }
+        }
 
         assertNotNull(result)
-        assertEquals("Updated Title", result.getTitle())
-        assertEquals("Updated content", result.getContent())
+        assertEquals("Updated Title", result.getTitleOrThrow())
+        assertEquals("Updated content", result.getContentOrThrow())
     }
 
     @Test
@@ -103,11 +84,31 @@ class UpdatePostResolverTest : ResolverTestBase() {
 
         assertThrows<NotFoundException> {
             runMutationFieldResolver(resolver) {
-                queryValue = queryObj()
                 arguments = args
                 requestContext = RequestContext(user = mockUser)
-                }
+            }
         }
+    }
+
+    @Test
+    fun `UpdatePostResolver reports a post that disappears during update`() = runBlocking {
+        val resolver = UpdatePostResolver(postRepository)
+        val input = UpdatePostInput.Builder(context)
+            .id(globalIDFor(ViaductBlogPost.Reflection, postId.toString()))
+            .title("Updated Title")
+            .build()
+        val args = Mutation_UpdatePost_Arguments.Builder(context).input(input).build()
+        every { postRepository.findById(postId) } returns mockPost
+        every { postRepository.updateById(postId, "Updated Title", null) } returns null
+
+        val error = assertThrows<NotFoundException> {
+            runMutationFieldResolver(resolver) {
+                arguments = args
+                requestContext = RequestContext(user = mockUser)
+            }
+        }
+
+        assertEquals("Failed to update post", error.message)
     }
 
     @Test
@@ -121,10 +122,9 @@ class UpdatePostResolverTest : ResolverTestBase() {
 
         assertThrows<AuthorizationException> {
             runMutationFieldResolver(resolver) {
-                queryValue = queryObj()
                 arguments = args
                 requestContext = RequestContext(user = mockUser)
-                }
+            }
         }
     }
 
@@ -136,10 +136,9 @@ class UpdatePostResolverTest : ResolverTestBase() {
 
         assertThrows<IllegalArgumentException> {
             runMutationFieldResolver(resolver) {
-                queryValue = queryObj()
                 arguments = args
                 requestContext = RequestContext(user = mockUser)
-                }
+            }
         }
     }
 
@@ -151,10 +150,9 @@ class UpdatePostResolverTest : ResolverTestBase() {
 
         assertThrows<IllegalArgumentException> {
             runMutationFieldResolver(resolver) {
-                queryValue = queryObj()
                 arguments = args
                 requestContext = RequestContext(user = mockUser)
-                }
+            }
         }
     }
 
@@ -166,10 +164,9 @@ class UpdatePostResolverTest : ResolverTestBase() {
 
         assertThrows<IllegalArgumentException> {
             runMutationFieldResolver(resolver) {
-                queryValue = queryObj()
                 arguments = args
                 requestContext = RequestContext(user = mockUser)
-                }
+            }
         }
     }
 
@@ -181,10 +178,9 @@ class UpdatePostResolverTest : ResolverTestBase() {
 
         assertThrows<IllegalArgumentException> {
             runMutationFieldResolver(resolver) {
-                queryValue = queryObj()
                 arguments = args
                 requestContext = RequestContext(user = mockUser)
-                }
+            }
         }
     }
 }

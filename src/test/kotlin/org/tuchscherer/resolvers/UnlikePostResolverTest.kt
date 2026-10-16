@@ -34,8 +34,6 @@ class UnlikePostResolverTest : ResolverTestBase() {
     private val userId = UUID.randomUUID()
     private val postId = UUID.randomUUID()
 
-    private fun queryObj() = Query.Builder(context).build()
-
     @BeforeEach
     fun setup() {
         likeRepository = mockk<LikeRepository>()
@@ -69,7 +67,6 @@ class UnlikePostResolverTest : ResolverTestBase() {
         every { likeRepository.deleteByPostAndUser(mockPost.id.value, mockUser.id.value) } returns true
 
         val result = runMutationFieldResolver(resolver) {
-            queryValue = queryObj()
             arguments = args
             requestContext = RequestContext(user = mockUser)
             }
@@ -88,7 +85,6 @@ class UnlikePostResolverTest : ResolverTestBase() {
         every { likeRepository.deleteByPostAndUser(mockPost.id.value, mockUser.id.value) } returns false
 
         val result = runMutationFieldResolver(resolver) {
-            queryValue = queryObj()
             arguments = args
             requestContext = RequestContext(user = mockUser)
             }
@@ -105,7 +101,6 @@ class UnlikePostResolverTest : ResolverTestBase() {
 
         assertThrows<AuthenticationException> {
             runMutationFieldResolver(resolver) {
-                queryValue = queryObj()
                 arguments = args
                 requestContext = RequestContext()
                 }
@@ -126,7 +121,6 @@ class UnlikePostResolverTest : ResolverTestBase() {
 
         assertThrows<NotFoundException> {
             runMutationFieldResolver(resolver) {
-                queryValue = queryObj()
                 arguments = args
                 requestContext = RequestContext(user = mockUser)
                 }

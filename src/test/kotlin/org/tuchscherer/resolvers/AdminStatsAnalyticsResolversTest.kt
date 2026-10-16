@@ -88,7 +88,7 @@ class AdminStatsTopPostsResolverTest {
 
     private fun mockCtx(): AdminStatsResolvers.TopPosts.Context {
         val ctx = mockk<AdminStatsResolvers.TopPosts.Context>(relaxed = true)
-        every { ctx.nodeRef(any<GlobalID<ViaductBlogPost>>()) } returns mockk<ViaductBlogPost>(relaxed = true)
+        every { ctx.ref(any<GlobalID<ViaductBlogPost>>()) } returns mockk<ViaductBlogPost>(relaxed = true)
         return ctx
     }
 

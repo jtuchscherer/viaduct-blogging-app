@@ -1,8 +1,9 @@
 [versions]
-viaduct = "2.0.0"
-kotlin = "2.2.21"
-ksp = "2.2.21-2.0.5"
-detekt = "1.23.8"
+viaduct = "3.0.0-rc.1"
+kotlin = "2.3.21"
+ksp = "2.3.12"
+jacoco = "0.8.14"
+detekt = "2.0.0-alpha.3"
 ktor = "3.6.0"
 koin = "4.2.2"
 micrometer = "1.17.1"
@@ -36,7 +37,7 @@ viaduct-application = { id = "com.airbnb.viaduct.application-gradle-plugin", ver
 viaduct-module = { id = "com.airbnb.viaduct.module-gradle-plugin", version.ref = "viaduct" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
-detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
+detekt = { id = "dev.detekt", version.ref = "detekt" }
 
 [libraries]
 viaduct-api = { module = "com.airbnb.viaduct:api", version.ref = "viaduct" }
@@ -86,6 +87,7 @@ janino = { module = "org.codehaus.janino:janino", version.ref = "janino" }
 flyway-core = { module = "org.flywaydb:flyway-core", version.ref = "flyway" }
 flyway-database-postgresql = { module = "org.flywaydb:flyway-database-postgresql", version.ref = "flyway" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit-jupiter" }
+junit-jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api", version.ref = "junit-jupiter" }
 junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "junit-jupiter" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher", version.ref = "junit-platform-launcher" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }

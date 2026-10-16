@@ -599,7 +599,7 @@ else
     print_error "node(id) failed for User: $NODE_USER_RESPONSE"
 fi
 
-# Regression guard: Post.author is wired through ctx.nodeFor, so querying
+# Regression guard: Post.author is wired through ctx.ref, so querying
 # Post.author.username exercises the UserNodeResolver indirectly.
 POST_AUTHOR_RESPONSE=$(curl -s -X POST $GRAPHQL_URL \
     -H "Content-Type: application/json" \
@@ -1235,6 +1235,37 @@ else
 fi
 
 # --- Scope Enforcement (Negative Tests) ---
+
+# Viaduct 3 loads served schemas from scopes.yaml. Check the actual schemas as
+# well as operation rejection so a missing or overly broad scope cannot hide.
+SCHEMA_INTROSPECTION='{"query":"{ queryType: __type(name: \"Query\") { fields { name } } adminType: __type(name: \"AdminQueries\") { name } }"}'
+PUBLIC_SCHEMA_RESPONSE=$(curl -s -X POST "$GRAPHQL_URL" \
+    -H "Content-Type: application/json" \
+    -d "$SCHEMA_INTROSPECTION")
+
+if echo "$PUBLIC_SCHEMA_RESPONSE" | jq -e '
+    (.errors == null) and (.data.adminType == null) and
+    ([.data.queryType.fields[].name] | (index("posts") != null) and (index("admin") == null))
+' > /dev/null; then
+    print_success "Public schema exposes posts and hides admin fields and types"
+else
+    print_error "Public schema scope isolation failed: $PUBLIC_SCHEMA_RESPONSE"
+fi
+
+ADMIN_SCHEMA_RESPONSE=$(curl -s -X POST "$GRAPHQL_URL" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $ADMIN_TOKEN" \
+    -H "X-Schema: admin" \
+    -d "$SCHEMA_INTROSPECTION")
+
+if echo "$ADMIN_SCHEMA_RESPONSE" | jq -e '
+    (.errors == null) and (.data.adminType.name == "AdminQueries") and
+    ([.data.queryType.fields[].name] | (index("posts") != null) and (index("admin") != null))
+' > /dev/null; then
+    print_success "Admin schema exposes both public and admin fields"
+else
+    print_error "Admin schema scope loading failed: $ADMIN_SCHEMA_RESPONSE"
+fi
 
 print_info "Testing scope enforcement: admin query without X-Schema header..."
 NO_SCHEMA_QUERY=$(curl -s -X POST $GRAPHQL_URL \

@@ -70,8 +70,8 @@ class PostsResolverTest : ResolverTestBase() {
             }
 
         assertEquals(1, result.size)
-        assertEquals(postId.toString(), result[0].getId().internalID)
-        assertEquals("Test Post", result[0].getTitle())
+        assertEquals(postId.toString(), result[0].getIdOrThrow().internalID)
+        assertEquals("Test Post", result[0].getTitleOrThrow())
     }
 
     @Test
@@ -128,7 +128,7 @@ class PostsResolverTest : ResolverTestBase() {
         val result = resolver.resolve(buildConnectionContext())
 
         assertNotNull(result)
-        assertEquals(1, result!!.getTotalCount())
+        assertEquals(1, result!!.getTotalCountOrThrow())
     }
 
     @Test
@@ -140,7 +140,7 @@ class PostsResolverTest : ResolverTestBase() {
         val result = resolver.resolve(buildConnectionContext())
 
         assertNotNull(result)
-        assertEquals(0, result!!.getTotalCount())
+        assertEquals(0, result!!.getTotalCountOrThrow())
     }
 
     @Test
@@ -163,11 +163,11 @@ class PostsResolverTest : ResolverTestBase() {
         val result = resolver.resolve(buildConnectionContext(first = 1, offset = 0))
 
         assertNotNull(result)
-        val pageInfo = result!!.getPageInfo()
-        assertTrue(pageInfo.getHasNextPage())
-        assertFalse(pageInfo.getHasPreviousPage())
-        assertNotNull(pageInfo.getStartCursor())
-        assertNotNull(pageInfo.getEndCursor())
+        val pageInfo = result!!.getPageInfoOrThrow()
+        assertTrue(pageInfo.getHasNextPageOrThrow())
+        assertFalse(pageInfo.getHasPreviousPageOrThrow())
+        assertNotNull(pageInfo.getStartCursorOrThrow())
+        assertNotNull(pageInfo.getEndCursorOrThrow())
     }
 
     @Test
@@ -179,9 +179,9 @@ class PostsResolverTest : ResolverTestBase() {
         val result = resolver.resolve(buildConnectionContext(first = 1, offset = 2))
 
         assertNotNull(result)
-        val pageInfo = result!!.getPageInfo()
-        assertTrue(pageInfo.getHasPreviousPage())
-        assertTrue(pageInfo.getHasNextPage())
+        val pageInfo = result!!.getPageInfoOrThrow()
+        assertTrue(pageInfo.getHasPreviousPageOrThrow())
+        assertTrue(pageInfo.getHasNextPageOrThrow())
     }
 
     @Test
@@ -193,11 +193,11 @@ class PostsResolverTest : ResolverTestBase() {
         val result = resolver.resolve(buildConnectionContext())
 
         assertNotNull(result)
-        assertEquals(0, result!!.getEdges()?.size ?: 0)
-        val pageInfo = result.getPageInfo()
-        assertFalse(pageInfo.getHasNextPage())
-        assertNull(pageInfo.getStartCursor())
-        assertNull(pageInfo.getEndCursor())
+        assertEquals(emptyList<PostEdge>(), result!!.getEdgesOrThrow())
+        val pageInfo = result.getPageInfoOrThrow()
+        assertFalse(pageInfo.getHasNextPageOrThrow())
+        assertNull(pageInfo.getStartCursorOrThrow())
+        assertNull(pageInfo.getEndCursorOrThrow())
     }
 
     @Test
@@ -213,7 +213,7 @@ class PostsResolverTest : ResolverTestBase() {
         val result = resolver.resolve(buildConnectionContext())
 
         assertNotNull(result)
-        assertEquals(2, result!!.getTotalCount())
-        assertEquals(2, result.getEdges()?.size)
+        assertEquals(2, result!!.getTotalCountOrThrow())
+        assertEquals(2, result.getEdgesOrThrow()?.size)
     }
 }

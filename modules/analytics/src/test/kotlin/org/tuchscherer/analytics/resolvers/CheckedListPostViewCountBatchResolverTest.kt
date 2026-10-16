@@ -38,7 +38,7 @@ class CheckedListPostViewCountBatchResolverTest {
         val globalId = mockk<GlobalID<ViaductCheckedListPost>>()
         every { globalId.internalID } returns postId.toString()
         val ctx = mockk<CheckedListPostResolvers.ViewCount.Context>(relaxed = true)
-        coEvery { ctx.getObjectValue().getId() } returns globalId
+        coEvery { ctx.getObjectValue().getIdOrThrow() } returns globalId
         return ctx
     }
 

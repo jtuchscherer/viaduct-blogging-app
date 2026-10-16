@@ -14,14 +14,14 @@ class CheckedListPostReadTimeMinutesBatchResolverTest {
 
     private fun makeItem(text: String): ViaductCheckedListItem {
         val item = mockk<ViaductCheckedListItem>(relaxed = true)
-        coEvery { item.getText() } returns text
+        coEvery { item.getTextOrThrow() } returns text
         return item
     }
 
     private fun mockContext(itemTexts: List<String>): CheckedListPostResolvers.ReadTimeMinutes.Context {
         val ctx = mockk<CheckedListPostResolvers.ReadTimeMinutes.Context>(relaxed = true)
         val items = itemTexts.map { makeItem(it) }
-        coEvery { ctx.getObjectValue().getItems() } returns items
+        coEvery { ctx.getObjectValue().getItemsOrThrow() } returns items
         return ctx
     }
 

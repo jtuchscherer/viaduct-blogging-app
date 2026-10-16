@@ -20,7 +20,6 @@ import org.koin.dsl.module
 import viaduct.api.grts.CreatePostInput
 import viaduct.api.grts.Mutation_CreatePost_Arguments
 import viaduct.api.grts.BlogPost as ViaductBlogPost
-import viaduct.api.grts.Query
 import viaduct.api.testing.ResolverTestBase
 import java.time.LocalDateTime
 import java.util.UUID
@@ -32,8 +31,6 @@ class CreatePostResolverTest : ResolverTestBase() {
     private lateinit var mockPost: Post
     private val userId = UUID.randomUUID()
     private val postId = UUID.randomUUID()
-
-    private fun queryObj() = Query.Builder(context).build()
 
     @BeforeEach
     fun setup() {
@@ -75,15 +72,14 @@ class CreatePostResolverTest : ResolverTestBase() {
         } returns mockPost
 
         val result = runMutationFieldResolver(resolver) {
-            queryValue = queryObj()
             arguments = args
             requestContext = RequestContext(user = mockUser)
             }
 
         assertNotNull(result)
-        assertEquals(postId.toString(), result.getId().internalID)
-        assertEquals("Test Post", result.getTitle())
-        assertEquals("Test content", result.getContent())
+        assertEquals(postId.toString(), result.getIdOrThrow().internalID)
+        assertEquals("Test Post", result.getTitleOrThrow())
+        assertEquals("Test content", result.getContentOrThrow())
     }
 
     @Test
@@ -94,7 +90,6 @@ class CreatePostResolverTest : ResolverTestBase() {
 
         assertThrows<AuthenticationException> {
             runMutationFieldResolver(resolver) {
-                queryValue = queryObj()
                 arguments = args
                 requestContext = RequestContext()
                 }
@@ -109,7 +104,6 @@ class CreatePostResolverTest : ResolverTestBase() {
 
         assertThrows<IllegalArgumentException> {
             runMutationFieldResolver(resolver) {
-                queryValue = queryObj()
                 arguments = args
                 requestContext = RequestContext(user = mockUser)
                 }
@@ -124,7 +118,6 @@ class CreatePostResolverTest : ResolverTestBase() {
 
         assertThrows<IllegalArgumentException> {
             runMutationFieldResolver(resolver) {
-                queryValue = queryObj()
                 arguments = args
                 requestContext = RequestContext(user = mockUser)
                 }
@@ -139,7 +132,6 @@ class CreatePostResolverTest : ResolverTestBase() {
 
         assertThrows<IllegalArgumentException> {
             runMutationFieldResolver(resolver) {
-                queryValue = queryObj()
                 arguments = args
                 requestContext = RequestContext(user = mockUser)
                 }
@@ -154,7 +146,6 @@ class CreatePostResolverTest : ResolverTestBase() {
 
         assertThrows<IllegalArgumentException> {
             runMutationFieldResolver(resolver) {
-                queryValue = queryObj()
                 arguments = args
                 requestContext = RequestContext(user = mockUser)
                 }

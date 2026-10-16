@@ -73,7 +73,7 @@ class MyPostsResolverTest : ResolverTestBase() {
             }
 
         assertEquals(1, result.size)
-        assertEquals(postId.toString(), result[0].getId().internalID)
+        assertEquals(postId.toString(), result[0].getIdOrThrow().internalID)
     }
 
     @Test

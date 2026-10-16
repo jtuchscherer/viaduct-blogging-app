@@ -15,13 +15,13 @@ class PostAuthorResolver(
     private val postRepository: PostRepository,
 ) : BlogPostResolvers.Author() {
     override suspend fun batchResolve(contexts: List<Context>): List<FieldValue<ViaductUser>> {
-        val postIds = contexts.map { UUID.fromString(it.getObjectValue().getId().internalID) }
+        val postIds = contexts.map { UUID.fromString(it.getObjectValue().getIdOrThrow().internalID) }
         val authorIdByPostId = postRepository.getAuthorIdsByPostIds(postIds)
 
         return contexts.zip(postIds).map { (ctx, postId) ->
             val authorId = authorIdByPostId[postId]
                 ?: return@map FieldValue.ofError(NotFoundException("Post not found: $postId"))
-            FieldValue.ofValue(ctx.nodeRef(ctx.globalIDFor(ViaductUser.Reflection, authorId.toString())))
+            FieldValue.ofValue(ctx.ref(ctx.globalIDFor(ViaductUser.Reflection, authorId.toString())))
         }
     }
 }
@@ -31,7 +31,7 @@ class PostCommentsFieldResolver(
     private val commentRepository: CommentRepository,
 ) : BlogPostResolvers.Comments() {
     override suspend fun resolve(ctx: Context): List<ViaductComment> {
-        val postId = UUID.fromString(ctx.getObjectValue().getId().internalID)
+        val postId = UUID.fromString(ctx.getObjectValue().getIdOrThrow().internalID)
 
         return commentRepository.findByPostId(postId).map { it.toViaductComment(ctx) }
     }

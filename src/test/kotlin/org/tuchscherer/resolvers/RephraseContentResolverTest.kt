@@ -17,7 +17,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.koin.core.context.GlobalContext
 import viaduct.api.grts.Mutation_RephraseContent_Arguments
-import viaduct.api.grts.Query
 import viaduct.api.grts.RephraseTone
 import viaduct.api.testing.ResolverTestBase
 import java.util.UUID
@@ -26,8 +25,6 @@ class RephraseContentResolverTest : ResolverTestBase() {
 
     private lateinit var mockUser: User
     private val userId = UUID.randomUUID()
-
-    private fun queryObj() = Query.Builder(context).build()
 
     @BeforeEach
     fun setup() {
@@ -47,13 +44,12 @@ class RephraseContentResolverTest : ResolverTestBase() {
             .build()
 
         val result = runMutationFieldResolver(resolver) {
-            queryValue = queryObj()
             arguments = args
             requestContext = RequestContext(user = mockUser)
         }
 
         assertNotNull(result)
-        assertEquals("[PROFESSIONAL] Hello world", result.getRephrasedContent())
+        assertEquals("[PROFESSIONAL] Hello world", result.getRephrasedContentOrThrow())
     }
 
     @Test
@@ -64,13 +60,12 @@ class RephraseContentResolverTest : ResolverTestBase() {
             .build()
 
         val result = runMutationFieldResolver(resolver) {
-            queryValue = queryObj()
             arguments = args
             requestContext = RequestContext(user = mockUser)
         }
 
         assertNotNull(result)
-        assertEquals("[PROFESSIONAL] Some content", result.getRephrasedContent())
+        assertEquals("[PROFESSIONAL] Some content", result.getRephrasedContentOrThrow())
     }
 
     @Test
@@ -82,13 +77,12 @@ class RephraseContentResolverTest : ResolverTestBase() {
             .build()
 
         val result = runMutationFieldResolver(resolver) {
-            queryValue = queryObj()
             arguments = args
             requestContext = RequestContext(user = mockUser)
         }
 
         assertNotNull(result)
-        assertEquals("[CASUAL] Hello world", result.getRephrasedContent())
+        assertEquals("[CASUAL] Hello world", result.getRephrasedContentOrThrow())
     }
 
     @Test
@@ -100,13 +94,12 @@ class RephraseContentResolverTest : ResolverTestBase() {
             .build()
 
         val result = runMutationFieldResolver(resolver) {
-            queryValue = queryObj()
             arguments = args
             requestContext = RequestContext(user = mockUser)
         }
 
         assertNotNull(result)
-        assertEquals("[CONCISE] Hello world", result.getRephrasedContent())
+        assertEquals("[CONCISE] Hello world", result.getRephrasedContentOrThrow())
     }
 
     @Test
@@ -118,7 +111,6 @@ class RephraseContentResolverTest : ResolverTestBase() {
 
         assertThrows<IllegalArgumentException> {
             runMutationFieldResolver(resolver) {
-                queryValue = queryObj()
                 arguments = args
                 requestContext = RequestContext(user = mockUser)
             }
@@ -134,7 +126,6 @@ class RephraseContentResolverTest : ResolverTestBase() {
 
         assertThrows<IllegalArgumentException> {
             runMutationFieldResolver(resolver) {
-                queryValue = queryObj()
                 arguments = args
                 requestContext = RequestContext(user = mockUser)
             }
@@ -150,7 +141,6 @@ class RephraseContentResolverTest : ResolverTestBase() {
 
         assertThrows<AuthenticationException> {
             runMutationFieldResolver(resolver) {
-                queryValue = queryObj()
                 arguments = args
                 requestContext = RequestContext()
             }
@@ -171,7 +161,6 @@ class RephraseContentResolverTest : ResolverTestBase() {
 
         val ex = assertThrows<AIServiceException> {
             runMutationFieldResolver(resolver) {
-                queryValue = queryObj()
                 arguments = args
                 requestContext = RequestContext(user = mockUser)
             }

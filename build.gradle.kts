@@ -81,10 +81,13 @@ dependencies {
     implementation(libs.koin.ktor)
 
     // Testing
-    testImplementation(libs.viaduct.test.fixtures)
+    // Viaduct's fixtures bundle JUnit 5 API classes. Prefer our matching JUnit 6 API,
+    // including its nullability annotations, on both compiler and runtime classpaths.
+    testImplementation(libs.junit.jupiter.api)
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.junit.jupiter.engine)
     testImplementation(libs.junit.platform.launcher)
+    testImplementation(libs.viaduct.test.fixtures)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.koin.test)
     testImplementation(libs.koin.test.junit5)
@@ -124,10 +127,22 @@ application {
 // needs allprojects rather than the root-only configurations.all block below.
 val opentelemetryVersion: String = libs.versions.opentelemetry.get()
 val bouncyCastleVersion: String = libs.versions.bouncycastle.get()
+val jacocoVersion: String = libs.versions.jacoco.get()
 allprojects {
-    plugins.withId("io.gitlab.arturbosch.detekt") {
-        extensions.configure<io.gitlab.arturbosch.detekt.extensions.DetektExtension> {
-            buildUponDefaultConfig = true
+    plugins.withId("org.jetbrains.kotlin.jvm") {
+        extensions.configure<org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension> {
+            jvmToolchain(25)
+        }
+    }
+    plugins.withId("jacoco") {
+        extensions.configure<org.gradle.testing.jacoco.plugins.JacocoPluginExtension> {
+            // JaCoCo 0.8.14 supports Java 25 class files for both tests and reports.
+            toolVersion = jacocoVersion
+        }
+    }
+    plugins.withId("dev.detekt") {
+        extensions.configure<dev.detekt.gradle.extensions.DetektExtension> {
+            buildUponDefaultConfig.set(true)
             config.setFrom(rootProject.file("detekt.yml"))
         }
     }

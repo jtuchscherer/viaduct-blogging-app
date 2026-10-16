@@ -46,25 +46,25 @@ class CheckedListPostFieldResolversTest {
 
     private fun mockCommentCountContext(): CheckedListPostResolvers.CommentCount.Context {
         val ctx = mockk<CheckedListPostResolvers.CommentCount.Context>(relaxed = true)
-        coEvery { ctx.getObjectValue().getId().internalID } returns postId.toString()
+        coEvery { ctx.getObjectValue().getIdOrThrow().internalID } returns postId.toString()
         return ctx
     }
 
     private fun mockLikeCountContext(): CheckedListPostResolvers.LikeCount.Context {
         val ctx = mockk<CheckedListPostResolvers.LikeCount.Context>(relaxed = true)
-        coEvery { ctx.getObjectValue().getId().internalID } returns postId.toString()
+        coEvery { ctx.getObjectValue().getIdOrThrow().internalID } returns postId.toString()
         return ctx
     }
 
     private fun mockIsLikedByMeContext(): CheckedListPostResolvers.IsLikedByMe.Context {
         val ctx = mockk<CheckedListPostResolvers.IsLikedByMe.Context>(relaxed = true)
-        coEvery { ctx.getObjectValue().getId().internalID } returns postId.toString()
+        coEvery { ctx.getObjectValue().getIdOrThrow().internalID } returns postId.toString()
         return ctx
     }
 
     private fun mockItemsContext(): CheckedListPostResolvers.Items.Context {
         val ctx = mockk<CheckedListPostResolvers.Items.Context>(relaxed = true)
-        coEvery { ctx.getObjectValue().getId().internalID } returns postId.toString()
+        coEvery { ctx.getObjectValue().getIdOrThrow().internalID } returns postId.toString()
         return ctx
     }
 

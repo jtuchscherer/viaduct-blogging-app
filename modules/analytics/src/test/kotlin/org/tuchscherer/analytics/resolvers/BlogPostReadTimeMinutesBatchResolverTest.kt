@@ -13,7 +13,7 @@ class BlogPostReadTimeMinutesBatchResolverTest {
 
     private fun mockContext(content: String): BlogPostResolvers.ReadTimeMinutes.Context {
         val ctx = mockk<BlogPostResolvers.ReadTimeMinutes.Context>(relaxed = true)
-        coEvery { ctx.getObjectValue().getContent() } returns content
+        coEvery { ctx.getObjectValue().getContentOrThrow() } returns content
         return ctx
     }
 

@@ -34,8 +34,6 @@ class DeletePostResolverTest : ResolverTestBase() {
     private val userId = UUID.randomUUID()
     private val postId = UUID.randomUUID()
 
-    private fun queryObj() = Query.Builder(context).build()
-
     @BeforeEach
     fun setup() {
         postRepository = mockk<PostRepository>()
@@ -71,7 +69,6 @@ class DeletePostResolverTest : ResolverTestBase() {
         every { postRepository.delete(postId) } returns true
 
         val result = runMutationFieldResolver(resolver) {
-            queryValue = queryObj()
             arguments = args
             requestContext = RequestContext(user = mockUser)
             }
@@ -88,7 +85,6 @@ class DeletePostResolverTest : ResolverTestBase() {
 
         assertThrows<AuthenticationException> {
             runMutationFieldResolver(resolver) {
-                queryValue = queryObj()
                 arguments = args
                 requestContext = RequestContext()
                 }
@@ -109,7 +105,6 @@ class DeletePostResolverTest : ResolverTestBase() {
 
         assertThrows<NotFoundException> {
             runMutationFieldResolver(resolver) {
-                queryValue = queryObj()
                 arguments = args
                 requestContext = RequestContext(user = mockUser)
                 }
@@ -131,7 +126,6 @@ class DeletePostResolverTest : ResolverTestBase() {
 
         assertThrows<AuthorizationException> {
             runMutationFieldResolver(resolver) {
-                queryValue = queryObj()
                 arguments = args
                 requestContext = RequestContext(user = mockUser)
                 }

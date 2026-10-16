@@ -49,8 +49,8 @@ class TrendingQueryResolverTest {
 
     private fun mockCtx(): QueryResolvers.Trending.Context {
         val ctx = mockk<QueryResolvers.Trending.Context>(relaxed = true)
-        every { ctx.nodeRef(any<GlobalID<ViaductBlogPost>>()) } returns mockk<ViaductBlogPost>(relaxed = true)
-        every { ctx.nodeRef(any<GlobalID<ViaductCheckedListPost>>()) } returns mockk<ViaductCheckedListPost>(relaxed = true)
+        every { ctx.ref(any<GlobalID<ViaductBlogPost>>()) } returns mockk<ViaductBlogPost>(relaxed = true)
+        every { ctx.ref(any<GlobalID<ViaductCheckedListPost>>()) } returns mockk<ViaductCheckedListPost>(relaxed = true)
         return ctx
     }
 
