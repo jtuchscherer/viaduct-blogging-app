@@ -24,12 +24,17 @@ plugins {
 
 dependencies {
     implementation(project(":modules:analytics"))
+    implementation(project(":modules:analytics-persistence"))
     implementation(project(":modules:checkedlist"))
     implementation(project(":modules:ai"))
     implementation(project(":modules:shared"))
 
     implementation(libs.viaduct.api)
     implementation(libs.viaduct.runtime)
+    implementation(libs.viaduct.java.runtime)
+    // Koin constructs Java resolvers whose generic supertypes refer to Java-generated types.
+    // The application plugin supplies those types separately at runtime.
+    compileOnly(project(path = ":", configuration = "viaductJavaGRTClasses"))
     // Align every Netty module, including Ktor's HTTP/3 and QUIC dependencies.
     implementation(enforcedPlatform(libs.netty.bom))
     // Koin and AI tracing also bring Ktor modules; keep them on the server's version.
@@ -88,6 +93,8 @@ dependencies {
     testImplementation(libs.junit.jupiter.engine)
     testImplementation(libs.junit.platform.launcher)
     testImplementation(libs.viaduct.test.fixtures)
+    // Kotlin tests exercise Java resolver contexts as well as Kotlin-generated types.
+    testImplementation(project(path = ":", configuration = "viaductJavaGRTClasses"))
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.koin.test)
     testImplementation(libs.koin.test.junit5)

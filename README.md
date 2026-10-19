@@ -1,11 +1,14 @@
 # Viaduct Blogging App
 
-A full-stack blogging application with a Kotlin/Viaduct GraphQL backend and a React/TypeScript frontend.
+A full-stack blogging application with a Java/Kotlin Viaduct GraphQL backend and a React/TypeScript frontend.
 
 The backend uses Viaduct **3.0.0-rc.1**, Java **25**, Kotlin **2.3.21**, and the Gradle **9.3.1** wrapper.
 Viaduct's settings plugin version in `gradle.properties` must match the version in
 `gradle/libs.versions.toml`, which also aligns the application/module plugins, API, runtime, and test fixtures.
 See [Viaduct 3 upgrade notes](VIADUCT_3_UPGRADE.md) for compatibility changes and recommended follow-ups.
+The Java analytics tenant extends Kotlin-owned posts with view counts, read time, and
+mixed-type trending. See [the implemented Java migration](JAVA_MODULE_MIGRATION_PLAN.md)
+for the module boundaries and an example query.
 
 ## Requirements
 
@@ -23,7 +26,8 @@ export JAVA_HOME=$(/usr/libexec/java_home -v 25)
 export PATH="$JAVA_HOME/bin:$PATH"
 ```
 
-The shared Gradle toolchain selects Java 25 for compilation, tests, and the application.
+Gradle selects Java 25 for compilation, tests, and the application. Kotlin projects
+share the toolchain convention; the Java analytics tenant declares it explicitly.
 
 ## Quick Start
 
@@ -220,20 +224,31 @@ If the database already has data it will prompt before clearing it.
 ## Running Tests
 
 ```bash
-./gradlew test                    # backend unit + integration tests
-cd frontend && npm test           # frontend unit tests (Vitest)
+./gradlew test                    # backend unit + integration tests in every module
+(cd frontend && bash test.sh)     # frontend type-check, lint, and unit tests
 ./query-tests.sh                  # API E2E tests (starts its own server)
 ./e2e.sh                          # Playwright browser tests (starts its own servers)
-cd frontend && npm run test:e2e   # Playwright only (servers must already be running)
 ```
+
+Run these suites in order, audit the changes for refactoring, then repeat all four.
+For Playwright alone with servers already running, use
+`(cd frontend && npm run test:e2e)`.
+
+Analytics tests in the root Kotlin test project exercise Java resolver classes;
+`MixedLanguageAnalyticsIntegrationTest` verifies real Java/Kotlin GraphQL execution.
+The Kotlin persistence adapter has its own H2 and SQLite integration tests. See
+[the migration guide](JAVA_MODULE_MIGRATION_PLAN.md#testing-analysis-and-coverage)
+for focused commands and Java coverage reports.
 
 Current counts live in `TODO.md`, which is updated as part of finishing a phase.
 
 ---
 
-## Kotlin Static Analysis
+## Kotlin and Java Static Analysis
 
-Detekt 2.0.0-alpha.3 analyzes Kotlin production and test sources in the application and all four modules. This version supports Java 25 and Kotlin 2.3.21; Detekt 1.23.8's bundled compiler cannot run on Java 25.
+Detekt 2.0.0-alpha.3 analyzes Kotlin production and test sources in the application,
+checkedlist, AI, shared, and analytics-persistence projects. This version supports
+Java 25 and Kotlin 2.3.21; Detekt 1.23.8's bundled compiler cannot run on Java 25.
 
 It inherits its bundled defaults and applies the shared [detekt.yml](detekt.yml). It is part of Gradle's `check` task, so `./gradlew build` runs it automatically and fails on findings.
 
@@ -241,10 +256,15 @@ The configuration permits test/Ktor wildcard imports, long test lines, schema co
 
 ```bash
 ./gradlew detekt                  # static analysis across all Kotlin projects
+./gradlew :modules:analytics:lintJava  # Java compiler lint, with warnings treated as errors
 ./gradlew build                   # compile, test, and run static analysis
 ```
 
 Reports are written to each project's `build/reports/detekt/` directory, including `detekt.html` and `detekt.sarif`.
+
+The Java analytics tenant's `lintJava` task recompiles handwritten production
+sources with `-Xlint:all -Werror -proc:none` against compiled generated types. It is
+part of `check`; generated-source warnings do not mask application warnings.
 
 ## Markdown Files
 
@@ -271,7 +291,7 @@ Instructions for Claude Code describing project conventions, coding standards, t
 └───────────────────────┬─────────────────────────────┘
                         │ HTTP
 ┌───────────────────────▼─────────────────────────────┐
-│  Backend (Kotlin + Viaduct + Ktor)  Port 8080       │
+│  Backend (Java/Kotlin + Viaduct + Ktor) Port 8080    │
 │  /graphql  — GraphQL API                            │
 │  /auth/*   — REST auth endpoints (register, login)  │
 │  /health   — health check with DB connectivity      │
@@ -283,9 +303,20 @@ Instructions for Claude Code describing project conventions, coding standards, t
 └─────────────────────────────────────────────────────┘
 ```
 
+The root application hosts the Kotlin core tenant and composes dependencies with
+Koin. `:modules:checkedlist` is a Kotlin tenant; `:modules:analytics` is a pure Java
+tenant whose four batched fields extend both post types. The ordinary Kotlin
+`:modules:analytics-persistence` library implements analytics' Java repository
+interface with Exposed. AI and shared helpers remain Kotlin libraries.
+
+Java uses `viaduct.java.grts`, Kotlin uses `viaduct.api.grts`, and Viaduct carries
+engine data between them. The root includes both rc.1 runtimes; the Java plugin
+wires its annotation processor and registry. Existing schema signatures and stored
+view data are preserved.
+
 **Key decisions:**
 - Single Ktor server on port 8080 — auth routes and GraphQL share one process, no CORS complexity
-- Schema-first: `src/main/viaduct/schema/schema.graphqls` is the source of truth; Viaduct generates resolver base classes
+- Schema-first: root and tenant SDL under each project's `src/main/viaduct/schema` define the GraphQL contract; Viaduct generates resolver base classes
 - Repository pattern — all database access is behind interfaces; resolvers never touch the DB directly
 - Koin dependency injection — `KoinTenantCodeInjector` bridges Viaduct's resolver instantiation with Koin
 - JWT stored in `localStorage` as `authToken` + `authUser`
