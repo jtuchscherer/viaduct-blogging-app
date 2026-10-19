@@ -44,7 +44,7 @@ class UpdatePostResolverTest : ResolverTestBase() {
     }
 
     @Test
-    fun `UpdatePostResolver updates post and returns updated title and content`() = runBlocking<Unit> {
+    fun `UpdatePostResolver updates post and returns owned title and identity`() = runBlocking<Unit> {
         val resolver = UpdatePostResolver(postRepository)
         val input = UpdatePostInput.Builder(context)
             .id(globalIDFor(ViaductBlogPost.Reflection, postId.toString()))
@@ -57,7 +57,6 @@ class UpdatePostResolverTest : ResolverTestBase() {
         val updatedPost = mockk<Post>()
         every { updatedPost.id } returns EntityID(postId, mockk())
         every { updatedPost.title } returns "Updated Title"
-        every { updatedPost.content } returns "Updated content"
         every { updatedPost.createdAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
         every { updatedPost.updatedAt } returns LocalDateTime.of(2025, 1, 1, 12, 0)
         every { updatedPost.status } returns PostStatus.PUBLISHED
@@ -71,7 +70,7 @@ class UpdatePostResolverTest : ResolverTestBase() {
 
         assertNotNull(result)
         assertEquals("Updated Title", result.getTitleOrThrow())
-        assertEquals("Updated content", result.getContentOrThrow())
+        assertEquals(postId.toString(), result.getIdOrThrow().internalID)
     }
 
     @Test

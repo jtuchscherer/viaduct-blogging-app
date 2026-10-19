@@ -37,13 +37,16 @@ class BlogPostNodeResolver(
     override suspend fun batchResolve(contexts: List<Context>): Map<Context, FieldValue<ViaductBlogPost>> {
         // Every context in a batch belongs to the same request, so one viewer covers them all.
         val viewer = optionalAuth(contexts.firstOrNull()?.requestContext)
+        val fields = contexts.flatMap { it.ownedSelections().postFields() }.toSet()
 
         return batchNodeResolve(
             contexts = contexts,
             extractId = { UUID.fromString(it.id.internalID) },
             // node(id) is how the post detail and edit pages read a single post, so this is the
             // draft leak that matters most: it bypasses the filtered list queries entirely.
-            findByIds = { ids -> postRepository.findByIds(ids).filterValues { it.isVisibleTo(viewer) } },
+            findByIds = { ids ->
+                postRepository.findProjectedByIds(ids, fields).filterValues { it.isVisibleTo(viewer) }
+            },
             transform = { post, ctx -> post.toViaductBlogPost(ctx) },
             // A draft the viewer may not see is reported exactly as a missing post, so the
             // response cannot be used to work out whether it exists.

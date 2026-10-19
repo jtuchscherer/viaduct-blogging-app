@@ -70,7 +70,7 @@ The compatibility upgrade retained existing behavior. Follow-up status is record
 | --- | --- | --- |
 | Implemented | `scopes.yaml` and `SchemaScopeInfo.fromResources()` | The manifest is the single source of truth for vocabulary and served views. Viaduct validates it at build time; registration and routing load the generated resource. Public = `[public]`, admin = `[public, admin]`. |
 | Implemented | Resolver output diagnostics | `withResolverErrorReporter(...)` reports incomplete output by schema coordinates. Client-visible missing-field errors stay disabled. Real-engine tests exercise both default behavior and the strict test flag. |
-| Larger performance project | Selective Kotlin resolvers | Use `@resolver(isSelective: true)`, `ctx.ownedSelections()`, and selected field coordinates to request only needed data. Add repository projections first: current Exposed DAO queries load full rows, and feed previews request content, limiting immediate savings. Preserve draft visibility, ordering, and batching. |
+| Implemented | Selective Kotlin resolvers | Feed roots return identities; the batched BlogPost node uses `ctx.ownedSelections()` and SQL projections for requested scalars. A separate batched content field supports both clients and analytics required selections. Draft visibility, stable ordering, and batching are covered. |
 | Implemented | Root-field references | `admin.post` delegates to the existing `Query.post` factory through `ctx.ref(Query.post { ... })`. The opt-in is local to that resolver; the default engine and feature flags are unchanged. The API remains experimental. |
 
 The scope follow-up removes the separate Kotlin scope map and regex-based vocabulary test.
@@ -91,6 +91,16 @@ aliased draft access, public-schema rejection, and errors at the original admin 
 They replace two unit cases whose fixture cannot materialize lazy references. Explicit Unit
 return types also activate ten previously undiscovered exception/overflow tests in the
 touched admin test class; all twenty remaining admin unit tests pass.
+
+Selective loading keeps large post bodies out of identity, title, and metadata-only reads.
+The selective BlogPost node uses schema coordinates, so aliases and fragments share a
+projection. Author lookup selects only identities; feed ordering includes an id tie-breaker.
+Content has a separate batched field resolver because the rc.1 default engine does not
+replay a selective node for analytics required selections. This preserves analytics without
+coupling node projections to analytics field names or enabling experimental execution.
+SQL and real-engine tests cover projections, pagination, drafts, analytics, and content
+returned after create, author update, and admin update. Direct object tests now assert
+node-owned fields; content assertions run through its field resolver and persisted responses.
 
 The upgrade also inherits resource indexing/startup improvements, tenant metadata/topology
 validation, materialization and duplicate-selection fixes, polymorphic-query heap protections,

@@ -10,11 +10,14 @@ import org.tuchscherer.database.PostType
 import org.tuchscherer.database.Posts
 import org.tuchscherer.database.Users
 import org.jetbrains.exposed.v1.core.SortOrder
+import org.jetbrains.exposed.v1.core.Column
+import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.inList
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.select
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -52,6 +55,54 @@ class ExposedPostRepository : PostRepository {
     // draft is not loaded at all rather than filtered out later.
     override fun findAll(): List<Post> = transaction {
         Post.find { publishedBlogPosts }.toList()
+    }
+
+    override fun findPublishedProjection(
+        fields: Set<PostField>,
+        limit: Int?,
+        offset: Int
+    ): List<PostProjection> = transaction {
+        val columns = listOf(Posts.id, Posts.postType) + fields.map { it.column() }
+        val query = Posts.select(columns).where { publishedBlogPosts }
+            // Equal publication timestamps need a stable tie-breaker across page requests.
+            .orderBy(Posts.publishedAt to SortOrder.DESC, Posts.id to SortOrder.ASC)
+            .offset(offset.toLong())
+        if (limit != null) query.limit(limit)
+        query.map { it.toProjection(fields) }
+    }
+
+    override fun findProjectedByIds(
+        ids: List<UUID>,
+        fields: Set<PostField>
+    ): Map<UUID, PostProjection> = transaction {
+        if (ids.isEmpty()) return@transaction emptyMap()
+        val columns = (listOf(Posts.id, Posts.postType, Posts.status, Posts.authorId) +
+            fields.map { it.column() }).distinct()
+        Posts.select(columns).where { Posts.id inList ids.map { EntityID(it, Posts) } }
+            .map { it.toProjection(fields) }
+            .associateBy { it.id }
+    }
+
+    private fun ResultRow.toProjection(fields: Set<PostField>) = PostProjection(
+        id = this[Posts.id].value,
+        postType = this[Posts.postType],
+        fields = fields.toSet(),
+        title = getOrNull(Posts.title),
+        content = getOrNull(Posts.content),
+        status = getOrNull(Posts.status),
+        publishedAt = getOrNull(Posts.publishedAt),
+        createdAt = getOrNull(Posts.createdAt),
+        updatedAt = getOrNull(Posts.updatedAt),
+        authorId = getOrNull(Posts.authorId)?.value,
+    )
+
+    private fun PostField.column(): Column<*> = when (this) {
+        PostField.TITLE -> Posts.title
+        PostField.CONTENT -> Posts.content
+        PostField.STATUS -> Posts.status
+        PostField.PUBLISHED_AT -> Posts.publishedAt
+        PostField.CREATED_AT -> Posts.createdAt
+        PostField.UPDATED_AT -> Posts.updatedAt
     }
 
     override fun create(
@@ -133,8 +184,9 @@ class ExposedPostRepository : PostRepository {
 
     override fun getAuthorIdsByPostIds(postIds: List<UUID>): Map<UUID, UUID> = transaction {
         if (postIds.isEmpty()) return@transaction emptyMap()
-        Post.find { Posts.id inList postIds.map { EntityID(it, Posts) } }
-            .associate { it.id.value to it.authorId.value }
+        Posts.select(Posts.id, Posts.authorId)
+            .where { Posts.id inList postIds.map { EntityID(it, Posts) } }
+            .associate { it[Posts.id].value to it[Posts.authorId].value }
     }
 
     override fun countByAuthorId(authorId: UUID): Long = transaction {

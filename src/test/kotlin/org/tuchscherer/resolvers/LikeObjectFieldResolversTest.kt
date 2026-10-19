@@ -56,7 +56,6 @@ class LikeObjectFieldResolversTest : ResolverTestBase() {
         mockPost = mockk(relaxed = true)
         every { mockPost.id } returns EntityID(postId, mockk())
         every { mockPost.title } returns "Test Post"
-        every { mockPost.content } returns "Test content"
         every { mockPost.createdAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
         every { mockPost.updatedAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
         every { mockPost.status } returns PostStatus.PUBLISHED
@@ -71,7 +70,7 @@ class LikeObjectFieldResolversTest : ResolverTestBase() {
     // ── LikeUserResolver ────────────────────────────────────────────────
 
     @Test
-    fun `LikeUserResolver returns user for like`() = runBlocking {
+    fun `LikeUserResolver returns user for like`() = runBlocking<Unit> {
         val resolver = LikeUserResolver(likeRepository)
         every { likeRepository.getUserForLike(likeId) } returns mockUser
 
@@ -87,7 +86,7 @@ class LikeObjectFieldResolversTest : ResolverTestBase() {
     }
 
     @Test
-    fun `LikeUserResolver throws when like not found`() = runBlocking {
+    fun `LikeUserResolver throws when like not found`() = runBlocking<Unit> {
         val resolver = LikeUserResolver(likeRepository)
         every { likeRepository.getUserForLike(likeId) } returns null
 
@@ -103,7 +102,7 @@ class LikeObjectFieldResolversTest : ResolverTestBase() {
     // ── LikePostResolver ────────────────────────────────────────────────
 
     @Test
-    fun `LikePostResolver returns post for like`() = runBlocking {
+    fun `LikePostResolver returns post for like`() = runBlocking<Unit> {
         val resolver = LikePostResolver(likeRepository)
         every { likeRepository.getPostForLike(likeId) } returns mockPost
 
@@ -116,11 +115,11 @@ class LikeObjectFieldResolversTest : ResolverTestBase() {
         val blogPost = result as ViaductBlogPost
         assertEquals(postId.toString(), blogPost.getIdOrThrow().internalID)
         assertEquals("Test Post", blogPost.getTitleOrThrow())
-        assertEquals("Test content", blogPost.getContentOrThrow())
+        assertEquals(PostStatus.PUBLISHED, blogPost.getStatusOrThrow().name)
     }
 
     @Test
-    fun `LikePostResolver throws when like not found`() = runBlocking {
+    fun `LikePostResolver throws when like not found`() = runBlocking<Unit> {
         val resolver = LikePostResolver(likeRepository)
         every { likeRepository.getPostForLike(likeId) } returns null
 

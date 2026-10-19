@@ -43,7 +43,6 @@ class CreatePostResolverTest : ResolverTestBase() {
         mockPost = mockk(relaxed = true)
         every { mockPost.id } returns EntityID(postId, mockk())
         every { mockPost.title } returns "Test Post"
-        every { mockPost.content } returns "Test content"
         every { mockPost.authorId } returns EntityID(userId, mockk())
         every { mockPost.createdAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
         every { mockPost.updatedAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
@@ -56,7 +55,7 @@ class CreatePostResolverTest : ResolverTestBase() {
     }
 
     @Test
-    fun `CreatePostResolver creates post and returns id, title, content`() = runBlocking {
+    fun `CreatePostResolver creates post and returns owned id title and status`() = runBlocking<Unit> {
         val resolver = CreatePostResolver(postRepository)
         val input = CreatePostInput.Builder(context).title("New Post").content("New content").build()
         val args = Mutation_CreatePost_Arguments.Builder(context).input(input).build()
@@ -79,11 +78,11 @@ class CreatePostResolverTest : ResolverTestBase() {
         assertNotNull(result)
         assertEquals(postId.toString(), result.getIdOrThrow().internalID)
         assertEquals("Test Post", result.getTitleOrThrow())
-        assertEquals("Test content", result.getContentOrThrow())
+        assertEquals(PostStatus.PUBLISHED, result.getStatusOrThrow().name)
     }
 
     @Test
-    fun `CreatePostResolver throws AuthenticationException when not authenticated`() = runBlocking {
+    fun `CreatePostResolver throws AuthenticationException when not authenticated`() = runBlocking<Unit> {
         val resolver = CreatePostResolver(postRepository)
         val input = CreatePostInput.Builder(context).title("New Post").content("New content").build()
         val args = Mutation_CreatePost_Arguments.Builder(context).input(input).build()
@@ -97,7 +96,7 @@ class CreatePostResolverTest : ResolverTestBase() {
     }
 
     @Test
-    fun `CreatePostResolver throws IllegalArgumentException for blank title`() = runBlocking {
+    fun `CreatePostResolver throws IllegalArgumentException for blank title`() = runBlocking<Unit> {
         val resolver = CreatePostResolver(postRepository)
         val input = CreatePostInput.Builder(context).title("   ").content("Some content").build()
         val args = Mutation_CreatePost_Arguments.Builder(context).input(input).build()
@@ -111,7 +110,7 @@ class CreatePostResolverTest : ResolverTestBase() {
     }
 
     @Test
-    fun `CreatePostResolver throws IllegalArgumentException for blank content`() = runBlocking {
+    fun `CreatePostResolver throws IllegalArgumentException for blank content`() = runBlocking<Unit> {
         val resolver = CreatePostResolver(postRepository)
         val input = CreatePostInput.Builder(context).title("Valid title").content("   ").build()
         val args = Mutation_CreatePost_Arguments.Builder(context).input(input).build()
@@ -125,7 +124,7 @@ class CreatePostResolverTest : ResolverTestBase() {
     }
 
     @Test
-    fun `CreatePostResolver throws IllegalArgumentException for title exceeding 500 characters`() = runBlocking {
+    fun `CreatePostResolver throws IllegalArgumentException for title exceeding 500 characters`() = runBlocking<Unit> {
         val resolver = CreatePostResolver(postRepository)
         val input = CreatePostInput.Builder(context).title("a".repeat(501)).content("Some content").build()
         val args = Mutation_CreatePost_Arguments.Builder(context).input(input).build()
@@ -139,7 +138,7 @@ class CreatePostResolverTest : ResolverTestBase() {
     }
 
     @Test
-    fun `CreatePostResolver throws IllegalArgumentException for content exceeding 100000 characters`() = runBlocking {
+    fun `CreatePostResolver throws IllegalArgumentException for content exceeding 100000 characters`() = runBlocking<Unit> {
         val resolver = CreatePostResolver(postRepository)
         val input = CreatePostInput.Builder(context).title("Valid title").content("a".repeat(100_001)).build()
         val args = Mutation_CreatePost_Arguments.Builder(context).input(input).build()

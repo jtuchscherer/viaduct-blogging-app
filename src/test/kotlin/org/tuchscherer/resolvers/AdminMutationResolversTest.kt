@@ -123,7 +123,7 @@ class AdminMutationResolversTest : ResolverTestBase() {
     // ── AdminDeletePostResolver ───────────────────────────────────────────────
 
     @Test
-    fun `AdminDeletePostResolver deletes post and returns true`() = runBlocking {
+    fun `AdminDeletePostResolver deletes post and returns true`() = runBlocking<Unit> {
         val resolver = AdminDeletePostResolver(postRepository)
         val args = AdminMutations_DeletePost_Arguments.Builder(context)
             .id(globalIDFor(ViaductBlogPost.Reflection, postId.toString()))
@@ -138,7 +138,7 @@ class AdminMutationResolversTest : ResolverTestBase() {
     }
 
     @Test
-    fun `AdminDeletePostResolver throws NotFoundException when post does not exist`() = runBlocking {
+    fun `AdminDeletePostResolver throws NotFoundException when post does not exist`() = runBlocking<Unit> {
         val resolver = AdminDeletePostResolver(postRepository)
         val args = AdminMutations_DeletePost_Arguments.Builder(context)
             .id(globalIDFor(ViaductBlogPost.Reflection, postId.toString()))
@@ -155,7 +155,7 @@ class AdminMutationResolversTest : ResolverTestBase() {
     // ── AdminDeleteCommentResolver ────────────────────────────────────────────
 
     @Test
-    fun `AdminDeleteCommentResolver deletes comment and returns true`() = runBlocking {
+    fun `AdminDeleteCommentResolver deletes comment and returns true`() = runBlocking<Unit> {
         val resolver = AdminDeleteCommentResolver(commentRepository)
         val args = AdminMutations_DeleteComment_Arguments.Builder(context)
             .id(globalIDFor(viaduct.api.grts.Comment.Reflection, commentId.toString()))
@@ -170,7 +170,7 @@ class AdminMutationResolversTest : ResolverTestBase() {
     }
 
     @Test
-    fun `AdminDeleteCommentResolver throws NotFoundException when comment does not exist`() = runBlocking {
+    fun `AdminDeleteCommentResolver throws NotFoundException when comment does not exist`() = runBlocking<Unit> {
         val resolver = AdminDeleteCommentResolver(commentRepository)
         val args = AdminMutations_DeleteComment_Arguments.Builder(context)
             .id(globalIDFor(viaduct.api.grts.Comment.Reflection, commentId.toString()))
@@ -187,7 +187,7 @@ class AdminMutationResolversTest : ResolverTestBase() {
     // ── AdminDeleteUserResolver ───────────────────────────────────────────────
 
     @Test
-    fun `AdminDeleteUserResolver deletes user and all their content`() = runBlocking {
+    fun `AdminDeleteUserResolver deletes user and all their content`() = runBlocking<Unit> {
         val resolver = AdminDeleteUserResolver(userRepository, postRepository, commentRepository, likeRepository)
         val args = AdminMutations_DeleteUser_Arguments.Builder(context)
             .id(globalIDFor(ViaductUser.Reflection, targetUserId.toString()))
@@ -209,7 +209,7 @@ class AdminMutationResolversTest : ResolverTestBase() {
     }
 
     @Test
-    fun `AdminDeleteUserResolver throws NotFoundException when user does not exist`() = runBlocking {
+    fun `AdminDeleteUserResolver throws NotFoundException when user does not exist`() = runBlocking<Unit> {
         val resolver = AdminDeleteUserResolver(userRepository, postRepository, commentRepository, likeRepository)
         val args = AdminMutations_DeleteUser_Arguments.Builder(context)
             .id(globalIDFor(ViaductUser.Reflection, targetUserId.toString()))
@@ -226,7 +226,7 @@ class AdminMutationResolversTest : ResolverTestBase() {
     // ── AdminUpdateUserResolver ───────────────────────────────────────────────
 
     @Test
-    fun `AdminUpdateUserResolver updates user and returns updated user`() = runBlocking {
+    fun `AdminUpdateUserResolver updates user and returns updated user`() = runBlocking<Unit> {
         val resolver = AdminUpdateUserResolver(userRepository)
         val input = AdminUpdateUserInput.Builder(context)
             .id(globalIDFor(ViaductUser.Reflection, targetUserId.toString()))
@@ -245,7 +245,7 @@ class AdminMutationResolversTest : ResolverTestBase() {
     }
 
     @Test
-    fun `AdminUpdateUserResolver throws NotFoundException when user does not exist`() = runBlocking {
+    fun `AdminUpdateUserResolver throws NotFoundException when user does not exist`() = runBlocking<Unit> {
         val resolver = AdminUpdateUserResolver(userRepository)
         val input = AdminUpdateUserInput.Builder(context)
             .id(globalIDFor(ViaductUser.Reflection, targetUserId.toString()))
@@ -261,7 +261,7 @@ class AdminMutationResolversTest : ResolverTestBase() {
     }
 
     @Test
-    fun `AdminUpdateUserResolver throws IllegalArgumentException when name exceeds 255 characters`() = runBlocking {
+    fun `AdminUpdateUserResolver throws IllegalArgumentException when name exceeds 255 characters`() = runBlocking<Unit> {
         val resolver = AdminUpdateUserResolver(userRepository)
         val input = AdminUpdateUserInput.Builder(context)
             .id(globalIDFor(ViaductUser.Reflection, targetUserId.toString()))
@@ -277,12 +277,11 @@ class AdminMutationResolversTest : ResolverTestBase() {
     // ── AdminUpdatePostResolver ───────────────────────────────────────────────
 
     @Test
-    fun `AdminUpdatePostResolver updates post and returns updated post`() = runBlocking {
+    fun `AdminUpdatePostResolver updates post and returns updated post`() = runBlocking<Unit> {
         val resolver = AdminUpdatePostResolver(postRepository)
         val updatedPost = mockk<Post>(relaxed = true)
         every { updatedPost.id } returns EntityID(postId, mockk())
         every { updatedPost.title } returns "New Title"
-        every { updatedPost.content } returns "New content"
         every { updatedPost.createdAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
         every { updatedPost.updatedAt } returns LocalDateTime.of(2025, 1, 1, 12, 0)
         every { updatedPost.status } returns PostStatus.PUBLISHED
@@ -301,11 +300,11 @@ class AdminMutationResolversTest : ResolverTestBase() {
         assertNotNull(result)
         assertEquals(postId.toString(), result.getIdOrThrow().internalID)
         assertEquals("New Title", result.getTitleOrThrow())
-        assertEquals("New content", result.getContentOrThrow())
+        assertEquals(PostStatus.PUBLISHED, result.getStatusOrThrow().name)
     }
 
     @Test
-    fun `AdminUpdatePostResolver throws NotFoundException when post does not exist`() = runBlocking {
+    fun `AdminUpdatePostResolver throws NotFoundException when post does not exist`() = runBlocking<Unit> {
         val resolver = AdminUpdatePostResolver(postRepository)
         val input = AdminUpdatePostInput.Builder(context)
             .id(globalIDFor(ViaductBlogPost.Reflection, postId.toString()))
@@ -321,7 +320,7 @@ class AdminMutationResolversTest : ResolverTestBase() {
     }
 
     @Test
-    fun `AdminUpdatePostResolver throws IllegalArgumentException for blank title`() = runBlocking {
+    fun `AdminUpdatePostResolver throws IllegalArgumentException for blank title`() = runBlocking<Unit> {
         val resolver = AdminUpdatePostResolver(postRepository)
         val input = AdminUpdatePostInput.Builder(context)
             .id(globalIDFor(ViaductBlogPost.Reflection, postId.toString()))
@@ -335,7 +334,7 @@ class AdminMutationResolversTest : ResolverTestBase() {
     }
 
     @Test
-    fun `AdminUpdatePostResolver throws IllegalArgumentException for blank content`() = runBlocking {
+    fun `AdminUpdatePostResolver throws IllegalArgumentException for blank content`() = runBlocking<Unit> {
         // Until centralised in PostValidation, AdminUpdatePost only checked
         // content length and silently accepted whitespace-only content,
         // diverging from CreatePost / UpdatePost. Lock that gap shut.
@@ -352,7 +351,7 @@ class AdminMutationResolversTest : ResolverTestBase() {
     }
 
     @Test
-    fun `AdminUpdatePostResolver throws IllegalArgumentException for title exceeding 500 characters`() = runBlocking {
+    fun `AdminUpdatePostResolver throws IllegalArgumentException for title exceeding 500 characters`() = runBlocking<Unit> {
         val resolver = AdminUpdatePostResolver(postRepository)
         val input = AdminUpdatePostInput.Builder(context)
             .id(globalIDFor(ViaductBlogPost.Reflection, postId.toString()))

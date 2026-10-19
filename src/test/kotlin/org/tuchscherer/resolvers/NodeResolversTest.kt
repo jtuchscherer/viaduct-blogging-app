@@ -1,11 +1,15 @@
 @file:Suppress("DEPRECATION")
+@file:OptIn(viaduct.apiannotations.InternalApi::class, viaduct.apiannotations.ExperimentalApi::class)
 
 package org.tuchscherer.resolvers
 
 import org.tuchscherer.auth.NotFoundException
 import org.tuchscherer.database.Comment
 import org.tuchscherer.database.Like
-import org.tuchscherer.database.Post
+import org.tuchscherer.database.PostStatus
+import org.tuchscherer.database.PostType
+import org.tuchscherer.database.repositories.PostField
+import org.tuchscherer.database.repositories.PostProjection
 import org.tuchscherer.database.User
 import org.tuchscherer.database.repositories.CommentRepository
 import org.tuchscherer.database.repositories.LikeRepository
@@ -80,29 +84,40 @@ class NodeResolversTest : ResolverTestBase() {
     // ── BlogPostNodeResolver ───────────────────────────────────────────────────
 
     @Test
-    fun `BlogPostNodeResolver calls findByIds once for the whole batch`() = runBlocking {
+    fun `BlogPostNodeResolver resolves projected values for the whole batch`() = runBlocking<Unit> {
         val repo = mockk<PostRepository>()
         val id1 = UUID.randomUUID()
         val id2 = UUID.randomUUID()
-        every { repo.findByIds(listOf(id1, id2)) } returns mapOf(id1 to mockk(relaxed = true), id2 to mockk(relaxed = true))
+        val author = UUID.randomUUID()
+        val fields = setOf(PostField.TITLE)
+        every { repo.findProjectedByIds(listOf(id1, id2), fields) } returns mapOf(
+            id1 to PostProjection(id1, PostType.BLOG_POST, fields, title = "First", status = PostStatus.PUBLISHED, authorId = author),
+            id2 to PostProjection(id2, PostType.BLOG_POST, fields, title = "Second", status = PostStatus.PUBLISHED, authorId = author),
+        )
 
-        runCatching { BlogPostNodeResolver(repo).batchResolve(listOf(postNodeCtx(id1), postNodeCtx(id2))) }
+        val result = runNodeBatchResolver(BlogPostNodeResolver(repo)) {
+            ids = listOf(globalIDFor(ViaductBlogPost.Reflection, id1.toString()), globalIDFor(ViaductBlogPost.Reflection, id2.toString()))
+            selections = mkSelectionSetFactory().selectionsOn(ViaductBlogPost.Reflection, "id title", emptyMap())
+        }
 
-        verify(exactly = 1) { repo.findByIds(listOf(id1, id2)) }
+        assertEquals(setOf("First", "Second"), result.values.map { it.get().getTitleOrThrow() }.toSet())
     }
 
     @Test
-    fun `BlogPostNodeResolver returns NotFoundException FieldValue for missing id`() = runBlocking {
+    fun `BlogPostNodeResolver returns NotFoundException FieldValue for missing id`() = runBlocking<Unit> {
         val repo = mockk<PostRepository>()
-        val id = UUID.randomUUID()
-        every { repo.findByIds(listOf(id)) } returns emptyMap()
+        val missingId = UUID.randomUUID()
+        every { repo.findProjectedByIds(listOf(missingId), emptySet()) } returns emptyMap()
 
-        val results = BlogPostNodeResolver(repo).batchResolve(listOf(postNodeCtx(id)))
+        val result = runNodeBatchResolver(BlogPostNodeResolver(repo)) {
+            ids = listOf(globalIDFor(ViaductBlogPost.Reflection, missingId.toString()))
+            selections = mkSelectionSetFactory().selectionsOn(ViaductBlogPost.Reflection, "id", emptyMap())
+        }
 
-        assertEquals(1, results.size)
-        assertTrue(results.values.single().isError)
-        val err = runCatching { results.values.single().get() }.exceptionOrNull()
-        assertTrue(err is NotFoundException, "Expected NotFoundException, got $err")
+        assertEquals(1, result.size)
+        assertTrue(result.values.single().isError)
+        val error = runCatching { result.values.single().get() }.exceptionOrNull()
+        assertTrue(error is NotFoundException, "Expected NotFoundException, got $error")
     }
 
     // ── CommentNodeResolver ────────────────────────────────────────────────────
@@ -164,12 +179,6 @@ class NodeResolversTest : ResolverTestBase() {
     private fun userNodeCtx(id: UUID): NodeResolvers.User.Context {
         val ctx = mockk<NodeResolvers.User.Context>(relaxed = true)
         coEvery { ctx.id } returns globalIDFor(ViaductUser.Reflection, id.toString())
-        return ctx
-    }
-
-    private fun postNodeCtx(id: UUID): NodeResolvers.BlogPost.Context {
-        val ctx = mockk<NodeResolvers.BlogPost.Context>(relaxed = true)
-        coEvery { ctx.id } returns globalIDFor(ViaductBlogPost.Reflection, id.toString())
         return ctx
     }
 

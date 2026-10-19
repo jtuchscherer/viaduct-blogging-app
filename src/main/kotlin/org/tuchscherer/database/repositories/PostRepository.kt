@@ -29,6 +29,12 @@ interface PostRepository {
      */
     fun findAll(): List<Post>
 
+    /** Published blog feed, loading only requested scalar columns in stable publication order. */
+    fun findPublishedProjection(fields: Set<PostField>, limit: Int? = null, offset: Int = 0): List<PostProjection>
+
+    /** Batched scalar projection with author/status metadata for node visibility checks. */
+    fun findProjectedByIds(ids: List<UUID>, fields: Set<PostField>): Map<UUID, PostProjection>
+
     /**
      * Create a new post.
      */
