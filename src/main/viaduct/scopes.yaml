@@ -1,0 +1,11 @@
+version: 1
+
+schemaScopes:
+  - public
+  - admin
+
+scopedSchemas:
+  - id: public
+    scopes: [public]
+  - id: admin
+    scopes: [public, admin]

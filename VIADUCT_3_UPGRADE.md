@@ -1,6 +1,6 @@
 # Viaduct 3.0.0-rc.1 upgrade
 
-Reviewed October 16, 2026.
+Upgrade reviewed October 16, 2026; follow-ups started October 19, 2026.
 
 ## Applied migration
 
@@ -15,9 +15,10 @@ Reviewed October 16, 2026.
 - Update mutation test contexts for the removed `queryValue` argument. Prefer the app's
   explicit JUnit 6 API dependency before Viaduct's fixtures, whose rc.1 JAR also bundles
   JUnit 5 classes; this prevents mixed JUnit nullability metadata during Kotlin compilation.
-- Keep the existing public/admin `SchemaScopeInfo.Scoped(...)` declarations. The removed
-  Gradle scopes DSL was not used here, and the published rc.1 runtime still supports this API.
-  Runtime query tests verify both public/admin introspection and admin operation rejection.
+- Load the public/admin views through `SchemaScopeInfo.fromResources()` from the manifest
+  generated from `src/main/viaduct/scopes.yaml`. The initial compatibility upgrade retained
+  manual declarations; the scope follow-up below adds build-time validation. Runtime query
+  tests verify both public/admin introspection and admin operation rejection.
 
 The application remains Kotlin. The Java plugin and `javaapi-*` dependencies mentioned in
 the announcement apply when adding Java tenant modules. The proposed analytics migration
@@ -63,14 +64,19 @@ test continues to exercise form submission and navigation.
 
 ## Recommended follow-ups
 
-These are proposals; the compatibility upgrade does not enable new runtime features.
+The compatibility upgrade retained existing behavior. Follow-up status is recorded below.
 
 | Priority | Feature | Application benefit and prerequisites |
 | --- | --- | --- |
-| First follow-up | `scopes.yaml` and `SchemaScopeInfo.fromResources()` | Move the public/admin declarations into the framework's build validation. Consolidate the existing `SchemaScopes` vocabulary and tests around the manifest instead of maintaining two independent declarations. Preserve public = `[public]`, admin = `[public, admin]`. |
+| Implemented | `scopes.yaml` and `SchemaScopeInfo.fromResources()` | The manifest is the single source of truth for vocabulary and served views. Viaduct validates it at build time; registration and routing load the generated resource. Public = `[public]`, admin = `[public, admin]`. |
 | Small development improvement | Resolver output diagnostics | Configure `withResolverErrorReporter(...)` to report `ResolverOutputMissingFieldException`. Consider `ENABLE_RESOLVER_OUTPUT_MISSING_FIELD_ERRORS` in tests to expose incomplete generated-object construction in mapper helpers and module boundaries. Test this explicitly before changing client-visible error behavior. |
 | Larger performance project | Selective Kotlin resolvers | Use `@resolver(isSelective: true)`, `ctx.ownedSelections()`, and selected field coordinates to request only needed data. Add repository projections first: current Exposed DAO queries load full rows, and feed previews request content, limiting immediate savings. Preserve draft visibility, ordering, and batching. |
 | As module composition grows | Root-field references | Generated calls through `ctx.ref(...)` can compose future cross-module factories. Current node references already cover this app's use cases. Root-field references remain experimental. |
+
+The scope follow-up removes the separate Kotlin scope map and regex-based vocabulary test.
+Three manifest tests pin the served views, generated routing ids, and rejection of unknown
+schema ids. In an isolated build, a probe using `@scope(to: ["publicc"])` failed schema
+assembly with an invalid-scope diagnostic; the unmodified schema assembled successfully.
 
 The upgrade also inherits resource indexing/startup improvements, tenant metadata/topology
 validation, materialization and duplicate-selection fixes, polymorphic-query heap protections,

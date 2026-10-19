@@ -1,6 +1,5 @@
 package org.tuchscherer.web
 
-import org.tuchscherer.config.SchemaScopes
 import org.tuchscherer.config.ViaductSchemas
 import viaduct.service.api.ExecutionInput
 import viaduct.service.api.ExecutionResult
@@ -22,8 +21,8 @@ class SchemaRoutingExecutor(private val viaduct: Viaduct) {
 
     /** Which schema a caller should be served. */
     enum class Audience(val schemaId: String) {
-        PUBLIC(SchemaScopes.PUBLIC),
-        ADMIN(SchemaScopes.ADMIN),
+        PUBLIC(ViaductSchemas.PUBLIC),
+        ADMIN(ViaductSchemas.ADMIN),
     }
 
     suspend fun execute(executionInput: ExecutionInput, audience: Audience): ExecutionResult =
