@@ -146,6 +146,7 @@ val viaductModule = module {
     single<Viaduct> {
         val underlying = ViaductBuilder()
             .withScopedSchemas(ViaductSchemas.all)
+            .withResolverErrorReporter(ResolverOutputErrorReporter())
             .withTenantModuleInjectorFactory(SharedTenantModuleInjectorFactory(KoinTenantCodeInjector()))
             .withMeterRegistry(get())
             .build()
