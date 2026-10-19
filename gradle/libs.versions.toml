@@ -34,12 +34,15 @@ opentelemetry = "1.62.0"
 
 [plugins]
 viaduct-application = { id = "com.airbnb.viaduct.application-gradle-plugin", version.ref = "viaduct" }
+viaduct-module-java = { id = "com.airbnb.viaduct.module-java-gradle-plugin", version.ref = "viaduct" }
 viaduct-module = { id = "com.airbnb.viaduct.module-gradle-plugin", version.ref = "viaduct" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 detekt = { id = "dev.detekt", version.ref = "detekt" }
 
 [libraries]
+viaduct-java-api = { module = "com.airbnb.viaduct:javaapi-api", version.ref = "viaduct" }
+viaduct-java-runtime = { module = "com.airbnb.viaduct:javaapi-runtime", version.ref = "viaduct" }
 viaduct-api = { module = "com.airbnb.viaduct:api", version.ref = "viaduct" }
 viaduct-runtime = { module = "com.airbnb.viaduct:runtime", version.ref = "viaduct" }
 viaduct-test-fixtures = { module = "com.airbnb.viaduct:test-fixtures", version.ref = "viaduct" }

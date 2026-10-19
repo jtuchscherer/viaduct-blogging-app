@@ -33,6 +33,7 @@ import viaduct.api.grts.Comment as ViaductComment
 import viaduct.api.grts.Like as ViaductLike
 import viaduct.api.grts.User as ViaductUser
 import viaduct.api.testing.ResolverTestBase
+import java.time.LocalDateTime
 import java.util.UUID
 
 /**
@@ -89,10 +90,19 @@ class NodeResolversTest : ResolverTestBase() {
         val id1 = UUID.randomUUID()
         val id2 = UUID.randomUUID()
         val author = UUID.randomUUID()
-        val fields = setOf(PostField.TITLE)
+        val fields = setOf(
+            PostField.TITLE, PostField.STATUS, PostField.PUBLISHED_AT, PostField.CREATED_AT, PostField.UPDATED_AT,
+        )
+        val timestamp = LocalDateTime.of(2026, 10, 19, 12, 0)
         every { repo.findProjectedByIds(listOf(id1, id2), fields) } returns mapOf(
-            id1 to PostProjection(id1, PostType.BLOG_POST, fields, title = "First", status = PostStatus.PUBLISHED, authorId = author),
-            id2 to PostProjection(id2, PostType.BLOG_POST, fields, title = "Second", status = PostStatus.PUBLISHED, authorId = author),
+            id1 to PostProjection(
+                id1, PostType.BLOG_POST, fields, title = "First", status = PostStatus.PUBLISHED,
+                authorId = author, createdAt = timestamp, updatedAt = timestamp,
+            ),
+            id2 to PostProjection(
+                id2, PostType.BLOG_POST, fields, title = "Second", status = PostStatus.PUBLISHED,
+                authorId = author, createdAt = timestamp, updatedAt = timestamp,
+            ),
         )
 
         val result = runNodeBatchResolver(BlogPostNodeResolver(repo)) {
@@ -107,7 +117,7 @@ class NodeResolversTest : ResolverTestBase() {
     fun `BlogPostNodeResolver returns NotFoundException FieldValue for missing id`() = runBlocking<Unit> {
         val repo = mockk<PostRepository>()
         val missingId = UUID.randomUUID()
-        every { repo.findProjectedByIds(listOf(missingId), emptySet()) } returns emptyMap()
+        every { repo.findProjectedByIds(listOf(missingId), any()) } returns emptyMap()
 
         val result = runNodeBatchResolver(BlogPostNodeResolver(repo)) {
             ids = listOf(globalIDFor(ViaductBlogPost.Reflection, missingId.toString()))

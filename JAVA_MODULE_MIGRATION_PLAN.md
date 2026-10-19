@@ -1,165 +1,165 @@
-# Java module migration plan
+# Java analytics module migration
 
-Reviewed October 16, 2026. Status: proposal; no Java migration implemented.
+Updated October 19, 2026. Status: implemented.
 
-## Recommendation
+## Why analytics
 
-Migrate **`:modules:analytics`** to a Java Viaduct tenant. Keep the application,
-core post resolvers, and `:modules:checkedlist` in Kotlin.
+`:modules:analytics` is the Java Viaduct tenant. The application, core post resolvers,
+and `:modules:checkedlist` remain Kotlin. Analytics provides a small but substantive
+language boundary: four batched fields extend Kotlin-owned `BlogPost` and
+`CheckedListPost`, `trending` returns both types, and `recordPostView` records public
+engagement. One GraphQL operation exercises both languages.
 
-Analytics has six resolvers and a bounded concern. Its four batched fields extend
-Kotlin-owned `BlogPost` and `CheckedListPost`; `trending` returns both post types;
-`recordPostView` adds a mutation. A single GraphQL operation can therefore demonstrate
-Java analytics and Kotlin post resolution working together. Existing repository and
-lookup interfaces provide useful language boundaries.
+Checkedlist would require migrating its CRUD, authorization, nested items, and social
+behavior together. The AI module has no tenant schema, while converting shared
+utilities alone would not demonstrate Java/Kotlin resolver composition.
 
-| Candidate | Assessment |
-| --- | --- |
-| **analytics** | Best first migration: real Viaduct schema ownership, batching, cross-module field dependencies, a query, and a mutation. About 435 lines across 13 production Kotlin files. |
-| checkedlist | A useful later candidate, but about 996 production lines with CRUD, authorization, nested items, node construction, and social behavior. More contracts to preserve. |
-| ai | Natural Java library dependencies, but currently no tenant schema or resolvers. Converting it would not demonstrate Java Viaduct modules. |
-| shared | Small, but its node helpers expose Kotlin Viaduct types. Limited showcase value and broader coupling. |
-| Root application | Hosting, authentication, persistence composition, and the core tenant make this too broad for the first migration. |
-
-## Proposed boundary
-
-Make analytics' production sources Java: the six resolvers, read-time helper,
-`PostViewRepository`, `PostStatusLookupPort`, and `PostTypeLookupPort`/`PostKind`.
-Preserve package names and interface signatures where practical. Keep its SDL unchanged.
-
-Retain Exposed persistence in Kotlin. Prefer a small, ordinary
-**`:modules:analytics-persistence`** library containing `AnalyticsTables.kt`,
-`ExposedPostViewRepository.kt`, and their H2 integration tests. This preserves the
-existing analytics boundary and makes the language split explicit. Register this
-library with ordinary Gradle `include`, outside the Viaduct tenant topology.
+## Implemented architecture
 
 ```text
-Kotlin application
-  ├── Java analytics tenant (schema, resolvers, repository/lookup contracts)
-  ├── Kotlin analytics-persistence ──> Java analytics contracts
-  ├── Kotlin checkedlist tenant
-  └── Kotlin core tenant and application adapters
+Kotlin application and core tenant
+  ├── Java analytics tenant (:modules:analytics)
+  │     ├── six resolvers and read-time helper
+  │     └── repository and post-lookup interfaces
+  ├── Kotlin persistence adapter (:modules:analytics-persistence)
+  │     └── Exposed table/repository ──> Java analytics interfaces
+  ├── Kotlin checkedlist tenant (:modules:checkedlist)
+  └── Kotlin shared and AI libraries
 ```
 
-Keep Koin composition in the root Kotlin application. Move `analyticsKoinModule`
-there and register the Kotlin repository plus Java resolver constructors explicitly.
-The root already supplies both lookup ports and consumes `PostViewRepository` for
-admin statistics. Neither analytics nor its persistence adapter may depend on root.
+Tenant production code lives entirely in `modules/analytics/src/main/java`. Its existing
+SDL, package names, and repository/lookup method signatures are preserved. The
+ordinary Kotlin persistence library contains `AnalyticsTables.kt` and
+`ExposedPostViewRepository.kt`; it is registered outside the Viaduct tenant topology.
+The `post_views` table, UUID/count columns, and existing view data need no migration.
 
-Moving the two persistence classes/tests into the root repository layer is a smaller
-alternative if avoiding another Gradle module is preferred. It has the same dependency
-direction, but weakens the current analytics packaging. Replacing Exposed with JDBC
-would add a separate persistence change and is unnecessary for this showcase.
+The root application's `AnalyticsKoinModule.kt` composes Java resolver constructors
+and the Kotlin repository. The root also implements `PostTypeLookupPort` and
+`PostStatusLookupPort`, keeping post storage and publication checks behind its
+repository layer. Analytics and its persistence adapter have no source dependency on
+the application. Java calls the existing Kotlin `GlobalIdsKt.decodeGlobalId` utility
+rather than duplicating global-ID validation.
 
-The existing Kotlin `shared` library can remain a dependency: Java can call the
-existing `GlobalIdsKt.decodeGlobalId` static method. Preserve its decoding/error
-behavior rather than duplicating it or migrating unrelated shared helpers.
+## Build and execution
 
-## Evidence and compatibility gates
+The tenant applies `com.airbnb.viaduct.module-java-gradle-plugin` **3.0.0-rc.1** and
+exports `com.airbnb.viaduct:javaapi-api` at the same version. The application includes
+`javaapi-runtime` alongside the Kotlin runtime. The Java plugin wires its annotation
+processor, resolver bases, generated types, and resolver registry; there is no manual
+annotation-processor dependency. Kotlin and KSP plugins are removed from analytics.
 
-The published **3.0.0-rc.1** Java API/runtime binaries were inspected with `javap`.
-Their source JARs are empty. The binaries contain object selection fragments,
-batch resolution, `ref(GlobalID<T>)`, `globalIDFor(Type<T>, String)`, `Type.ofClass`,
-Java `FieldValue` success/error factories, and a Java executor using the shared
-service `CodeInjector`. These establish the API building blocks; application
-interoperability still needs an executable proof.
+Java analytics uses `viaduct.java.grts`; Kotlin tenants use `viaduct.api.grts`.
+Viaduct passes engine data across the boundary. No casts convert one generated type
+family into the other. Java `trending` builds references with `ctx.ref(...)` and the
+concrete Java post reflection types, then Kotlin node/field resolvers supply the
+selected post data. Checklist read time declares `items { text }` as its object
+fragment so Kotlin checklist fields supply the nested dependency.
 
-| Area | Required proof before completing the migration |
-| --- | --- |
-| Generated types | Java resolvers use `viaduct.java.grts`; Kotlin resolvers continue using `viaduct.api.grts`. They communicate through Viaduct engine data, not casts between generated classes. |
-| Cross-language node references | Java `trending` returns both concrete post types; Kotlin node/field resolvers and Java analytics fields resolve in the same operation. |
-| Nested dependencies | Java checklist read time reads `items { text }` supplied through Kotlin resolvers. Check generated getters, missing-field errors, and nullability behavior. |
-| Batching | Generated Java examples use `CompletableFuture<Map<Context, T>>`, rather than Kotlin's `List<FieldValue<T>>`. Key results by original context, preferably using `IdentityHashMap`; preserve one bulk count lookup and independent duplicate-parent results. Verify field-error behavior against the generated rc.1 base classes. |
-| DI | Existing `KoinTenantCodeInjector` resolves Java constructor dependencies through real Viaduct startup and execution. A separate DI framework is unnecessary. |
-| Plugin/runtime discovery | Exact rc.1 Java plugin generates Java bases, GRT dependencies, annotation-processor metadata, and the execution registry alongside the Kotlin modules. Each analytics coordinate has one owner, with no stale Kotlin registry. |
+Java batch resolvers return `CompletableFuture<Map<Context, T>>`. Results use the
+original contexts as keys in an `IdentityHashMap`; aliases and repeated parents
+retain their independent results. Each view-count batch makes one bulk repository
+lookup, with missing counts returning zero. Generated bases wrap successful values
+in Java field results. Dependency and repository failures preserve error behavior.
 
-Upstream's inspected release commit includes a mixed Kotlin/Java execution smoke
-test and a Java batching resolver with an object fragment. The exact published
-Java plugin binary has not been inspected or exercised in this repository.
+Read time retains the 200-word-per-minute heuristic, the 0.5-minute minimum, and
+Kotlin's Unicode whitespace trimming semantics. Public view recording still accepts
+anonymous users, rejects drafts and missing posts, and preserves malformed-ID errors.
+Trending preserves ranking, candidate over-fetching, publication filtering, and
+omission of deleted post types. Public/admin schema scopes and frontend behavior
+are unchanged by the language migration.
 
-## Implementation sequence
+Analytics configures its Java **25** toolchain explicitly. Kotlin projects retain
+the shared Java 25 toolchain, Kotlin **2.3.21**, and Gradle **9.3.1**. The new execution
+engine and incremental execution remain disabled.
 
-1. **Prove the runtime boundary first.** On an implementation branch, use a
-   temporary Java probe tenant with distinct test field names so it cannot duplicate
-   analytics' existing coordinates. Exercise a batch on Kotlin-owned posts, nested
-   checklist item text, mixed node references, and Koin injection through real
-   GraphQL execution. Check clean code generation and registry discovery. Remove
-   the probe when the production conversion replaces it. If a required gate fails,
-   investigate before translating the full module.
-2. **Extract persistence without changing behavior.** Move the Exposed table,
-   repository implementation, H2 helper, and repository tests into the ordinary
-   Kotlin adapter library. Preserve `post_views`, column types, initialization,
-   transactions, increment behavior, and ordering. Establish root Koin wiring.
-3. **Convert analytics as one tenant.** Change its contracts and pure estimation
-   helper to Java, then all six resolver implementations. Switch the tenant plugin
-   and remove its Kotlin/KSP configuration together; a partial plugin switch must
-   not strand the remaining Kotlin resolvers. Preserve object fragments selecting
-   `id`, `content`, and `items { text }`. Use constructor injection and generated
-   Java types; adapt futures and batching explicitly.
-   Before removing the Kotlin plugin, port `src/test/kotlin` tests to Java or move
-   retained Kotlin tests into a Kotlin project so they continue to compile and run.
-4. **Finish build and documentation.** Add the Java plugin/API aliases at
-   `3.0.0-rc.1`, with `api("com.airbnb.viaduct:javaapi-api:3.0.0-rc.1")` in
-   analytics and `implementation("com.airbnb.viaduct:javaapi-runtime:3.0.0-rc.1")`
-   in the application. The plugin is
-   `com.airbnb.viaduct.module-java-gradle-plugin`; it wires Viaduct's annotation
-   processor itself. Keep analytics' existing topology/package registration and
-   Kotlin runtime for the other tenants. Retain Java 25, Kotlin 2.3.21, and Gradle
-   9.3.1. Configure the Java tenant's Java 25 toolchain explicitly after removing
-   Kotlin; the current shared convention is registered through the Kotlin plugin.
-   Remove analytics-only unused plugins/dependencies, check Java compilation
-   and analysis coverage, and document an example mixed-language query.
-5. **Audit and verify.** Complete the acceptance checks below and the repository's
-   full test/refactoring sequence. Keep the language migration separate from
-   optional scopes, engine flags, new features, and persistence redesign.
+rc.1 Java code generation rejects selective resolver declarations across the central
+schema, including Kotlin-owned types. The mixed application therefore keeps BlogPost
+nodes non-selective and projects a fixed set of metadata columns. Feed identities and
+batched on-demand content still avoid loading bodies for metadata-only requests.
+Selection-aware metadata projections require an upstream code-generation fix.
 
-## Acceptance checks
+## Mixed-language example
 
-Preserve existing GraphQL signatures, public/admin scopes, stored data, and frontend
-behavior. Port existing analytics resolver/helper tests to the Java implementation;
-Kotlin tests may call Java classes during transition. Do not assume Kotlin Viaduct
-test fixtures accept Java execution contexts. Use explicit stubs for unit behavior
-and real engine integration tests for the language boundary.
+After publishing posts and recording views, run this against `/graphql`:
 
-- **View counts:** both post types, multiple parents, repeated parents/aliases,
-  absent rows returning zero, empty batches, and failure propagation. Maintain a
-  dedicated batch integration check so accidental per-parent database reads are detected.
-- **Read time:** blog content and checklist text; empty/whitespace content retains
-  the 0.5-minute minimum, and 400 words yield 2.0 minutes. Exercise nested Kotlin
-  fields through the Java object fragment, including dependency errors.
-- **View mutation:** anonymous published-post recording succeeds, drafts and
-  missing posts return false, malformed IDs retain their existing error contract,
-  and admin totals reflect successful increments.
-- **Trending:** default/explicit limits, no candidates, ordering, mixed post types,
-  candidate over-fetching, draft filtering, and omission of deleted/unknown types.
-  Resolve ordinary post fields and Java analytics fields in the same request.
-- **Persistence:** retain H2 repository integration tests and verify existing
-  SQLite data remains usable without a database migration.
-- **Contract/browser coverage:** public/admin introspection stays equivalent;
-  existing analytics queries, draft visibility, trending, and browser workflows pass.
-  Audit backend unit/integration, frontend unit, E2E, and query coverage and add
-  missing cases. A language-only migration needs no frontend product changes.
+```graphql
+query MixedLanguageShowcase {
+  trending(limit: 5) {
+    __typename
+    id
+    title
+    ... on BlogPost {
+      viewCount
+      readTimeMinutes
+    }
+    ... on CheckedListPost {
+      items { text }
+      viewCount
+      readTimeMinutes
+    }
+  }
+}
+```
 
-Run `./gradlew test`, `cd frontend && bash test.sh`, `./query-tests.sh`, and
-`./e2e.sh` in that order. After the required refactoring audit, repeat all four.
-Also build from clean generated output to catch stale Kotlin metadata or classes.
+Java resolves `trending`, `viewCount`, and `readTimeMinutes`. Kotlin resolves ordinary
+post fields and checklist items, including item text needed by Java read-time
+calculation even when clients omit `items`.
 
-Keep this as a focused, reversible change after the rc.1 upgrade. With SDL and
-database format preserved, reverting the Java conversion restores the Kotlin
-tenant without a data migration.
+## Testing, analysis, and coverage
 
-## References and planning validation
+The existing analytics resolver/helper tests remain Kotlin and now live in the root
+`src/test/kotlin/org/tuchscherer/analytics` tree, where they exercise Java contexts
+and future/map results using explicit mocks. The root test classpath includes the
+Java plugin's generated-type artifact. Persistence integration tests live in
+`modules/analytics-persistence/src/test/kotlin`, including H2 behavior and reopening
+an existing SQLite database.
+
+`MixedLanguageAnalyticsIntegrationTest` runs the real Viaduct engine with the
+production Koin injector and registry. It covers mixed post references, nested
+checklist dependencies and failures, aliases, bulk view-count reads, anonymous
+mutations, draft/deleted-post filtering, malformed IDs, and Kotlin admin totals.
+Its strict missing-output flag catches incomplete materialization without enabling
+the new execution engine or changing production error responses.
+
+```bash
+# Focused Java/Kotlin resolver behavior and real-engine composition
+./gradlew :test --tests 'org.tuchscherer.analytics.*' \
+  --tests org.tuchscherer.integration.MixedLanguageAnalyticsIntegrationTest
+
+# Kotlin persistence behavior, including existing SQLite data
+./gradlew :modules:analytics-persistence:test
+
+# Strict Java compiler analysis of handwritten production sources
+./gradlew :modules:analytics:lintJava
+
+# Java coverage from Kotlin-hosted tests; generated resolver bases are excluded
+./gradlew :modules:analytics:jacocoTestReport
+
+# Clean generation, all backend tests, and Kotlin/Java static analysis
+./gradlew clean build
+```
+
+`lintJava` uses `-Xlint:all -Werror -proc:none` against already compiled generated
+classes, keeping warnings in handwritten code actionable. It is part of analytics'
+`check` task. Detekt remains enabled for every Kotlin project, including the
+persistence adapter and relocated tests. Java coverage uses the root test execution
+data; its report is `modules/analytics/build/reports/jacoco/test/html/index.html`.
+
+The migration's isolated Java 25 validation passed Java generation/compilation,
+application and test compilation, strict Java lint, Kotlin analysis, persistence
+tests, and real-engine mixed-language tests. Final application acceptance follows
+[the upgrade verification notes](VIADUCT_3_UPGRADE.md): run backend tests, frontend
+checks, query tests, and browser tests in order, then repeat after the refactoring
+audit. The language migration needs no frontend product changes or database migration.
+
+## References
 
 - [Java reference application](https://github.com/airbnb/viaduct/tree/release/v3.0.0/demoapps/starwars-java)
 - [Mixed-language execution smoke test](https://github.com/airbnb/viaduct/blob/3b1a3d0054f27c7d2abf01fbc35946f48e0d327b/gradle-plugins/gradletestapps/multi-project/src/test/kotlin/com/example/execution/multiproject/PluginExecutionSmokeTest.kt)
 - [Java batching/object-fragment example](https://github.com/airbnb/viaduct/blob/3b1a3d0054f27c7d2abf01fbc35946f48e0d327b/demoapps/starwars-java/modules/filmography/src/main/java/com/example/starwars/modules/filmography/characters/resolvers/CharacterFilmCountResolver.java)
-- [Java module build](https://github.com/airbnb/viaduct/blob/3b1a3d0054f27c7d2abf01fbc35946f48e0d327b/demoapps/starwars-java/modules/filmography/build.gradle.kts)
-- [Java plugin: processor and generated-type wiring](https://github.com/airbnb/viaduct/blob/3b1a3d0054f27c7d2abf01fbc35946f48e0d327b/gradle-plugins/module-java/src/main/kotlin/viaduct/gradle/ViaductJavaModulePlugin.kt)
+- [Java plugin wiring](https://github.com/airbnb/viaduct/blob/3b1a3d0054f27c7d2abf01fbc35946f48e0d327b/gradle-plugins/module-java/src/main/kotlin/viaduct/gradle/ViaductJavaModulePlugin.kt)
 - [Published rc.1 Java API](https://repo.maven.apache.org/maven2/com/airbnb/viaduct/javaapi-api/3.0.0-rc.1/)
 - [Published rc.1 Java runtime](https://repo.maven.apache.org/maven2/com/airbnb/viaduct/javaapi-runtime/3.0.0-rc.1/)
 
-Source links pin the inspected release-branch commit; they are not a verified rc.1
-tag. Planning compared local module boundaries and existing tests with these
-sources and exact published API/runtime signatures. No Java migration has been
-compiled or tested. The completed Kotlin rc.1 upgrade and its validation results
-are recorded in [VIADUCT_3_UPGRADE.md](VIADUCT_3_UPGRADE.md).
+Source links pin the inspected release-branch commit. Implementation was compiled
+and executed against the exact published `3.0.0-rc.1` plugin, API, and runtime.

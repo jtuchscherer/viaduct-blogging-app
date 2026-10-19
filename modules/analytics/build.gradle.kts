@@ -1,31 +1,16 @@
 plugins {
     `java-library`
-    alias(libs.plugins.kotlin.jvm)
-    alias(libs.plugins.detekt)
-    alias(libs.plugins.ksp)
-    alias(libs.plugins.viaduct.module)
+    alias(libs.plugins.viaduct.module.java)
     jacoco
 }
 
-dependencies {
-    api(libs.viaduct.api)
-    implementation(libs.viaduct.runtime)
-    implementation(libs.exposed.core)
-    implementation(libs.exposed.dao)
-    implementation(libs.exposed.jdbc)
-    implementation(libs.exposed.java.time)
-    implementation(libs.koin.core)
-    implementation(project(":modules:shared"))
+java {
+    toolchain.languageVersion.set(JavaLanguageVersion.of(25))
+}
 
-    testImplementation(libs.junit.jupiter)
-    testImplementation(libs.junit.jupiter.engine)
-    testImplementation(libs.junit.platform.launcher)
-    testImplementation(libs.kotlinx.coroutines.test)
-    testImplementation(libs.koin.test)
-    testImplementation(libs.koin.test.junit5)
-    testImplementation(libs.mockk)
-    testImplementation(libs.h2)
-    testImplementation(libs.assertj.core)
+dependencies {
+    api(libs.viaduct.java.api)
+    implementation(project(":modules:shared"))
 }
 
 tasks.test {
@@ -34,9 +19,31 @@ tasks.test {
 }
 
 tasks.jacocoTestReport {
-    dependsOn(tasks.test)
+    // Kotlin-hosted unit and interoperability tests execute these Java classes in :test.
+    val applicationTests = rootProject.tasks.named<Test>("test")
+    dependsOn(applicationTests)
+    executionData(applicationTests.get())
+    classDirectories.setFrom(sourceSets.main.get().output.classesDirs.asFileTree.matching {
+        exclude("**/resolverbases/**")
+    })
     reports {
         xml.required = true
         html.required = true
     }
+}
+
+// Replaces Detekt for the Java tenant. Compile handwritten sources against the generated
+// classes so upstream codegen warnings cannot hide a new warning in application code.
+val lintJava by tasks.registering(JavaCompile::class) {
+    dependsOn(tasks.compileJava)
+    source(fileTree("src/main/java") { include("**/*.java") })
+    classpath = sourceSets.main.get().compileClasspath + sourceSets.main.get().output.classesDirs
+    destinationDirectory.set(layout.buildDirectory.dir("lint/java"))
+    javaCompiler.set(javaToolchains.compilerFor(java.toolchain))
+    options.compilerArgs.addAll(listOf("-Xlint:all", "-Werror", "-proc:none"))
+    options.release.set(25)
+}
+
+tasks.check {
+    dependsOn(lintJava)
 }

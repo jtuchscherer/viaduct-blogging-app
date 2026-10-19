@@ -9,9 +9,8 @@ import viaduct.api.resolver.Resolver
 import java.util.UUID
 
 /**
- * Own the large body separately so both clients and cross-module required selections
- * can load it on demand. This also preserves analytics' content dependency with rc.1's
- * legacy engine, which does not replay a selective node for that required selection.
+ * Load large bodies only when clients or cross-module required selections request them.
+ * Analytics' content dependency uses this same batch as an explicit client selection.
  */
 @Resolver(objectValueFragment = "fragment _ on BlogPost { id }")
 class PostContentResolver(

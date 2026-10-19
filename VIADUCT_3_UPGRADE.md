@@ -20,14 +20,15 @@ Upgrade reviewed October 16, 2026; follow-ups started October 19, 2026.
   manual declarations; the scope follow-up below adds build-time validation. Runtime query
   tests verify both public/admin introspection and admin operation rejection.
 
-The application remains Kotlin. The Java plugin and `javaapi-*` dependencies mentioned in
-the announcement apply when adding Java tenant modules. The proposed analytics migration
-for a mixed Java/Kotlin showcase is described in [JAVA_MODULE_MIGRATION_PLAN.md](JAVA_MODULE_MIGRATION_PLAN.md).
+The analytics tenant now uses Java, alongside Kotlin core and checklist tenants. It applies
+the Java module plugin and `javaapi-api`; the application adds `javaapi-runtime`, all at rc.1.
+Kotlin persistence remains in a separate ordinary library. The implemented boundaries and
+mixed-language query are described in [JAVA_MODULE_MIGRATION_PLAN.md](JAVA_MODULE_MIGRATION_PLAN.md).
 
 ## Java 25 toolchain
 
-All five backend projects use a shared `jvmToolchain(25)` for Kotlin/Java compilation,
-tests, and application execution. Kotlin 2.3 supplies the JVM 25 bytecode target;
+All six backend projects target Java 25 for compilation, tests, and application execution.
+The five Kotlin projects share `jvmToolchain(25)`; Java analytics declares its toolchain explicitly. Kotlin 2.3 supplies the JVM 25 bytecode target;
 Gradle 9.3.1 supports running on Java 25. The wrapper distribution is pinned with its
 official SHA-256, and the wrapper scripts/JAR are regenerated together.
 
@@ -70,7 +71,8 @@ The compatibility upgrade retained existing behavior. Follow-up status is record
 | --- | --- | --- |
 | Implemented | `scopes.yaml` and `SchemaScopeInfo.fromResources()` | The manifest is the single source of truth for vocabulary and served views. Viaduct validates it at build time; registration and routing load the generated resource. Public = `[public]`, admin = `[public, admin]`. |
 | Implemented | Resolver output diagnostics | `withResolverErrorReporter(...)` reports incomplete output by schema coordinates. Client-visible missing-field errors stay disabled. Real-engine tests exercise both default behavior and the strict test flag. |
-| Implemented | Selective Kotlin resolvers | Feed roots return identities; the batched BlogPost node uses `ctx.ownedSelections()` and SQL projections for requested scalars. A separate batched content field supports both clients and analytics required selections. Draft visibility, stable ordering, and batching are covered. |
+| Partially implemented; rc.1 limitation | Selective loading | Feed roots return identities, node queries project metadata without bodies, and a separate batched content field loads bodies on demand for clients and analytics. Selection-aware metadata via `isSelective` is blocked by Java code generation in rc.1. Draft visibility, stable ordering, and batching are covered. |
+| Implemented | Java analytics tenant | Six Java resolvers compose with Kotlin post nodes and nested checklist items. Existing analytics data stays in the Kotlin persistence adapter; real-engine tests cover both language directions and production Koin wiring. |
 | Implemented | Root-field references | `admin.post` delegates to the existing `Query.post` factory through `ctx.ref(Query.post { ... })`. The opt-in is local to that resolver; the default engine and feature flags are unchanged. The API remains experimental. |
 
 The scope follow-up removes the separate Kotlin scope map and regex-based vocabulary test.
@@ -92,15 +94,22 @@ They replace two unit cases whose fixture cannot materialize lazy references. Ex
 return types also activate ten previously undiscovered exception/overflow tests in the
 touched admin test class; all twenty remaining admin unit tests pass.
 
-Selective loading keeps large post bodies out of identity, title, and metadata-only reads.
-The selective BlogPost node uses schema coordinates, so aliases and fragments share a
-projection. Author lookup selects only identities; feed ordering includes an id tie-breaker.
-Content has a separate batched field resolver because the rc.1 default engine does not
-replay a selective node for analytics required selections. This preserves analytics without
-coupling node projections to analytics field names or enabling experimental execution.
-SQL and real-engine tests cover projections, pagination, drafts, analytics, and content
-returned after create, author update, and admin update. Direct object tests now assert
-node-owned fields; content assertions run through its field resolver and persisted responses.
+Post projections keep large bodies out of feed and metadata node reads. Author lookup
+selects only identities; feed ordering includes an id tie-breaker. Content has a separate
+batched field resolver that serves both client selections and analytics required selections.
+SQL and real-engine tests cover pagination, drafts, analytics, and content returned after
+create, author update, and admin update. Direct object tests assert node-owned fields;
+content assertions run through its field resolver and persisted responses. A feed that
+requests content performs identity, metadata, and content reads in batches; this reduces
+body I/O for metadata-only requests but adds round trips for content-heavy previews.
+
+The initial Kotlin selective implementation passed focused tests, but combining it with Java
+analytics exposed an rc.1 code-generation limitation: the Java generator validates every
+schema type and rejects `BlogPost @resolver(isSelective: true)` even when Kotlin owns it.
+Its CLI does not expose an owning-module filter or a way to skip this resolver validation.
+The mixed-language app therefore uses a fixed metadata projection excluding content.
+Selection-aware metadata loading must wait for an upstream fix; the application does not
+replace plugin internals or alter generated schema metadata to bypass validation.
 
 The upgrade also inherits resource indexing/startup improvements, tenant metadata/topology
 validation, materialization and duplicate-selection fixes, polymorphic-query heap protections,
@@ -109,8 +118,8 @@ application feature flags.
 
 Keep the new execution engine and `@defer` disabled: the changelog describes them as
 incomplete and unsuitable for production use. Remote JVM execution has no immediate
-application requirement. Java tenants are an optional showcase follow-up in the
-linked migration plan. No new application query/parser cache is announced.
+application requirement. Java analytics now demonstrates mixed tenants as described in
+the linked migration document. No new application query/parser cache is announced.
 
 ## Verification scope
 
@@ -125,21 +134,29 @@ before navigating, avoiding cancellation of an in-flight mutation.
 
 The required verification sequence is `./gradlew test`, `cd frontend && bash test.sh`,
 `./query-tests.sh`, and `./e2e.sh`, followed by a code/refactoring audit and a second complete
-verification pass. All suites passed on Java 25 before and after the audit. After correcting
-the home-feed test setup, the final complete browser run passed with retries disabled:
+verification pass. Both combined follow-up passes completed on Java 25 on October 19, 2026.
+The first regenerated Kotlin and Java tenants from clean output; the second followed the
+classpath, unused-dependency, and projection-mapping cleanup. All suites were green in order.
 
 | Check | Final result |
 | --- | --- |
-| Backend unit/integration tests, including all modules | 597 passed; no failures, errors, or skips |
-| Frontend type-check and ESLint | Passed |
-| Frontend unit tests | 131 passed |
-| GraphQL query checks | 158 passed |
-| Playwright: Chromium, Firefox, WebKit | 414 passed with retries disabled |
-| Isolated home-feed test, repeated three times per browser | 9 passed with retries disabled |
-| Application bytecode | All five backend projects emit Java 25 class files (major version 69) |
+| Backend unit/integration tests, including all modules | 673 passed on each pass; no failures, errors, or skips |
+| Frontend type-check and ESLint | Passed twice |
+| Frontend unit tests | 131 passed on each pass |
+| GraphQL query checks | 158 passed on each pass |
+| Playwright: Chromium, Firefox, WebKit | 414 passed on each pass with retries disabled |
+| Public GraphQL schema snapshot | Matches all 159 entries |
+| Java analytics coverage | 80/80 handwritten lines; 36/36 branches |
+| Application bytecode | All six backend projects emit Java 25 class files (major version 69) |
 | Gradle build/static analysis, shell syntax, diff whitespace | Passed |
 
-Validation included regenerating the backend and all tenant modules from clean build output.
+The analytics migration retains the existing helper/resolver tests, adding Java batch,
+Unicode, and mixed-language execution cases. Kotlin persistence tests include H2 and an
+existing SQLite analytics table. No frontend API or workflow changed; the existing frontend,
+query, and browser suites exercise both languages through production routing and injection.
+Java compiler lint treats handwritten-source warnings as errors; generated resolver bases
+are excluded from Java coverage and that separate lint pass.
+
 The runtime container tag was verified as published; a container build/start was not part
 of this local verification.
 
