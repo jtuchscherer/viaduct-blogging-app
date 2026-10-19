@@ -55,7 +55,12 @@ class PostProjectionRepositoryTest {
 
     @Test
     fun `all scalar columns are available when explicitly selected`() {
-        val post = repository.create("Title", "Body", authorId)
+        val createdAt = LocalDateTime.of(2026, 10, 19, 12, 0, 0, 123456789)
+        val updatedAt = createdAt.plusHours(1).withNano(987654321)
+        val created = repository.create("Title", "Body", authorId, createdAt = createdAt, updatedAt = updatedAt)
+        // H2 rounds timestamps to microseconds; the newly created DAO retains input nanos.
+        // Compare both read paths against persisted values, independent of OS clock precision.
+        val post = requireNotNull(repository.findById(created.id.value))
 
         val projected = repository.findPublishedProjection(PostField.entries.toSet()).single()
 
