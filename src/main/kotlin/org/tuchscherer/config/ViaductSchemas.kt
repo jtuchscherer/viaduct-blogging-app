@@ -4,29 +4,19 @@ import viaduct.service.SchemaScopeInfo
 import viaduct.service.api.SchemaId
 
 /**
- * The scoped schemas registered with Viaduct, declared exactly once.
- *
- * [KoinModules] passes [all] to `ViaductBuilder.withScopedSchemas`, and the HTTP layer routes a
- * request by looking up the matching [SchemaId] with [schemaIdFor]. Both read the same
- * declarations, so the registered schemas and the routable schemas cannot disagree.
- *
- * The [SchemaId] is taken from `SchemaScopeInfo.schemaId` rather than built with
- * `SchemaId.Scoped(...)`. Constructing a `SchemaId` directly warns that the API is internal to
- * Viaduct, and it would mean declaring the same id and scope set twice. This mirrors the Viaduct
- * demo app, which declares `SchemaScopeInfo.Scoped(...)` values and later routes on their
- * `.schemaId`.
- *
- * Scope names come from [SchemaScopes], which is where the vocabulary is validated.
+ * Schema views loaded from the manifest generated from `src/main/viaduct/scopes.yaml`.
+ * Viaduct validates both the scope vocabulary and each view during schema assembly.
+ * Runtime registration and HTTP routing use these same generated declarations.
  */
 object ViaductSchemas {
 
-    private val byId: Map<String, SchemaScopeInfo.Scoped> =
-        SchemaScopes.servedSchemas.mapValues { (schemaId, scopes) ->
-            SchemaScopeInfo.Scoped(schemaId, scopes)
-        }
+    const val PUBLIC = "public"
+    const val ADMIN = "admin"
 
     /** Every scoped schema to register with Viaduct. */
-    val all: List<SchemaScopeInfo> = byId.values.toList()
+    val all: List<SchemaScopeInfo> = SchemaScopeInfo.fromResources()
+
+    private val byId = all.associateBy { it.schemaId.id }
 
     /** The [SchemaId] to execute against for a registered schema id. */
     fun schemaIdFor(schemaId: String): SchemaId = byId.getValue(schemaId).schemaId
