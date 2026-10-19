@@ -18,6 +18,7 @@
 
 import { test, expect, type Page } from '@playwright/test';
 import { registerAndLogin } from './fixtures/auth';
+import { createPostViaAPI } from './fixtures/posts';
 
 /** Fill in the blog form on /create. Returns the title used. */
 async function fillBlogForm(page: Page, title: string, body: string) {
@@ -92,18 +93,15 @@ test.describe('Drafts — authoring', () => {
   });
 
   test('My Posts can filter down to drafts', async ({ page }) => {
-    await registerAndLogin(page, `draft_filter_${Date.now()}`);
-
+    const { token } = await registerAndLogin(page, `draft_filter_${Date.now()}`);
     const published = `Published One ${Date.now()}`;
-    await fillBlogForm(page, published, 'This one goes live.');
-    await page.click('button[type="submit"]');
-    await expect(page).toHaveURL(/\/post\//);
-
     const draft = `Draft One ${Date.now()}`;
-    await fillBlogForm(page, draft, 'This one stays back.');
-    await saveAsDraft(page);
+    await createPostViaAPI(page, token, published, 'This one goes live.');
+    await createPostViaAPI(page, token, draft, 'This one stays back.', 'DRAFT');
 
     await page.goto('/my-posts');
+    await expect(page.locator('main')).toContainText(published);
+    await expect(page.locator('main')).toContainText(draft);
     await page.selectOption('select#status-filter', 'DRAFT');
 
     await expect(page.locator('main')).toContainText(draft);
