@@ -14,9 +14,11 @@ import viaduct.api.grts.AdminCommentsPage
 import viaduct.api.grts.AdminPostsPage
 import viaduct.api.grts.AdminStats
 import viaduct.api.grts.AdminUsersPage
+import viaduct.api.grts.Query
 import viaduct.api.grts.BlogPost as ViaductBlogPost
 import viaduct.api.grts.User as ViaductUser
 import viaduct.api.grts.UserContentCounts
+import viaduct.apiannotations.ExperimentalApi
 import java.util.UUID
 
 @Resolver
@@ -94,13 +96,12 @@ class AdminPostsResolver(
 }
 
 @Resolver
-class AdminPostResolver(
-    private val postRepository: PostRepository
-) : AdminQueriesResolvers.Post() {
-    override suspend fun resolve(ctx: Context): ViaductBlogPost? {
-        val postId = UUID.fromString(ctx.arguments.id.internalID)
-        return postRepository.findById(postId)?.toViaductBlogPost(ctx)
-    }
+class AdminPostResolver : AdminQueriesResolvers.Post() {
+    // Reuse the public lookup's construction and visibility rules. The admin request context
+    // reaches the referenced resolver, so administrators can still read any author's drafts.
+    @OptIn(ExperimentalApi::class)
+    override suspend fun resolve(ctx: Context): ViaductBlogPost? =
+        ctx.ref(Query.post { id(ctx.arguments.id) })
 }
 
 @Resolver
