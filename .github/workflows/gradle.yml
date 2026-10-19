@@ -67,6 +67,14 @@ jobs:
         echo "Backend did not start in time"
         exit 1
 
+    - name: Install Chromium for GraphiQL smoke tests
+      run: cd frontend && npx playwright install --with-deps chromium
+
+    - name: Verify GraphiQL loads and executes queries
+      env:
+        API_URL: http://127.0.0.1:8080
+      run: cd frontend && npx playwright test e2e/graphiql.spec.ts --project=chromium --retries=0
+
     - name: Run API E2E Tests
       run: bash query-tests.sh
 

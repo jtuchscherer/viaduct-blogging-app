@@ -30,8 +30,6 @@ import org.tuchscherer.database.DatabaseFactory
 import org.tuchscherer.database.repositories.UserRepository
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import viaduct.service.api.ExecutionInput
-import viaduct.service.wiring.graphiql.GraphiQLHtmlConfig
-import viaduct.service.wiring.graphiql.graphiQLHtml
 import java.util.UUID
 import kotlin.coroutines.cancellation.CancellationException
 
@@ -84,7 +82,7 @@ class GraphQLServer(
             installServerPlugins()
             routing {
                 post("/graphql") { handleGraphQL(call) }
-                graphiqlRoute()
+                graphiqlRoutes()
                 databaseHealthRoute()
                 aiHealthRoute()
                 metricsRoute()
@@ -204,30 +202,6 @@ class GraphQLServer(
             logger.info("GraphQL operation='{}' duration={}ms", operationName, durationMs)
         }
         return specification
-    }
-
-    private fun Route.graphiqlRoute() {
-        get("/graphiql") {
-            call.respondText(
-                graphiQLHtml(
-                    GraphiQLHtmlConfig(
-                        title = "Blogging App",
-                        defaultQuery = """
-                            query {
-                              posts {
-                                id
-                                title
-                                author { username }
-                                likeCount
-                              }
-                            }
-                        """.trimIndent(),
-                        storageKey = "viaduct-blogging-app",
-                    )
-                ),
-                ContentType.Text.Html,
-            )
-        }
     }
 
     private fun Route.databaseHealthRoute() {
