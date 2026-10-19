@@ -6,6 +6,7 @@ import org.tuchscherer.database.Post
 import org.tuchscherer.database.PostStatus
 import org.tuchscherer.database.PostType
 import org.tuchscherer.database.User
+import org.tuchscherer.database.repositories.PostProjection
 import viaduct.api.context.ExecutionContext
 import viaduct.api.context.ResolverExecutionContext
 import viaduct.api.grts.BlogPost as ViaductBlogPost
@@ -36,6 +37,14 @@ internal fun Post.isVisibleTo(viewer: User?): Boolean =
     PostVisibility.canView(
         status = status,
         authorId = authorId.value,
+        viewerId = viewer?.id?.value,
+        viewerIsAdmin = viewer?.isAdmin ?: false,
+    )
+
+internal fun PostProjection.isVisibleTo(viewer: User?): Boolean =
+    PostVisibility.canView(
+        status = requireNotNull(status),
+        authorId = requireNotNull(authorId),
         viewerId = viewer?.id?.value,
         viewerIsAdmin = viewer?.isAdmin ?: false,
     )
@@ -72,7 +81,6 @@ internal fun Post.toViaductBlogPost(ctx: ExecutionContext) =
     ViaductBlogPost.of(ctx) {
         id(ctx.globalIDFor(ViaductBlogPost.Reflection, id.value.toString()))
         title(title)
-        content(content)
         status(ViaductPostStatus.valueOf(status))
         publishedAt(publishedAt?.toString())
         createdAt(createdAt.toString())

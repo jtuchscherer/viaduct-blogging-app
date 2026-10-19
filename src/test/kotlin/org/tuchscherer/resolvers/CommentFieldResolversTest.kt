@@ -57,7 +57,6 @@ class CommentFieldResolversTest : ResolverTestBase() {
         mockPost = mockk(relaxed = true)
         every { mockPost.id } returns EntityID(postId, mockk())
         every { mockPost.title } returns "Test Post"
-        every { mockPost.content } returns "Test content"
         every { mockPost.postType } returns PostType.BLOG_POST
         every { mockPost.createdAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
         every { mockPost.updatedAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
@@ -72,7 +71,7 @@ class CommentFieldResolversTest : ResolverTestBase() {
     // ── CommentAuthorResolver ───────────────────────────────────────────
 
     @Test
-    fun `CommentAuthorResolver returns author for comment`() = runBlocking {
+    fun `CommentAuthorResolver returns author for comment`() = runBlocking<Unit> {
         val resolver = CommentAuthorResolver(commentRepository)
         every { commentRepository.getAuthorForComment(commentId) } returns mockUser
 
@@ -88,7 +87,7 @@ class CommentFieldResolversTest : ResolverTestBase() {
     }
 
     @Test
-    fun `CommentAuthorResolver throws when comment not found`() = runBlocking {
+    fun `CommentAuthorResolver throws when comment not found`() = runBlocking<Unit> {
         val resolver = CommentAuthorResolver(commentRepository)
         every { commentRepository.getAuthorForComment(commentId) } returns null
 
@@ -104,7 +103,7 @@ class CommentFieldResolversTest : ResolverTestBase() {
     // ── CommentPostResolver ─────────────────────────────────────────────
 
     @Test
-    fun `CommentPostResolver returns post for comment`() = runBlocking {
+    fun `CommentPostResolver returns post for comment`() = runBlocking<Unit> {
         val resolver = CommentPostResolver(commentRepository)
         every { commentRepository.getPostForComment(commentId) } returns mockPost
 
@@ -117,11 +116,11 @@ class CommentFieldResolversTest : ResolverTestBase() {
         val blogPost = result as ViaductBlogPost
         assertEquals(postId.toString(), blogPost.getIdOrThrow().internalID)
         assertEquals("Test Post", blogPost.getTitleOrThrow())
-        assertEquals("Test content", blogPost.getContentOrThrow())
+        assertEquals(PostStatus.PUBLISHED, blogPost.getStatusOrThrow().name)
     }
 
     @Test
-    fun `CommentPostResolver throws when comment not found`() = runBlocking {
+    fun `CommentPostResolver throws when comment not found`() = runBlocking<Unit> {
         val resolver = CommentPostResolver(commentRepository)
         every { commentRepository.getPostForComment(commentId) } returns null
 

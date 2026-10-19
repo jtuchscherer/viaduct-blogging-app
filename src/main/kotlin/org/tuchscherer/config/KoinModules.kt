@@ -69,6 +69,7 @@ import org.tuchscherer.viadapp.resolvers.PostAuthorResolver
 import org.tuchscherer.viadapp.resolvers.PostCommentCountResolver
 import org.tuchscherer.viadapp.resolvers.PostCommentsFieldResolver
 import org.tuchscherer.viadapp.resolvers.PostCommentsResolver
+import org.tuchscherer.viadapp.resolvers.PostContentResolver
 import org.tuchscherer.viadapp.resolvers.PostIsLikedByMeResolver
 import org.tuchscherer.viadapp.resolvers.PostLikeCountResolver
 import org.tuchscherer.viadapp.resolvers.PostLikesResolver
@@ -175,6 +176,7 @@ val resolverModule = module {
     singleOf(::UpdatePostResolver)
     singleOf(::DeletePostResolver)
     singleOf(::PostsResolver)
+    singleOf(::PostContentResolver)
     singleOf(::PostResolver)
     singleOf(::MyPostsResolver)
     singleOf(::PostsConnectionResolver)

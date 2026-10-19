@@ -16,9 +16,13 @@ import org.tuchscherer.database.Post
 import org.tuchscherer.database.PostStatus
 import org.tuchscherer.database.User
 import org.tuchscherer.database.repositories.PostRepository
+import org.tuchscherer.database.repositories.PostProjection
+import org.tuchscherer.database.repositories.PostField
+import org.tuchscherer.database.PostType
 import org.tuchscherer.database.repositories.CommentRepository
 import org.tuchscherer.viadapp.resolvers.AdminPostResolver
 import org.tuchscherer.viadapp.resolvers.PostResolver
+import org.tuchscherer.viadapp.resolvers.PostContentResolver
 import org.tuchscherer.viadapp.resolvers.PostCommentsFieldResolver
 import viaduct.service.ViaductBuilder
 import viaduct.service.api.ExecutionInput
@@ -45,6 +49,7 @@ class AdminPostReferenceIntegrationTest {
                     when (clazz) {
                         AdminPostResolver::class.java -> AdminPostResolver()
                         PostResolver::class.java -> PostResolver(postRepository)
+                        PostContentResolver::class.java -> PostContentResolver(postRepository)
                         PostCommentsFieldResolver::class.java -> PostCommentsFieldResolver(commentRepository)
                         else -> error("Unexpected resolver: ${clazz.name}")
                     }
@@ -60,6 +65,9 @@ class AdminPostReferenceIntegrationTest {
     @Test
     fun `admin post returns the referenced post and client selection`() = runBlocking<Unit> {
         every { postRepository.findById(postId) } returns post()
+        every { postRepository.findProjectedByIds(listOf(postId), setOf(PostField.CONTENT)) } returns mapOf(
+            postId to PostProjection(postId, PostType.BLOG_POST, setOf(PostField.CONTENT), content = "Body")
+        )
 
         val result = execute("{ admin { post(id: \"$postGlobalId\") { id title content } } }")
 

@@ -38,10 +38,10 @@ interface Post implements Node @scope(to: ["public", "admin"]) {
 }
 
 # BlogPost type for blog posts
-type BlogPost implements Post & Node @resolver(isBatching: true) @scope(to: ["public", "admin"]) {
+type BlogPost implements Post & Node @resolver(isBatching: true, isSelective: true) @scope(to: ["public", "admin"]) {
   id: ID!
   title: String!
-  content: String!
+  content: String! @resolver(isBatching: true)
   author: User! @resolver(isBatching: true)
   comments: [Comment!]! @resolver
   commentCount: Int! @resolver

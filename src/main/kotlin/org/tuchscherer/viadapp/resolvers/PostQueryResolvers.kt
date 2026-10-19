@@ -14,7 +14,8 @@ class PostsResolver(
     private val postRepository: PostRepository
 ) : QueryResolvers.Posts() {
     override suspend fun resolve(ctx: Context): List<ViaductBlogPost> {
-        return postRepository.findAll().map { it.toViaductBlogPost(ctx) }
+        return postRepository.findPublishedProjection(emptySet())
+            .map { ctx.ref(ctx.globalIDFor(ViaductBlogPost.Reflection, it.id.toString())) }
     }
 }
 
@@ -44,7 +45,7 @@ class PostsConnectionResolver(
 
     override suspend fun resolve(ctx: Context): PostsConnection? {
         val offsetLimit = ctx.arguments.toOffsetLimit(DEFAULT_PAGE_SIZE)
-        val posts = postRepository.findPage(offsetLimit.limit, offsetLimit.offset)
+        val posts = postRepository.findPublishedProjection(emptySet(), offsetLimit.limit, offsetLimit.offset)
         val totalCount = postRepository.count().toCountInt()
         val hasMore = (offsetLimit.offset + posts.size) < totalCount
 

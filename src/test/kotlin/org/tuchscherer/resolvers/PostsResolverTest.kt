@@ -3,34 +3,29 @@
 
 package org.tuchscherer.resolvers
 
-import org.tuchscherer.database.PostStatus
-import org.tuchscherer.database.Post
 import org.tuchscherer.database.PostType
+import org.tuchscherer.database.repositories.PostField
+import org.tuchscherer.database.repositories.PostProjection
 import org.tuchscherer.database.repositories.PostRepository
 import org.tuchscherer.viadapp.resolvers.*
 import org.tuchscherer.viadapp.resolvers.resolverbases.QueryResolvers
 import io.mockk.*
 import kotlinx.coroutines.runBlocking
-import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
-import org.koin.core.context.GlobalContext
-import org.koin.dsl.module
 import viaduct.api.types.OffsetLimit
 import viaduct.api.grts.*
 import viaduct.api.internal.InternalContext
 import viaduct.api.mocks.MockConnectionFieldExecutionContext
 import viaduct.api.types.Arguments.NoArguments
 import viaduct.api.testing.ResolverTestBase
-import java.time.LocalDateTime
 import java.util.*
 
 class PostsResolverTest : ResolverTestBase() {
 
     private lateinit var postRepository: PostRepository
-    private lateinit var mockPost: Post
-    private val userId = UUID.randomUUID()
+    private lateinit var mockPost: PostProjection
     private val postId = UUID.randomUUID()
 
     private fun queryObj() = Query.Builder(context).build()
@@ -39,51 +34,39 @@ class PostsResolverTest : ResolverTestBase() {
     fun setup() {
         postRepository = mockk<PostRepository>()
 
-        mockPost = mockk<Post>(relaxed = true)
-        every { mockPost.id } returns EntityID(postId, mockk())
-        every { mockPost.title } returns "Test Post"
-        every { mockPost.content } returns "Test content"
-        every { mockPost.authorId } returns EntityID(userId, mockk())
-        every { mockPost.postType } returns PostType.BLOG_POST
-        every { mockPost.createdAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
-        every { mockPost.updatedAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
-        every { mockPost.status } returns PostStatus.PUBLISHED
-
-        GlobalContext.getOrNull()?.let { GlobalContext.stopKoin() }
-        org.koin.core.context.startKoin {
-            modules(module {
-                single { postRepository }
-            })
-        }
+        mockPost = PostProjection(
+            postId, PostType.BLOG_POST, setOf(PostField.TITLE), title = "Test Post"
+        )
     }
 
     @Test
-    fun `PostsResolver returns all posts`() = runBlocking {
+    fun `PostsResolver returns all posts`() = runBlocking<Unit> {
         val resolver = PostsResolver(postRepository)
 
-        every { postRepository.findAll() } returns listOf(mockPost)
+        every { postRepository.findPublishedProjection(any(), null, 0) } returns listOf(mockPost)
 
         val result = runFieldResolver(resolver) {
             objectValue = queryObj()
             queryValue = queryObj()
             arguments = NoArguments
+            selections = mkSelectionSetFactory().selectionsOn(BlogPost.Reflection, "id title", emptyMap())
             }
 
         assertEquals(1, result.size)
         assertEquals(postId.toString(), result[0].getIdOrThrow().internalID)
-        assertEquals("Test Post", result[0].getTitleOrThrow())
     }
 
     @Test
-    fun `PostsResolver returns empty list when no posts exist`() = runBlocking {
+    fun `PostsResolver returns empty list when no posts exist`() = runBlocking<Unit> {
         val resolver = PostsResolver(postRepository)
 
-        every { postRepository.findAll() } returns emptyList()
+        every { postRepository.findPublishedProjection(any(), null, 0) } returns emptyList()
 
         val result = runFieldResolver(resolver) {
             objectValue = queryObj()
             queryValue = queryObj()
             arguments = NoArguments
+            selections = mkSelectionSetFactory().selectionsOn(BlogPost.Reflection, "id title", emptyMap())
             }
 
         assertEquals(0, result.size)
@@ -105,7 +88,7 @@ class PostsResolverTest : ResolverTestBase() {
         // fromSlice requires this to be false before taking that path; only backward pagination
         // needs a total count, and these fixtures paginate forward.
         every { args.requiresTotalCountForOffsetLimit() } returns false
-        val selections = mkSelectionSetFactory().selectionsOn(PostsConnection.Reflection, "postsConnection", emptyMap())
+        val selections = mkSelectionSetFactory().selectionsOn(PostsConnection.Reflection, "edges { cursor node { id title } } totalCount pageInfo { hasNextPage hasPreviousPage startCursor endCursor }", emptyMap())
         val mockConnCtx = MockConnectionFieldExecutionContext<Query, Query, Query_PostsConnection_Arguments, PostsConnection>(
             objectValue = Query.Builder(context).build(),
             queryValue = Query.Builder(context).build(),
@@ -120,9 +103,9 @@ class PostsResolverTest : ResolverTestBase() {
     }
 
     @Test
-    fun `PostsConnectionResolver returns connection with correct totalCount`() = runBlocking {
+    fun `PostsConnectionResolver returns connection with correct totalCount`() = runBlocking<Unit> {
         val resolver = PostsConnectionResolver(postRepository)
-        every { postRepository.findPage(any(), any()) } returns listOf(mockPost)
+        every { postRepository.findPublishedProjection(any(), any(), any()) } returns listOf(mockPost)
         every { postRepository.count() } returns 1L
 
         val result = resolver.resolve(buildConnectionContext())
@@ -132,9 +115,9 @@ class PostsResolverTest : ResolverTestBase() {
     }
 
     @Test
-    fun `PostsConnectionResolver returns empty connection for empty repository`() = runBlocking {
+    fun `PostsConnectionResolver returns empty connection for empty repository`() = runBlocking<Unit> {
         val resolver = PostsConnectionResolver(postRepository)
-        every { postRepository.findPage(any(), any()) } returns emptyList()
+        every { postRepository.findPublishedProjection(any(), any(), any()) } returns emptyList()
         every { postRepository.count() } returns 0L
 
         val result = resolver.resolve(buildConnectionContext())
@@ -144,20 +127,9 @@ class PostsResolverTest : ResolverTestBase() {
     }
 
     @Test
-    fun `PostsConnectionResolver does not call findAll`() = runBlocking {
+    fun `PostsConnectionResolver populates pageInfo with hasNextPage when more pages exist`() = runBlocking<Unit> {
         val resolver = PostsConnectionResolver(postRepository)
-        every { postRepository.findPage(any(), any()) } returns listOf(mockPost)
-        every { postRepository.count() } returns 1L
-
-        resolver.resolve(buildConnectionContext())
-
-        verify(exactly = 0) { postRepository.findAll() }
-    }
-
-    @Test
-    fun `PostsConnectionResolver populates pageInfo with hasNextPage when more pages exist`() = runBlocking {
-        val resolver = PostsConnectionResolver(postRepository)
-        every { postRepository.findPage(any(), any()) } returns listOf(mockPost)
+        every { postRepository.findPublishedProjection(any(), any(), any()) } returns listOf(mockPost)
         every { postRepository.count() } returns 5L
 
         val result = resolver.resolve(buildConnectionContext(first = 1, offset = 0))
@@ -171,9 +143,9 @@ class PostsResolverTest : ResolverTestBase() {
     }
 
     @Test
-    fun `PostsConnectionResolver populates pageInfo with hasPreviousPage when offset is positive`() = runBlocking {
+    fun `PostsConnectionResolver populates pageInfo with hasPreviousPage when offset is positive`() = runBlocking<Unit> {
         val resolver = PostsConnectionResolver(postRepository)
-        every { postRepository.findPage(any(), any()) } returns listOf(mockPost)
+        every { postRepository.findPublishedProjection(any(), any(), any()) } returns listOf(mockPost)
         every { postRepository.count() } returns 5L
 
         val result = resolver.resolve(buildConnectionContext(first = 1, offset = 2))
@@ -185,9 +157,9 @@ class PostsResolverTest : ResolverTestBase() {
     }
 
     @Test
-    fun `PostsConnectionResolver returns empty edges and null cursors when page is empty`() = runBlocking {
+    fun `PostsConnectionResolver returns empty edges and null cursors when page is empty`() = runBlocking<Unit> {
         val resolver = PostsConnectionResolver(postRepository)
-        every { postRepository.findPage(any(), any()) } returns emptyList()
+        every { postRepository.findPublishedProjection(any(), any(), any()) } returns emptyList()
         every { postRepository.count() } returns 0L
 
         val result = resolver.resolve(buildConnectionContext())
@@ -201,19 +173,20 @@ class PostsResolverTest : ResolverTestBase() {
     }
 
     @Test
-    fun `PostsConnectionResolver includes CheckedListPost nodes in the connection`() = runBlocking {
+    fun `PostsConnectionResolver includes CheckedListPost nodes in the connection`() = runBlocking<Unit> {
         val resolver = PostsConnectionResolver(postRepository)
-        val checkedListPost = mockk<Post>()
-        every { checkedListPost.id } returns EntityID(UUID.randomUUID(), mockk())
-        every { checkedListPost.postType } returns PostType.CHECKED_LIST
+        val checkedListPost = PostProjection(UUID.randomUUID(), PostType.CHECKED_LIST, emptySet())
 
-        every { postRepository.findPage(any(), any()) } returns listOf(mockPost, checkedListPost)
+        every { postRepository.findPublishedProjection(any(), any(), any()) } returns listOf(mockPost, checkedListPost)
         every { postRepository.count() } returns 2L
 
         val result = resolver.resolve(buildConnectionContext())
 
         assertNotNull(result)
         assertEquals(2, result!!.getTotalCountOrThrow())
-        assertEquals(2, result.getEdgesOrThrow()?.size)
+        val nodes = result.getEdgesOrThrow()?.map { it?.getNodeOrThrow() }
+        assertEquals(2, nodes?.size)
+        assertInstanceOf(BlogPost::class.java, nodes?.get(0))
+        assertInstanceOf(CheckedListPost::class.java, nodes?.get(1))
     }
 }
