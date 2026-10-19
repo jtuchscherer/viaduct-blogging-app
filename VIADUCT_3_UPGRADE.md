@@ -69,7 +69,7 @@ The compatibility upgrade retained existing behavior. Follow-up status is record
 | Priority | Feature | Application benefit and prerequisites |
 | --- | --- | --- |
 | Implemented | `scopes.yaml` and `SchemaScopeInfo.fromResources()` | The manifest is the single source of truth for vocabulary and served views. Viaduct validates it at build time; registration and routing load the generated resource. Public = `[public]`, admin = `[public, admin]`. |
-| Small development improvement | Resolver output diagnostics | Configure `withResolverErrorReporter(...)` to report `ResolverOutputMissingFieldException`. Consider `ENABLE_RESOLVER_OUTPUT_MISSING_FIELD_ERRORS` in tests to expose incomplete generated-object construction in mapper helpers and module boundaries. Test this explicitly before changing client-visible error behavior. |
+| Implemented | Resolver output diagnostics | `withResolverErrorReporter(...)` reports incomplete output by schema coordinates. Client-visible missing-field errors stay disabled. Real-engine tests exercise both default behavior and the strict test flag. |
 | Larger performance project | Selective Kotlin resolvers | Use `@resolver(isSelective: true)`, `ctx.ownedSelections()`, and selected field coordinates to request only needed data. Add repository projections first: current Exposed DAO queries load full rows, and feed previews request content, limiting immediate savings. Preserve draft visibility, ordering, and batching. |
 | As module composition grows | Root-field references | Generated calls through `ctx.ref(...)` can compose future cross-module factories. Current node references already cover this app's use cases. Root-field references remain experimental. |
 
@@ -77,6 +77,12 @@ The scope follow-up removes the separate Kotlin scope map and regex-based vocabu
 Three manifest tests pin the served views, generated routing ids, and rejection of unknown
 schema ids. In an isolated build, a probe using `@scope(to: ["publicc"])` failed schema
 assembly with an invalid-scope diagnostic; the unmodified schema assembled successfully.
+
+The diagnostic reporter logs only the missing field's parent type and name. It does not
+log request context, returned data, or error details. Five tests verify omitted nullable
+output, strict test-mode errors and paths, explicit nulls, unselected fields, and safe logging.
+An omitted selected nullable field continues to resolve to null without a new client error
+under the production flags. The experimental execution engine remains disabled.
 
 The upgrade also inherits resource indexing/startup improvements, tenant metadata/topology
 validation, materialization and duplicate-selection fixes, polymorphic-query heap protections,
