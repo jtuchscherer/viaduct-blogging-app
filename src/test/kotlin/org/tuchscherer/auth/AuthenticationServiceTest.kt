@@ -168,7 +168,6 @@ class AuthenticationServiceTest {
 
     @Test
     fun `authenticateUser is case sensitive for username`() {
-        val username = "TestUser"
         val password = "password123"
 
         every { userRepository.findByUsername("testuser") } returns null

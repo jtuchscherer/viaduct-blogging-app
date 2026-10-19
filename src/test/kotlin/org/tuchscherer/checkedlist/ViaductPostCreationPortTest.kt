@@ -121,8 +121,8 @@ class ViaductPostCreationPortTest {
         val result = port.getPostsData(listOf(p1.id, p2.id))
 
         assertEquals(2, result.size)
-        assertEquals("List 1", result[p1.id]!!.title)
-        assertEquals("List 2", result[p2.id]!!.title)
+        assertEquals("List 1", result.getValue(p1.id).title)
+        assertEquals("List 2", result.getValue(p2.id).title)
     }
 
     @Test
