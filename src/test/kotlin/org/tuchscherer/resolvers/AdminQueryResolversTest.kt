@@ -12,7 +12,6 @@ import org.tuchscherer.database.repositories.LikeRepository
 import org.tuchscherer.database.repositories.PostRepository
 import org.tuchscherer.database.repositories.UserRepository
 import org.tuchscherer.viadapp.resolvers.AdminCommentsResolver
-import org.tuchscherer.viadapp.resolvers.AdminPostResolver
 import org.tuchscherer.viadapp.resolvers.AdminPostsResolver
 import org.tuchscherer.viadapp.resolvers.AdminStatsResolver
 import org.tuchscherer.viadapp.resolvers.AdminUserContentCountsResolver
@@ -99,7 +98,7 @@ class AdminQueryResolversTest : ResolverTestBase() {
     // ── AdminUsersResolver ────────────────────────────────────────────────────
 
     @Test
-    fun `AdminUsersResolver returns paginated users with totalCount`() = runBlocking {
+    fun `AdminUsersResolver returns paginated users with totalCount`() = runBlocking<Unit> {
         val resolver = AdminUsersResolver(userRepository)
         val args = AdminQueries_Users_Arguments.Builder(context).limit(10).offset(0).build()
 
@@ -119,7 +118,7 @@ class AdminQueryResolversTest : ResolverTestBase() {
     }
 
     @Test
-    fun `AdminUsersResolver respects limit and offset arguments`() = runBlocking {
+    fun `AdminUsersResolver respects limit and offset arguments`() = runBlocking<Unit> {
         val resolver = AdminUsersResolver(userRepository)
         val args = AdminQueries_Users_Arguments.Builder(context).limit(5).offset(10).build()
 
@@ -138,7 +137,7 @@ class AdminQueryResolversTest : ResolverTestBase() {
     }
 
     @Test
-    fun `AdminUsersResolver throws when totalCount exceeds Int MAX_VALUE (toCountInt guard)`() = runBlocking {
+    fun `AdminUsersResolver throws when totalCount exceeds Int MAX_VALUE (toCountInt guard)`() = runBlocking<Unit> {
         val resolver = AdminUsersResolver(userRepository)
         val args = AdminQueries_Users_Arguments.Builder(context).limit(10).offset(0).build()
         every { userRepository.findPage(10, 0) } returns emptyList()
@@ -157,7 +156,7 @@ class AdminQueryResolversTest : ResolverTestBase() {
     // ── AdminPostsResolver ────────────────────────────────────────────────────
 
     @Test
-    fun `AdminPostsResolver returns paginated posts with totalCount`() = runBlocking {
+    fun `AdminPostsResolver returns paginated posts with totalCount`() = runBlocking<Unit> {
         val resolver = AdminPostsResolver(postRepository)
         val args = AdminQueries_Posts_Arguments.Builder(context).limit(10).offset(0).build()
 
@@ -177,7 +176,7 @@ class AdminQueryResolversTest : ResolverTestBase() {
     }
 
     @Test
-    fun `AdminPostsResolver respects limit and offset arguments`() = runBlocking {
+    fun `AdminPostsResolver respects limit and offset arguments`() = runBlocking<Unit> {
         val resolver = AdminPostsResolver(postRepository)
         val args = AdminQueries_Posts_Arguments.Builder(context).limit(5).offset(10).build()
 
@@ -196,7 +195,7 @@ class AdminQueryResolversTest : ResolverTestBase() {
     }
 
     @Test
-    fun `AdminPostsResolver throws when totalCount exceeds Int MAX_VALUE (toCountInt guard)`() = runBlocking {
+    fun `AdminPostsResolver throws when totalCount exceeds Int MAX_VALUE (toCountInt guard)`() = runBlocking<Unit> {
         val resolver = AdminPostsResolver(postRepository)
         val args = AdminQueries_Posts_Arguments.Builder(context).limit(10).offset(0).build()
         every { postRepository.findPage(10, 0) } returns emptyList()
@@ -215,7 +214,7 @@ class AdminQueryResolversTest : ResolverTestBase() {
     // ── AdminCommentsResolver ─────────────────────────────────────────────────
 
     @Test
-    fun `AdminCommentsResolver returns paginated comments with totalCount`() = runBlocking {
+    fun `AdminCommentsResolver returns paginated comments with totalCount`() = runBlocking<Unit> {
         val resolver = AdminCommentsResolver(commentRepository)
         val args = AdminQueries_Comments_Arguments.Builder(context).limit(10).offset(0).build()
 
@@ -235,7 +234,7 @@ class AdminQueryResolversTest : ResolverTestBase() {
     }
 
     @Test
-    fun `AdminCommentsResolver respects limit and offset arguments`() = runBlocking {
+    fun `AdminCommentsResolver respects limit and offset arguments`() = runBlocking<Unit> {
         val resolver = AdminCommentsResolver(commentRepository)
         val args = AdminQueries_Comments_Arguments.Builder(context).limit(5).offset(10).build()
 
@@ -254,7 +253,7 @@ class AdminQueryResolversTest : ResolverTestBase() {
     }
 
     @Test
-    fun `AdminCommentsResolver throws when totalCount exceeds Int MAX_VALUE (toCountInt guard)`() = runBlocking {
+    fun `AdminCommentsResolver throws when totalCount exceeds Int MAX_VALUE (toCountInt guard)`() = runBlocking<Unit> {
         val resolver = AdminCommentsResolver(commentRepository)
         val args = AdminQueries_Comments_Arguments.Builder(context).limit(10).offset(0).build()
         every { commentRepository.findPage(10, 0) } returns emptyList()
@@ -273,7 +272,7 @@ class AdminQueryResolversTest : ResolverTestBase() {
     // ── AdminStatsResolver ────────────────────────────────────────────────────
 
     @Test
-    fun `AdminStatsResolver returns aggregate counts`() = runBlocking {
+    fun `AdminStatsResolver returns aggregate counts`() = runBlocking<Unit> {
         val resolver = AdminStatsResolver(userRepository, postRepository, commentRepository, likeRepository)
 
         every { userRepository.count() } returns 5L
@@ -298,7 +297,7 @@ class AdminQueryResolversTest : ResolverTestBase() {
     // reverts to a silent toInt(), the matching test fails. Testing each source
     // independently catches partial reverts that an aggregate test would miss.
     @Test
-    fun `AdminStatsResolver throws when userCount exceeds Int MAX_VALUE`() = runBlocking {
+    fun `AdminStatsResolver throws when userCount exceeds Int MAX_VALUE`() = runBlocking<Unit> {
         val resolver = AdminStatsResolver(userRepository, postRepository, commentRepository, likeRepository)
         every { userRepository.count() } returns Int.MAX_VALUE.toLong() + 1L
         every { postRepository.count() } returns 0L
@@ -316,7 +315,7 @@ class AdminQueryResolversTest : ResolverTestBase() {
     }
 
     @Test
-    fun `AdminStatsResolver throws when postCount exceeds Int MAX_VALUE`() = runBlocking {
+    fun `AdminStatsResolver throws when postCount exceeds Int MAX_VALUE`() = runBlocking<Unit> {
         val resolver = AdminStatsResolver(userRepository, postRepository, commentRepository, likeRepository)
         every { userRepository.count() } returns 0L
         every { postRepository.count() } returns Int.MAX_VALUE.toLong() + 1L
@@ -334,7 +333,7 @@ class AdminQueryResolversTest : ResolverTestBase() {
     }
 
     @Test
-    fun `AdminStatsResolver throws when commentCount exceeds Int MAX_VALUE`() = runBlocking {
+    fun `AdminStatsResolver throws when commentCount exceeds Int MAX_VALUE`() = runBlocking<Unit> {
         val resolver = AdminStatsResolver(userRepository, postRepository, commentRepository, likeRepository)
         every { userRepository.count() } returns 0L
         every { postRepository.count() } returns 0L
@@ -352,7 +351,7 @@ class AdminQueryResolversTest : ResolverTestBase() {
     }
 
     @Test
-    fun `AdminStatsResolver throws when likeCount exceeds Int MAX_VALUE`() = runBlocking {
+    fun `AdminStatsResolver throws when likeCount exceeds Int MAX_VALUE`() = runBlocking<Unit> {
         val resolver = AdminStatsResolver(userRepository, postRepository, commentRepository, likeRepository)
         every { userRepository.count() } returns 0L
         every { postRepository.count() } returns 0L
@@ -372,7 +371,7 @@ class AdminQueryResolversTest : ResolverTestBase() {
     // ── AdminUserResolver ─────────────────────────────────────────────────────
 
     @Test
-    fun `AdminUserResolver returns user when found`() = runBlocking {
+    fun `AdminUserResolver returns user when found`() = runBlocking<Unit> {
         val resolver = AdminUserResolver(userRepository)
         val args = AdminQueries_User_Arguments.Builder(context)
             .id(globalIDFor(viaduct.api.grts.User.Reflection, dbUserId.toString()))
@@ -393,7 +392,7 @@ class AdminQueryResolversTest : ResolverTestBase() {
     }
 
     @Test
-    fun `AdminUserResolver returns null when user not found`() = runBlocking {
+    fun `AdminUserResolver returns null when user not found`() = runBlocking<Unit> {
         val resolver = AdminUserResolver(userRepository)
         val args = AdminQueries_User_Arguments.Builder(context)
             .id(globalIDFor(viaduct.api.grts.User.Reflection, dbUserId.toString()))
@@ -414,7 +413,7 @@ class AdminQueryResolversTest : ResolverTestBase() {
     // ── AdminUserContentCountsResolver ────────────────────────────────────────
 
     @Test
-    fun `AdminUserContentCountsResolver returns content counts for user`() = runBlocking {
+    fun `AdminUserContentCountsResolver returns content counts for user`() = runBlocking<Unit> {
         val resolver = AdminUserContentCountsResolver(postRepository, commentRepository, likeRepository)
         val args = AdminQueries_UserContentCounts_Arguments.Builder(context)
             .userId(globalIDFor(viaduct.api.grts.User.Reflection, dbUserId.toString()))
@@ -437,7 +436,7 @@ class AdminQueryResolversTest : ResolverTestBase() {
     }
 
     @Test
-    fun `AdminUserContentCountsResolver throws when postCount exceeds Int MAX_VALUE`() = runBlocking {
+    fun `AdminUserContentCountsResolver throws when postCount exceeds Int MAX_VALUE`() = runBlocking<Unit> {
         val resolver = AdminUserContentCountsResolver(postRepository, commentRepository, likeRepository)
         val args = AdminQueries_UserContentCounts_Arguments.Builder(context)
             .userId(globalIDFor(viaduct.api.grts.User.Reflection, dbUserId.toString()))
@@ -457,7 +456,7 @@ class AdminQueryResolversTest : ResolverTestBase() {
     }
 
     @Test
-    fun `AdminUserContentCountsResolver throws when commentCount exceeds Int MAX_VALUE`() = runBlocking {
+    fun `AdminUserContentCountsResolver throws when commentCount exceeds Int MAX_VALUE`() = runBlocking<Unit> {
         val resolver = AdminUserContentCountsResolver(postRepository, commentRepository, likeRepository)
         val args = AdminQueries_UserContentCounts_Arguments.Builder(context)
             .userId(globalIDFor(viaduct.api.grts.User.Reflection, dbUserId.toString()))
@@ -477,7 +476,7 @@ class AdminQueryResolversTest : ResolverTestBase() {
     }
 
     @Test
-    fun `AdminUserContentCountsResolver throws when likeCount exceeds Int MAX_VALUE`() = runBlocking {
+    fun `AdminUserContentCountsResolver throws when likeCount exceeds Int MAX_VALUE`() = runBlocking<Unit> {
         val resolver = AdminUserContentCountsResolver(postRepository, commentRepository, likeRepository)
         val args = AdminQueries_UserContentCounts_Arguments.Builder(context)
             .userId(globalIDFor(viaduct.api.grts.User.Reflection, dbUserId.toString()))
@@ -496,46 +495,7 @@ class AdminQueryResolversTest : ResolverTestBase() {
         }
     }
 
-    // ── AdminPostResolver ─────────────────────────────────────────────────────
-
-    @Test
-    fun `AdminPostResolver returns post when found`() = runBlocking {
-        val resolver = AdminPostResolver(postRepository)
-        val args = AdminQueries_Post_Arguments.Builder(context)
-            .id(globalIDFor(ViaductBlogPost.Reflection, postId.toString()))
-            .build()
-
-        every { postRepository.findById(postId) } returns mockPost
-
-        val result = runFieldResolver(resolver) {
-            objectValue = adminQueriesObj()
-            queryValue = queryObj()
-            arguments = args
-            requestContext = RequestContext(user = mockAdminUser)
-            }
-
-        assertNotNull(result)
-        assertEquals(postId.toString(), result!!.getIdOrThrow().internalID)
-        assertEquals("Test Post", result.getTitleOrThrow())
-    }
-
-    @Test
-    fun `AdminPostResolver returns null when post not found`() = runBlocking {
-        val resolver = AdminPostResolver(postRepository)
-        val args = AdminQueries_Post_Arguments.Builder(context)
-            .id(globalIDFor(ViaductBlogPost.Reflection, postId.toString()))
-            .build()
-
-        every { postRepository.findById(postId) } returns null
-
-        val result = runFieldResolver(resolver) {
-            objectValue = adminQueriesObj()
-            queryValue = queryObj()
-            arguments = args
-            requestContext = RequestContext(user = mockAdminUser)
-            }
-
-        assertNull(result)
-    }
+    // Admin post lookup behavior is covered through the real engine in
+    // AdminPostReferenceIntegrationTest: the unit harness cannot resolve lazy references.
 
 }
