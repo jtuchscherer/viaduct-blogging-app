@@ -14,8 +14,8 @@ import viaduct.service.api.spi.ErrorReporter
 class ResolverOutputErrorReporter : ErrorReporter {
     private val logger = LoggerFactory.getLogger(ResolverOutputErrorReporter::class.java)
 
-    override fun reportResolverError(error: Throwable, message: String, metadata: ErrorReporter.Metadata) {
-        if (error is ResolverOutputMissingFieldException) {
+    override fun reportResolverError(exception: Throwable, errorMessage: String, metadata: ErrorReporter.Metadata) {
+        if (exception is ResolverOutputMissingFieldException) {
             logger.warn("Incomplete resolver output: {}.{}", metadata.parentType, metadata.fieldName)
         }
     }

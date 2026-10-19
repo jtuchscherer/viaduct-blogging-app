@@ -46,7 +46,7 @@ class ResolverOutputDiagnosticsTest {
         assertEquals(mapOf("postsConnection" to mapOf("totalCount" to null)), result.getData(), result.toSpecification().toString())
         assertEquals(1, reports.size)
         val error = result.errors.single()
-        assertEquals("VIADUCT_RESOLVER_OUTPUT_MISSING_FIELD", error.extensions?.get("code"))
+        assertEquals("VIADUCT_RESOLVER_OUTPUT_MISSING_FIELD", error.extensions["code"])
         assertEquals(listOf("postsConnection", "totalCount"), error.path)
     }
 
@@ -117,11 +117,9 @@ class ResolverOutputDiagnosticsTest {
             }
         }
         val diagnosticReporter = ResolverOutputErrorReporter()
-        val reporter = object : ErrorReporter {
-            override fun reportResolverError(error: Throwable, message: String, metadata: ErrorReporter.Metadata) {
-                reports.add(error)
-                diagnosticReporter.reportResolverError(error, message, metadata)
-            }
+        val reporter = ErrorReporter { error, message, metadata ->
+            reports.add(error)
+            diagnosticReporter.reportResolverError(error, message, metadata)
         }
         val flags = object : FlagManager {
             override fun isEnabled(flag: FlagManager.Flag): Boolean =
