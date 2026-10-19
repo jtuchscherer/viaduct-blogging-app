@@ -123,6 +123,38 @@ the linked migration document. No new application query/parser cache is announce
 
 ## Verification scope
 
+### GraphiQL compatibility repair
+
+The rc.1 GraphiQL HTML requires `/js/jsx-loader.js`, `/js/global-id-plugin.jsx`,
+and favicons from the runtime JAR; the application now serves those resources.
+The template also imports `/js/introspection-patch.js`, which is absent from the
+published JAR, and its JSX loader calls Babel without loading it. The same template
+defects are present in the previous 2.0 runtime; they are not new engine behavior.
+The [Star Wars rc.1 controller](https://github.com/viaduct-dev/starwars/blob/rc/v3.0.0-rc.1/src/main/kotlin/com/example/starwars/service/graphiql/StaticJsController.kt)
+serves the two bundled JavaScript files but does not address those template defects.
+
+`GraphiQLRoutes.kt` keeps the configured upstream HTML, loads a pinned Babel build,
+and replaces the missing introspection-patch dependency with the standard fetcher.
+Our real introspection response builds a valid GraphQL client schema without the patch.
+GraphiQL, its React components, toolkit, and explorer use the CDN versions verified
+together. These compatibility substitutions should be revisited when upgrading Viaduct.
+GraphiQL still requires Internet access for its CDN dependencies.
+
+Route tests check the configured HTML, every referenced local asset, JavaScript MIME
+types, and missing-resource responses. Browser tests load the real schema, execute
+the default blogging query, and round-trip a BlogPost ID through the Global ID utility
+in Chromium, Firefox, and WebKit. CI runs the Chromium GraphiQL smoke tests against
+its existing backend server. No business schema or frontend application behavior
+changes in this repair.
+
+Both complete GraphiQL-repair verification passes on October 19, 2026 passed in
+the required order: 675 backend tests, frontend type-check/lint and 131 unit tests,
+158 query checks, and 420 browser tests with retries disabled. The code audit found
+no further refactoring needed after extracting the GraphiQL routes from the server.
+The final page was also checked separately after launching `start.sh` on port 8080.
+
+### Upgrade and module follow-ups
+
 The test audit covers backend resolver/auth units, repository and workflow integrations,
 frontend units, real GraphQL queries, and browser workflows. Existing coverage exercises
 node references, batching, polymorphic posts, analytics, pagination, draft visibility, and
