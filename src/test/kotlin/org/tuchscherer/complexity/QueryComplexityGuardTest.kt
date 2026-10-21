@@ -53,6 +53,18 @@ class QueryComplexityGuardTest {
     }
 
     @Test
+    fun `complexity limits cover fields from Java analytics and Kotlin checklist schemas`() {
+        val checkedGuard = QueryComplexityGuard(QueryFieldComplexityCalculator(), maxComplexity = 1)
+        for (query in listOf(
+            "{ trending { id ... on BlogPost { readTimeMinutes } } }",
+            "{ checkedListPosts { items { text } readTimeMinutes } }",
+        )) {
+            val error = checkedGuard.check(query)
+            assertTrue(error?.message?.startsWith("maximum query complexity exceeded") == true, query)
+        }
+    }
+
+    @Test
     fun `over-budget query is rejected with the complexity message`() {
         val query = "{ postsConnection(first: 50) { edges { node { id author { id } } } } }"
         val err = guard.check(query)!!
