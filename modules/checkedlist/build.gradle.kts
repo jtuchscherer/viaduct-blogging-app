@@ -19,8 +19,7 @@ dependencies {
     implementation(libs.koin.core)
 
     testImplementation(libs.junit.jupiter)
-    testImplementation(libs.junit.jupiter.engine)
-    testImplementation(libs.junit.platform.launcher)
+    testRuntimeOnly(libs.junit.platform.launcher)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.koin.test)
     testImplementation(libs.koin.test.junit5)

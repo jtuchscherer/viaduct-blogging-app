@@ -12,8 +12,7 @@ dependencies {
     implementation(libs.exposed.jdbc)
 
     testImplementation(libs.junit.jupiter)
-    testImplementation(libs.junit.jupiter.engine)
-    testImplementation(libs.junit.platform.launcher)
+    testRuntimeOnly(libs.junit.platform.launcher)
     testImplementation(libs.h2)
     testImplementation(libs.sqlite.jdbc)
 }

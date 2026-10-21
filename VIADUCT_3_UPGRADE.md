@@ -36,9 +36,13 @@ It starts the launcher outside the checkout with a temporary SQLite database and
 exercises registration, blog/checklist creation, Java read-time and view-count
 fields, view recording, trending, and the bundled GraphiQL assets.
 
-The test-fixtures JAR no longer bundles JUnit. The application already declares
-JUnit 6 explicitly, so those dependencies remain necessary and need no version
-change. The obsolete bundled-JUnit comment has been removed from the build.
+The test-fixtures JAR no longer bundles JUnit classes. The root no longer needs
+the rc.1 workaround that put an explicit JUnit API dependency before the fixtures.
+All projects with tests use `testImplementation(libs.junit.jupiter)` for the API,
+parameterized-test support, and engine, plus
+`testRuntimeOnly(libs.junit.platform.launcher)` for Gradle's launcher. Separate API
+and engine declarations were redundant because the Jupiter aggregate provides
+them transitively. One catalog version aligns Jupiter and Platform on JUnit 6.1.3.
 
 Both full rc.2 verification passes on October 21, 2026 passed in the required
 order: 677 backend tests with no skips, frontend type-check/lint and 131 unit
