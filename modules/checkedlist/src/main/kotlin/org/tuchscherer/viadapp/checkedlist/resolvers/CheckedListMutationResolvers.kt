@@ -1,8 +1,7 @@
 package org.tuchscherer.viadapp.checkedlist.resolvers
 
+import org.tuchscherer.checkedlist.ChecklistService
 import org.tuchscherer.checkedlist.port.CheckedListCurrentUserProvider
-import org.tuchscherer.checkedlist.port.PostCreationPort
-import org.tuchscherer.checkedlist.repositories.CheckedListItemRepository
 import org.tuchscherer.viadapp.checkedlist.resolverbases.MutationResolvers
 import org.koin.java.KoinJavaComponent.inject
 import viaduct.api.resolver.Resolver
@@ -11,207 +10,79 @@ import viaduct.api.grts.CheckedListPost as ViaductCheckedListPost
 import viaduct.api.grts.PostStatus as ViaductPostStatus
 import java.util.UUID
 
-/**
- * Creates a new [CheckedListPost] with the supplied initial items.
- * Requires the caller to be authenticated.
- *
- * Validation:
- * - title: non-blank, max 500 chars
- * - items: up to 100 items, each text non-blank, max 1000 chars
- */
 @Resolver
 class CreateCheckedListPostMutationResolver : MutationResolvers.CreateCheckedListPost() {
-    private val currentUserProvider: CheckedListCurrentUserProvider
-        by inject(CheckedListCurrentUserProvider::class.java)
-    private val postCreationPort: PostCreationPort by inject(PostCreationPort::class.java)
-    private val itemRepository: CheckedListItemRepository by inject(CheckedListItemRepository::class.java)
+    private val users: CheckedListCurrentUserProvider by inject(CheckedListCurrentUserProvider::class.java)
+    private val service: ChecklistService by inject(ChecklistService::class.java)
 
     override suspend fun resolve(ctx: Context): ViaductCheckedListPost {
-        val userId = currentUserProvider.getCurrentUserId(ctx.requestContext)
+        val actorId = users.getCurrentUserId(ctx.requestContext)
         val input = ctx.arguments.input
-
-        validateTitle(input.title)
-        val itemTexts = input.items
-        require(itemTexts.size <= MAX_CHECKLIST_ITEMS) { "A checklist may have at most 100 items" }
-        itemTexts.forEach { validateItemText(it) }
-
-        val description = input.description ?: ""
-        // Omitted status means PUBLISHED, so clients written before drafts existed are unaffected.
-        val status = when (input.status) {
-            ViaductPostStatus.DRAFT -> "DRAFT"
-            else -> "PUBLISHED"
-        }
-        val postData = postCreationPort.createCheckedListPost(input.title, userId, description, status)
-        itemTexts.forEach { text -> itemRepository.addItem(postData.id, text) }
-
-        return postData.toViaductPost(ctx)
+        val status = if (input.status == ViaductPostStatus.DRAFT) "DRAFT" else "PUBLISHED"
+        return service.create(actorId, input.title, input.description ?: "", input.items, status).toViaductPost(ctx)
     }
 }
 
-/**
- * Adds a single item to an existing [CheckedListPost].
- * Requires authentication.
- */
 @Resolver
 class AddCheckedListItemMutationResolver : MutationResolvers.AddCheckedListItem() {
-    private val currentUserProvider: CheckedListCurrentUserProvider
-        by inject(CheckedListCurrentUserProvider::class.java)
-    private val postCreationPort: PostCreationPort by inject(PostCreationPort::class.java)
-    private val itemRepository: CheckedListItemRepository by inject(CheckedListItemRepository::class.java)
+    private val users: CheckedListCurrentUserProvider by inject(CheckedListCurrentUserProvider::class.java)
+    private val service: ChecklistService by inject(ChecklistService::class.java)
 
     override suspend fun resolve(ctx: Context): ViaductCheckedListItem {
-        currentUserProvider.getCurrentUserId(ctx.requestContext) // ensure authenticated
-
+        val actorId = users.getCurrentUserId(ctx.requestContext)
         val input = ctx.arguments.input
-        val postId = UUID.fromString(input.postId.internalID)
-        validateItemText(input.text)
-
-        postCreationPort.getPostData(postId)
-            ?: error("CheckedListPost not found: $postId")
-
-        return itemRepository.addItem(postId, input.text).toViaductItem(ctx)
+        return service.addItem(actorId, UUID.fromString(input.postId.internalID), input.text).toViaductItem(ctx)
     }
 }
 
-/**
- * Toggles the checked state of a [CheckedListItem].
- * Requires authentication AND that the caller is the post's author.
- */
 @Resolver
 class ToggleCheckedListItemMutationResolver : MutationResolvers.ToggleCheckedListItem() {
-    private val currentUserProvider: CheckedListCurrentUserProvider
-        by inject(CheckedListCurrentUserProvider::class.java)
-    private val itemRepository: CheckedListItemRepository by inject(CheckedListItemRepository::class.java)
-    private val postCreationPort: PostCreationPort by inject(PostCreationPort::class.java)
+    private val users: CheckedListCurrentUserProvider by inject(CheckedListCurrentUserProvider::class.java)
+    private val service: ChecklistService by inject(ChecklistService::class.java)
 
-    override suspend fun resolve(ctx: Context): ViaductCheckedListItem {
-        val userId = currentUserProvider.getCurrentUserId(ctx.requestContext)
-
-        val itemId = UUID.fromString(ctx.arguments.id.internalID)
-
-        val postId = itemRepository.getPostIdForItem(itemId)
-            ?: error("CheckedListItem not found: $itemId")
-
-        val postData = postCreationPort.getPostData(postId)
-            ?: error("CheckedListPost not found: $postId")
-
-        check(postData.authorId == userId) {
-            "Not authorized: only the post author can toggle checklist items"
-        }
-
-        val item = itemRepository.toggleItem(itemId)
-            ?: error("CheckedListItem not found: $itemId")
-
-        return item.toViaductItem(ctx)
-    }
+    override suspend fun resolve(ctx: Context): ViaductCheckedListItem =
+        service.toggleItem(users.getCurrentUserId(ctx.requestContext), UUID.fromString(ctx.arguments.id.internalID))
+            .toViaductItem(ctx)
 }
 
-/**
- * Deletes a [CheckedListItem].
- * Requires authentication.
- */
 @Resolver
 class DeleteCheckedListItemMutationResolver : MutationResolvers.DeleteCheckedListItem() {
-    private val currentUserProvider: CheckedListCurrentUserProvider
-        by inject(CheckedListCurrentUserProvider::class.java)
-    private val itemRepository: CheckedListItemRepository by inject(CheckedListItemRepository::class.java)
+    private val users: CheckedListCurrentUserProvider by inject(CheckedListCurrentUserProvider::class.java)
+    private val service: ChecklistService by inject(ChecklistService::class.java)
 
-    override suspend fun resolve(ctx: Context): Boolean {
-        currentUserProvider.getCurrentUserId(ctx.requestContext) // ensure authenticated
-
-        val itemId = UUID.fromString(ctx.arguments.id.internalID)
-        return itemRepository.deleteItem(itemId)
-    }
+    override suspend fun resolve(ctx: Context): Boolean =
+        service.deleteItem(users.getCurrentUserId(ctx.requestContext), UUID.fromString(ctx.arguments.id.internalID))
 }
 
-/**
- * Updates the title and/or description of a [CheckedListPost].
- * Requires authentication and ownership.
- */
 @Resolver
 class UpdateCheckedListPostMutationResolver : MutationResolvers.UpdateCheckedListPost() {
-    private val currentUserProvider: CheckedListCurrentUserProvider
-        by inject(CheckedListCurrentUserProvider::class.java)
-    private val postCreationPort: PostCreationPort by inject(PostCreationPort::class.java)
+    private val users: CheckedListCurrentUserProvider by inject(CheckedListCurrentUserProvider::class.java)
+    private val service: ChecklistService by inject(ChecklistService::class.java)
 
     override suspend fun resolve(ctx: Context): ViaductCheckedListPost {
-        currentUserProvider.getCurrentUserId(ctx.requestContext) // ensure authenticated
-
+        val actorId = users.getCurrentUserId(ctx.requestContext)
         val input = ctx.arguments.input
-        val postId = UUID.fromString(input.id.internalID)
-        input.title?.let { validateTitle(it) }
-        input.description?.let { desc ->
-            require(desc.length <= MAX_DESCRIPTION_LENGTH) { "Description must be 10,000 characters or fewer" }
-        }
-
-        val postData = postCreationPort.updateCheckedListPost(
-            id = postId,
-            title = input.title,
-            description = input.description,
-        ) ?: error("CheckedListPost not found: $postId")
-
-        return postData.toViaductPost(ctx)
+        return service.update(actorId, UUID.fromString(input.id.internalID), input.title, input.description).toViaductPost(ctx)
     }
 }
 
-/**
- * Deletes a [CheckedListPost] and all its items.
- * Requires authentication.
- */
 @Resolver
 class DeleteCheckedListPostMutationResolver : MutationResolvers.DeleteCheckedListPost() {
-    private val currentUserProvider: CheckedListCurrentUserProvider
-        by inject(CheckedListCurrentUserProvider::class.java)
-    private val postCreationPort: PostCreationPort by inject(PostCreationPort::class.java)
-    private val itemRepository: CheckedListItemRepository by inject(CheckedListItemRepository::class.java)
+    private val users: CheckedListCurrentUserProvider by inject(CheckedListCurrentUserProvider::class.java)
+    private val service: ChecklistService by inject(ChecklistService::class.java)
 
-    override suspend fun resolve(ctx: Context): Boolean {
-        currentUserProvider.getCurrentUserId(ctx.requestContext) // ensure authenticated
-
-        val postId = UUID.fromString(ctx.arguments.id.internalID)
-        // Delete items first (no FK constraint, but clean up orphans)
-        itemRepository.deleteItemsForPost(postId)
-        return postCreationPort.deleteCheckedListPost(postId)
-    }
+    override suspend fun resolve(ctx: Context): Boolean =
+        service.delete(users.getCurrentUserId(ctx.requestContext), UUID.fromString(ctx.arguments.id.internalID))
 }
 
-/**
- * Updates the text of a [CheckedListItem].
- * Requires authentication.
- */
 @Resolver
 class UpdateCheckedListItemMutationResolver : MutationResolvers.UpdateCheckedListItem() {
-    private val currentUserProvider: CheckedListCurrentUserProvider
-        by inject(CheckedListCurrentUserProvider::class.java)
-    private val itemRepository: CheckedListItemRepository by inject(CheckedListItemRepository::class.java)
+    private val users: CheckedListCurrentUserProvider by inject(CheckedListCurrentUserProvider::class.java)
+    private val service: ChecklistService by inject(ChecklistService::class.java)
 
     override suspend fun resolve(ctx: Context): ViaductCheckedListItem {
-        currentUserProvider.getCurrentUserId(ctx.requestContext) // ensure authenticated
-
+        val actorId = users.getCurrentUserId(ctx.requestContext)
         val input = ctx.arguments.input
-        val itemId = UUID.fromString(input.id.internalID)
-        validateItemText(input.text)
-
-        val item = itemRepository.updateItem(itemId, input.text)
-            ?: error("CheckedListItem not found: $itemId")
-
-        return item.toViaductItem(ctx)
+        return service.updateItem(actorId, UUID.fromString(input.id.internalID), input.text).toViaductItem(ctx)
     }
 }
-
-// ── Validation helpers ────────────────────────────────────────────────────────
-
-internal fun validateTitle(title: String) {
-    require(title.isNotBlank()) { "Title must not be blank" }
-    require(title.length <= MAX_TITLE_LENGTH) { "Title must be 500 characters or fewer" }
-}
-
-internal fun validateItemText(text: String) {
-    require(text.isNotBlank()) { "Item text must not be blank" }
-    require(text.length <= MAX_ITEM_TEXT_LENGTH) { "Item text must be 1000 characters or fewer" }
-}
-
-private const val MAX_CHECKLIST_ITEMS = 100
-private const val MAX_DESCRIPTION_LENGTH = 10_000
-private const val MAX_TITLE_LENGTH = 500
-private const val MAX_ITEM_TEXT_LENGTH = 1000

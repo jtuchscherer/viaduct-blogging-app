@@ -34,6 +34,7 @@ import org.koin.dsl.module
  * Add `checkedListKoinModule` to `allModules` in the root project's [KoinModules].
  */
 val checkedListKoinModule = module {
+    singleOf(::ChecklistService)
     single<CheckedListItemRepository> { ExposedCheckedListItemRepository() }
 
     singleOf(::CheckedListPostBatchResolver)
