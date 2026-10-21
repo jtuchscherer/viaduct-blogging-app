@@ -14,13 +14,10 @@ import graphql.language.SelectionSet
 import graphql.parser.Parser
 import graphql.parser.InvalidSyntaxException
 import graphql.schema.GraphQLSchema
-import graphql.schema.idl.RuntimeWiring
-import graphql.schema.idl.SchemaGenerator
-import graphql.schema.idl.SchemaParser
 import graphql.validation.Validator
 import org.slf4j.LoggerFactory
+import viaduct.engine.SchemaFactory
 import viaduct.service.api.GraphQLError
-import java.io.File
 import java.util.Locale
 
 /**
@@ -37,17 +34,10 @@ class QueryComplexityGuard(
     private val logger = LoggerFactory.getLogger(QueryComplexityGuard::class.java)
 
     private val schema: GraphQLSchema by lazy {
-        val builtin = File("build/viaduct/centralSchema/BUILTIN_SCHEMA.graphqls").readText()
-        val modules = loadModuleSchemas()
-        val typeRegistry = SchemaParser().parse("$builtin\n$modules")
-        SchemaGenerator().makeExecutableSchema(typeRegistry, RuntimeWiring.MOCKED_WIRING)
+        // Use the same indexed resources as the engine, including Viaduct's built-ins.
+        // Source-tree paths are unavailable in an installed distribution or container.
+        SchemaFactory().fromResources().schema
     }
-
-    private fun loadModuleSchemas(): String =
-        MODULE_SCHEMA_PATHS
-            .map(::File)
-            .filter { it.exists() }
-            .joinToString("\n") { it.readText() }
 
     /**
      * Returns a [GraphQLError] explaining the rejection, or null if the query is within limits.
@@ -152,16 +142,5 @@ class QueryComplexityGuard(
     companion object {
         const val MAX_COMPLEXITY = 250
         const val MAX_DEPTH = 8
-
-        /**
-         * Schema files to merge into the complexity-check schema.
-         * Paths that don't exist yet are silently skipped so the guard works correctly
-         * before all modules are present (e.g. checkedlist not yet added).
-         */
-        internal val MODULE_SCHEMA_PATHS = listOf(
-            "src/main/viaduct/schema/schema.graphqls",
-            "modules/analytics/src/main/viaduct/schema/PostAnalytics.graphqls",
-            "modules/checkedlist/src/main/viaduct/schema/CheckedList.graphqls",
-        )
     }
 }

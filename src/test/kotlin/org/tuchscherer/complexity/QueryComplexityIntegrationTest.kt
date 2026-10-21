@@ -4,33 +4,21 @@ import graphql.analysis.QueryComplexityCalculator
 import graphql.execution.CoercedVariables
 import graphql.parser.Parser
 import graphql.schema.GraphQLSchema
-import graphql.schema.idl.RuntimeWiring
-import graphql.schema.idl.SchemaGenerator
-import graphql.schema.idl.SchemaParser
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import java.io.File
+import viaduct.engine.SchemaFactory
 
 /**
  * End-to-end check that real queries from query-tests.sh score under [QueryComplexityGuard.MAX_COMPLEXITY]
  * and that an obviously expensive nested/paginated query exceeds it.
  *
- * Builds the schema from SDL and runs graphql-java's [QueryComplexityCalculator] — no Viaduct
- * runtime needed, since instrumentation operates on the parsed AST + schema.
+ * Loads the packaged schema resources and runs graphql-java's [QueryComplexityCalculator].
  */
 class QueryComplexityIntegrationTest {
 
     private val schema: GraphQLSchema by lazy {
-        val builtin = File("build/viaduct/centralSchema/BUILTIN_SCHEMA.graphqls").readText()
-        // Use the same module-aware schema loader as QueryComplexityGuard so tests
-        // reflect the actual schema the guard enforces at runtime.
-        val modules = QueryComplexityGuard.MODULE_SCHEMA_PATHS
-            .map(::File)
-            .filter { it.exists() }
-            .joinToString("\n") { it.readText() }
-        val typeRegistry = SchemaParser().parse("$builtin\n$modules")
-        SchemaGenerator().makeExecutableSchema(typeRegistry, RuntimeWiring.MOCKED_WIRING)
+        SchemaFactory().fromResources().schema
     }
 
     private fun score(query: String): Int =
