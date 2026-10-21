@@ -86,11 +86,9 @@ dependencies {
     implementation(libs.koin.ktor)
 
     // Testing
-    // rc.2 fixtures no longer bundle JUnit; declare our JUnit 6 API and engine explicitly.
-    testImplementation(libs.junit.jupiter.api)
+    // Jupiter supplies the test API and engine; Gradle needs the launcher at runtime.
     testImplementation(libs.junit.jupiter)
-    testImplementation(libs.junit.jupiter.engine)
-    testImplementation(libs.junit.platform.launcher)
+    testRuntimeOnly(libs.junit.platform.launcher)
     testImplementation(libs.viaduct.test.fixtures)
     // Kotlin tests exercise Java resolver contexts as well as Kotlin-generated types.
     testImplementation(project(path = ":", configuration = "viaductJavaGRTClasses"))
