@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 import org.tuchscherer.auth.RequestContext
+import org.tuchscherer.checkedlist.ChecklistService
 import org.tuchscherer.checkedlist.checkedListKoinModule
 import org.tuchscherer.checkedlist.port.PostCreationPort
 import org.tuchscherer.checkedlist.repositories.CheckedListItemRepository
@@ -27,6 +28,7 @@ class ChecklistAccessIntegrationTest {
     private lateinit var admin: User
     private lateinit var posts: PostCreationPort
     private lateinit var items: CheckedListItemRepository
+    private lateinit var service: ChecklistService
     private val viaduct by lazy {
         ViaductBuilder()
             .withScopedSchemas(ViaductSchemas.all)
@@ -47,6 +49,7 @@ class ChecklistAccessIntegrationTest {
         admin = requireNotNull(users.updateFields(createdAdmin.id.value, isAdmin = true))
         posts = koin.get()
         items = koin.get()
+        service = koin.get()
     }
 
     @AfterEach
@@ -97,6 +100,51 @@ class ChecklistAccessIntegrationTest {
             assertTrue(result.toString().contains("Public"))
         }
     }
+
+    @Test
+    fun `every checklist write rejects anonymous users nonauthors and nonowner admins`() = runBlocking<Unit> {
+        val post = posts.createCheckedListPost("Original", author.id.value)
+        val item = items.addItem(post.id, "Original item")
+        val postId = globalId("CheckedListPost", post.id)
+        val itemId = globalId("CheckedListItem", item.id)
+        val commands = listOf(
+            "updateCheckedListPost(input:{id:\"$postId\",title:\"Changed\"}) { id }",
+            "deleteCheckedListPost(id:\"$postId\")",
+            "addCheckedListItem(input:{postId:\"$postId\",text:\"Extra\"}) { id }",
+            "updateCheckedListItem(input:{id:\"$itemId\",text:\"Changed\"}) { id }",
+            "toggleCheckedListItem(id:\"$itemId\") { id }",
+            "deleteCheckedListItem(id:\"$itemId\")",
+        )
+        for (viewer in listOf(null, stranger, admin)) {
+            for (command in commands) {
+                val result = execute("mutation { $command }", viewer)
+                assertNotNull(result["errors"], "$command: $result")
+                assertEquals("Original", posts.getPostData(post.id)?.title)
+                assertEquals(listOf(item), items.getItemsForPost(post.id))
+            }
+        }
+    }
+
+    @Test
+    fun `owner can create edit and delete checklist and items through the service`() {
+        val post = service.create(author.id.value, "Title", "Description", listOf("One"), "DRAFT")
+        assertEquals("DRAFT", post.status)
+        assertEquals("Edited", service.update(author.id.value, post.id, "Edited", null).title)
+        val added = service.addItem(author.id.value, post.id, "Two")
+        assertEquals("Updated", service.updateItem(author.id.value, added.id, "Updated").text)
+        assertTrue(service.toggleItem(author.id.value, added.id).checked)
+        assertTrue(service.deleteItem(author.id.value, added.id))
+        assertTrue(service.delete(author.id.value, post.id))
+        assertNull(posts.getPostData(post.id))
+        assertTrue(items.getItemsForPost(post.id).isEmpty())
+    }
+
+    private fun globalId(type: String, id: UUID): String =
+        Base64.getEncoder().encodeToString("$type:$id".toByteArray())
+
+    private suspend fun execute(query: String, viewer: User?): Map<String, Any?> =
+        viaduct.execute(ExecutionInput.create(operationText = query, requestContext = viewer?.let { RequestContext(it) }),
+            ViaductSchemas.schemaIdFor(ViaductSchemas.PUBLIC)).toSpecification()
 
     private suspend fun node(type: String, id: UUID, viewer: User?): Map<String, Any?> {
         val globalId = Base64.getEncoder().encodeToString("$type:$id".toByteArray())

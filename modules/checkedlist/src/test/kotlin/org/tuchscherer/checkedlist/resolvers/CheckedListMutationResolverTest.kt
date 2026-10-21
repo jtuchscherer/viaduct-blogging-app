@@ -6,6 +6,9 @@ import kotlinx.coroutines.runBlocking
 import org.tuchscherer.checkedlist.port.CheckedListCurrentUserProvider
 import org.tuchscherer.checkedlist.port.PostCreationPort
 import org.tuchscherer.checkedlist.repositories.CheckedListItemRepository
+import org.tuchscherer.auth.NotFoundException
+import org.tuchscherer.auth.AuthorizationException
+import org.tuchscherer.checkedlist.ChecklistService
 import org.tuchscherer.checkedlist.port.PostData
 import org.tuchscherer.viadapp.checkedlist.resolvers.AddCheckedListItemMutationResolver
 import org.tuchscherer.viadapp.checkedlist.resolvers.CreateCheckedListPostMutationResolver
@@ -49,10 +52,13 @@ class CheckedListMutationResolverTest {
         itemRepository = mockk()
 
         every { currentUserProvider.getCurrentUserId(any()) } returns userId
+        every { postCreationPort.getPostData(any()) } returns makePostData()
+        every { itemRepository.getPostIdForItem(any()) } returns postId
 
         GlobalContext.getOrNull()?.let { GlobalContext.stopKoin() }
         org.koin.core.context.startKoin {
             modules(module {
+                single { ChecklistService(postCreationPort, itemRepository) }
                 single<CheckedListCurrentUserProvider> { currentUserProvider }
                 single<PostCreationPort> { postCreationPort }
                 single<CheckedListItemRepository> { itemRepository }
@@ -152,7 +158,7 @@ class CheckedListMutationResolverTest {
         every { ctx.arguments.input.text } returns "Some text"
         every { postCreationPort.getPostData(any()) } returns null
 
-        assertThrows(IllegalStateException::class.java) {
+        assertThrows(NotFoundException::class.java) {
             runBlocking { AddCheckedListItemMutationResolver().resolve(ctx) }
         }
     }
@@ -180,7 +186,7 @@ class CheckedListMutationResolverTest {
         // passed (if it had failed, "Not authorized" would have been thrown instead).
         every { itemRepository.toggleItem(itemId) } returns null
 
-        val ex = assertThrows(IllegalStateException::class.java) {
+        val ex = assertThrows(NotFoundException::class.java) {
             runBlocking { ToggleCheckedListItemMutationResolver().resolve(ctx) }
         }
         assertTrue(ex.message?.contains("CheckedListItem not found") == true,
@@ -196,7 +202,7 @@ class CheckedListMutationResolverTest {
         every { itemRepository.getPostIdForItem(itemId) } returns postId
         every { postCreationPort.getPostData(postId) } returns makePostData(authorId = userId)
 
-        assertThrows(IllegalStateException::class.java) {
+        assertThrows(AuthorizationException::class.java) {
             runBlocking { ToggleCheckedListItemMutationResolver().resolve(ctx) }
         }
     }
@@ -207,7 +213,7 @@ class CheckedListMutationResolverTest {
         every { ctx.arguments.id } returns itemGlobalId()
         every { itemRepository.getPostIdForItem(itemId) } returns null
 
-        assertThrows(IllegalStateException::class.java) {
+        assertThrows(NotFoundException::class.java) {
             runBlocking { ToggleCheckedListItemMutationResolver().resolve(ctx) }
         }
     }
@@ -284,14 +290,14 @@ class CheckedListMutationResolverTest {
     }
 
     @Test
-    fun `updateCheckedListPost throws IllegalStateException when post not found`() {
+    fun `updateCheckedListPost throws NotFoundException when post not found`() {
         val ctx = mockk<MutationResolvers.UpdateCheckedListPost.Context>(relaxed = true)
         every { ctx.arguments.input.id } returns postGlobalId()
         every { ctx.arguments.input.title } returns "New Title"
         every { ctx.arguments.input.description } returns null
         every { postCreationPort.updateCheckedListPost(any(), any(), any()) } returns null
 
-        assertThrows(IllegalStateException::class.java) {
+        assertThrows(NotFoundException::class.java) {
             runBlocking { UpdateCheckedListPostMutationResolver().resolve(ctx) }
         }
     }
@@ -390,13 +396,13 @@ class CheckedListMutationResolverTest {
     }
 
     @Test
-    fun `updateCheckedListItem throws IllegalStateException when item not found`() {
+    fun `updateCheckedListItem throws NotFoundException when item not found`() {
         val ctx = mockk<MutationResolvers.UpdateCheckedListItem.Context>(relaxed = true)
         every { ctx.arguments.input.id } returns itemGlobalId()
         every { ctx.arguments.input.text } returns "Updated text"
         every { itemRepository.updateItem(any(), any()) } returns null
 
-        assertThrows(IllegalStateException::class.java) {
+        assertThrows(NotFoundException::class.java) {
             runBlocking { UpdateCheckedListItemMutationResolver().resolve(ctx) }
         }
     }

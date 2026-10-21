@@ -2267,6 +2267,18 @@ for VIEWER_TOKEN in "" "$USER2_TOKEN"; do
     fi
 done
 
+for FIELD in 'updateCheckedListPost(input:{id:$id,title:"Unauthorized"}) { id }' 'deleteCheckedListPost(id:$id)'; do
+    REJECTED_CL_WRITE=$(curl -s -X POST "$GRAPHQL_URL" \
+        -H "Content-Type: application/json" \
+        -H "Authorization: Bearer $USER2_TOKEN" \
+        -d "$(jq -n --arg id "$DRAFT_CL_ID" --arg field "$FIELD" '{query:("mutation($id:ID!) { " + $field + " }"),variables:{id:$id}}')")
+    if [ -n "$DRAFT_CL_ID" ] && echo "$REJECTED_CL_WRITE" | jq -e '.errors | length > 0' > /dev/null; then
+        print_success "Checklist mutation rejects a nonowner"
+    else
+        print_error "Checklist mutation accepted a nonowner: $REJECTED_CL_WRITE"
+    fi
+done
+
 print_info "Testing publishPost on a checklist..."
 CL_PUBLISH=$(curl -s -X POST $GRAPHQL_URL \
     -H "Content-Type: application/json" \
