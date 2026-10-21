@@ -2,7 +2,7 @@
 
 A full-stack blogging application with a Java/Kotlin Viaduct GraphQL backend and a React/TypeScript frontend.
 
-The backend uses Viaduct **3.0.0-rc.1**, Java **25**, Kotlin **2.3.21**, and the Gradle **9.3.1** wrapper.
+The backend uses Viaduct **3.0.0-rc.2**, Java **25**, Kotlin **2.3.21**, and the Gradle **9.3.1** wrapper.
 Viaduct's settings plugin version in `gradle.properties` must match the version in
 `gradle/libs.versions.toml`, which also aligns the application/module plugins, API, runtime, and test fixtures.
 See [Viaduct 3 upgrade notes](VIADUCT_3_UPGRADE.md) for compatibility changes and recommended follow-ups.
@@ -310,7 +310,7 @@ tenant whose four batched fields extend both post types. The ordinary Kotlin
 interface with Exposed. AI and shared helpers remain Kotlin libraries.
 
 Java uses `viaduct.java.grts`, Kotlin uses `viaduct.api.grts`, and Viaduct carries
-engine data between them. The root includes both rc.1 runtimes; the Java plugin
+engine data between them. The root includes both rc.2 runtimes; the Java plugin
 wires its annotation processor and registry. Existing schema signatures and stored
 view data are preserved.
 

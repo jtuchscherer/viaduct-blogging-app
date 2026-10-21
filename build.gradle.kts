@@ -86,8 +86,7 @@ dependencies {
     implementation(libs.koin.ktor)
 
     // Testing
-    // Viaduct's fixtures bundle JUnit 5 API classes. Prefer our matching JUnit 6 API,
-    // including its nullability annotations, on both compiler and runtime classpaths.
+    // rc.2 fixtures no longer bundle JUnit; declare our JUnit 6 API and engine explicitly.
     testImplementation(libs.junit.jupiter.api)
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.junit.jupiter.engine)
