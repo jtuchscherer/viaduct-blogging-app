@@ -1,11 +1,28 @@
-# Viaduct 3.0 release-candidate upgrade
+# Viaduct 3.0 upgrade
 
 Initial upgrade reviewed October 16, 2026; follow-ups started October 19, 2026.
-Current dependencies: **3.0.0-rc.2**, upgraded October 21, 2026.
+Current dependencies: **3.0.0**, upgraded October 21, 2026.
+
+## Final 3.0 release
+
+All Viaduct plugins, Kotlin/Java APIs, runtimes, and test fixtures use the final
+`3.0.0` artifacts. Java 25, Kotlin 2.3.21, KSP 2.3.12, Gradle 9.3.1, and the
+simplified JUnit 6.1.3 setup are unchanged. The rc.2 compatibility changes below
+remain in place, including indexed resource loading and the upstream GraphiQL
+template.
+
+No source compatibility changes were needed. The test audit found existing
+coverage for mixed Java/Kotlin execution, scoped schemas, indexed resources,
+and GraphiQL; no tests were removed or disabled. Both full verification passes
+on October 21, 2026 passed in the required order: 677 backend tests with no
+skips, frontend type-check/lint and 131 unit tests, 158 query checks, and 420
+browser tests with retries disabled. The code audit found no refactoring needed.
+The installed-distribution smoke test also passed outside the checkout, and the
+public schema matches all 159 snapshot entries.
 
 ## rc.2 compatibility update
 
-All Viaduct plugins, APIs, runtimes, and fixtures now use `3.0.0-rc.2`.
+The rc.2 update aligned all Viaduct plugins, APIs, runtimes, and fixtures on `3.0.0-rc.2`.
 Java 25, Kotlin 2.3.21, KSP 2.3.12, and Gradle 9.3.1 are unchanged.
 
 rc.2 fixes the upstream GraphiQL template: it loads Babel and no longer imports
