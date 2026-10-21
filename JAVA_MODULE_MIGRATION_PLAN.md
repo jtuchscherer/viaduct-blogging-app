@@ -42,7 +42,7 @@ rather than duplicating global-ID validation.
 
 ## Build and execution
 
-The tenant applies `com.airbnb.viaduct.module-java-gradle-plugin` **3.0.0-rc.1** and
+The tenant applies `com.airbnb.viaduct.module-java-gradle-plugin` **3.0.0-rc.2** and
 exports `com.airbnb.viaduct:javaapi-api` at the same version. The application includes
 `javaapi-runtime` alongside the Kotlin runtime. The Java plugin wires its annotation
 processor, resolver bases, generated types, and resolver registry; there is no manual
@@ -161,5 +161,7 @@ audit. The language migration needs no frontend product changes or database migr
 - [Published rc.1 Java API](https://repo.maven.apache.org/maven2/com/airbnb/viaduct/javaapi-api/3.0.0-rc.1/)
 - [Published rc.1 Java runtime](https://repo.maven.apache.org/maven2/com/airbnb/viaduct/javaapi-runtime/3.0.0-rc.1/)
 
-Source links pin the inspected release-branch commit. Implementation was compiled
-and executed against the exact published `3.0.0-rc.1` plugin, API, and runtime.
+Source links pin the inspected release-branch commit. The initial implementation
+was compiled and executed against the published `3.0.0-rc.1` plugin, API, and runtime.
+The app now uses rc.2; see [the upgrade notes](VIADUCT_3_UPGRADE.md) for current
+compatibility changes and verification.

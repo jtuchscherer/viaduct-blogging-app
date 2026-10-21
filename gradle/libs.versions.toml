@@ -1,5 +1,5 @@
 [versions]
-viaduct = "3.0.0-rc.1"
+viaduct = "3.0.0-rc.2"
 kotlin = "2.3.21"
 ksp = "2.3.12"
 jacoco = "0.8.14"

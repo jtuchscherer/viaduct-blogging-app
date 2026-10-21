@@ -1,8 +1,57 @@
-# Viaduct 3.0.0-rc.1 upgrade
+# Viaduct 3.0 release-candidate upgrade
 
-Upgrade reviewed October 16, 2026; follow-ups started October 19, 2026.
+Initial upgrade reviewed October 16, 2026; follow-ups started October 19, 2026.
+Current dependencies: **3.0.0-rc.2**, upgraded October 21, 2026.
 
-## Applied migration
+## rc.2 compatibility update
+
+All Viaduct plugins, APIs, runtimes, and fixtures now use `3.0.0-rc.2`.
+Java 25, Kotlin 2.3.21, KSP 2.3.12, and Gradle 9.3.1 are unchanged.
+
+rc.2 fixes the upstream GraphiQL template: it loads Babel and no longer imports
+the nonexistent introspection patch. `GraphiQLRoutes.kt` now returns the configured
+upstream HTML directly, removing every local HTML rewrite and CDN substitution.
+The application still serves the bundled JavaScript, JSX, and favicon resources
+referenced by that HTML. CDN dependencies still require Internet access.
+
+Schema and execution-registry loading now require explicit resource indexes;
+rc.2 removes the ClassGraph fallback for these resources. Our existing settings
+topology and application plugin already generate both indexes, covering core,
+Java analytics, and Kotlin checklist tenants. Keep the application plugin and all
+three tenants in `includeViaductApplication`; manually assembling a runtime
+classpath without these generated indexes now fails at startup. No application
+bootstrap API changes are needed.
+
+An installed-distribution smoke test exposed an existing source-tree dependency
+in `QueryComplexityGuard`: it read the generated built-in SDL and module source
+files from the working directory. The guard now uses `SchemaFactory.fromResources()`
+to load the same indexed schema resources as the engine, including built-ins.
+Its integration tests use that loader too. A regression runs the guard in a fresh
+JVM from an empty temporary directory, and mixed-language field tests ensure
+complexity limits cover both Java analytics and Kotlin checklist fields.
+
+The installed-distribution check verifies exactly one schema index and one
+execution-registry index, with all three tenant resources present exactly once.
+It starts the launcher outside the checkout with a temporary SQLite database and
+exercises registration, blog/checklist creation, Java read-time and view-count
+fields, view recording, trending, and the bundled GraphiQL assets.
+
+The test-fixtures JAR no longer bundles JUnit. The application already declares
+JUnit 6 explicitly, so those dependencies remain necessary and need no version
+change. The obsolete bundled-JUnit comment has been removed from the build.
+
+Both full rc.2 verification passes on October 21, 2026 passed in the required
+order: 677 backend tests with no skips, frontend type-check/lint and 131 unit
+tests, 158 query checks, and 420 browser tests with retries disabled. The code
+audit removed the old filesystem loader and its hardcoded module list; no further
+refactoring was needed. Gradle build/static analysis also passed. The public
+schema matches all 159 snapshot entries. After launching `start.sh`, GraphiQL
+executed its default query and decoded a BlogPost ID at the normal port 8080 URL.
+The installed-distribution smoke test passed; a container image was not run.
+
+The sections below record the initial rc.1 migration and its verification history.
+
+## Initial rc.1 migration
 
 - Align the settings plugin, application/module plugins, API, runtime, and test fixtures on
   `3.0.0-rc.1` through `gradle.properties` and `gradle/libs.versions.toml`.
@@ -123,7 +172,7 @@ the linked migration document. No new application query/parser cache is announce
 
 ## Verification scope
 
-### GraphiQL compatibility repair
+### Initial rc.1 GraphiQL compatibility repair
 
 The rc.1 GraphiQL HTML requires `/js/jsx-loader.js`, `/js/global-id-plugin.jsx`,
 and favicons from the runtime JAR; the application now serves those resources.
@@ -133,11 +182,12 @@ defects are present in the previous 2.0 runtime; they are not new engine behavio
 The [Star Wars rc.1 controller](https://github.com/viaduct-dev/starwars/blob/rc/v3.0.0-rc.1/src/main/kotlin/com/example/starwars/service/graphiql/StaticJsController.kt)
 serves the two bundled JavaScript files but does not address those template defects.
 
-`GraphiQLRoutes.kt` keeps the configured upstream HTML, loads a pinned Babel build,
-and replaces the missing introspection-patch dependency with the standard fetcher.
+The rc.1 version of `GraphiQLRoutes.kt` kept the configured upstream HTML, loaded a
+pinned Babel build, and replaced the missing introspection-patch dependency with
+the standard fetcher.
 Our real introspection response builds a valid GraphQL client schema without the patch.
 GraphiQL, its React components, toolkit, and explorer use the CDN versions verified
-together. These compatibility substitutions should be revisited when upgrading Viaduct.
+together. The rc.2 update above removes these compatibility substitutions.
 GraphiQL still requires Internet access for its CDN dependencies.
 
 Route tests check the configured HTML, every referenced local asset, JavaScript MIME
