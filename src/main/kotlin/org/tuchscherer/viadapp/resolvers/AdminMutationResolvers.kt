@@ -41,27 +41,15 @@ class AdminUpdateUserResolver(
 
 @Resolver
 class AdminDeleteUserResolver(
-    private val userRepository: UserRepository,
-    private val postRepository: PostRepository,
-    private val commentRepository: CommentRepository,
-    private val likeRepository: LikeRepository
+    private val deletionService: org.tuchscherer.admin.AdminUserDeletionService,
 ) : AdminMutationsResolvers.DeleteUser() {
     override suspend fun resolve(ctx: Context): AdminDeleteUserResult {
-        val userId = UUID.fromString(ctx.arguments.id.internalID)
-
-        userRepository.findById(userId) ?: throw NotFoundException("User not found")
-
-        // Delete in order: likes, comments, posts, then user
-        val likesDeleted = likeRepository.deleteByUserId(userId)
-        val commentsDeleted = commentRepository.deleteByUserId(userId)
-        val postsDeleted = postRepository.deleteByAuthorId(userId)
-        val userDeleted = userRepository.delete(userId)
-
+        val result = deletionService.delete(UUID.fromString(ctx.arguments.id.internalID))
         return AdminDeleteUserResult.of(ctx) {
-            success(userDeleted)
-            postsDeleted(postsDeleted)
-            commentsDeleted(commentsDeleted)
-            likesDeleted(likesDeleted)
+            success(result.success)
+            postsDeleted(result.posts)
+            commentsDeleted(result.comments)
+            likesDeleted(result.likes)
         }
     }
 }

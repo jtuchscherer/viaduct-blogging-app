@@ -110,6 +110,7 @@ val configModule = module {
  * Provides all repository interfaces with their Exposed implementations.
  */
 val repositoryModule = module {
+    single<org.tuchscherer.shared.TransactionRunner> { org.tuchscherer.database.repositories.ExposedTransactionRunner() }
     single<DatabaseMaintenanceRepository> { ExposedDatabaseMaintenanceRepository() }
     single<UserRepository> { ExposedUserRepository() }
     single<PostRepository> { ExposedPostRepository() }
@@ -123,6 +124,7 @@ val repositoryModule = module {
  */
 val serviceModule = module {
     single<Clock> { Clock.systemUTC() }
+    single { org.tuchscherer.admin.AdminUserDeletionService(get(), get(), get(), get(), get()) }
     single { PasswordService() }
     single { JwtService(get(), get(), get()) }
     single { AuthenticationService(get(), get()) }

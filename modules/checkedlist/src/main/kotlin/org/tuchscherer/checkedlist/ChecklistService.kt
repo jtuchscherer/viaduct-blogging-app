@@ -6,59 +6,61 @@ import org.tuchscherer.checkedlist.port.PostCreationPort
 import org.tuchscherer.checkedlist.port.PostData
 import org.tuchscherer.checkedlist.repositories.CheckedListItemData
 import org.tuchscherer.checkedlist.repositories.CheckedListItemRepository
+import org.tuchscherer.shared.TransactionRunner
 import java.util.UUID
 
 /** Owns checklist validation and write authorization independently of GraphQL. */
 class ChecklistService(
     private val posts: PostCreationPort,
     private val items: CheckedListItemRepository,
+    private val transactions: TransactionRunner,
 ) {
-    fun create(actorId: UUID, title: String, description: String, texts: List<String>, status: String): PostData {
+    fun create(actorId: UUID, title: String, description: String, texts: List<String>, status: String): PostData = transactions.run {
         validateTitle(title)
         validateDescription(description)
         require(texts.size <= MAX_ITEMS) { "A checklist may have at most 100 items" }
         texts.forEach(::validateItemText)
         val post = posts.createCheckedListPost(title, actorId, description, status)
         texts.forEach { items.addItem(post.id, it) }
-        return post
+        post
     }
 
-    fun update(actorId: UUID, postId: UUID, title: String?, description: String?): PostData {
+    fun update(actorId: UUID, postId: UUID, title: String?, description: String?): PostData = transactions.run {
         title?.let(::validateTitle)
         description?.let(::validateDescription)
         requireOwnedPost(actorId, postId)
-        return posts.updateCheckedListPost(postId, title, description)
+        posts.updateCheckedListPost(postId, title, description)
             ?: throw NotFoundException("CheckedListPost not found: $postId")
     }
 
-    fun delete(actorId: UUID, postId: UUID): Boolean {
-        if (posts.getPostData(postId) == null) return false
+    fun delete(actorId: UUID, postId: UUID): Boolean = transactions.run {
+        if (posts.getPostData(postId) == null) return@run false
         requireOwnedPost(actorId, postId)
         items.deleteItemsForPost(postId)
-        return posts.deleteCheckedListPost(postId)
+        posts.deleteCheckedListPost(postId)
     }
 
-    fun addItem(actorId: UUID, postId: UUID, text: String): CheckedListItemData {
+    fun addItem(actorId: UUID, postId: UUID, text: String): CheckedListItemData = transactions.run {
         validateItemText(text)
         requireOwnedPost(actorId, postId)
-        return items.addItem(postId, text)
+        items.addItem(postId, text)
     }
 
-    fun updateItem(actorId: UUID, itemId: UUID, text: String): CheckedListItemData {
+    fun updateItem(actorId: UUID, itemId: UUID, text: String): CheckedListItemData = transactions.run {
         validateItemText(text)
         requireOwnedItem(actorId, itemId)
-        return items.updateItem(itemId, text) ?: throw NotFoundException("CheckedListItem not found: $itemId")
+        items.updateItem(itemId, text) ?: throw NotFoundException("CheckedListItem not found: $itemId")
     }
 
-    fun toggleItem(actorId: UUID, itemId: UUID): CheckedListItemData {
+    fun toggleItem(actorId: UUID, itemId: UUID): CheckedListItemData = transactions.run {
         requireOwnedItem(actorId, itemId)
-        return items.toggleItem(itemId) ?: throw NotFoundException("CheckedListItem not found: $itemId")
+        items.toggleItem(itemId) ?: throw NotFoundException("CheckedListItem not found: $itemId")
     }
 
-    fun deleteItem(actorId: UUID, itemId: UUID): Boolean {
-        val postId = items.getPostIdForItem(itemId) ?: return false
+    fun deleteItem(actorId: UUID, itemId: UUID): Boolean = transactions.run {
+        val postId = items.getPostIdForItem(itemId) ?: return@run false
         requireOwnedPost(actorId, postId)
-        return items.deleteItem(itemId)
+        items.deleteItem(itemId)
     }
 
     private fun requireOwnedItem(actorId: UUID, itemId: UUID) {

@@ -1,5 +1,8 @@
 package org.tuchscherer.database.repositories
 
+import org.tuchscherer.analytics.PostViews
+import org.tuchscherer.checkedlist.database.CheckedListItems
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.tuchscherer.database.Comment
 import org.tuchscherer.database.Comments
 import org.tuchscherer.database.Like
@@ -200,13 +203,15 @@ class ExposedPostRepository : PostRepository {
     }
 
     /**
-     * Delete [post] along with its likes and comments. Dependents go first so
+     * Delete [post] along with its social, checklist, and analytics data. Dependents go first so
      * the foreign-key constraints on Likes.postId and Comments.postId stay
      * satisfied. Must be called inside an existing transaction.
      */
     private fun deleteWithDependents(post: Post) {
         Like.find { Likes.postId eq post.id }.forEach { it.delete() }
         Comment.find { Comments.postId eq post.id }.forEach { it.delete() }
+        CheckedListItems.deleteWhere { CheckedListItems.postId eq post.id.value.toString() }
+        PostViews.deleteWhere { PostViews.postId eq post.id.value.toString() }
         post.delete()
     }
 }
