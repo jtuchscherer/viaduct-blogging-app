@@ -2254,6 +2254,19 @@ else
     echo "Response: $MY_CL"
 fi
 
+# Direct node reads must obey the same draft policy as the public feed.
+for VIEWER_TOKEN in "" "$USER2_TOKEN"; do
+    PRIVATE_CL=$(curl -s -X POST "$GRAPHQL_URL" \
+        -H "Content-Type: application/json" \
+        -H "Authorization: Bearer $VIEWER_TOKEN" \
+        -d "$(jq -n --arg id "$DRAFT_CL_ID" '{query: "query($id: ID!) { node(id:$id) { ... on CheckedListPost { title description items { text } } } }", variables:{id:$id}}')")
+    if [ -n "$DRAFT_CL_ID" ] && echo "$PRIVATE_CL" | jq -e '.data.node == null and (.errors | length > 0)' > /dev/null; then
+        print_success "Draft checklist node is hidden from an unauthorized viewer"
+    else
+        print_error "Draft checklist leaked through node(id): $PRIVATE_CL"
+    fi
+done
+
 print_info "Testing publishPost on a checklist..."
 CL_PUBLISH=$(curl -s -X POST $GRAPHQL_URL \
     -H "Content-Type: application/json" \

@@ -3,6 +3,7 @@ package org.tuchscherer.checkedlist
 import org.tuchscherer.auth.AuthenticationException
 import org.tuchscherer.auth.RequestContext
 import org.tuchscherer.checkedlist.port.CheckedListCurrentUserProvider
+import org.tuchscherer.checkedlist.port.CheckedListViewer
 import java.util.UUID
 
 /**
@@ -14,6 +15,8 @@ import java.util.UUID
  * bridge lives in the root project and is registered via Koin.
  */
 class ViaductCheckedListCurrentUserProvider : CheckedListCurrentUserProvider {
+    override fun getViewer(requestContext: Any?): CheckedListViewer? =
+        (requestContext as? RequestContext)?.user?.let { CheckedListViewer(it.id.value, it.isAdmin) }
 
     override fun getCurrentUserId(requestContext: Any?): UUID {
         val rc = requestContext as? RequestContext

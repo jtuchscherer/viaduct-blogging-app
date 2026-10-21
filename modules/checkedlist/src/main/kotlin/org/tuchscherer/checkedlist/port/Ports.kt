@@ -128,9 +128,12 @@ interface PostSocialPort {
  * Throws an application-level exception (mapped to 401) when the user is not authenticated.
  */
 interface CheckedListCurrentUserProvider {
+    fun getViewer(requestContext: Any?): CheckedListViewer?
     /**
      * Extracts the authenticated user's UUID from the opaque request context.
      * @throws RuntimeException (or a domain exception) when the user is not authenticated.
      */
     fun getCurrentUserId(requestContext: Any?): UUID
 }
+
+data class CheckedListViewer(val id: UUID, val isAdmin: Boolean)
