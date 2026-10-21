@@ -1,5 +1,7 @@
 package org.tuchscherer.checkedlist.resolvers
 
+import org.tuchscherer.checkedlist.port.CheckedListCurrentUserProvider
+import org.tuchscherer.checkedlist.port.ChecklistPostReader
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -10,11 +12,11 @@ import org.tuchscherer.viadapp.checkedlist.resolverbases.NodeResolvers
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.koin.core.context.GlobalContext
-import org.koin.dsl.module
 import java.util.UUID
 
 class CheckedListItemBatchResolverTest {
+    private val posts = mockk<ChecklistPostReader>()
+    private val users = mockk<CheckedListCurrentUserProvider>()
 
     private lateinit var itemRepository: CheckedListItemRepository
     private val itemId = UUID.randomUUID()
@@ -22,13 +24,6 @@ class CheckedListItemBatchResolverTest {
     @BeforeEach
     fun setup() {
         itemRepository = mockk()
-
-        GlobalContext.getOrNull()?.let { GlobalContext.stopKoin() }
-        org.koin.core.context.startKoin {
-            modules(module {
-                single<CheckedListItemRepository> { itemRepository }
-            })
-        }
     }
 
     private fun mockContext(id: UUID): NodeResolvers.CheckedListItem.Context {
@@ -41,7 +36,7 @@ class CheckedListItemBatchResolverTest {
     fun `returns error FieldValue when item not found`() = runBlocking {
         every { itemRepository.findByIds(any()) } returns emptyMap()
 
-        val results = CheckedListItemBatchResolver().batchResolve(listOf(mockContext(itemId)))
+        val results = CheckedListItemBatchResolver(itemRepository, posts, users).batchResolve(listOf(mockContext(itemId)))
 
         assertEquals(1, results.size)
         assertTrue(results.values.single().isError)
@@ -52,7 +47,7 @@ class CheckedListItemBatchResolverTest {
         every { itemRepository.findByIds(any()) } returns emptyMap()
 
         val ids = List(3) { UUID.randomUUID() }
-        val results = CheckedListItemBatchResolver().batchResolve(ids.map(::mockContext))
+        val results = CheckedListItemBatchResolver(itemRepository, posts, users).batchResolve(ids.map(::mockContext))
 
         assertEquals(3, results.size)
         assertTrue(results.values.all { it.isError })
@@ -63,7 +58,7 @@ class CheckedListItemBatchResolverTest {
         val ids = List(3) { UUID.randomUUID() }
         every { itemRepository.findByIds(any()) } returns emptyMap()
 
-        CheckedListItemBatchResolver().batchResolve(ids.map(::mockContext))
+        CheckedListItemBatchResolver(itemRepository, posts, users).batchResolve(ids.map(::mockContext))
 
         verify(exactly = 1) { itemRepository.findByIds(ids) }
     }

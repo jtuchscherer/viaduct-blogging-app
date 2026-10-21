@@ -8,8 +8,8 @@ import org.junit.jupiter.api.assertThrows
 import org.tuchscherer.admin.AdminUserDeletionService
 import org.tuchscherer.analytics.repositories.ExposedPostViewRepository
 import org.tuchscherer.checkedlist.ChecklistService
-import org.tuchscherer.checkedlist.ViaductPostCreationPort
-import org.tuchscherer.checkedlist.port.PostCreationPort
+import org.tuchscherer.database.repositories.ExposedChecklistPostRepository
+import org.tuchscherer.checkedlist.port.ChecklistPostRepository
 import org.tuchscherer.checkedlist.repositories.CheckedListItemData
 import org.tuchscherer.checkedlist.repositories.CheckedListItemRepository
 import org.tuchscherer.checkedlist.repositories.ExposedCheckedListItemRepository
@@ -24,7 +24,7 @@ class AtomicCommandIntegrationTest {
     private val transactions = ExposedTransactionRunner()
     private lateinit var items: CheckedListItemRepository
     private lateinit var views: ExposedPostViewRepository
-    private val checklistPosts = ViaductPostCreationPort()
+    private val checklistPosts = ExposedChecklistPostRepository(posts)
     private lateinit var authorId: UUID
 
     @BeforeEach
@@ -32,7 +32,7 @@ class AtomicCommandIntegrationTest {
         DatabaseTestHelper.setupDatabase()
         items = ExposedCheckedListItemRepository()
         views = ExposedPostViewRepository()
-        authorId = users.create("author", "author@example.com", "Author", "hash", "salt").id.value
+        authorId = users.create("author", "author@example.com", "Author", "hash", "salt").id
     }
 
     @AfterEach
@@ -60,7 +60,7 @@ class AtomicCommandIntegrationTest {
     fun `failed post deletion restores deleted items`() {
         val post = checklistPosts.createCheckedListPost("Checklist", authorId)
         val item = items.addItem(post.id, "Keep me")
-        val failingPosts = object : PostCreationPort by checklistPosts {
+        val failingPosts = object : ChecklistPostRepository by checklistPosts {
             override fun deleteCheckedListPost(id: UUID): Boolean = error("Simulated storage failure")
         }
         assertThrows<IllegalStateException> {
@@ -85,8 +85,8 @@ class AtomicCommandIntegrationTest {
         }
         assertNotNull(users.findById(authorId))
         assertNotNull(posts.findById(post.id))
-        assertNotNull(comments.findById(comment.id.value))
-        assertNotNull(likes.findById(like.id.value))
+        assertNotNull(comments.findById(comment.id))
+        assertNotNull(likes.findById(like.id))
         assertEquals(listOf(item), items.getItemsForPost(post.id))
         assertEquals(1L, views.getTotalViews())
     }
@@ -97,7 +97,7 @@ class AtomicCommandIntegrationTest {
         val blog = posts.create("Blog", "Content", authorId)
         items.addItem(checklist.id, "Item")
         views.incrementViewCount(checklist.id)
-        views.incrementViewCount(blog.id.value)
+        views.incrementViewCount(blog.id)
         comments.create("Comment", checklist.id, authorId)
         likes.create(checklist.id, authorId)
 
@@ -109,7 +109,7 @@ class AtomicCommandIntegrationTest {
         assertEquals(1, result.likes)
         assertNull(users.findById(authorId))
         assertNull(posts.findById(checklist.id))
-        assertNull(posts.findById(blog.id.value))
+        assertNull(posts.findById(blog.id))
         assertTrue(items.getItemsForPost(checklist.id).isEmpty())
         assertEquals(0L, views.getTotalViews())
     }

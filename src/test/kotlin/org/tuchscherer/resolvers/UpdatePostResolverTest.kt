@@ -11,7 +11,6 @@ import org.tuchscherer.viadapp.resolvers.UpdatePostResolver
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
-import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
@@ -37,7 +36,7 @@ class UpdatePostResolverTest : ResolverTestBase() {
         postRepository = mockk()
 
         mockUser = mockk()
-        every { mockUser.id } returns EntityID(userId, mockk())
+        every { mockUser.id } returns userId
 
         mockPost = mockk()
         every { mockPost.authorId } returns mockUser.id
@@ -55,7 +54,7 @@ class UpdatePostResolverTest : ResolverTestBase() {
 
         every { postRepository.findById(postId) } returns mockPost
         val updatedPost = mockk<Post>()
-        every { updatedPost.id } returns EntityID(postId, mockk())
+        every { updatedPost.id } returns postId
         every { updatedPost.title } returns "Updated Title"
         every { updatedPost.createdAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
         every { updatedPost.updatedAt } returns LocalDateTime.of(2025, 1, 1, 12, 0)
@@ -117,7 +116,7 @@ class UpdatePostResolverTest : ResolverTestBase() {
         val args = Mutation_UpdatePost_Arguments.Builder(context).input(input).build()
 
         every { postRepository.findById(postId) } returns mockPost
-        every { mockPost.authorId } returns EntityID(UUID.randomUUID(), mockk())
+        every { mockPost.authorId } returns UUID.randomUUID()
 
         assertThrows<AuthorizationException> {
             runMutationFieldResolver(resolver) {

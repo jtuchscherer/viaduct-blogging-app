@@ -317,7 +317,10 @@ view data are preserved.
 **Key decisions:**
 - Single Ktor server on port 8080 — auth routes and GraphQL share one process, no CORS complexity
 - Schema-first: root and tenant SDL under each project's `src/main/viaduct/schema` define the GraphQL contract; Viaduct generates resolver base classes
-- Repository pattern — all database access is behind interfaces; resolvers never touch the DB directly
-- Koin dependency injection — `KoinTenantCodeInjector` bridges Viaduct's resolver instantiation with Koin
+- Repository pattern — all database access is behind interfaces. Core repositories return immutable records with UUIDs; Exposed entities stay inside repositories and are materialized before the transaction closes.
+- Checklist commands — `ChecklistService` owns input validation and author-only writes. `TransactionRunner` keeps authorization and multi-step changes atomic. Post deletion removes comments, likes, checklist items, and view counts, including when an admin deletes a user.
+- Visibility — the shared `PostVisibility` policy applies to both post types and their item/comment/like nodes. Drafts are readable by their author and admins; checklist writes remain author-only.
+- Checklist persistence — read resolvers depend on `ChecklistPostReader`; `ChecklistPostWriter` supplies writes. `ExposedChecklistPostRepository` implements their combined command contract in the root repository layer.
+- Koin dependency injection — all resolvers use constructor injection. `KoinTenantCodeInjector` receives the application container explicitly, so resolver providers do not consult global Koin.
 - JWT stored in `localStorage` as `authToken` + `authUser`
 - Relay-style cursor pagination via `postsConnection(first, after)` with DB-level `LIMIT/OFFSET`

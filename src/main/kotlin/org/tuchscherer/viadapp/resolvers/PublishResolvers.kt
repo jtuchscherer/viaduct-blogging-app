@@ -37,7 +37,7 @@ private fun PostRepository.transitionStatus(
 ): Post {
     val post = findById(postId) ?: throw NotFoundException("Post not found")
 
-    if (!PostVisibility.canChangeStatus(post.authorId.value, viewerId)) {
+    if (!PostVisibility.canChangeStatus(post.authorId, viewerId)) {
         throw AuthorizationException("You are not authorized to $action this post")
     }
 
@@ -61,7 +61,7 @@ class PublishPostResolver(
 
         return postRepository.transitionStatus(
             postId = decodeGlobalId(ctx.arguments.postId),
-            viewerId = user.id.value,
+            viewerId = user.id,
             status = PostStatus.PUBLISHED,
             // Stamped now, so a draft held for weeks enters the feed as new rather than backdated.
             publishedAt = LocalDateTime.now(),
@@ -86,7 +86,7 @@ class UnpublishPostResolver(
 
         return postRepository.transitionStatus(
             postId = decodeGlobalId(ctx.arguments.postId),
-            viewerId = user.id.value,
+            viewerId = user.id,
             status = PostStatus.DRAFT,
             publishedAt = null,
             action = "unpublish",

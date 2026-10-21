@@ -3,7 +3,6 @@ package org.tuchscherer.auth
 import org.tuchscherer.database.User
 import org.tuchscherer.database.repositories.UserRepository
 import io.mockk.*
-import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
@@ -36,7 +35,7 @@ class AuthenticationServiceTest {
         val passwordHash = "hashed-password"
 
         val mockUser = mockk<User>()
-        every { mockUser.id } returns EntityID(UUID.randomUUID(), mockk())
+        every { mockUser.id } returns UUID.randomUUID()
         every { mockUser.username } returns username
 
         every { userRepository.existsByUsername(username) } returns false
@@ -152,8 +151,8 @@ class AuthenticationServiceTest {
 
         val mockUser1 = mockk<User>()
         val mockUser2 = mockk<User>()
-        every { mockUser1.id } returns EntityID(UUID.randomUUID(), mockk())
-        every { mockUser2.id } returns EntityID(UUID.randomUUID(), mockk())
+        every { mockUser1.id } returns UUID.randomUUID()
+        every { mockUser2.id } returns UUID.randomUUID()
 
         every { userRepository.existsByUsername(any()) } returns false
         every { passwordService.generateSalt() } returnsMany listOf(salt1, salt2)
@@ -213,7 +212,7 @@ class AuthenticationServiceTest {
         val password = "password"
 
         val mockUser = mockk<User>()
-        every { mockUser.id } returns EntityID(UUID.randomUUID(), mockk())
+        every { mockUser.id } returns UUID.randomUUID()
 
         every { userRepository.existsByUsername(username) } returns false
         every { passwordService.generateSalt() } returns "salt"

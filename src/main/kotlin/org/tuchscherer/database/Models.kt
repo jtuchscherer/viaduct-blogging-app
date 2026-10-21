@@ -1,60 +1,43 @@
 package org.tuchscherer.database
 
-import org.jetbrains.exposed.v1.dao.java.UUIDEntity
-import org.jetbrains.exposed.v1.dao.java.UUIDEntityClass
-import org.jetbrains.exposed.v1.core.dao.id.EntityID
+import java.time.LocalDateTime
 import java.util.UUID
 
-class User(id: EntityID<UUID>) : UUIDEntity(id) {
-    companion object : UUIDEntityClass<User>(Users)
+/** Immutable snapshots, fully materialized inside the repository transaction. */
+data class User(
+    val id: UUID,
+    val username: String,
+    val email: String,
+    val name: String,
+    val passwordHash: String,
+    val salt: String,
+    val isAdmin: Boolean,
+    val createdAt: LocalDateTime,
+)
 
-    var username by Users.username
-    var email by Users.email
-    var name by Users.name
-    var passwordHash by Users.passwordHash
-    var salt by Users.salt
-    var isAdmin by Users.isAdmin
-    var createdAt by Users.createdAt
+data class Post(
+    val id: UUID,
+    val title: String,
+    val content: String,
+    val authorId: UUID,
+    val postType: String,
+    val status: String,
+    val publishedAt: LocalDateTime?,
+    val createdAt: LocalDateTime,
+    val updatedAt: LocalDateTime,
+)
 
-    val posts by Post referrersOn Posts.authorId
-}
+data class Comment(
+    val id: UUID,
+    val content: String,
+    val postId: UUID,
+    val authorId: UUID,
+    val createdAt: LocalDateTime,
+)
 
-class Post(id: EntityID<UUID>) : UUIDEntity(id) {
-    companion object : UUIDEntityClass<Post>(Posts)
-
-    var title by Posts.title
-    var content by Posts.content
-    var authorId by Posts.authorId
-    var postType by Posts.postType
-    var status by Posts.status
-    var publishedAt by Posts.publishedAt
-    var createdAt by Posts.createdAt
-    var updatedAt by Posts.updatedAt
-
-    var author by User referencedOn Posts.authorId
-    val comments by Comment referrersOn Comments.postId
-    val likes by Like referrersOn Likes.postId
-}
-
-class Comment(id: EntityID<UUID>) : UUIDEntity(id) {
-    companion object : UUIDEntityClass<Comment>(Comments)
-
-    var content by Comments.content
-    var postId by Comments.postId
-    var authorId by Comments.authorId
-    var createdAt by Comments.createdAt
-
-    var post by Post referencedOn Comments.postId
-    var author by User referencedOn Comments.authorId
-}
-
-class Like(id: EntityID<UUID>) : UUIDEntity(id) {
-    companion object : UUIDEntityClass<Like>(Likes)
-
-    var postId by Likes.postId
-    var userId by Likes.userId
-    var createdAt by Likes.createdAt
-
-    var post by Post referencedOn Likes.postId
-    var user by User referencedOn Likes.userId
-}
+data class Like(
+    val id: UUID,
+    val postId: UUID,
+    val userId: UUID,
+    val createdAt: LocalDateTime,
+)

@@ -138,7 +138,7 @@ class NodeResolversTest : ResolverTestBase() {
         val id = UUID.randomUUID()
         every { repo.findByIds(listOf(id)) } returns mapOf(id to mockk<Comment>(relaxed = true))
 
-        runCatching { CommentNodeResolver(repo).batchResolve(listOf(commentNodeCtx(id))) }
+        runCatching { CommentNodeResolver(repo, mockk()).batchResolve(listOf(commentNodeCtx(id))) }
 
         verify(exactly = 1) { repo.findByIds(listOf(id)) }
     }
@@ -149,7 +149,7 @@ class NodeResolversTest : ResolverTestBase() {
         val id = UUID.randomUUID()
         every { repo.findByIds(listOf(id)) } returns emptyMap()
 
-        val results = CommentNodeResolver(repo).batchResolve(listOf(commentNodeCtx(id)))
+        val results = CommentNodeResolver(repo, mockk()).batchResolve(listOf(commentNodeCtx(id)))
 
         assertEquals(1, results.size)
         assertTrue(results.values.single().isError)
@@ -165,7 +165,7 @@ class NodeResolversTest : ResolverTestBase() {
         val id = UUID.randomUUID()
         every { repo.findByIds(listOf(id)) } returns mapOf(id to mockk<Like>(relaxed = true))
 
-        runCatching { LikeNodeResolver(repo).batchResolve(listOf(likeNodeCtx(id))) }
+        runCatching { LikeNodeResolver(repo, mockk()).batchResolve(listOf(likeNodeCtx(id))) }
 
         verify(exactly = 1) { repo.findByIds(listOf(id)) }
     }
@@ -176,7 +176,7 @@ class NodeResolversTest : ResolverTestBase() {
         val id = UUID.randomUUID()
         every { repo.findByIds(listOf(id)) } returns emptyMap()
 
-        val results = LikeNodeResolver(repo).batchResolve(listOf(likeNodeCtx(id)))
+        val results = LikeNodeResolver(repo, mockk()).batchResolve(listOf(likeNodeCtx(id)))
 
         assertEquals(1, results.size)
         assertTrue(results.values.single().isError)

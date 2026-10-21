@@ -118,14 +118,14 @@ class AuthFlowIntegrationTest {
         val user = authService.createUser("carol", "carol@example.com", "Carol", "pass")
         val authenticated = authService.authenticateUser("carol", "pass")!!
 
-        val token = jwtService.generateToken(authenticated.username, authenticated.id.value.toString())
+        val token = jwtService.generateToken(authenticated.username, authenticated.id.toString())
         assertNotNull(token)
         assertTrue(token.isNotBlank())
 
         val payload = jwtService.verifyToken(token)
         assertNotNull(payload)
         assertEquals("carol", payload!!.username)
-        assertEquals(user.id.value.toString(), payload.userId)
+        assertEquals(user.id.toString(), payload.userId)
 
         val userFromToken = jwtService.getUserFromToken(token)
         assertNotNull(userFromToken)
@@ -142,7 +142,7 @@ class AuthFlowIntegrationTest {
         val user = authService.createUser("eve", "eve@example.com", "Eve", "pass")
         val clock = Clock.fixed(Instant.parse("2026-10-07T12:34:56Z"), ZoneOffset.UTC)
         val issuingService = JwtService(jwtConfig, userRepository, clock)
-        val token = issuingService.generateToken(user.username, user.id.value.toString())
+        val token = issuingService.generateToken(user.username, user.id.toString())
 
         assertEquals(user.id, issuingService.getUserFromToken(token)?.id)
 
@@ -154,9 +154,9 @@ class AuthFlowIntegrationTest {
     @Test
     fun `getUserFromToken returns null when user no longer exists`() {
         val user = authService.createUser("dave", "dave@example.com", "Dave", "pass")
-        val token = jwtService.generateToken(user.username, user.id.value.toString())
+        val token = jwtService.generateToken(user.username, user.id.toString())
 
-        userRepository.delete(user.id.value)
+        userRepository.delete(user.id)
 
         assertNull(jwtService.getUserFromToken(token))
     }

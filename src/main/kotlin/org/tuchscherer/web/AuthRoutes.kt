@@ -49,7 +49,7 @@ fun Route.authRoutes(
         try {
             val request = call.receive<RegisterRequest>()
             val user = authService.createUser(request.username, request.email, request.name, request.password)
-            val token = jwtService.generateToken(user.username, user.id.value.toString())
+            val token = jwtService.generateToken(user.username, user.id.toString())
             call.respond(HttpStatusCode.Created, AuthResponse(token = token, user = user.toUserResponse()))
         } catch (e: UserAlreadyExistsException) {
             call.respond(HttpStatusCode.Conflict, mapOf("error" to e.message))
@@ -62,7 +62,7 @@ fun Route.authRoutes(
         val request = call.receive<LoginRequest>()
         val user = authService.authenticateUser(request.username, request.password)
             ?: return@post call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "Invalid credentials"))
-        val token = jwtService.generateToken(user.username, user.id.value.toString())
+        val token = jwtService.generateToken(user.username, user.id.toString())
         call.respond(HttpStatusCode.OK, AuthResponse(token = token, user = user.toUserResponse()))
     }
 
@@ -79,7 +79,7 @@ fun Route.authRoutes(
 }
 
 private fun org.tuchscherer.database.User.toUserResponse() = UserResponse(
-    id = id.value.toString(),
+    id = id.toString(),
     username = username,
     email = email,
     name = name,

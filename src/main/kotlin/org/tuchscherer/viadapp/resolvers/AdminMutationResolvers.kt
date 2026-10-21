@@ -3,7 +3,6 @@ package org.tuchscherer.viadapp.resolvers
 import org.tuchscherer.auth.NotFoundException
 import org.tuchscherer.auth.UserInputLimits
 import org.tuchscherer.database.repositories.CommentRepository
-import org.tuchscherer.database.repositories.LikeRepository
 import org.tuchscherer.database.repositories.PostRepository
 import org.tuchscherer.database.repositories.UserRepository
 import org.tuchscherer.viadapp.resolvers.resolverbases.AdminMutationsResolvers

@@ -4,7 +4,7 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
 import org.tuchscherer.checkedlist.port.CheckedListCurrentUserProvider
-import org.tuchscherer.checkedlist.port.PostCreationPort
+import org.tuchscherer.checkedlist.port.ChecklistPostRepository
 import org.tuchscherer.checkedlist.repositories.CheckedListItemRepository
 import org.tuchscherer.auth.NotFoundException
 import org.tuchscherer.auth.AuthorizationException
@@ -21,17 +21,16 @@ import org.tuchscherer.viadapp.checkedlist.resolverbases.MutationResolvers
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.koin.core.context.GlobalContext
-import org.koin.dsl.module
 import viaduct.api.globalid.GlobalID
 import viaduct.api.grts.CheckedListItem as ViaductCheckedListItem
 import viaduct.api.grts.CheckedListPost as ViaductCheckedListPost
 import java.util.UUID
 
 class CheckedListMutationResolverTest {
+    private val service get() = ChecklistService(checklistPosts, itemRepository, org.tuchscherer.DirectTransactionRunner)
 
     private lateinit var currentUserProvider: CheckedListCurrentUserProvider
-    private lateinit var postCreationPort: PostCreationPort
+    private lateinit var checklistPosts: ChecklistPostRepository
     private lateinit var itemRepository: CheckedListItemRepository
 
     private val userId = UUID.randomUUID()
@@ -48,22 +47,13 @@ class CheckedListMutationResolverTest {
     @BeforeEach
     fun setup() {
         currentUserProvider = mockk()
-        postCreationPort = mockk()
+        checklistPosts = mockk()
         itemRepository = mockk()
 
         every { currentUserProvider.getCurrentUserId(any()) } returns userId
-        every { postCreationPort.getPostData(any()) } returns makePostData()
+        every { checklistPosts.getPostData(any()) } returns makePostData()
         every { itemRepository.getPostIdForItem(any()) } returns postId
 
-        GlobalContext.getOrNull()?.let { GlobalContext.stopKoin() }
-        org.koin.core.context.startKoin {
-            modules(module {
-                single { ChecklistService(postCreationPort, itemRepository, org.tuchscherer.DirectTransactionRunner) }
-                single<CheckedListCurrentUserProvider> { currentUserProvider }
-                single<PostCreationPort> { postCreationPort }
-                single<CheckedListItemRepository> { itemRepository }
-            })
-        }
     }
 
     private fun postGlobalId(): GlobalID<ViaductCheckedListPost> {
@@ -87,7 +77,7 @@ class CheckedListMutationResolverTest {
         every { ctx.arguments.input.items } returns listOf("Item")
 
         assertThrows(IllegalArgumentException::class.java) {
-            runBlocking { CreateCheckedListPostMutationResolver().resolve(ctx) }
+            runBlocking { CreateCheckedListPostMutationResolver(currentUserProvider, service).resolve(ctx) }
         }
     }
 
@@ -98,7 +88,7 @@ class CheckedListMutationResolverTest {
         every { ctx.arguments.input.items } returns listOf("Item")
 
         assertThrows(IllegalArgumentException::class.java) {
-            runBlocking { CreateCheckedListPostMutationResolver().resolve(ctx) }
+            runBlocking { CreateCheckedListPostMutationResolver(currentUserProvider, service).resolve(ctx) }
         }
     }
 
@@ -109,7 +99,7 @@ class CheckedListMutationResolverTest {
         every { ctx.arguments.input.items } returns List(101) { "Item $it" }
 
         assertThrows(IllegalArgumentException::class.java) {
-            runBlocking { CreateCheckedListPostMutationResolver().resolve(ctx) }
+            runBlocking { CreateCheckedListPostMutationResolver(currentUserProvider, service).resolve(ctx) }
         }
     }
 
@@ -120,7 +110,7 @@ class CheckedListMutationResolverTest {
         every { ctx.arguments.input.items } returns listOf("  ")
 
         assertThrows(IllegalArgumentException::class.java) {
-            runBlocking { CreateCheckedListPostMutationResolver().resolve(ctx) }
+            runBlocking { CreateCheckedListPostMutationResolver(currentUserProvider, service).resolve(ctx) }
         }
     }
 
@@ -131,7 +121,7 @@ class CheckedListMutationResolverTest {
         every { ctx.arguments.input.items } returns listOf("a".repeat(1001))
 
         assertThrows(IllegalArgumentException::class.java) {
-            runBlocking { CreateCheckedListPostMutationResolver().resolve(ctx) }
+            runBlocking { CreateCheckedListPostMutationResolver(currentUserProvider, service).resolve(ctx) }
         }
     }
 
@@ -145,7 +135,7 @@ class CheckedListMutationResolverTest {
         every { ctx.arguments.input.items } returns listOf("Item")
 
         assertThrows(RuntimeException::class.java) {
-            runBlocking { CreateCheckedListPostMutationResolver().resolve(ctx) }
+            runBlocking { CreateCheckedListPostMutationResolver(currentUserProvider, service).resolve(ctx) }
         }
     }
 
@@ -156,10 +146,10 @@ class CheckedListMutationResolverTest {
         val ctx = mockk<MutationResolvers.AddCheckedListItem.Context>(relaxed = true)
         every { ctx.arguments.input.postId } returns postGlobalId()
         every { ctx.arguments.input.text } returns "Some text"
-        every { postCreationPort.getPostData(any()) } returns null
+        every { checklistPosts.getPostData(any()) } returns null
 
         assertThrows(NotFoundException::class.java) {
-            runBlocking { AddCheckedListItemMutationResolver().resolve(ctx) }
+            runBlocking { AddCheckedListItemMutationResolver(currentUserProvider, service).resolve(ctx) }
         }
     }
 
@@ -170,7 +160,7 @@ class CheckedListMutationResolverTest {
         every { ctx.arguments.input.text } returns "  "
 
         assertThrows(IllegalArgumentException::class.java) {
-            runBlocking { AddCheckedListItemMutationResolver().resolve(ctx) }
+            runBlocking { AddCheckedListItemMutationResolver(currentUserProvider, service).resolve(ctx) }
         }
     }
 
@@ -181,13 +171,13 @@ class CheckedListMutationResolverTest {
         val ctx = mockk<MutationResolvers.ToggleCheckedListItem.Context>(relaxed = true)
         every { ctx.arguments.id } returns itemGlobalId()
         every { itemRepository.getPostIdForItem(itemId) } returns postId
-        every { postCreationPort.getPostData(postId) } returns makePostData(authorId = userId)
+        every { checklistPosts.getPostData(postId) } returns makePostData(authorId = userId)
         // Return null so the resolver throws "item not found" — this confirms the auth check
         // passed (if it had failed, "Not authorized" would have been thrown instead).
         every { itemRepository.toggleItem(itemId) } returns null
 
         val ex = assertThrows(NotFoundException::class.java) {
-            runBlocking { ToggleCheckedListItemMutationResolver().resolve(ctx) }
+            runBlocking { ToggleCheckedListItemMutationResolver(currentUserProvider, service).resolve(ctx) }
         }
         assertTrue(ex.message?.contains("CheckedListItem not found") == true,
             "Expected 'item not found' error (auth passed), but got: ${ex.message}")
@@ -200,10 +190,10 @@ class CheckedListMutationResolverTest {
         val ctx = mockk<MutationResolvers.ToggleCheckedListItem.Context>(relaxed = true)
         every { ctx.arguments.id } returns itemGlobalId()
         every { itemRepository.getPostIdForItem(itemId) } returns postId
-        every { postCreationPort.getPostData(postId) } returns makePostData(authorId = userId)
+        every { checklistPosts.getPostData(postId) } returns makePostData(authorId = userId)
 
         assertThrows(AuthorizationException::class.java) {
-            runBlocking { ToggleCheckedListItemMutationResolver().resolve(ctx) }
+            runBlocking { ToggleCheckedListItemMutationResolver(currentUserProvider, service).resolve(ctx) }
         }
     }
 
@@ -214,7 +204,7 @@ class CheckedListMutationResolverTest {
         every { itemRepository.getPostIdForItem(itemId) } returns null
 
         assertThrows(NotFoundException::class.java) {
-            runBlocking { ToggleCheckedListItemMutationResolver().resolve(ctx) }
+            runBlocking { ToggleCheckedListItemMutationResolver(currentUserProvider, service).resolve(ctx) }
         }
     }
 
@@ -226,7 +216,7 @@ class CheckedListMutationResolverTest {
         every { ctx.arguments.id } returns itemGlobalId()
         every { itemRepository.deleteItem(itemId) } returns true
 
-        assertTrue(DeleteCheckedListItemMutationResolver().resolve(ctx))
+        assertTrue(DeleteCheckedListItemMutationResolver(currentUserProvider, service).resolve(ctx))
     }
 
     @Test
@@ -235,7 +225,7 @@ class CheckedListMutationResolverTest {
         every { ctx.arguments.id } returns itemGlobalId()
         every { itemRepository.deleteItem(any()) } returns false
 
-        assertFalse(DeleteCheckedListItemMutationResolver().resolve(ctx))
+        assertFalse(DeleteCheckedListItemMutationResolver(currentUserProvider, service).resolve(ctx))
     }
 
     @Test
@@ -247,7 +237,7 @@ class CheckedListMutationResolverTest {
         every { toggleCtx.arguments.id } returns itemGlobalId()
 
         assertThrows(RuntimeException::class.java) {
-            runBlocking { ToggleCheckedListItemMutationResolver().resolve(toggleCtx) }
+            runBlocking { ToggleCheckedListItemMutationResolver(currentUserProvider, service).resolve(toggleCtx) }
         }
     }
 
@@ -261,7 +251,7 @@ class CheckedListMutationResolverTest {
         every { ctx.arguments.input.description } returns null
 
         assertThrows(IllegalArgumentException::class.java) {
-            runBlocking { UpdateCheckedListPostMutationResolver().resolve(ctx) }
+            runBlocking { UpdateCheckedListPostMutationResolver(currentUserProvider, service).resolve(ctx) }
         }
     }
 
@@ -273,7 +263,7 @@ class CheckedListMutationResolverTest {
         every { ctx.arguments.input.description } returns null
 
         assertThrows(IllegalArgumentException::class.java) {
-            runBlocking { UpdateCheckedListPostMutationResolver().resolve(ctx) }
+            runBlocking { UpdateCheckedListPostMutationResolver(currentUserProvider, service).resolve(ctx) }
         }
     }
 
@@ -285,7 +275,7 @@ class CheckedListMutationResolverTest {
         every { ctx.arguments.input.description } returns "a".repeat(10_001)
 
         assertThrows(IllegalArgumentException::class.java) {
-            runBlocking { UpdateCheckedListPostMutationResolver().resolve(ctx) }
+            runBlocking { UpdateCheckedListPostMutationResolver(currentUserProvider, service).resolve(ctx) }
         }
     }
 
@@ -295,10 +285,10 @@ class CheckedListMutationResolverTest {
         every { ctx.arguments.input.id } returns postGlobalId()
         every { ctx.arguments.input.title } returns "New Title"
         every { ctx.arguments.input.description } returns null
-        every { postCreationPort.updateCheckedListPost(any(), any(), any()) } returns null
+        every { checklistPosts.updateCheckedListPost(any(), any(), any()) } returns null
 
         assertThrows(NotFoundException::class.java) {
-            runBlocking { UpdateCheckedListPostMutationResolver().resolve(ctx) }
+            runBlocking { UpdateCheckedListPostMutationResolver(currentUserProvider, service).resolve(ctx) }
         }
     }
 
@@ -311,7 +301,7 @@ class CheckedListMutationResolverTest {
         every { ctx.arguments.input.id } returns postGlobalId()
 
         assertThrows(RuntimeException::class.java) {
-            runBlocking { UpdateCheckedListPostMutationResolver().resolve(ctx) }
+            runBlocking { UpdateCheckedListPostMutationResolver(currentUserProvider, service).resolve(ctx) }
         }
     }
 
@@ -322,9 +312,9 @@ class CheckedListMutationResolverTest {
         val ctx = mockk<MutationResolvers.DeleteCheckedListPost.Context>(relaxed = true)
         every { ctx.arguments.id } returns postGlobalId()
         every { itemRepository.deleteItemsForPost(postId) } returns 0
-        every { postCreationPort.deleteCheckedListPost(postId) } returns true
+        every { checklistPosts.deleteCheckedListPost(postId) } returns true
 
-        assertTrue(DeleteCheckedListPostMutationResolver().resolve(ctx))
+        assertTrue(DeleteCheckedListPostMutationResolver(currentUserProvider, service).resolve(ctx))
     }
 
     @Test
@@ -332,9 +322,9 @@ class CheckedListMutationResolverTest {
         val ctx = mockk<MutationResolvers.DeleteCheckedListPost.Context>(relaxed = true)
         every { ctx.arguments.id } returns postGlobalId()
         every { itemRepository.deleteItemsForPost(any()) } returns 0
-        every { postCreationPort.deleteCheckedListPost(any()) } returns false
+        every { checklistPosts.deleteCheckedListPost(any()) } returns false
 
-        assertFalse(DeleteCheckedListPostMutationResolver().resolve(ctx))
+        assertFalse(DeleteCheckedListPostMutationResolver(currentUserProvider, service).resolve(ctx))
     }
 
     @Test
@@ -348,12 +338,12 @@ class CheckedListMutationResolverTest {
             itemsDeletedFirst = true
             0
         }
-        every { postCreationPort.deleteCheckedListPost(postId) } answers {
+        every { checklistPosts.deleteCheckedListPost(postId) } answers {
             postDeletedAfterItems = itemsDeletedFirst
             true
         }
 
-        DeleteCheckedListPostMutationResolver().resolve(ctx)
+        DeleteCheckedListPostMutationResolver(currentUserProvider, service).resolve(ctx)
 
         assertTrue(postDeletedAfterItems, "Post must be deleted after its items")
     }
@@ -367,7 +357,7 @@ class CheckedListMutationResolverTest {
         every { ctx.arguments.id } returns postGlobalId()
 
         assertThrows(RuntimeException::class.java) {
-            runBlocking { DeleteCheckedListPostMutationResolver().resolve(ctx) }
+            runBlocking { DeleteCheckedListPostMutationResolver(currentUserProvider, service).resolve(ctx) }
         }
     }
 
@@ -380,7 +370,7 @@ class CheckedListMutationResolverTest {
         every { ctx.arguments.input.text } returns "  "
 
         assertThrows(IllegalArgumentException::class.java) {
-            runBlocking { UpdateCheckedListItemMutationResolver().resolve(ctx) }
+            runBlocking { UpdateCheckedListItemMutationResolver(currentUserProvider, service).resolve(ctx) }
         }
     }
 
@@ -391,7 +381,7 @@ class CheckedListMutationResolverTest {
         every { ctx.arguments.input.text } returns "a".repeat(1001)
 
         assertThrows(IllegalArgumentException::class.java) {
-            runBlocking { UpdateCheckedListItemMutationResolver().resolve(ctx) }
+            runBlocking { UpdateCheckedListItemMutationResolver(currentUserProvider, service).resolve(ctx) }
         }
     }
 
@@ -403,7 +393,7 @@ class CheckedListMutationResolverTest {
         every { itemRepository.updateItem(any(), any()) } returns null
 
         assertThrows(NotFoundException::class.java) {
-            runBlocking { UpdateCheckedListItemMutationResolver().resolve(ctx) }
+            runBlocking { UpdateCheckedListItemMutationResolver(currentUserProvider, service).resolve(ctx) }
         }
     }
 
@@ -416,7 +406,7 @@ class CheckedListMutationResolverTest {
         every { ctx.arguments.input.id } returns itemGlobalId()
 
         assertThrows(RuntimeException::class.java) {
-            runBlocking { UpdateCheckedListItemMutationResolver().resolve(ctx) }
+            runBlocking { UpdateCheckedListItemMutationResolver(currentUserProvider, service).resolve(ctx) }
         }
     }
 }

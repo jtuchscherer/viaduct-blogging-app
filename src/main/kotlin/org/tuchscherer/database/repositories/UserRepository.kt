@@ -1,7 +1,6 @@
 package org.tuchscherer.database.repositories
 
 import org.tuchscherer.database.User
-import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -46,11 +45,6 @@ interface UserRepository {
         salt: String,
         createdAt: LocalDateTime = LocalDateTime.now()
     ): User
-
-    /**
-     * Update an existing user.
-     */
-    fun update(user: User): User
 
     /**
      * Partially update mutable fields on an existing user.

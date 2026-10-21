@@ -78,7 +78,7 @@ class PostContentMutationIntegrationTest {
     @Test
     fun `update mutation returns updated persisted content through its field resolver`() = runBlocking<Unit> {
         val author = author()
-        val id = globalId(posts.create("Original title", "Original body", author.id.value).id.value)
+        val id = globalId(posts.create("Original title", "Original body", author.id).id)
 
         val result = execute(
             "mutation { updatePost(input: { id: \"$id\", title: \"Updated title\", content: \"Updated body\" }) { id title content } }",
@@ -95,8 +95,8 @@ class PostContentMutationIntegrationTest {
     @Test
     fun `admin update mutation returns updated content through its field resolver`() = runBlocking<Unit> {
         val author = author()
-        val id = globalId(posts.create("Original title", "Original body", author.id.value).id.value)
-        val admin = requireNotNull(users.updateFields(author.id.value, isAdmin = true))
+        val id = globalId(posts.create("Original title", "Original body", author.id).id)
+        val admin = requireNotNull(users.updateFields(author.id, isAdmin = true))
 
         val result = execute(
             "mutation { admin { updatePost(input: { id: \"$id\", content: \"Admin body\" }) { id content } } }",

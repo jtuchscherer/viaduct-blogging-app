@@ -8,8 +8,6 @@ import org.tuchscherer.database.User
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.jetbrains.exposed.v1.core.dao.id.EntityID
-import org.tuchscherer.database.Users
 import java.util.UUID
 
 /**
@@ -25,9 +23,7 @@ class ViaductCheckedListCurrentUserProviderTest {
 
     private fun mockUser(id: UUID): User {
         val user = mockk<User>()
-        val entityId = mockk<EntityID<UUID>>()
-        every { entityId.value } returns id
-        every { user.id } returns entityId
+        every { user.id } returns id
         return user
     }
 

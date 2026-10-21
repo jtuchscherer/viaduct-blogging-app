@@ -3,7 +3,6 @@ package org.tuchscherer.integration
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
-import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
@@ -16,7 +15,7 @@ import org.tuchscherer.analytics.analyticsKoinModule
 import org.tuchscherer.analytics.repositories.PostViewRepository
 import org.tuchscherer.auth.RequestContext
 import org.tuchscherer.checkedlist.checkedListKoinModule
-import org.tuchscherer.checkedlist.port.PostCreationPort
+import org.tuchscherer.checkedlist.port.ChecklistPostRepository
 import org.tuchscherer.checkedlist.port.PostData
 import org.tuchscherer.checkedlist.repositories.CheckedListItemData
 import org.tuchscherer.checkedlist.repositories.CheckedListItemRepository
@@ -55,14 +54,14 @@ class MixedLanguageAnalyticsIntegrationTest {
     private val time = LocalDateTime.of(2026, 10, 19, 12, 0)
     private val repository = mockk<PostRepository>()
     private val items = mockk<CheckedListItemRepository>()
-    private val creation = mockk<PostCreationPort>()
+    private val creation = mockk<ChecklistPostRepository>()
     private val views = CountingViews()
     private val posts = linkedMapOf<UUID, Post>()
 
     private val viaduct by lazy {
         ViaductBuilder()
             .withScopedSchemas(ViaductSchemas.all)
-            .withTenantModuleInjectorFactory(SharedTenantModuleInjectorFactory(KoinTenantCodeInjector()))
+            .withTenantModuleInjectorFactory(SharedTenantModuleInjectorFactory(KoinTenantCodeInjector(org.koin.core.context.GlobalContext.get())))
             .withFlagManager(object : FlagManager {
                 override fun isEnabled(flag: FlagManager.Flag): Boolean =
                     flag == FlagManager.Flags.ENABLE_RESOLVER_OUTPUT_MISSING_FIELD_ERRORS || FlagManager.Default.isEnabled(flag)
@@ -113,7 +112,9 @@ class MixedLanguageAnalyticsIntegrationTest {
                 module {
                     single<PostRepository> { repository }
                     single<PostViewRepository> { views }
-                    single<PostCreationPort> { creation }
+                    single<ChecklistPostRepository> { creation }
+                    single<org.tuchscherer.checkedlist.port.ChecklistPostReader> { creation }
+                    single<org.tuchscherer.checkedlist.port.CheckedListCurrentUserProvider> { org.tuchscherer.checkedlist.ViaductCheckedListCurrentUserProvider() }
                     single<CheckedListItemRepository> { items }
                     single<UserRepository> { users }
                     single<CommentRepository> { comments }
@@ -162,7 +163,7 @@ class MixedLanguageAnalyticsIntegrationTest {
         assertFalse(views.counts.containsKey(draft))
         assertFalse(views.counts.containsKey(missing))
         val admin = mockk<User>()
-        every { admin.id } returns EntityID(UUID.randomUUID(), mockk())
+        every { admin.id } returns UUID.randomUUID()
         every { admin.isAdmin } returns true
         val totals = execute("{ admin { stats { totalViews } } }", "admin", RequestContext(admin))
         assertNull(totals["errors"], totals.toString())
@@ -212,11 +213,11 @@ class MixedLanguageAnalyticsIntegrationTest {
 
     private fun post(id: UUID, kind: String, title: String, content: String, status: String = PostStatus.PUBLISHED): Post {
         val value = mockk<Post>()
-        every { value.id } returns EntityID(id, mockk())
+        every { value.id } returns id
         every { value.postType } returns kind
         every { value.title } returns title
         every { value.content } returns content
-        every { value.authorId } returns EntityID(author, mockk())
+        every { value.authorId } returns author
         every { value.status } returns status
         every { value.publishedAt } returns if (status == PostStatus.PUBLISHED) time else null
         every { value.createdAt } returns time
@@ -225,19 +226,19 @@ class MixedLanguageAnalyticsIntegrationTest {
     }
 
     private fun postData(post: Post) = PostData(
-        post.id.value, post.title, post.content, post.authorId.value, post.status,
+        post.id, post.title, post.content, post.authorId, post.status,
         post.publishedAt?.toString(), post.createdAt.toString(), post.updatedAt.toString(),
     )
 
     private fun projection(post: Post, fields: Set<PostField>) = PostProjection(
-        id = post.id.value,
+        id = post.id,
         postType = post.postType,
         fields = fields,
         title = post.title.takeIf { PostField.TITLE in fields },
         content = post.content.takeIf { PostField.CONTENT in fields },
         // Visibility metadata is always available, independent of the requested output fields.
         status = post.status,
-        authorId = post.authorId.value,
+        authorId = post.authorId,
         publishedAt = post.publishedAt.takeIf { PostField.PUBLISHED_AT in fields },
         createdAt = post.createdAt.takeIf { PostField.CREATED_AT in fields },
         updatedAt = post.updatedAt.takeIf { PostField.UPDATED_AT in fields },

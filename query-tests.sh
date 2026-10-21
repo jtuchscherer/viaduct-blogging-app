@@ -1651,6 +1651,21 @@ else
     echo "Response: $BLANK_TITLE_RESPONSE"
 fi
 
+print_info "Testing createCheckedListPost rejects an oversized description..."
+LONG_DESCRIPTION=$(jq -nr '"x" * 10001')
+LONG_DESCRIPTION_PAYLOAD=$(jq -n --arg description "$LONG_DESCRIPTION" \
+    '{query:"mutation($description:String!) { createCheckedListPost(input:{title:\"Too long\",description:$description,items:[]}) { id } }",variables:{description:$description}}')
+LONG_DESCRIPTION_RESPONSE=$(curl -sS -X POST "$GRAPHQL_URL" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $USER1_TOKEN" \
+    -d "$LONG_DESCRIPTION_PAYLOAD")
+if echo "$LONG_DESCRIPTION_RESPONSE" | jq -e '.errors | any(.message | contains("10,000"))' > /dev/null; then
+    print_success "createCheckedListPost rejected an oversized description"
+else
+    print_error "createCheckedListPost accepted an oversized description"
+    echo "Response: $LONG_DESCRIPTION_RESPONSE"
+fi
+
 # --- CheckedList likePost / unlikePost ---
 
 print_info "Testing likePost on a CheckedListPost..."
@@ -1966,6 +1981,23 @@ else
     echo "Response: $MY_POSTS"
 fi
 
+print_info "Testing that user profile post lists hide drafts..."
+PROFILE_POSTS_PAYLOAD=$(jq -n --arg id "$USER1_GID" \
+    '{query:"query($id:ID!) { node(id:$id) { ... on User { posts { id title } } } }",variables:{id:$id}}')
+for VIEWER_TOKEN in "" "$USER2_TOKEN"; do
+    PROFILE_POSTS=$(curl -sS -X POST "$GRAPHQL_URL" \
+        -H "Content-Type: application/json" \
+        -H "Authorization: Bearer $VIEWER_TOKEN" \
+        -d "$PROFILE_POSTS_PAYLOAD")
+    if [ -n "$DRAFT_POST_ID" ] && echo "$PROFILE_POSTS" | jq -e --arg draft "$DRAFT_POST_ID" \
+        '.errors == null and .data.node != null and (.data.node.posts | type == "array") and all(.data.node.posts[]; .id != $draft)' > /dev/null; then
+        print_success "User profile posts hide drafts from this viewer"
+    else
+        print_error "User profile posts leaked a draft or failed to load"
+        echo "Response: $PROFILE_POSTS"
+    fi
+done
+
 print_info "Testing that another user cannot read the draft via node(id)..."
 OTHER_NODE=$(curl -s -X POST $GRAPHQL_URL \
     -H "Content-Type: application/json" \
@@ -2188,6 +2220,22 @@ elif echo $FEED_UNPUB | grep -q "$DRAFT_POST_ID"; then
 else
     print_success "Unpublished post left the feed"
 fi
+
+print_info "Testing that unpublished comments are hidden from anonymous and other users..."
+KEEP_COMMENT_ID=$(echo "$KEEP_COMMENT" | jq -r '.data.createComment.id // empty')
+for VIEWER_TOKEN in "" "$USER2_TOKEN"; do
+    PRIVATE_COMMENT=$(curl -s -X POST "$GRAPHQL_URL" \
+        -H "Content-Type: application/json" \
+        -H "Authorization: Bearer $VIEWER_TOKEN" \
+        -d "$(jq -n --arg id "$KEEP_COMMENT_ID" --arg post "$DRAFT_POST_ID" \
+            '{query:"query($id:ID!,$post:ID!) { node(id:$id) { ... on Comment { content } } postComments(postId:$post) { content } }", variables:{id:$id,post:$post}}')")
+    if [ -n "$KEEP_COMMENT_ID" ] && echo "$PRIVATE_COMMENT" | jq -e '.data.node == null and .data.postComments == [] and (.errors | length > 0)' > /dev/null; then
+        print_success "Unpublished comment is hidden from this viewer"
+    else
+        print_error "Unpublished comment leaked to this viewer"
+        echo "Response: $PRIVATE_COMMENT"
+    fi
+done
 
 print_info "Testing that engagement survives an unpublish..."
 curl -s -X POST $GRAPHQL_URL \

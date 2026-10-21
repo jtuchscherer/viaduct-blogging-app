@@ -3,7 +3,6 @@ package org.tuchscherer.integration
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
-import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -92,7 +91,7 @@ class AdminPostReferenceIntegrationTest {
     fun `reference resolves nested fields and their required selections`() = runBlocking<Unit> {
         every { postRepository.findById(postId) } returns post()
         val comment = mockk<Comment>()
-        every { comment.id } returns EntityID(UUID.randomUUID(), mockk())
+        every { comment.id } returns UUID.randomUUID()
         every { comment.content } returns "A comment"
         every { comment.createdAt } returns LocalDateTime.of(2026, 10, 19, 12, 0)
         every { commentRepository.findByPostId(postId) } returns listOf(comment)
@@ -142,7 +141,7 @@ class AdminPostReferenceIntegrationTest {
 
     private suspend fun execute(query: String, schema: String = "admin"): Map<String, Any?> {
         val admin = mockk<User>()
-        every { admin.id } returns EntityID(adminId, mockk())
+        every { admin.id } returns adminId
         every { admin.isAdmin } returns true
         return viaduct.execute(
             ExecutionInput.builder()
@@ -155,8 +154,8 @@ class AdminPostReferenceIntegrationTest {
 
     private fun post(status: String = PostStatus.PUBLISHED): Post {
         val result = mockk<Post>()
-        every { result.id } returns EntityID(postId, mockk())
-        every { result.authorId } returns EntityID(authorId, mockk())
+        every { result.id } returns postId
+        every { result.authorId } returns authorId
         every { result.title } returns "Test Post"
         every { result.content } returns "Body"
         every { result.status } returns status

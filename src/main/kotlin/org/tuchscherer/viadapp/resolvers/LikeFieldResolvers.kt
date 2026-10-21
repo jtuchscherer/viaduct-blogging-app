@@ -17,7 +17,7 @@ class PostLikesResolver(
 
         return likeRepository.findByPostId(postId).map { like ->
             ViaductLike.of(ctx) {
-                id(ctx.globalIDFor(ViaductLike.Reflection, like.id.value.toString()))
+                id(ctx.globalIDFor(ViaductLike.Reflection, like.id.toString()))
                 createdAt(like.createdAt.toString())
             }
         }
@@ -42,7 +42,7 @@ class PostIsLikedByMeResolver(
     override suspend fun resolve(ctx: Context): Boolean {
         val postId = UUID.fromString(ctx.getObjectValue().getIdOrThrow().internalID)
         val user = optionalAuth(ctx.requestContext) ?: return false
-        return likeRepository.existsByPostAndUser(postId, user.id.value)
+        return likeRepository.existsByPostAndUser(postId, user.id)
     }
 }
 

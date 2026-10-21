@@ -6,14 +6,12 @@ import org.tuchscherer.auth.RequestContext
 import org.tuchscherer.database.PostStatus
 import org.tuchscherer.database.Like
 import org.tuchscherer.database.Post
-import org.tuchscherer.database.Posts
 import org.tuchscherer.database.User
 import org.tuchscherer.database.repositories.LikeRepository
 import org.tuchscherer.database.repositories.PostRepository
 import org.tuchscherer.viadapp.resolvers.LikePostMutationResolver
 import io.mockk.*
 import kotlinx.coroutines.runBlocking
-import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
@@ -45,18 +43,18 @@ class LikePostResolverTest : ResolverTestBase() {
         postRepository = mockk()
 
         mockUser = mockk(relaxed = true)
-        every { mockUser.id } returns EntityID(userId, mockk())
+        every { mockUser.id } returns userId
         every { mockUser.username } returns "testuser"
 
         mockPost = mockk(relaxed = true)
-        every { mockPost.id } returns EntityID(postId, Posts)
+        every { mockPost.id } returns postId
         every { mockPost.title } returns "Test Post"
         every { mockPost.status } returns PostStatus.PUBLISHED
 
         mockLike = mockk(relaxed = true)
-        every { mockLike.id } returns EntityID(likeId, mockk())
-        every { mockLike.userId } returns EntityID(userId, mockk())
-        every { mockLike.postId } returns EntityID(postId, Posts)
+        every { mockLike.id } returns likeId
+        every { mockLike.userId } returns userId
+        every { mockLike.postId } returns postId
         every { mockLike.createdAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
 
         GlobalContext.getOrNull()?.let { GlobalContext.stopKoin() }
@@ -74,9 +72,9 @@ class LikePostResolverTest : ResolverTestBase() {
         val args = Mutation_LikePost_Arguments.Builder(context).postId(globalIDFor(ViaductBlogPost.Reflection, postId.toString())).build()
 
         every { postRepository.findById(postId) } returns mockPost
-        every { likeRepository.findByPostAndUser(mockPost.id.value, mockUser.id.value) } returns null
+        every { likeRepository.findByPostAndUser(mockPost.id, mockUser.id) } returns null
         every {
-            likeRepository.create(postId = mockPost.id.value, userId = mockUser.id.value, createdAt = any())
+            likeRepository.create(postId = mockPost.id, userId = mockUser.id, createdAt = any())
         } returns mockLike
 
         val result = runMutationFieldResolver(resolver) {
@@ -94,7 +92,7 @@ class LikePostResolverTest : ResolverTestBase() {
         val args = Mutation_LikePost_Arguments.Builder(context).postId(globalIDFor(ViaductBlogPost.Reflection, postId.toString())).build()
 
         every { postRepository.findById(postId) } returns mockPost
-        every { likeRepository.findByPostAndUser(mockPost.id.value, mockUser.id.value) } returns mockLike
+        every { likeRepository.findByPostAndUser(mockPost.id, mockUser.id) } returns mockLike
 
         val result = runMutationFieldResolver(resolver) {
             arguments = args

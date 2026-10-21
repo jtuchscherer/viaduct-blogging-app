@@ -39,7 +39,7 @@ class LikeRepositoryTest {
         testPost = postRepository.create(
             title = "Test Post",
             content = "Test Content",
-            authorId = testUser.id.value
+            authorId = testUser.id
         )
     }
 
@@ -56,8 +56,8 @@ class LikeRepositoryTest {
     @Test
     fun `create like successfully`() {
         val like = likeRepository.create(
-            postId = testPost.id.value,
-            userId = testUser.id.value
+            postId = testPost.id,
+            userId = testUser.id
         )
 
         Assertions.assertNotNull(like)
@@ -68,14 +68,14 @@ class LikeRepositoryTest {
     @Test
     fun `findById returns like when exists`() {
         val created = likeRepository.create(
-            postId = testPost.id.value,
-            userId = testUser.id.value
+            postId = testPost.id,
+            userId = testUser.id
         )
 
-        val found = likeRepository.findById(created.id.value)
+        val found = likeRepository.findById(created.id)
 
         Assertions.assertNotNull(found)
-        assertEquals(created.id.value, found!!.id.value)
+        assertEquals(created.id, found!!.id)
     }
 
     @Test
@@ -95,15 +95,15 @@ class LikeRepositoryTest {
             passwordHash = "hash",
             salt = "salt"
         )
-        val like1 = likeRepository.create(postId = testPost.id.value, userId = testUser.id.value)
-        val like2 = likeRepository.create(postId = testPost.id.value, userId = user2.id.value)
+        val like1 = likeRepository.create(postId = testPost.id, userId = testUser.id)
+        val like2 = likeRepository.create(postId = testPost.id, userId = user2.id)
         val missingId = UUID.randomUUID()
 
-        val result = likeRepository.findByIds(listOf(like1.id.value, like2.id.value, missingId))
+        val result = likeRepository.findByIds(listOf(like1.id, like2.id, missingId))
 
         assertEquals(2, result.size)
-        assertTrue(result.containsKey(like1.id.value))
-        assertTrue(result.containsKey(like2.id.value))
+        assertTrue(result.containsKey(like1.id))
+        assertTrue(result.containsKey(like2.id))
         assertFalse(result.containsKey(missingId))
     }
 
@@ -123,15 +123,15 @@ class LikeRepositoryTest {
         )
 
         likeRepository.create(
-            postId = testPost.id.value,
-            userId = testUser.id.value
+            postId = testPost.id,
+            userId = testUser.id
         )
         likeRepository.create(
-            postId = testPost.id.value,
-            userId = user2.id.value
+            postId = testPost.id,
+            userId = user2.id
         )
 
-        val likes = likeRepository.findByPostId(testPost.id.value)
+        val likes = likeRepository.findByPostId(testPost.id)
 
         assertEquals(2, likes.size)
     }
@@ -141,19 +141,19 @@ class LikeRepositoryTest {
         val post2 = postRepository.create(
             title = "Post 2",
             content = "Content 2",
-            authorId = testUser.id.value
+            authorId = testUser.id
         )
 
         likeRepository.create(
-            postId = testPost.id.value,
-            userId = testUser.id.value
+            postId = testPost.id,
+            userId = testUser.id
         )
         likeRepository.create(
-            postId = post2.id.value,
-            userId = testUser.id.value
+            postId = post2.id,
+            userId = testUser.id
         )
 
-        val likes = likeRepository.findByUserId(testUser.id.value)
+        val likes = likeRepository.findByUserId(testUser.id)
 
         assertEquals(2, likes.size)
     }
@@ -161,11 +161,11 @@ class LikeRepositoryTest {
     @Test
     fun `findByPostAndUser returns like when exists`() {
         likeRepository.create(
-            postId = testPost.id.value,
-            userId = testUser.id.value
+            postId = testPost.id,
+            userId = testUser.id
         )
 
-        val found = likeRepository.findByPostAndUser(testPost.id.value, testUser.id.value)
+        val found = likeRepository.findByPostAndUser(testPost.id, testUser.id)
 
         Assertions.assertNotNull(found)
         assertEquals(testPost.id, found!!.postId)
@@ -174,7 +174,7 @@ class LikeRepositoryTest {
 
     @Test
     fun `findByPostAndUser returns null when like does not exist`() {
-        val found = likeRepository.findByPostAndUser(testPost.id.value, testUser.id.value)
+        val found = likeRepository.findByPostAndUser(testPost.id, testUser.id)
 
         Assertions.assertNull(found)
     }
@@ -182,18 +182,18 @@ class LikeRepositoryTest {
     @Test
     fun `existsByPostAndUser returns true when like exists`() {
         likeRepository.create(
-            postId = testPost.id.value,
-            userId = testUser.id.value
+            postId = testPost.id,
+            userId = testUser.id
         )
 
-        val exists = likeRepository.existsByPostAndUser(testPost.id.value, testUser.id.value)
+        val exists = likeRepository.existsByPostAndUser(testPost.id, testUser.id)
 
         assertTrue(exists)
     }
 
     @Test
     fun `existsByPostAndUser returns false when like does not exist`() {
-        val exists = likeRepository.existsByPostAndUser(testPost.id.value, testUser.id.value)
+        val exists = likeRepository.existsByPostAndUser(testPost.id, testUser.id)
 
         assertFalse(exists)
     }
@@ -201,14 +201,14 @@ class LikeRepositoryTest {
     @Test
     fun `delete like removes from database`() {
         val like = likeRepository.create(
-            postId = testPost.id.value,
-            userId = testUser.id.value
+            postId = testPost.id,
+            userId = testUser.id
         )
 
-        val deleted = likeRepository.delete(like.id.value)
+        val deleted = likeRepository.delete(like.id)
 
         assertTrue(deleted)
-        Assertions.assertNull(likeRepository.findById(like.id.value))
+        Assertions.assertNull(likeRepository.findById(like.id))
     }
 
     @Test
@@ -222,19 +222,19 @@ class LikeRepositoryTest {
     @Test
     fun `deleteByPostAndUser removes like`() {
         likeRepository.create(
-            postId = testPost.id.value,
-            userId = testUser.id.value
+            postId = testPost.id,
+            userId = testUser.id
         )
 
-        val deleted = likeRepository.deleteByPostAndUser(testPost.id.value, testUser.id.value)
+        val deleted = likeRepository.deleteByPostAndUser(testPost.id, testUser.id)
 
         assertTrue(deleted)
-        assertFalse(likeRepository.existsByPostAndUser(testPost.id.value, testUser.id.value))
+        assertFalse(likeRepository.existsByPostAndUser(testPost.id, testUser.id))
     }
 
     @Test
     fun `deleteByPostAndUser returns false when like does not exist`() {
-        val deleted = likeRepository.deleteByPostAndUser(testPost.id.value, testUser.id.value)
+        val deleted = likeRepository.deleteByPostAndUser(testPost.id, testUser.id)
 
         assertFalse(deleted)
     }
@@ -250,15 +250,15 @@ class LikeRepositoryTest {
         )
 
         likeRepository.create(
-            postId = testPost.id.value,
-            userId = testUser.id.value
+            postId = testPost.id,
+            userId = testUser.id
         )
         likeRepository.create(
-            postId = testPost.id.value,
-            userId = user2.id.value
+            postId = testPost.id,
+            userId = user2.id
         )
 
-        val count = likeRepository.countByPostId(testPost.id.value)
+        val count = likeRepository.countByPostId(testPost.id)
 
         assertEquals(2, count)
     }
@@ -266,15 +266,15 @@ class LikeRepositoryTest {
     @Test
     fun `cannot create duplicate like for same post and user`() {
         likeRepository.create(
-            postId = testPost.id.value,
-            userId = testUser.id.value
+            postId = testPost.id,
+            userId = testUser.id
         )
 
         // Attempting to create duplicate like should fail due to unique constraint
         assertThrows<Exception> {
             likeRepository.create(
-                postId = testPost.id.value,
-                userId = testUser.id.value
+                postId = testPost.id,
+                userId = testUser.id
             )
         }
     }
@@ -285,10 +285,10 @@ class LikeRepositoryTest {
             username = "user2", email = "user2@example.com", name = "User 2",
             passwordHash = "hash", salt = "salt"
         )
-        likeRepository.create(postId = testPost.id.value, userId = testUser.id.value)
-        likeRepository.create(postId = testPost.id.value, userId = user2.id.value)
+        likeRepository.create(postId = testPost.id, userId = testUser.id)
+        likeRepository.create(postId = testPost.id, userId = user2.id)
 
-        val likes = likeRepository.findByPostId(testPost.id.value)
+        val likes = likeRepository.findByPostId(testPost.id)
 
         assertEquals(2, likes.size)
     }
@@ -302,16 +302,16 @@ class LikeRepositoryTest {
 
     @Test
     fun `existsByPostAndUser by UUID returns true when like exists`() {
-        likeRepository.create(postId = testPost.id.value, userId = testUser.id.value)
+        likeRepository.create(postId = testPost.id, userId = testUser.id)
 
-        val exists = likeRepository.existsByPostAndUser(testPost.id.value, testUser.id.value)
+        val exists = likeRepository.existsByPostAndUser(testPost.id, testUser.id)
 
         assertTrue(exists)
     }
 
     @Test
     fun `existsByPostAndUser by UUID returns false when like does not exist`() {
-        val exists = likeRepository.existsByPostAndUser(testPost.id.value, testUser.id.value)
+        val exists = likeRepository.existsByPostAndUser(testPost.id, testUser.id)
 
         assertFalse(exists)
     }
@@ -322,8 +322,8 @@ class LikeRepositoryTest {
             username = "user2", email = "user2@example.com", name = "User 2",
             passwordHash = "hash", salt = "salt"
         )
-        likeRepository.create(postId = testPost.id.value, userId = testUser.id.value)
-        likeRepository.create(postId = testPost.id.value, userId = user2.id.value)
+        likeRepository.create(postId = testPost.id, userId = testUser.id)
+        likeRepository.create(postId = testPost.id, userId = user2.id)
 
         val count = likeRepository.count()
 
@@ -332,11 +332,11 @@ class LikeRepositoryTest {
 
     @Test
     fun `countByUserId returns like count for user`() {
-        val post2 = postRepository.create(title = "Post 2", content = "c", authorId = testUser.id.value)
-        likeRepository.create(postId = testPost.id.value, userId = testUser.id.value)
-        likeRepository.create(postId = post2.id.value, userId = testUser.id.value)
+        val post2 = postRepository.create(title = "Post 2", content = "c", authorId = testUser.id)
+        likeRepository.create(postId = testPost.id, userId = testUser.id)
+        likeRepository.create(postId = post2.id, userId = testUser.id)
 
-        val count = likeRepository.countByUserId(testUser.id.value)
+        val count = likeRepository.countByUserId(testUser.id)
 
         assertEquals(2L, count)
     }
@@ -350,14 +350,14 @@ class LikeRepositoryTest {
 
     @Test
     fun `deleteByUserId removes all likes by user`() {
-        val post2 = postRepository.create(title = "Post 2", content = "c", authorId = testUser.id.value)
-        likeRepository.create(postId = testPost.id.value, userId = testUser.id.value)
-        likeRepository.create(postId = post2.id.value, userId = testUser.id.value)
+        val post2 = postRepository.create(title = "Post 2", content = "c", authorId = testUser.id)
+        likeRepository.create(postId = testPost.id, userId = testUser.id)
+        likeRepository.create(postId = post2.id, userId = testUser.id)
 
-        val deleted = likeRepository.deleteByUserId(testUser.id.value)
+        val deleted = likeRepository.deleteByUserId(testUser.id)
 
         assertEquals(2, deleted)
-        assertEquals(0L, likeRepository.countByUserId(testUser.id.value))
+        assertEquals(0L, likeRepository.countByUserId(testUser.id))
     }
 
     @Test
@@ -369,21 +369,21 @@ class LikeRepositoryTest {
 
     @Test
     fun `getUserForLike returns user when like exists`() {
-        val like = likeRepository.create(postId = testPost.id.value, userId = testUser.id.value)
+        val like = likeRepository.create(postId = testPost.id, userId = testUser.id)
 
-        val user = likeRepository.getUserForLike(like.id.value)
+        val user = likeRepository.getUserForLike(like.id)
 
         Assertions.assertNotNull(user)
-        assertEquals(testUser.id.value, user!!.id.value)
+        assertEquals(testUser.id, user!!.id)
     }
 
     @Test
     fun `getPostForLike returns post when like exists`() {
-        val like = likeRepository.create(postId = testPost.id.value, userId = testUser.id.value)
+        val like = likeRepository.create(postId = testPost.id, userId = testUser.id)
 
-        val post = likeRepository.getPostForLike(like.id.value)
+        val post = likeRepository.getPostForLike(like.id)
 
         Assertions.assertNotNull(post)
-        assertEquals(testPost.id.value, post!!.id.value)
+        assertEquals(testPost.id, post!!.id)
     }
 }

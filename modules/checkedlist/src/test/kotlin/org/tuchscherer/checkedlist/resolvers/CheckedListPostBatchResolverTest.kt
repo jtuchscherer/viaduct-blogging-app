@@ -1,17 +1,16 @@
 package org.tuchscherer.checkedlist.resolvers
 
+import org.tuchscherer.checkedlist.port.CheckedListCurrentUserProvider
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.runBlocking
-import org.tuchscherer.checkedlist.port.PostCreationPort
+import org.tuchscherer.checkedlist.port.ChecklistPostRepository
 import org.tuchscherer.viadapp.checkedlist.resolvers.CheckedListPostBatchResolver
 import org.tuchscherer.viadapp.checkedlist.resolverbases.NodeResolvers
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.koin.core.context.GlobalContext
-import org.koin.dsl.module
 import java.util.UUID
 
 /**
@@ -23,19 +22,14 @@ import java.util.UUID
  *   - results list length matches batch input length
  */
 class CheckedListPostBatchResolverTest {
+    private val users = mockk<CheckedListCurrentUserProvider>()
 
-    private lateinit var postCreationPort: PostCreationPort
+    private lateinit var checklistPosts: ChecklistPostRepository
 
     @BeforeEach
     fun setup() {
-        postCreationPort = mockk()
+        checklistPosts = mockk()
 
-        GlobalContext.getOrNull()?.let { GlobalContext.stopKoin() }
-        org.koin.core.context.startKoin {
-            modules(module {
-                single<PostCreationPort> { postCreationPort }
-            })
-        }
     }
 
     private fun mockContext(id: UUID): NodeResolvers.CheckedListPost.Context {
@@ -46,10 +40,10 @@ class CheckedListPostBatchResolverTest {
 
     @Test
     fun `returns error FieldValue when post not found`() = runBlocking {
-        every { postCreationPort.getPostsData(any()) } returns emptyMap()
+        every { checklistPosts.getPostsData(any()) } returns emptyMap()
 
         val id = UUID.randomUUID()
-        val results = CheckedListPostBatchResolver().batchResolve(listOf(mockContext(id)))
+        val results = CheckedListPostBatchResolver(checklistPosts, users).batchResolve(listOf(mockContext(id)))
 
         assertEquals(1, results.size)
         assertTrue(results.values.single().isError)
@@ -57,10 +51,10 @@ class CheckedListPostBatchResolverTest {
 
     @Test
     fun `returns error for each missing ID in a batch`() = runBlocking {
-        every { postCreationPort.getPostsData(any()) } returns emptyMap()
+        every { checklistPosts.getPostsData(any()) } returns emptyMap()
 
         val ids = List(3) { UUID.randomUUID() }
-        val results = CheckedListPostBatchResolver().batchResolve(ids.map(::mockContext))
+        val results = CheckedListPostBatchResolver(checklistPosts, users).batchResolve(ids.map(::mockContext))
 
         assertEquals(3, results.size)
         assertTrue(results.values.all { it.isError })
@@ -69,10 +63,10 @@ class CheckedListPostBatchResolverTest {
     @Test
     fun `calls getPostsData once for the whole batch`() = runBlocking {
         val ids = List(3) { UUID.randomUUID() }
-        every { postCreationPort.getPostsData(any()) } returns emptyMap()
+        every { checklistPosts.getPostsData(any()) } returns emptyMap()
 
-        CheckedListPostBatchResolver().batchResolve(ids.map(::mockContext))
+        CheckedListPostBatchResolver(checklistPosts, users).batchResolve(ids.map(::mockContext))
 
-        verify(exactly = 1) { postCreationPort.getPostsData(ids) }
+        verify(exactly = 1) { checklistPosts.getPostsData(ids) }
     }
 }

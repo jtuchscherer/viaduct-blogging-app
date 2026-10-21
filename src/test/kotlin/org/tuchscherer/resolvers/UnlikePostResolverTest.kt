@@ -6,14 +6,12 @@ import org.tuchscherer.auth.AuthenticationException
 import org.tuchscherer.auth.NotFoundException
 import org.tuchscherer.auth.RequestContext
 import org.tuchscherer.database.Post
-import org.tuchscherer.database.Posts
 import org.tuchscherer.database.User
 import org.tuchscherer.database.repositories.LikeRepository
 import org.tuchscherer.database.repositories.PostRepository
 import org.tuchscherer.viadapp.resolvers.*
 import io.mockk.*
 import kotlinx.coroutines.runBlocking
-import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
@@ -40,11 +38,11 @@ class UnlikePostResolverTest : ResolverTestBase() {
         postRepository = mockk<PostRepository>()
 
         mockUser = mockk<User>(relaxed = true)
-        every { mockUser.id } returns EntityID(userId, mockk())
+        every { mockUser.id } returns userId
         every { mockUser.username } returns "testuser"
 
         mockPost = mockk<Post>(relaxed = true)
-        every { mockPost.id } returns EntityID(postId, Posts)
+        every { mockPost.id } returns postId
         every { mockPost.title } returns "Test Post"
 
         GlobalContext.getOrNull()?.let { GlobalContext.stopKoin() }
@@ -64,7 +62,7 @@ class UnlikePostResolverTest : ResolverTestBase() {
             .build()
 
         every { postRepository.findById(postId) } returns mockPost
-        every { likeRepository.deleteByPostAndUser(mockPost.id.value, mockUser.id.value) } returns true
+        every { likeRepository.deleteByPostAndUser(mockPost.id, mockUser.id) } returns true
 
         val result = runMutationFieldResolver(resolver) {
             arguments = args
@@ -82,7 +80,7 @@ class UnlikePostResolverTest : ResolverTestBase() {
             .build()
 
         every { postRepository.findById(postId) } returns mockPost
-        every { likeRepository.deleteByPostAndUser(mockPost.id.value, mockUser.id.value) } returns false
+        every { likeRepository.deleteByPostAndUser(mockPost.id, mockUser.id) } returns false
 
         val result = runMutationFieldResolver(resolver) {
             arguments = args

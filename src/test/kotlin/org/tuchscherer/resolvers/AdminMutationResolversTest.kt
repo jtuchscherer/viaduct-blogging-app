@@ -19,7 +19,6 @@ import org.tuchscherer.viadapp.resolvers.AdminUpdatePostResolver
 import org.tuchscherer.viadapp.resolvers.AdminUpdateUserResolver
 import io.mockk.*
 import kotlinx.coroutines.runBlocking
-import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -87,11 +86,11 @@ class AdminMutationResolversTest : ResolverTestBase() {
         likeRepository = mockk()
 
         mockAdminUser = mockk(relaxed = true)
-        every { mockAdminUser.id } returns EntityID(adminUserId, mockk())
+        every { mockAdminUser.id } returns adminUserId
         every { mockAdminUser.isAdmin } returns true
 
         mockDbUser = mockk(relaxed = true)
-        every { mockDbUser.id } returns EntityID(targetUserId, mockk())
+        every { mockDbUser.id } returns targetUserId
         every { mockDbUser.username } returns "targetuser"
         every { mockDbUser.email } returns "target@example.com"
         every { mockDbUser.name } returns "Target User"
@@ -99,7 +98,7 @@ class AdminMutationResolversTest : ResolverTestBase() {
         every { mockDbUser.isAdmin } returns false
 
         mockPost = mockk(relaxed = true)
-        every { mockPost.id } returns EntityID(postId, mockk())
+        every { mockPost.id } returns postId
         every { mockPost.title } returns "Original Title"
         every { mockPost.content } returns "Original content"
         every { mockPost.createdAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
@@ -107,7 +106,7 @@ class AdminMutationResolversTest : ResolverTestBase() {
         every { mockPost.status } returns PostStatus.PUBLISHED
 
         mockComment = mockk(relaxed = true)
-        every { mockComment.id } returns EntityID(commentId, mockk())
+        every { mockComment.id } returns commentId
 
         GlobalContext.getOrNull()?.let { GlobalContext.stopKoin() }
         org.koin.core.context.startKoin {
@@ -280,7 +279,7 @@ class AdminMutationResolversTest : ResolverTestBase() {
     fun `AdminUpdatePostResolver updates post and returns updated post`() = runBlocking<Unit> {
         val resolver = AdminUpdatePostResolver(postRepository)
         val updatedPost = mockk<Post>(relaxed = true)
-        every { updatedPost.id } returns EntityID(postId, mockk())
+        every { updatedPost.id } returns postId
         every { updatedPost.title } returns "New Title"
         every { updatedPost.createdAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
         every { updatedPost.updatedAt } returns LocalDateTime.of(2025, 1, 1, 12, 0)

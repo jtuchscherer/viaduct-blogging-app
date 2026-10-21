@@ -1,5 +1,10 @@
 package org.tuchscherer.config
 
+import org.tuchscherer.admin.AdminUserDeletionService
+import org.tuchscherer.shared.TransactionRunner
+import org.tuchscherer.database.repositories.ExposedTransactionRunner
+import org.tuchscherer.checkedlist.port.ChecklistPostReader
+import org.tuchscherer.checkedlist.port.ChecklistPostWriter
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
@@ -11,11 +16,11 @@ import org.tuchscherer.analytics.port.PostStatusLookupPort
 import org.tuchscherer.analytics.port.PostTypeLookupPort
 import org.tuchscherer.auth.AuthenticationService
 import org.tuchscherer.checkedlist.ViaductCheckedListCurrentUserProvider
-import org.tuchscherer.checkedlist.ViaductPostCreationPort
+import org.tuchscherer.database.repositories.ExposedChecklistPostRepository
 import org.tuchscherer.checkedlist.ViaductPostSocialAccess
 import org.tuchscherer.checkedlist.checkedListKoinModule
 import org.tuchscherer.checkedlist.port.CheckedListCurrentUserProvider
-import org.tuchscherer.checkedlist.port.PostCreationPort
+import org.tuchscherer.checkedlist.port.ChecklistPostRepository
 import org.tuchscherer.checkedlist.port.PostSocialPort
 import org.tuchscherer.auth.JwtService
 import org.tuchscherer.auth.PasswordService
@@ -110,7 +115,7 @@ val configModule = module {
  * Provides all repository interfaces with their Exposed implementations.
  */
 val repositoryModule = module {
-    single<org.tuchscherer.shared.TransactionRunner> { org.tuchscherer.database.repositories.ExposedTransactionRunner() }
+    single<TransactionRunner> { ExposedTransactionRunner() }
     single<DatabaseMaintenanceRepository> { ExposedDatabaseMaintenanceRepository() }
     single<UserRepository> { ExposedUserRepository() }
     single<PostRepository> { ExposedPostRepository() }
@@ -124,7 +129,7 @@ val repositoryModule = module {
  */
 val serviceModule = module {
     single<Clock> { Clock.systemUTC() }
-    single { org.tuchscherer.admin.AdminUserDeletionService(get(), get(), get(), get(), get()) }
+    singleOf(::AdminUserDeletionService)
     single { PasswordService() }
     single { JwtService(get(), get(), get()) }
     single { AuthenticationService(get(), get()) }
@@ -150,7 +155,7 @@ val viaductModule = module {
         val underlying = ViaductBuilder()
             .withScopedSchemas(ViaductSchemas.all)
             .withResolverErrorReporter(ResolverOutputErrorReporter())
-            .withTenantModuleInjectorFactory(SharedTenantModuleInjectorFactory(KoinTenantCodeInjector()))
+            .withTenantModuleInjectorFactory(SharedTenantModuleInjectorFactory(KoinTenantCodeInjector(getKoin())))
             .withMeterRegistry(get())
             .build()
         GuardedViaduct(underlying, get())
@@ -252,7 +257,9 @@ val resolverModule = module {
  * compile-time imports.
  */
 val checkedListPortModule = module {
-    single<PostCreationPort> { ViaductPostCreationPort() }
+    single<ChecklistPostRepository> { ExposedChecklistPostRepository(get()) }
+    single<ChecklistPostReader> { get<ChecklistPostRepository>() }
+    single<ChecklistPostWriter> { get<ChecklistPostRepository>() }
     single<PostSocialPort> { ViaductPostSocialAccess(get(), get()) }
     single<CheckedListCurrentUserProvider> { ViaductCheckedListCurrentUserProvider() }
 }

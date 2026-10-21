@@ -60,9 +60,11 @@ test.describe('Drafts — authoring', () => {
   });
 
   test('a draft offers no engagement the backend would refuse', async ({ page }) => {
-    await registerAndLogin(page, `draft_engage_${Date.now()}`);
-    await fillBlogForm(page, `No Engagement ${Date.now()}`, 'Nothing to react to yet.');
-    await saveAsDraft(page);
+    const { token } = await registerAndLogin(page, `draft_engage_${Date.now()}`);
+    const post = await createPostViaAPI(
+      page, token, `No Engagement ${Date.now()}`, 'Nothing to react to yet.', 'DRAFT',
+    );
+    await page.goto(`/post/${post.id}`);
 
     // The backend rejects comments and likes on a draft, so offering either would only produce an
     // error the author cannot act on.

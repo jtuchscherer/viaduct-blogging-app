@@ -31,13 +31,13 @@ internal fun Long.toCountInt(): Int {
  * Whether [viewer] may read this post, delegating to [PostVisibility].
  *
  * An extension so the single-post read paths cannot accidentally disagree about how the
- * viewer's id and admin flag are pulled out of the entity.
+ * viewer's id and admin flag are pulled out of the record.
  */
 internal fun Post.isVisibleTo(viewer: User?): Boolean =
     PostVisibility.canView(
         status = status,
-        authorId = authorId.value,
-        viewerId = viewer?.id?.value,
+        authorId = authorId,
+        viewerId = viewer?.id,
         viewerIsAdmin = viewer?.isAdmin ?: false,
     )
 
@@ -45,7 +45,7 @@ internal fun PostProjection.isVisibleTo(viewer: User?): Boolean =
     PostVisibility.canView(
         status = requireNotNull(status),
         authorId = requireNotNull(authorId),
-        viewerId = viewer?.id?.value,
+        viewerId = viewer?.id,
         viewerIsAdmin = viewer?.isAdmin ?: false,
     )
 
@@ -63,7 +63,7 @@ internal fun Post.requirePublished(action: String) {
 
 internal fun User.toViaductUser(ctx: ExecutionContext) =
     ViaductUser.of(ctx) {
-        id(ctx.globalIDFor(ViaductUser.Reflection, id.value.toString()))
+        id(ctx.globalIDFor(ViaductUser.Reflection, id.toString()))
         username(username)
         email(email)
         name(name)
@@ -73,13 +73,13 @@ internal fun User.toViaductUser(ctx: ExecutionContext) =
 internal fun Post.toViaductPost(ctx: ResolverExecutionContext<*>): ViaductPost =
     when (postType) {
         PostType.CHECKED_LIST ->
-            ctx.ref(ctx.globalIDFor(ViaductCheckedListPost.Reflection, id.value.toString()))
+            ctx.ref(ctx.globalIDFor(ViaductCheckedListPost.Reflection, id.toString()))
         else -> toViaductBlogPost(ctx)
     }
 
 internal fun Post.toViaductBlogPost(ctx: ExecutionContext) =
     ViaductBlogPost.of(ctx) {
-        id(ctx.globalIDFor(ViaductBlogPost.Reflection, id.value.toString()))
+        id(ctx.globalIDFor(ViaductBlogPost.Reflection, id.toString()))
         title(title)
         status(ViaductPostStatus.valueOf(status))
         publishedAt(publishedAt?.toString())
@@ -89,13 +89,13 @@ internal fun Post.toViaductBlogPost(ctx: ExecutionContext) =
 
 internal fun org.tuchscherer.database.Comment.toViaductComment(ctx: ExecutionContext) =
     ViaductComment.of(ctx) {
-        id(ctx.globalIDFor(ViaductComment.Reflection, id.value.toString()))
+        id(ctx.globalIDFor(ViaductComment.Reflection, id.toString()))
         content(content)
         createdAt(createdAt.toString())
     }
 
 internal fun org.tuchscherer.database.Like.toViaductLike(ctx: ExecutionContext) =
     ViaductLike.of(ctx) {
-        id(ctx.globalIDFor(ViaductLike.Reflection, id.value.toString()))
+        id(ctx.globalIDFor(ViaductLike.Reflection, id.toString()))
         createdAt(createdAt.toString())
     }
