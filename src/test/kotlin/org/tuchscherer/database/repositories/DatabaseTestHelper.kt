@@ -1,5 +1,7 @@
 package org.tuchscherer.database.repositories
 
+import org.tuchscherer.analytics.PostViews
+import org.tuchscherer.checkedlist.database.CheckedListItems
 import org.tuchscherer.database.Comments
 import org.tuchscherer.database.Likes
 import org.tuchscherer.database.Posts
@@ -25,7 +27,7 @@ object DatabaseTestHelper {
         )
 
         transaction {
-            SchemaUtils.create(Users, Posts, Comments, Likes)
+            SchemaUtils.create(Users, Posts, Comments, Likes, CheckedListItems, PostViews)
         }
     }
 
@@ -35,8 +37,8 @@ object DatabaseTestHelper {
      */
     fun cleanDatabase() {
         transaction {
-            SchemaUtils.drop(Likes, Comments, Posts, Users)
-            SchemaUtils.create(Users, Posts, Comments, Likes)
+            SchemaUtils.drop(PostViews, CheckedListItems, Likes, Comments, Posts, Users)
+            SchemaUtils.create(Users, Posts, Comments, Likes, CheckedListItems, PostViews)
         }
     }
 
@@ -46,7 +48,7 @@ object DatabaseTestHelper {
      */
     fun tearDownDatabase() {
         transaction {
-            SchemaUtils.drop(Likes, Comments, Posts, Users)
+            SchemaUtils.drop(PostViews, CheckedListItems, Likes, Comments, Posts, Users)
         }
     }
 }

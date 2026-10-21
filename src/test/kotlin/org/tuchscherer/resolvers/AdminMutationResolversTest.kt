@@ -188,7 +188,7 @@ class AdminMutationResolversTest : ResolverTestBase() {
 
     @Test
     fun `AdminDeleteUserResolver deletes user and all their content`() = runBlocking<Unit> {
-        val resolver = AdminDeleteUserResolver(userRepository, postRepository, commentRepository, likeRepository)
+        val resolver = AdminDeleteUserResolver(org.tuchscherer.admin.AdminUserDeletionService(userRepository, postRepository, commentRepository, likeRepository, org.tuchscherer.DirectTransactionRunner))
         val args = AdminMutations_DeleteUser_Arguments.Builder(context)
             .id(globalIDFor(ViaductUser.Reflection, targetUserId.toString()))
             .build()
@@ -210,7 +210,7 @@ class AdminMutationResolversTest : ResolverTestBase() {
 
     @Test
     fun `AdminDeleteUserResolver throws NotFoundException when user does not exist`() = runBlocking<Unit> {
-        val resolver = AdminDeleteUserResolver(userRepository, postRepository, commentRepository, likeRepository)
+        val resolver = AdminDeleteUserResolver(org.tuchscherer.admin.AdminUserDeletionService(userRepository, postRepository, commentRepository, likeRepository, org.tuchscherer.DirectTransactionRunner))
         val args = AdminMutations_DeleteUser_Arguments.Builder(context)
             .id(globalIDFor(ViaductUser.Reflection, targetUserId.toString()))
             .build()

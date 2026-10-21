@@ -3,6 +3,8 @@ package org.tuchscherer.database.repositories
 import org.jetbrains.exposed.v1.jdbc.SchemaUtils
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.slf4j.LoggerFactory
+import org.tuchscherer.analytics.PostViews
+import org.tuchscherer.checkedlist.database.CheckedListItems
 import org.tuchscherer.database.Comments
 import org.tuchscherer.database.Likes
 import org.tuchscherer.database.Posts
@@ -14,7 +16,7 @@ class ExposedDatabaseMaintenanceRepository : DatabaseMaintenanceRepository {
 
     override fun initializeSchema() {
         transaction {
-            SchemaUtils.createMissingTablesAndColumns(Users, Posts, Comments, Likes)
+            SchemaUtils.createMissingTablesAndColumns(Users, Posts, Comments, Likes, CheckedListItems, PostViews)
         }
     }
 

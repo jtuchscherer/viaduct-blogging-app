@@ -58,7 +58,7 @@ class CheckedListMutationResolverTest {
         GlobalContext.getOrNull()?.let { GlobalContext.stopKoin() }
         org.koin.core.context.startKoin {
             modules(module {
-                single { ChecklistService(postCreationPort, itemRepository) }
+                single { ChecklistService(postCreationPort, itemRepository, org.tuchscherer.DirectTransactionRunner) }
                 single<CheckedListCurrentUserProvider> { currentUserProvider }
                 single<PostCreationPort> { postCreationPort }
                 single<CheckedListItemRepository> { itemRepository }
