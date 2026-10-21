@@ -1,6 +1,7 @@
 package org.tuchscherer.viadapp.resolvers
 
 import org.tuchscherer.auth.NotFoundException
+import org.tuchscherer.auth.optionalAuth
 import org.tuchscherer.auth.requireAuth
 import org.tuchscherer.database.repositories.PostRepository
 import org.tuchscherer.database.repositories.UserRepository
@@ -27,7 +28,10 @@ class UserPostsResolver(
 ) : UserResolvers.Posts() {
     override suspend fun resolve(ctx: Context): List<ViaductBlogPost> {
         val userId = UUID.fromString(ctx.getObjectValue().getIdOrThrow().internalID)
-        return postRepository.findByAuthorId(userId).map { it.toViaductBlogPost(ctx) }
+        val viewer = optionalAuth(ctx.requestContext)
+        return postRepository.findByAuthorId(userId)
+            .filter { it.isVisibleTo(viewer) }
+            .map { it.toViaductBlogPost(ctx) }
     }
 }
 

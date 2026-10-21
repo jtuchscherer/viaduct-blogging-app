@@ -2,7 +2,7 @@ package org.tuchscherer.checkedlist
 
 import org.tuchscherer.auth.AuthorizationException
 import org.tuchscherer.auth.NotFoundException
-import org.tuchscherer.checkedlist.port.PostCreationPort
+import org.tuchscherer.checkedlist.port.ChecklistPostRepository
 import org.tuchscherer.checkedlist.port.PostData
 import org.tuchscherer.checkedlist.repositories.CheckedListItemData
 import org.tuchscherer.checkedlist.repositories.CheckedListItemRepository
@@ -11,11 +11,17 @@ import java.util.UUID
 
 /** Owns checklist validation and write authorization independently of GraphQL. */
 class ChecklistService(
-    private val posts: PostCreationPort,
+    private val posts: ChecklistPostRepository,
     private val items: CheckedListItemRepository,
     private val transactions: TransactionRunner,
 ) {
-    fun create(actorId: UUID, title: String, description: String, texts: List<String>, status: String): PostData = transactions.run {
+    fun create(
+        actorId: UUID,
+        title: String,
+        description: String,
+        texts: List<String>,
+        status: String,
+    ): PostData = transactions.run {
         validateTitle(title)
         validateDescription(description)
         require(texts.size <= MAX_ITEMS) { "A checklist may have at most 100 items" }
@@ -34,8 +40,8 @@ class ChecklistService(
     }
 
     fun delete(actorId: UUID, postId: UUID): Boolean = transactions.run {
-        if (posts.getPostData(postId) == null) return@run false
-        requireOwnedPost(actorId, postId)
+        val post = posts.getPostData(postId) ?: return@run false
+        requireOwner(actorId, post)
         items.deleteItemsForPost(postId)
         posts.deleteCheckedListPost(postId)
     }
@@ -70,6 +76,10 @@ class ChecklistService(
 
     private fun requireOwnedPost(actorId: UUID, postId: UUID) {
         val post = posts.getPostData(postId) ?: throw NotFoundException("CheckedListPost not found: $postId")
+        requireOwner(actorId, post)
+    }
+
+    private fun requireOwner(actorId: UUID, post: PostData) {
         if (post.authorId != actorId) throw AuthorizationException("Only the post author can modify a checklist")
     }
 }

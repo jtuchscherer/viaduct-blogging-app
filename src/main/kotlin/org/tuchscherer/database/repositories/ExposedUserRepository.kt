@@ -16,25 +16,25 @@ import java.util.UUID
 class ExposedUserRepository : UserRepository {
 
     override fun findById(id: UUID): User? = transaction {
-        User.findById(id)
+        UserEntity.findById(id)?.toRecord()
     }
 
     override fun findByIds(ids: List<UUID>): Map<UUID, User> = transaction {
         if (ids.isEmpty()) return@transaction emptyMap()
-        User.find { Users.id inList ids.map { EntityID(it, Users) } }
-            .associateBy { it.id.value }
+        UserEntity.find { Users.id inList ids.map { EntityID(it, Users) } }
+            .map { it.toRecord() }.associateBy { it.id }
     }
 
     override fun findByUsername(username: String): User? = transaction {
-        User.find { Users.username eq username }.firstOrNull()
+        UserEntity.find { Users.username eq username }.firstOrNull()?.toRecord()
     }
 
     override fun findByEmail(email: String): User? = transaction {
-        User.find { Users.email eq email }.firstOrNull()
+        UserEntity.find { Users.email eq email }.firstOrNull()?.toRecord()
     }
 
     override fun existsByUsername(username: String): Boolean = transaction {
-        !User.find { Users.username eq username }.empty()
+        !UserEntity.find { Users.username eq username }.empty()
     }
 
     override fun create(
@@ -45,34 +45,27 @@ class ExposedUserRepository : UserRepository {
         salt: String,
         createdAt: LocalDateTime
     ): User = transaction {
-        User.new {
+        UserEntity.new {
             this.username = username
             this.email = email
             this.name = name
             this.passwordHash = passwordHash
             this.salt = salt
             this.createdAt = createdAt
-        }
-    }
-
-    override fun update(user: User): User = transaction {
-        user.also {
-            // Exposed automatically tracks changes, just flush
-            it.flush()
-        }
+        }.toRecord()
     }
 
     override fun updateFields(id: UUID, name: String?, email: String?, isAdmin: Boolean?): User? = transaction {
-        val user = User.findById(id) ?: return@transaction null
+        val user = UserEntity.findById(id) ?: return@transaction null
         name?.let { user.name = it }
         email?.let { user.email = it }
         isAdmin?.let { user.isAdmin = it }
         user.flush()
-        user
+        user.toRecord()
     }
 
     override fun delete(id: UUID): Boolean = transaction {
-        val user = User.findById(id)
+        val user = UserEntity.findById(id)
         if (user != null) {
             user.delete()
             true
@@ -82,18 +75,18 @@ class ExposedUserRepository : UserRepository {
     }
 
     override fun findAll(): List<User> = transaction {
-        User.all().toList()
+        UserEntity.all().map { it.toRecord() }
     }
 
     override fun findPage(limit: Int, offset: Int): List<User> = transaction {
-        User.all()
+        UserEntity.all()
             .orderBy(Users.createdAt to org.jetbrains.exposed.v1.core.SortOrder.DESC)
             .limit(limit)
             .offset(offset.toLong())
-            .toList()
+            .map { it.toRecord() }
     }
 
     override fun count(): Long = transaction {
-        User.all().count()
+        UserEntity.all().count()
     }
 }

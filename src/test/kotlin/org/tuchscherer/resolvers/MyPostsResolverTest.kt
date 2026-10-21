@@ -11,7 +11,6 @@ import org.tuchscherer.database.repositories.PostRepository
 import org.tuchscherer.viadapp.resolvers.*
 import io.mockk.*
 import kotlinx.coroutines.runBlocking
-import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
@@ -39,14 +38,14 @@ class MyPostsResolverTest : ResolverTestBase() {
         postRepository = mockk<PostRepository>()
 
         mockUser = mockk<User>(relaxed = true)
-        every { mockUser.id } returns EntityID(userId, mockk())
+        every { mockUser.id } returns userId
         every { mockUser.username } returns "testuser"
 
         mockPost = mockk<Post>(relaxed = true)
-        every { mockPost.id } returns EntityID(postId, mockk())
+        every { mockPost.id } returns postId
         every { mockPost.title } returns "Test Post"
         every { mockPost.content } returns "Test content"
-        every { mockPost.authorId } returns EntityID(userId, mockk())
+        every { mockPost.authorId } returns userId
         every { mockPost.createdAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
         every { mockPost.updatedAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
         every { mockPost.status } returns PostStatus.PUBLISHED
@@ -63,7 +62,7 @@ class MyPostsResolverTest : ResolverTestBase() {
     fun `MyPostsResolver returns posts for authenticated user`() = runBlocking {
         val resolver = MyPostsResolver(postRepository)
 
-        every { postRepository.findByAuthorId(mockUser.id.value) } returns listOf(mockPost)
+        every { postRepository.findByAuthorId(mockUser.id) } returns listOf(mockPost)
 
         val result = runFieldResolver(resolver) {
             objectValue = queryObj()

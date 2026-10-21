@@ -20,12 +20,12 @@ interface PostRepository {
     fun findByIds(ids: List<UUID>): Map<UUID, Post>
 
     /**
-     * Find all posts by a specific author.
+     * Find blog posts by a specific author, including drafts.
      */
     fun findByAuthorId(authorId: UUID): List<Post>
 
     /**
-     * Get all posts.
+     * Get published blog posts.
      */
     fun findAll(): List<Post>
 
@@ -35,22 +35,13 @@ interface PostRepository {
     /** Batched scalar projection with author/status metadata for node visibility checks. */
     fun findProjectedByIds(ids: List<UUID>, fields: Set<PostField>): Map<UUID, PostProjection>
 
-    /**
-     * Create a new post.
-     */
-    /**
-     * Sets a post's publication state.
-     *
-     * publishedAt is stamped when publishing and cleared when unpublishing, so it always means
-     * "published at, if currently published". Returns null when the post does not exist.
-     */
-    /**
-     * Of [ids], the subset that is published. Covers every post type, since both share the table.
-     */
+    /** Published IDs across every post type. */
     fun publishedIds(ids: List<UUID>): Set<UUID>
 
+    /** Sets publication state and timestamp; returns null if the post is missing. */
     fun updateStatus(id: UUID, status: String, publishedAt: LocalDateTime?): Post?
 
+    /** Creates a blog post and returns a materialized snapshot. */
     fun create(
         title: String,
         content: String,
@@ -59,11 +50,6 @@ interface PostRepository {
         updatedAt: LocalDateTime = LocalDateTime.now(),
         status: String = PostStatus.PUBLISHED
     ): Post
-
-    /**
-     * Update an existing post.
-     */
-    fun update(post: Post): Post
 
     /**
      * Update a post by ID with new values.
@@ -81,12 +67,12 @@ interface PostRepository {
     fun delete(id: UUID): Boolean
 
     /**
-     * Find a page of posts ordered by createdAt descending.
+     * Find published blog posts ordered by publication time descending.
      */
     fun findPage(limit: Int, offset: Int): List<Post>
 
     /**
-     * Count total posts.
+     * Count published blog posts.
      */
     fun count(): Long
 

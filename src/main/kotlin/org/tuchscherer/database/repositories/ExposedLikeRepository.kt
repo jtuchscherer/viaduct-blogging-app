@@ -18,25 +18,25 @@ import java.util.UUID
 class ExposedLikeRepository : LikeRepository {
 
     override fun findById(id: UUID): Like? = transaction {
-        Like.findById(id)
+        LikeEntity.findById(id)?.toRecord()
     }
 
     override fun findByIds(ids: List<UUID>): Map<UUID, Like> = transaction {
         if (ids.isEmpty()) return@transaction emptyMap()
-        Like.find { Likes.id inList ids.map { EntityID(it, Likes) } }
-            .associateBy { it.id.value }
+        LikeEntity.find { Likes.id inList ids.map { EntityID(it, Likes) } }
+            .map { it.toRecord() }.associateBy { it.id }
     }
 
     override fun findByPostId(postId: UUID): List<Like> = transaction {
-        Like.find { Likes.postId eq postId }.toList()
+        LikeEntity.find { Likes.postId eq postId }.map { it.toRecord() }
     }
 
     override fun findByUserId(userId: UUID): List<Like> = transaction {
-        Like.find { Likes.userId eq userId }.toList()
+        LikeEntity.find { Likes.userId eq userId }.map { it.toRecord() }
     }
 
     override fun findByPostAndUser(postId: UUID, userId: UUID): Like? = transaction {
-        Like.find { (Likes.postId eq postId) and (Likes.userId eq userId) }.firstOrNull()
+        LikeEntity.find { (Likes.postId eq postId) and (Likes.userId eq userId) }.firstOrNull()?.toRecord()
     }
 
     override fun create(
@@ -44,15 +44,15 @@ class ExposedLikeRepository : LikeRepository {
         userId: UUID,
         createdAt: LocalDateTime
     ): Like = transaction {
-        Like.new {
+        LikeEntity.new {
             this.postId = EntityID(postId, Posts)
             this.userId = EntityID(userId, Users)
             this.createdAt = createdAt
-        }
+        }.toRecord()
     }
 
     override fun delete(id: UUID): Boolean = transaction {
-        val like = Like.findById(id)
+        val like = LikeEntity.findById(id)
         if (like != null) {
             like.delete()
             true
@@ -62,7 +62,7 @@ class ExposedLikeRepository : LikeRepository {
     }
 
     override fun deleteByPostAndUser(postId: UUID, userId: UUID): Boolean = transaction {
-        val like = findByPostAndUser(postId, userId)
+        val like = LikeEntity.find { (Likes.postId eq postId) and (Likes.userId eq userId) }.firstOrNull()
         if (like != null) {
             like.delete()
             true
@@ -72,31 +72,31 @@ class ExposedLikeRepository : LikeRepository {
     }
 
     override fun countByPostId(postId: UUID): Long = transaction {
-        Like.find { Likes.postId eq postId }.count()
+        LikeEntity.find { Likes.postId eq postId }.count()
     }
 
     override fun existsByPostAndUser(postId: UUID, userId: UUID): Boolean = transaction {
-        !Like.find { (Likes.postId eq postId) and (Likes.userId eq userId) }.empty()
+        !LikeEntity.find { (Likes.postId eq postId) and (Likes.userId eq userId) }.empty()
     }
 
     override fun getUserForLike(likeId: UUID): org.tuchscherer.database.User? = transaction {
-        Like.findById(likeId)?.user
+        LikeEntity.findById(likeId)?.user?.toRecord()
     }
 
     override fun getPostForLike(likeId: UUID): org.tuchscherer.database.Post? = transaction {
-        Like.findById(likeId)?.post
+        LikeEntity.findById(likeId)?.post?.toRecord()
     }
 
     override fun count(): Long = transaction {
-        Like.all().count()
+        LikeEntity.all().count()
     }
 
     override fun countByUserId(userId: UUID): Long = transaction {
-        Like.find { Likes.userId eq userId }.count()
+        LikeEntity.find { Likes.userId eq userId }.count()
     }
 
     override fun deleteByUserId(userId: UUID): Int = transaction {
-        val likes = Like.find { Likes.userId eq userId }.toList()
+        val likes = LikeEntity.find { Likes.userId eq userId }.toList()
         val count = likes.size
         likes.forEach { it.delete() }
         count

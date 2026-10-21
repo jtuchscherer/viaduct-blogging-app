@@ -8,7 +8,6 @@ import org.tuchscherer.database.repositories.PostRepository
 import org.tuchscherer.viadapp.resolvers.*
 import io.mockk.*
 import kotlinx.coroutines.runBlocking
-import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
@@ -34,10 +33,10 @@ class PostResolverTest : ResolverTestBase() {
         postRepository = mockk<PostRepository>()
 
         mockPost = mockk<Post>(relaxed = true)
-        every { mockPost.id } returns EntityID(postId, mockk())
+        every { mockPost.id } returns postId
         every { mockPost.title } returns "Test Post"
         every { mockPost.content } returns "Test content"
-        every { mockPost.authorId } returns EntityID(userId, mockk())
+        every { mockPost.authorId } returns userId
         every { mockPost.createdAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
         every { mockPost.updatedAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
         every { mockPost.status } returns PostStatus.PUBLISHED

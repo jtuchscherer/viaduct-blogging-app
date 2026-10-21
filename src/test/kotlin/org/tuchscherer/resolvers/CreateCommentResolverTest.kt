@@ -6,14 +6,12 @@ import org.tuchscherer.auth.RequestContext
 import org.tuchscherer.database.PostStatus
 import org.tuchscherer.database.Comment
 import org.tuchscherer.database.Post
-import org.tuchscherer.database.Posts
 import org.tuchscherer.database.User
 import org.tuchscherer.database.repositories.CommentRepository
 import org.tuchscherer.database.repositories.PostRepository
 import org.tuchscherer.viadapp.resolvers.CreateCommentResolver
 import io.mockk.*
 import kotlinx.coroutines.runBlocking
-import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
@@ -46,19 +44,19 @@ class CreateCommentResolverTest : ResolverTestBase() {
         postRepository = mockk()
 
         mockUser = mockk(relaxed = true)
-        every { mockUser.id } returns EntityID(userId, mockk())
+        every { mockUser.id } returns userId
         every { mockUser.username } returns "testuser"
 
         mockPost = mockk(relaxed = true)
-        every { mockPost.id } returns EntityID(postId, Posts)
+        every { mockPost.id } returns postId
         every { mockPost.title } returns "Test Post"
         every { mockPost.status } returns PostStatus.PUBLISHED
 
         mockComment = mockk(relaxed = true)
-        every { mockComment.id } returns EntityID(commentId, mockk())
+        every { mockComment.id } returns commentId
         every { mockComment.content } returns "Test comment content"
-        every { mockComment.authorId } returns EntityID(userId, mockk())
-        every { mockComment.postId } returns EntityID(postId, Posts)
+        every { mockComment.authorId } returns userId
+        every { mockComment.postId } returns postId
         every { mockComment.createdAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
 
         GlobalContext.getOrNull()?.let { GlobalContext.stopKoin() }
@@ -80,8 +78,8 @@ class CreateCommentResolverTest : ResolverTestBase() {
         every {
             commentRepository.create(
                 content = "New comment",
-                postId = mockPost.id.value,
-                authorId = mockUser.id.value,
+                postId = mockPost.id,
+                authorId = mockUser.id,
                 createdAt = any()
             )
         } returns mockComment

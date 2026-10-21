@@ -38,10 +38,8 @@ interface CommentRepository {
         createdAt: LocalDateTime = LocalDateTime.now()
     ): Comment
 
-    /**
-     * Update an existing comment.
-     */
-    fun update(comment: Comment): Comment
+    /** Updates content by ID; returns null when the comment is missing. */
+    fun updateContent(id: UUID, content: String): Comment?
 
     /**
      * Delete a comment by ID.

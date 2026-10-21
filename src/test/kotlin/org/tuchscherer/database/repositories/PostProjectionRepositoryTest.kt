@@ -26,7 +26,7 @@ class PostProjectionRepositoryTest {
 
     @BeforeEach
     fun setupAuthor() {
-        authorId = ExposedUserRepository().create("author", "a@example.com", "Author", "hash", "salt").id.value
+        authorId = ExposedUserRepository().create("author", "a@example.com", "Author", "hash", "salt").id
     }
 
     @AfterEach
@@ -41,10 +41,10 @@ class PostProjectionRepositoryTest {
         val sql = mutableListOf<String>()
         val projected = transaction {
             defaultLogger.addLogger(captureSql(sql))
-            repository.findProjectedByIds(listOf(post.id.value), setOf(PostField.TITLE))
+            repository.findProjectedByIds(listOf(post.id), setOf(PostField.TITLE))
         }.values.single()
 
-        assertEquals(post.id.value, projected.id)
+        assertEquals(post.id, projected.id)
         assertEquals("Title", projected.title)
         assertNull(projected.content)
         assertEquals(setOf(PostField.TITLE), projected.fields)
@@ -60,7 +60,7 @@ class PostProjectionRepositoryTest {
         val created = repository.create("Title", "Body", authorId, createdAt = createdAt, updatedAt = updatedAt)
         // H2 rounds timestamps to microseconds; the newly created DAO retains input nanos.
         // Compare both read paths against persisted values, independent of OS clock precision.
-        val post = requireNotNull(repository.findById(created.id.value))
+        val post = requireNotNull(repository.findById(created.id))
 
         val projected = repository.findPublishedProjection(PostField.entries.toSet()).single()
 
@@ -78,10 +78,10 @@ class PostProjectionRepositoryTest {
         val sql = mutableListOf<String>()
         val authors = transaction {
             defaultLogger.addLogger(captureSql(sql))
-            repository.getAuthorIdsByPostIds(listOf(post.id.value, UUID.randomUUID()))
+            repository.getAuthorIdsByPostIds(listOf(post.id, UUID.randomUUID()))
         }
 
-        assertEquals(mapOf(post.id.value to authorId), authors)
+        assertEquals(mapOf(post.id to authorId), authors)
         val select = sql.single { it.startsWith("SELECT", ignoreCase = true) }.substringBefore(" FROM ").lowercase()
         assertTrue("author_id" in select, select)
         assertFalse("content" in select, select)
@@ -93,7 +93,7 @@ class PostProjectionRepositoryTest {
 
         val projected = repository.findPublishedProjection(emptySet()).single()
 
-        assertEquals(post.id.value, projected.id)
+        assertEquals(post.id, projected.id)
         assertEquals(PostType.BLOG_POST, projected.postType)
         assertTrue(projected.fields.isEmpty())
         assertNull(projected.title)
@@ -105,10 +105,10 @@ class PostProjectionRepositoryTest {
         val post = repository.create("Private", "Secret body", authorId, status = PostStatus.DRAFT)
         val missing = UUID.randomUUID()
         val fields = setOf(PostField.TITLE)
-        val rows = repository.findProjectedByIds(listOf(post.id.value, missing), fields)
+        val rows = repository.findProjectedByIds(listOf(post.id, missing), fields)
 
-        assertEquals(setOf(post.id.value), rows.keys)
-        val projected = requireNotNull(rows[post.id.value])
+        assertEquals(setOf(post.id), rows.keys)
+        val projected = requireNotNull(rows[post.id])
         assertEquals("Private", projected.title)
         assertEquals(authorId, projected.authorId)
         assertEquals(PostStatus.DRAFT, projected.status)
@@ -121,12 +121,11 @@ class PostProjectionRepositoryTest {
     fun `public projection excludes drafts and checked lists`() {
         val published = repository.create("Public", "Body", authorId)
         repository.create("Draft", "Secret", authorId, status = PostStatus.DRAFT)
-        val checklist = repository.create("Checklist", "", authorId)
-        transaction { checklist.postType = PostType.CHECKED_LIST }
+        ExposedChecklistPostRepository(repository).createCheckedListPost("Checklist", authorId)
 
         val projected = repository.findPublishedProjection(emptySet())
 
-        assertEquals(listOf(published.id.value), projected.map { it.id })
+        assertEquals(listOf(published.id), projected.map { it.id })
         assertEquals(1L, repository.count())
     }
 
@@ -136,7 +135,7 @@ class PostProjectionRepositoryTest {
         val old = repository.create("Old", "Body", authorId, createdAt = time.minusDays(1))
         val first = repository.create("A", "Body", authorId, createdAt = time)
         val second = repository.create("B", "Body", authorId, createdAt = time)
-        val expected = listOf(first.id.value, second.id.value).sortedBy { it.toString() } + old.id.value
+        val expected = listOf(first.id, second.id).sortedBy { it.toString() } + old.id
 
         val idsOnly = repository.findPublishedProjection(emptySet()).map { it.id }
         val withContent = repository.findPublishedProjection(setOf(PostField.CONTENT)).map { it.id }

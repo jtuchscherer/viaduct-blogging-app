@@ -1,6 +1,5 @@
 package org.tuchscherer.database.repositories
 
-import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.*
@@ -45,7 +44,7 @@ class UserRepositoryTest {
         assertEquals("testuser", user.username)
         assertEquals("test@example.com", user.email)
         assertEquals("Test User", user.name)
-        Assertions.assertNotNull(user.id.value)
+        Assertions.assertNotNull(user.id)
     }
 
     @Test
@@ -58,10 +57,10 @@ class UserRepositoryTest {
             salt = "salt123"
         )
 
-        val found = userRepository.findById(created.id.value)
+        val found = userRepository.findById(created.id)
 
         Assertions.assertNotNull(found)
-        assertEquals(created.id.value, found!!.id.value)
+        assertEquals(created.id, found!!.id)
         assertEquals("testuser", found.username)
     }
 
@@ -144,10 +143,10 @@ class UserRepositoryTest {
             salt = "salt123"
         )
 
-        val deleted = userRepository.delete(user.id.value)
+        val deleted = userRepository.delete(user.id)
 
         assertTrue(deleted)
-        Assertions.assertNull(userRepository.findById(user.id.value))
+        Assertions.assertNull(userRepository.findById(user.id))
     }
 
     @Test
@@ -243,8 +242,8 @@ class UserRepositoryTest {
 
         assertEquals(2, secondPage.size)
         // Pages must not overlap
-        val firstPageIds = firstPage.map { it.id.value }.toSet()
-        val secondPageIds = secondPage.map { it.id.value }.toSet()
+        val firstPageIds = firstPage.map { it.id }.toSet()
+        val secondPageIds = secondPage.map { it.id }.toSet()
         assertTrue(firstPageIds.intersect(secondPageIds).isEmpty())
     }
 
@@ -273,10 +272,10 @@ class UserRepositoryTest {
             salt = "salt"
         )
 
-        transaction { user.name = "Updated Name" }
-        userRepository.update(user)
+        userRepository.updateFields(user.id, name = "Updated Name")
+        assertEquals("Original Name", user.name)
 
-        val found = userRepository.findById(user.id.value)
+        val found = userRepository.findById(user.id)
         assertTrue(found != null)
         assertEquals("Updated Name", found!!.name)
     }

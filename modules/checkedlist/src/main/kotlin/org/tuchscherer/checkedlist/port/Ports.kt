@@ -14,8 +14,8 @@ import java.util.UUID
  * world without coupling it to any particular implementation.
  *
  * The **adapters** — concrete classes that implement these ports using the root project's
- * database layer — live in `src/main/kotlin/org/tuchscherer/checkedlist/` in the root project
- * (e.g. `ViaductPostCreationPort`, `ViaductPostSocialPort`). They are registered via Koin so
+ * database layer — live in the root project's repositories and checkedlist adapters
+ * (e.g. `ExposedChecklistPostRepository`, `ViaductPostSocialAccess`). They are registered via Koin so
  * the module never knows which concrete class it's talking to.
  *
  * This boundary means:
@@ -28,7 +28,7 @@ import java.util.UUID
 
 /**
  * Minimal view of a post's scalar fields as seen from the checkedlist module.
- * Populated by [PostCreationPort] from the Posts table in the root project.
+ * Populated by [ChecklistPostRepository] from the Posts table in the root project.
  *
  * [description] is persisted in the Posts.content column for CheckedListPost rows.
  */
@@ -65,50 +65,34 @@ data class LikeView(
 // ── Port interfaces (implemented by the root project) ─────────────────────────
 
 /**
- * Access to the Posts table for creating and reading CheckedListPost metadata.
- * Implemented in the root project as [ViaductPostCreationPort] so the checkedlist
+ * Read-only access to CheckedListPost metadata.
+ * Implemented in the root project as [ExposedChecklistPostRepository] so the checkedlist
  * module stays free of root-project compile-time dependencies.
  */
-interface PostCreationPort {
-    /** Creates a new post row with postType=CHECKED_LIST, returning its scalar data. */
-    /** [status] is "DRAFT" or "PUBLISHED"; publishedAt is stamped only when publishing. */
+interface ChecklistPostReader {
+    fun getPostData(id: UUID): PostData?
+    fun getPostsData(ids: List<UUID>): Map<UUID, PostData>
+    /** Published checklists, newest publication first. */
+    fun getAllCheckedListPosts(): List<PostData>
+    /** All checklists by the author, including drafts. */
+    fun getCheckedListPostsByAuthorId(authorId: UUID): List<PostData>
+    fun getAuthorIdsForPosts(postIds: List<UUID>): Map<UUID, UUID>
+}
+
+interface ChecklistPostWriter {
     fun createCheckedListPost(
         title: String,
         authorId: UUID,
         description: String = "",
         status: String = "PUBLISHED",
     ): PostData
-
-    /** Fetches scalar fields for a single CheckedListPost by ID, or null if not found. */
-    fun getPostData(id: UUID): PostData?
-
-    /** Batch-fetches scalar fields for multiple CheckedListPosts. Missing IDs are absent. */
-    fun getPostsData(ids: List<UUID>): Map<UUID, PostData>
-
-    /** Returns all CheckedListPost rows ordered by createdAt DESC. */
-    /** Published checklists only — the public feed must never surface a draft. */
-    fun getAllCheckedListPosts(): List<PostData>
-
-    /** Returns all CheckedListPost rows for a specific author, ordered by createdAt DESC. */
-    /** Every checklist by this author, drafts included: this backs My Posts. */
-    fun getCheckedListPostsByAuthorId(authorId: UUID): List<PostData>
-
-    /** Returns authorId for each requested post ID. Missing IDs are absent. */
-    fun getAuthorIdsForPosts(postIds: List<UUID>): Map<UUID, UUID>
-
-    /**
-     * Updates the title and/or description of an existing CheckedListPost.
-     * Returns the updated [PostData], or null if not found.
-     */
     fun updateCheckedListPost(id: UUID, title: String? = null, description: String? = null): PostData?
-
-    /**
-     * Deletes a CheckedListPost row (and its dependent comments/likes) from the Posts table.
-     * The caller must delete checklist items beforehand.
-     * Returns true if the post existed and was removed.
-     */
+    /** Removes the post and all social, checklist, and analytics dependents. */
     fun deleteCheckedListPost(id: UUID): Boolean
 }
+
+/** Persistence contract for application commands that both read and write metadata. */
+interface ChecklistPostRepository : ChecklistPostReader, ChecklistPostWriter
 
 /**
  * Access to comments and likes data on behalf of the checkedlist module.
@@ -131,7 +115,7 @@ interface CheckedListCurrentUserProvider {
     fun getViewer(requestContext: Any?): CheckedListViewer?
     /**
      * Extracts the authenticated user's UUID from the opaque request context.
-     * @throws RuntimeException (or a domain exception) when the user is not authenticated.
+     * @throws org.tuchscherer.auth.AuthenticationException when the user is not authenticated.
      */
     fun getCurrentUserId(requestContext: Any?): UUID
 }

@@ -28,7 +28,7 @@ class CreatePostResolver(
         val post = postRepository.create(
             title = input.title,
             content = input.content,
-            authorId = user.id.value,
+            authorId = user.id,
             createdAt = LocalDateTime.now(),
             updatedAt = LocalDateTime.now(),
             // Omitted status means PUBLISHED, so clients written before drafts existed are

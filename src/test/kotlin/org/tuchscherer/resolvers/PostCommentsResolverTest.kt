@@ -3,12 +3,10 @@
 package org.tuchscherer.resolvers
 
 import org.tuchscherer.database.Comment
-import org.tuchscherer.database.Posts
 import org.tuchscherer.database.repositories.CommentRepository
 import org.tuchscherer.viadapp.resolvers.*
 import io.mockk.*
 import kotlinx.coroutines.runBlocking
-import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
@@ -23,6 +21,7 @@ import java.util.*
 
 class PostCommentsResolverTest : ResolverTestBase() {
 
+    private val postRepository = mockk<org.tuchscherer.database.repositories.PostRepository>()
     private lateinit var commentRepository: CommentRepository
     private lateinit var mockComment: Comment
     private val userId = UUID.randomUUID()
@@ -34,12 +33,16 @@ class PostCommentsResolverTest : ResolverTestBase() {
     @BeforeEach
     fun setup() {
         commentRepository = mockk<CommentRepository>()
+        val post = mockk<org.tuchscherer.database.Post>()
+        every { post.status } returns "PUBLISHED"
+        every { post.authorId } returns userId
+        every { postRepository.findById(postId) } returns post
 
         mockComment = mockk<Comment>(relaxed = true)
-        every { mockComment.id } returns EntityID(commentId, mockk())
+        every { mockComment.id } returns commentId
         every { mockComment.content } returns "Test comment content"
-        every { mockComment.authorId } returns EntityID(userId, mockk())
-        every { mockComment.postId } returns EntityID(postId, Posts)
+        every { mockComment.authorId } returns userId
+        every { mockComment.postId } returns postId
         every { mockComment.createdAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
 
         GlobalContext.getOrNull()?.let { GlobalContext.stopKoin() }
@@ -52,7 +55,7 @@ class PostCommentsResolverTest : ResolverTestBase() {
 
     @Test
     fun `PostCommentsResolver returns comments for post`() = runBlocking {
-        val resolver = PostCommentsResolver(commentRepository)
+        val resolver = PostCommentsResolver(commentRepository, postRepository)
         val args = Query_PostComments_Arguments.Builder(context)
             .postId(globalIDFor(ViaductBlogPost.Reflection, postId.toString()))
             .build()
@@ -72,7 +75,7 @@ class PostCommentsResolverTest : ResolverTestBase() {
 
     @Test
     fun `PostCommentsResolver returns empty list when no comments exist`() = runBlocking {
-        val resolver = PostCommentsResolver(commentRepository)
+        val resolver = PostCommentsResolver(commentRepository, postRepository)
         val args = Query_PostComments_Arguments.Builder(context)
             .postId(globalIDFor(ViaductBlogPost.Reflection, postId.toString()))
             .build()

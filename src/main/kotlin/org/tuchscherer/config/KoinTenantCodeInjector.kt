@@ -1,24 +1,13 @@
 package org.tuchscherer.config
 
-import org.koin.core.context.GlobalContext
+import org.koin.core.Koin
 import viaduct.service.api.spi.CodeInjector
 import javax.inject.Provider
-import kotlin.reflect.KClass
 
-/**
- * Custom CodeInjector that uses Koin for dependency injection.
- * This allows Viaduct to resolve resolver instances using Koin.
- *
- * Note: Uses GlobalContext to always access the current active Koin instance,
- * which is important for test scenarios where Koin may be restarted.
- */
-class KoinTenantCodeInjector : CodeInjector {
+/** Uses the application's explicit container; providers never consult global state. */
+class KoinTenantCodeInjector(private val koin: Koin) : CodeInjector {
     @Suppress("UNCHECKED_CAST")
-    override fun <T> getProvider(clazz: Class<T>): Provider<T> {
-        return Provider {
-            // Convert Java Class to Kotlin KClass and get instance from current Koin
-            val kClass = (clazz as Class<Any>).kotlin as KClass<Any>
-            GlobalContext.get().get(kClass, null) as T
-        }
+    override fun <T> getProvider(clazz: Class<T>): Provider<T> = Provider {
+        koin.get((clazz as Class<Any>).kotlin) as T
     }
 }

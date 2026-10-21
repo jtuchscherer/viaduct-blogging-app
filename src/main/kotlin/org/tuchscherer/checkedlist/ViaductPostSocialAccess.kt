@@ -20,7 +20,7 @@ class ViaductPostSocialAccess(
     override fun getCommentsForPost(postId: UUID): List<CommentView> =
         commentRepository.findByPostId(postId).map { comment ->
             CommentView(
-                id = comment.id.value,
+                id = comment.id,
                 content = comment.content,
                 createdAt = comment.createdAt.toString(),
             )
@@ -32,7 +32,7 @@ class ViaductPostSocialAccess(
     override fun getLikesForPost(postId: UUID): List<LikeView> =
         likeRepository.findByPostId(postId).map { like ->
             LikeView(
-                id = like.id.value,
+                id = like.id,
                 createdAt = like.createdAt.toString(),
             )
         }

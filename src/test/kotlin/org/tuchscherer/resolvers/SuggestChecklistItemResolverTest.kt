@@ -10,7 +10,6 @@ import org.tuchscherer.auth.RequestContext
 import org.tuchscherer.database.User
 import org.tuchscherer.viadapp.checkedlist.resolverbases.MutationResolvers
 import org.tuchscherer.viadapp.resolvers.SuggestChecklistItemMutationResolver
-import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
@@ -29,7 +28,7 @@ class SuggestChecklistItemResolverTest : ResolverTestBase() {
     @BeforeEach
     fun setup() {
         mockUser = mockk(relaxed = true)
-        every { mockUser.id } returns EntityID(userId, mockk())
+        every { mockUser.id } returns userId
         every { mockUser.username } returns "testuser"
 
         GlobalContext.getOrNull()?.let { GlobalContext.stopKoin() }

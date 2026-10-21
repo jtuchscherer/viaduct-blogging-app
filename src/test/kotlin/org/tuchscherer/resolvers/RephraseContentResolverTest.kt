@@ -9,7 +9,6 @@ import org.tuchscherer.viadapp.resolvers.RephraseContentResolver
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
-import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
@@ -29,7 +28,7 @@ class RephraseContentResolverTest : ResolverTestBase() {
     @BeforeEach
     fun setup() {
         mockUser = mockk(relaxed = true)
-        every { mockUser.id } returns EntityID(userId, mockk())
+        every { mockUser.id } returns userId
         every { mockUser.username } returns "testuser"
 
         GlobalContext.getOrNull()?.let { GlobalContext.stopKoin() }

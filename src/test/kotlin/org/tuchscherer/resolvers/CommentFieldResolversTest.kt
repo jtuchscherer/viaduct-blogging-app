@@ -11,7 +11,6 @@ import org.tuchscherer.viadapp.resolvers.CommentPostResolver
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
-import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -48,14 +47,14 @@ class CommentFieldResolversTest : ResolverTestBase() {
         commentRepository = mockk()
 
         mockUser = mockk(relaxed = true)
-        every { mockUser.id } returns EntityID(userId, mockk())
+        every { mockUser.id } returns userId
         every { mockUser.username } returns "testuser"
         every { mockUser.email } returns "test@example.com"
         every { mockUser.name } returns "Test User"
         every { mockUser.createdAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
 
         mockPost = mockk(relaxed = true)
-        every { mockPost.id } returns EntityID(postId, mockk())
+        every { mockPost.id } returns postId
         every { mockPost.title } returns "Test Post"
         every { mockPost.postType } returns PostType.BLOG_POST
         every { mockPost.createdAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)

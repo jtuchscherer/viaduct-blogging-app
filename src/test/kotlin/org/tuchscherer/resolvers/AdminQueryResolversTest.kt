@@ -19,7 +19,6 @@ import org.tuchscherer.viadapp.resolvers.AdminUserResolver
 import org.tuchscherer.viadapp.resolvers.AdminUsersResolver
 import io.mockk.*
 import kotlinx.coroutines.runBlocking
-import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
@@ -60,27 +59,27 @@ class AdminQueryResolversTest : ResolverTestBase() {
         likeRepository = mockk()
 
         mockAdminUser = mockk(relaxed = true)
-        every { mockAdminUser.id } returns EntityID(adminUserId, mockk())
+        every { mockAdminUser.id } returns adminUserId
         every { mockAdminUser.isAdmin } returns true
 
         mockDbUser = mockk(relaxed = true)
-        every { mockDbUser.id } returns EntityID(dbUserId, mockk())
+        every { mockDbUser.id } returns dbUserId
         every { mockDbUser.username } returns "dbuser"
         every { mockDbUser.email } returns "db@example.com"
         every { mockDbUser.name } returns "DB User"
         every { mockDbUser.createdAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
 
         mockPost = mockk(relaxed = true)
-        every { mockPost.id } returns EntityID(postId, mockk())
+        every { mockPost.id } returns postId
         every { mockPost.title } returns "Test Post"
         every { mockPost.content } returns "Test content"
-        every { mockPost.authorId } returns EntityID(dbUserId, mockk())
+        every { mockPost.authorId } returns dbUserId
         every { mockPost.createdAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
         every { mockPost.updatedAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
         every { mockPost.status } returns PostStatus.PUBLISHED
 
         mockComment = mockk(relaxed = true)
-        every { mockComment.id } returns EntityID(commentId, mockk())
+        every { mockComment.id } returns commentId
         every { mockComment.content } returns "Test comment"
         every { mockComment.createdAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
 

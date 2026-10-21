@@ -16,13 +16,13 @@ import java.util.UUID
  */
 class ViaductCheckedListCurrentUserProvider : CheckedListCurrentUserProvider {
     override fun getViewer(requestContext: Any?): CheckedListViewer? =
-        (requestContext as? RequestContext)?.user?.let { CheckedListViewer(it.id.value, it.isAdmin) }
+        (requestContext as? RequestContext)?.user?.let { CheckedListViewer(it.id, it.isAdmin) }
 
     override fun getCurrentUserId(requestContext: Any?): UUID {
         val rc = requestContext as? RequestContext
             ?: throw AuthenticationException("Authentication required")
         val user = rc.user
             ?: throw AuthenticationException("Authentication required")
-        return user.id.value
+        return user.id
     }
 }

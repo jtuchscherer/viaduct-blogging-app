@@ -55,13 +55,19 @@ class BlogPostNodeResolver(
 
 @Resolver
 class CommentNodeResolver(
-    private val commentRepository: CommentRepository
+    private val commentRepository: CommentRepository,
+    private val postRepository: PostRepository,
 ) : NodeResolvers.Comment() {
     override suspend fun batchResolve(contexts: List<Context>): Map<Context, FieldValue<ViaductComment>> =
         batchNodeResolve(
             contexts = contexts,
             extractId = { UUID.fromString(it.id.internalID) },
-            findByIds = commentRepository::findByIds,
+            findByIds = { ids ->
+                postRepository.filterVisibleChildren(
+                    commentRepository.findByIds(ids),
+                    optionalAuth(contexts.firstOrNull()?.requestContext),
+                ) { it.postId }
+            },
             transform = { comment, ctx -> comment.toViaductComment(ctx) },
             notFound = { id -> NotFoundException("Comment not found: $id") },
         )
@@ -69,14 +75,31 @@ class CommentNodeResolver(
 
 @Resolver
 class LikeNodeResolver(
-    private val likeRepository: LikeRepository
+    private val likeRepository: LikeRepository,
+    private val postRepository: PostRepository,
 ) : NodeResolvers.Like() {
     override suspend fun batchResolve(contexts: List<Context>): Map<Context, FieldValue<ViaductLike>> =
         batchNodeResolve(
             contexts = contexts,
             extractId = { UUID.fromString(it.id.internalID) },
-            findByIds = likeRepository::findByIds,
+            findByIds = { ids ->
+                postRepository.filterVisibleChildren(
+                    likeRepository.findByIds(ids),
+                    optionalAuth(contexts.firstOrNull()?.requestContext),
+                ) { it.postId }
+            },
             transform = { like, ctx -> like.toViaductLike(ctx) },
             notFound = { id -> NotFoundException("Like not found: $id") },
         )
+}
+
+/** Parent lookups stay batched and use the same draft policy for each kind of social node. */
+private fun <T> PostRepository.filterVisibleChildren(
+    children: Map<UUID, T>,
+    viewer: org.tuchscherer.database.User?,
+    postId: (T) -> UUID,
+): Map<UUID, T> {
+    if (children.isEmpty()) return emptyMap()
+    val parents = findByIds(children.values.map(postId).distinct())
+    return children.filterValues { parents[postId(it)]?.isVisibleTo(viewer) == true }
 }

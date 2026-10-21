@@ -1,4 +1,4 @@
-package org.tuchscherer.checkedlist
+package org.tuchscherer.database.repositories
 
 import org.tuchscherer.database.repositories.DatabaseTestHelper
 import org.tuchscherer.database.repositories.ExposedUserRepository
@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import java.util.UUID
 
 /**
- * Integration tests for [ViaductPostCreationPort] against an H2 in-memory database.
+ * Integration tests for [ExposedChecklistPostRepository] against an H2 in-memory database.
  *
  * This port is the primary bridge between the checkedlist module and the Posts table.
  * It owns all CRUD for CheckedListPost rows, including cascade-deleting likes and
@@ -19,15 +19,15 @@ import java.util.UUID
  * implementation; these integration tests verify the actual SQL behaviour.
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class ViaductPostCreationPortTest {
+class ExposedChecklistPostRepositoryTest {
 
-    private lateinit var port: ViaductPostCreationPort
+    private lateinit var port: ExposedChecklistPostRepository
     private lateinit var authorId: UUID
 
     @BeforeAll
     fun setupDatabase() {
         DatabaseTestHelper.setupDatabase()
-        port = ViaductPostCreationPort()
+        port = ExposedChecklistPostRepository(ExposedPostRepository())
 
         // Every post needs a valid author row for the FK constraint.
         val userRepo = ExposedUserRepository()
@@ -38,7 +38,7 @@ class ViaductPostCreationPortTest {
             passwordHash = "hash",
             salt = "salt",
         )
-        authorId = user.id.value
+        authorId = user.id
     }
 
     @AfterEach
@@ -53,7 +53,7 @@ class ViaductPostCreationPortTest {
             passwordHash = "hash",
             salt = "salt",
         )
-        authorId = user.id.value
+        authorId = user.id
     }
 
     @AfterAll
@@ -108,7 +108,7 @@ class ViaductPostCreationPortTest {
         val blogPost = org.tuchscherer.database.repositories.ExposedPostRepository()
             .create("A Blog Post", "content", authorId)
 
-        assertNull(port.getPostData(blogPost.id.value))
+        assertNull(port.getPostData(blogPost.id))
     }
 
     // ── getPostsData ──────────────────────────────────────────────────────────
@@ -136,7 +136,7 @@ class ViaductPostCreationPortTest {
             .create("Blog", "content", authorId)
         val checklist = port.createCheckedListPost("CL", authorId, "")
 
-        val result = port.getPostsData(listOf(blogPost.id.value, checklist.id))
+        val result = port.getPostsData(listOf(blogPost.id, checklist.id))
 
         assertEquals(1, result.size)
         assertTrue(result.containsKey(checklist.id))
@@ -223,7 +223,7 @@ class ViaductPostCreationPortTest {
 
         port.deleteCheckedListPost(post.id)
 
-        assertNull(likeRepo.findById(like.id.value))
+        assertNull(likeRepo.findById(like.id))
     }
 
     @Test
@@ -234,7 +234,7 @@ class ViaductPostCreationPortTest {
 
         port.deleteCheckedListPost(post.id)
 
-        assertNull(commentRepo.findById(comment.id.value))
+        assertNull(commentRepo.findById(comment.id))
     }
 
     // ── getAuthorIdsForPosts ──────────────────────────────────────────────────

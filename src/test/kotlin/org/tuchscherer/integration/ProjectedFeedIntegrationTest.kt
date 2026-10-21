@@ -8,7 +8,6 @@ import org.junit.jupiter.api.Test
 import org.tuchscherer.config.ViaductSchemas
 import org.tuchscherer.auth.RequestContext
 import org.tuchscherer.database.User
-import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.tuchscherer.database.PostStatus
 import org.tuchscherer.database.PostType
 import org.tuchscherer.database.repositories.CommentRepository
@@ -28,6 +27,7 @@ import viaduct.service.api.spi.SharedTenantModuleInjectorFactory
 import java.time.LocalDateTime
 import java.util.Base64
 import java.util.UUID
+import java.util.concurrent.CopyOnWriteArrayList
 import javax.inject.Provider
 
 /** Runs projected nodes and batched content dependencies in the actual engine. */
@@ -37,7 +37,7 @@ class ProjectedFeedIntegrationTest {
     private val postId = UUID.randomUUID()
     private val authorId = UUID.randomUUID()
     private val globalId = Base64.getEncoder().encodeToString("BlogPost:$postId".toByteArray())
-    private val requestedProjections = mutableListOf<Set<PostField>>()
+    private val requestedProjections = CopyOnWriteArrayList<Set<PostField>>()
     private val nodeFields = setOf(
         PostField.TITLE, PostField.STATUS, PostField.PUBLISHED_AT, PostField.CREATED_AT, PostField.UPDATED_AT,
     )
@@ -224,7 +224,7 @@ class ProjectedFeedIntegrationTest {
     }
 
     private fun viewer(id: UUID, isAdmin: Boolean): User = mockk<User>().also {
-        every { it.id } returns EntityID(id, mockk())
+        every { it.id } returns id
         every { it.isAdmin } returns isAdmin
     }
 

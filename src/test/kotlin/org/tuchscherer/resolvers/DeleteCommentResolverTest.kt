@@ -7,13 +7,11 @@ import org.tuchscherer.auth.AuthorizationException
 import org.tuchscherer.auth.NotFoundException
 import org.tuchscherer.auth.RequestContext
 import org.tuchscherer.database.Comment
-import org.tuchscherer.database.Posts
 import org.tuchscherer.database.User
 import org.tuchscherer.database.repositories.CommentRepository
 import org.tuchscherer.viadapp.resolvers.*
 import io.mockk.*
 import kotlinx.coroutines.runBlocking
-import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
@@ -40,14 +38,14 @@ class DeleteCommentResolverTest : ResolverTestBase() {
         commentRepository = mockk<CommentRepository>()
 
         mockUser = mockk<User>(relaxed = true)
-        every { mockUser.id } returns EntityID(userId, mockk())
+        every { mockUser.id } returns userId
         every { mockUser.username } returns "testuser"
 
         mockComment = mockk<Comment>(relaxed = true)
-        every { mockComment.id } returns EntityID(commentId, mockk())
+        every { mockComment.id } returns commentId
         every { mockComment.content } returns "Test comment content"
-        every { mockComment.authorId } returns EntityID(userId, mockk())
-        every { mockComment.postId } returns EntityID(postId, Posts)
+        every { mockComment.authorId } returns userId
+        every { mockComment.postId } returns postId
         every { mockComment.createdAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
 
         GlobalContext.getOrNull()?.let { GlobalContext.stopKoin() }
@@ -123,7 +121,7 @@ class DeleteCommentResolverTest : ResolverTestBase() {
             .build()
 
         every { commentRepository.findById(commentId) } returns mockComment
-        every { mockComment.authorId } returns EntityID(differentUserId, mockk())
+        every { mockComment.authorId } returns differentUserId
 
         assertThrows<AuthorizationException> {
             runMutationFieldResolver(resolver) {

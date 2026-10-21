@@ -1,12 +1,11 @@
 package org.tuchscherer.viadapp.checkedlist.resolvers
 
 import org.tuchscherer.checkedlist.repositories.CheckedListItemRepository
-import org.tuchscherer.checkedlist.port.PostCreationPort
+import org.tuchscherer.checkedlist.port.ChecklistPostReader
 import org.tuchscherer.checkedlist.port.CheckedListCurrentUserProvider
 import org.tuchscherer.checkedlist.isVisibleTo
 import org.tuchscherer.shared.batchNodeResolve
 import org.tuchscherer.viadapp.checkedlist.resolverbases.NodeResolvers
-import org.koin.java.KoinJavaComponent.inject
 import viaduct.api.FieldValue
 import viaduct.api.resolver.Resolver
 import viaduct.api.grts.CheckedListItem as ViaductCheckedListItem
@@ -17,10 +16,11 @@ import java.util.UUID
  * [CheckedListItemRepository].
  */
 @Resolver
-class CheckedListItemBatchResolver : NodeResolvers.CheckedListItem() {
-    private val itemRepository: CheckedListItemRepository by inject(CheckedListItemRepository::class.java)
-    private val posts: PostCreationPort by inject(PostCreationPort::class.java)
-    private val users: CheckedListCurrentUserProvider by inject(CheckedListCurrentUserProvider::class.java)
+class CheckedListItemBatchResolver(
+    private val itemRepository: CheckedListItemRepository,
+    private val posts: ChecklistPostReader,
+    private val users: CheckedListCurrentUserProvider,
+) : NodeResolvers.CheckedListItem() {
 
     override suspend fun batchResolve(contexts: List<Context>): Map<Context, FieldValue<ViaductCheckedListItem>> =
         batchNodeResolve(

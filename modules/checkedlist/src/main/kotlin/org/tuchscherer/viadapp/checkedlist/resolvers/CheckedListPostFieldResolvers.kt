@@ -1,11 +1,10 @@
 package org.tuchscherer.viadapp.checkedlist.resolvers
 
-import org.tuchscherer.checkedlist.port.PostCreationPort
+import org.tuchscherer.checkedlist.port.ChecklistPostReader
 import org.tuchscherer.checkedlist.port.PostSocialPort
 import org.tuchscherer.checkedlist.port.CheckedListCurrentUserProvider
 import org.tuchscherer.checkedlist.repositories.CheckedListItemRepository
 import org.tuchscherer.viadapp.checkedlist.resolverbases.CheckedListPostResolvers
-import org.koin.java.KoinJavaComponent.inject
 import viaduct.api.FieldValue
 import viaduct.api.resolver.Resolver
 import viaduct.api.grts.CheckedListItem as ViaductCheckedListItem
@@ -29,8 +28,9 @@ private const val POST_ID = "fragment _ on CheckedListPost { ...PostIdFragment }
  *
  */
 @Resolver(objectValueFragment = POST_ID)
-class CheckedListPostItemsResolver : CheckedListPostResolvers.Items() {
-    private val itemRepository: CheckedListItemRepository by inject(CheckedListItemRepository::class.java)
+class CheckedListPostItemsResolver(
+    private val itemRepository: CheckedListItemRepository,
+) : CheckedListPostResolvers.Items() {
 
     override suspend fun resolve(ctx: Context): List<ViaductCheckedListItem> {
         val postId = UUID.fromString(ctx.getObjectValue().getIdOrThrow().internalID)
@@ -39,16 +39,17 @@ class CheckedListPostItemsResolver : CheckedListPostResolvers.Items() {
 }
 
 /**
- * Batch resolves [CheckedListPost.author]. Uses [PostCreationPort] to get author IDs,
+ * Batch resolves [CheckedListPost.author]. Uses [ChecklistPostReader] to get author IDs,
  * then delegates to Viaduct's node cache via [ctx.ref].
  */
 @Resolver(objectValueFragment = POST_ID)
-class CheckedListPostAuthorBatchResolver : CheckedListPostResolvers.Author() {
-    private val postCreationPort: PostCreationPort by inject(PostCreationPort::class.java)
+class CheckedListPostAuthorBatchResolver(
+    private val checklistPosts: ChecklistPostReader,
+) : CheckedListPostResolvers.Author() {
 
     override suspend fun batchResolve(contexts: List<Context>): List<FieldValue<ViaductUser>> {
         val postIds = contexts.map { UUID.fromString(it.getObjectValue().getIdOrThrow().internalID) }
-        val authorIdByPostId = postCreationPort.getAuthorIdsForPosts(postIds)
+        val authorIdByPostId = checklistPosts.getAuthorIdsForPosts(postIds)
 
         return contexts.zip(postIds).map { (ctx, postId) ->
             val authorId = authorIdByPostId[postId]
@@ -66,8 +67,9 @@ class CheckedListPostAuthorBatchResolver : CheckedListPostResolvers.Author() {
  * Resolves [CheckedListPost.comments].
  */
 @Resolver(objectValueFragment = POST_ID)
-class CheckedListPostCommentsResolver : CheckedListPostResolvers.Comments() {
-    private val socialPort: PostSocialPort by inject(PostSocialPort::class.java)
+class CheckedListPostCommentsResolver(
+    private val socialPort: PostSocialPort,
+) : CheckedListPostResolvers.Comments() {
 
     override suspend fun resolve(ctx: Context): List<ViaductComment> {
         val postId = UUID.fromString(ctx.getObjectValue().getIdOrThrow().internalID)
@@ -85,8 +87,9 @@ class CheckedListPostCommentsResolver : CheckedListPostResolvers.Comments() {
  * Resolves [CheckedListPost.commentCount].
  */
 @Resolver(objectValueFragment = POST_ID)
-class CheckedListPostCommentCountResolver : CheckedListPostResolvers.CommentCount() {
-    private val socialPort: PostSocialPort by inject(PostSocialPort::class.java)
+class CheckedListPostCommentCountResolver(
+    private val socialPort: PostSocialPort,
+) : CheckedListPostResolvers.CommentCount() {
 
     override suspend fun resolve(ctx: Context): Int {
         val postId = UUID.fromString(ctx.getObjectValue().getIdOrThrow().internalID)
@@ -98,8 +101,9 @@ class CheckedListPostCommentCountResolver : CheckedListPostResolvers.CommentCoun
  * Resolves [CheckedListPost.likes].
  */
 @Resolver(objectValueFragment = POST_ID)
-class CheckedListPostLikesResolver : CheckedListPostResolvers.Likes() {
-    private val socialPort: PostSocialPort by inject(PostSocialPort::class.java)
+class CheckedListPostLikesResolver(
+    private val socialPort: PostSocialPort,
+) : CheckedListPostResolvers.Likes() {
 
     override suspend fun resolve(ctx: Context): List<ViaductLike> {
         val postId = UUID.fromString(ctx.getObjectValue().getIdOrThrow().internalID)
@@ -116,8 +120,9 @@ class CheckedListPostLikesResolver : CheckedListPostResolvers.Likes() {
  * Resolves [CheckedListPost.likeCount].
  */
 @Resolver(objectValueFragment = POST_ID)
-class CheckedListPostLikeCountResolver : CheckedListPostResolvers.LikeCount() {
-    private val socialPort: PostSocialPort by inject(PostSocialPort::class.java)
+class CheckedListPostLikeCountResolver(
+    private val socialPort: PostSocialPort,
+) : CheckedListPostResolvers.LikeCount() {
 
     override suspend fun resolve(ctx: Context): Int {
         val postId = UUID.fromString(ctx.getObjectValue().getIdOrThrow().internalID)
@@ -129,10 +134,10 @@ class CheckedListPostLikeCountResolver : CheckedListPostResolvers.LikeCount() {
  * Resolves [CheckedListPost.isLikedByMe]. Returns false for unauthenticated requests.
  */
 @Resolver(objectValueFragment = POST_ID)
-class CheckedListPostIsLikedByMeResolver : CheckedListPostResolvers.IsLikedByMe() {
-    private val socialPort: PostSocialPort by inject(PostSocialPort::class.java)
-    private val currentUserProvider: CheckedListCurrentUserProvider
-        by inject(CheckedListCurrentUserProvider::class.java)
+class CheckedListPostIsLikedByMeResolver(
+    private val socialPort: PostSocialPort,
+    private val currentUserProvider: CheckedListCurrentUserProvider,
+) : CheckedListPostResolvers.IsLikedByMe() {
 
     override suspend fun resolve(ctx: Context): Boolean {
         val postId = UUID.fromString(ctx.getObjectValue().getIdOrThrow().internalID)

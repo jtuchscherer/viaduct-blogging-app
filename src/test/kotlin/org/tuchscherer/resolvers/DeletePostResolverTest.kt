@@ -13,7 +13,6 @@ import org.tuchscherer.database.repositories.PostRepository
 import org.tuchscherer.viadapp.resolvers.*
 import io.mockk.*
 import kotlinx.coroutines.runBlocking
-import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
@@ -39,12 +38,12 @@ class DeletePostResolverTest : ResolverTestBase() {
         postRepository = mockk<PostRepository>()
 
         mockUser = mockk<User>(relaxed = true)
-        every { mockUser.id } returns EntityID(userId, mockk())
+        every { mockUser.id } returns userId
         every { mockUser.username } returns "testuser"
 
         mockPost = mockk<Post>(relaxed = true)
-        every { mockPost.id } returns EntityID(postId, mockk())
-        every { mockPost.authorId } returns EntityID(userId, mockk())
+        every { mockPost.id } returns postId
+        every { mockPost.authorId } returns userId
         every { mockPost.createdAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
         every { mockPost.updatedAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
         every { mockPost.status } returns PostStatus.PUBLISHED
@@ -122,7 +121,7 @@ class DeletePostResolverTest : ResolverTestBase() {
             .build()
 
         every { postRepository.findById(postId) } returns mockPost
-        every { mockPost.authorId } returns EntityID(differentUserId, mockk())
+        every { mockPost.authorId } returns differentUserId
 
         assertThrows<AuthorizationException> {
             runMutationFieldResolver(resolver) {

@@ -11,7 +11,6 @@ import org.tuchscherer.viadapp.resolvers.UserIsAdminResolver
 import org.tuchscherer.viadapp.resolvers.resolverbases.UserResolvers
 import io.mockk.*
 import kotlinx.coroutines.runBlocking
-import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -38,7 +37,7 @@ class UserResolversTest : ResolverTestBase() {
         userRepository = mockk()
 
         mockUser = mockk(relaxed = true)
-        every { mockUser.id } returns EntityID(userId, mockk())
+        every { mockUser.id } returns userId
         every { mockUser.username } returns "testuser"
         every { mockUser.email } returns "test@example.com"
         every { mockUser.name } returns "Test User"

@@ -2,6 +2,7 @@ package org.tuchscherer.viadapp.resolvers
 
 import org.tuchscherer.auth.AuthorizationException
 import org.tuchscherer.auth.NotFoundException
+import org.tuchscherer.auth.optionalAuth
 import org.tuchscherer.auth.requireAuth
 import org.tuchscherer.database.repositories.CommentRepository
 import org.tuchscherer.database.repositories.PostRepository
@@ -31,8 +32,8 @@ class CreateCommentResolver(
 
         val comment = commentRepository.create(
             content = input.content,
-            postId = post.id.value,
-            authorId = user.id.value,
+            postId = post.id,
+            authorId = user.id,
             createdAt = LocalDateTime.now()
         )
 
@@ -61,11 +62,14 @@ class DeleteCommentResolver(
 
 @Resolver
 class PostCommentsResolver(
-    private val commentRepository: CommentRepository
+    private val commentRepository: CommentRepository,
+    private val postRepository: PostRepository,
 ) : QueryResolvers.PostComments() {
     override suspend fun resolve(ctx: Context): List<ViaductComment> {
         val postId = UUID.fromString(ctx.arguments.postId.internalID)
 
+        val viewer = optionalAuth(ctx.requestContext)
+        if (postRepository.findById(postId)?.isVisibleTo(viewer) != true) return emptyList()
         return commentRepository.findByPostId(postId).map { it.toViaductComment(ctx) }
     }
 }

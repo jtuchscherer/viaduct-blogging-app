@@ -34,7 +34,7 @@ class ViaductPostSocialAccessTest {
         val createdAt = LocalDateTime.of(2024, 1, 15, 10, 30)
 
         val comment = mockk<Comment>(relaxed = true)
-        every { comment.id.value } returns commentId
+        every { comment.id } returns commentId
         every { comment.content } returns "Nice post!"
         every { comment.createdAt } returns createdAt
 
@@ -95,7 +95,7 @@ class ViaductPostSocialAccessTest {
         val createdAt = LocalDateTime.of(2024, 2, 1, 8, 0)
 
         val like = mockk<Like>(relaxed = true)
-        every { like.id.value } returns likeId
+        every { like.id } returns likeId
         every { like.createdAt } returns createdAt
 
         every { likeRepo.findByPostId(postId) } returns listOf(like)

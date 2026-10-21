@@ -26,7 +26,7 @@ import org.koin.dsl.module
 /**
  * Koin module for the checkedlist tenant.
  *
- * The port interfaces ([PostCreationPort], [PostSocialPort], [CheckedListCurrentUserProvider])
+ * The port interfaces ([ChecklistPostRepository], [PostSocialPort], [CheckedListCurrentUserProvider])
  * are registered in the root project's [KoinModules] so the implementations can import
  * root-project types ([CommentRepository], [RequestContext], etc.) without creating a
  * compile-time circular dependency.

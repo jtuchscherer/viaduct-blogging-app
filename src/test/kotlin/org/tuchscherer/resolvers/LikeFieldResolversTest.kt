@@ -13,7 +13,6 @@ import org.tuchscherer.viadapp.resolvers.PostLikeCountResolver
 import org.tuchscherer.viadapp.resolvers.PostLikesResolver
 import io.mockk.*
 import kotlinx.coroutines.runBlocking
-import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -54,13 +53,13 @@ class LikeFieldResolversTest : ResolverTestBase() {
         commentRepository = mockk<CommentRepository>()
 
         mockUser = mockk<User>(relaxed = true)
-        every { mockUser.id } returns EntityID(userId, mockk())
+        every { mockUser.id } returns userId
         every { mockUser.username } returns "testuser"
 
         mockLike = mockk<Like>(relaxed = true)
-        every { mockLike.id } returns EntityID(likeId, mockk())
-        every { mockLike.userId } returns EntityID(userId, mockk())
-        every { mockLike.postId } returns EntityID(postId, mockk())
+        every { mockLike.id } returns likeId
+        every { mockLike.userId } returns userId
+        every { mockLike.postId } returns postId
         every { mockLike.createdAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
 
         GlobalContext.getOrNull()?.let { GlobalContext.stopKoin() }

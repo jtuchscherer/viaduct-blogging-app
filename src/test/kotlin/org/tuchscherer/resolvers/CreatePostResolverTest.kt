@@ -9,7 +9,6 @@ import org.tuchscherer.database.repositories.PostRepository
 import org.tuchscherer.viadapp.resolvers.CreatePostResolver
 import io.mockk.*
 import kotlinx.coroutines.runBlocking
-import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
@@ -37,13 +36,13 @@ class CreatePostResolverTest : ResolverTestBase() {
         postRepository = mockk()
 
         mockUser = mockk(relaxed = true)
-        every { mockUser.id } returns EntityID(userId, mockk())
+        every { mockUser.id } returns userId
         every { mockUser.username } returns "testuser"
 
         mockPost = mockk(relaxed = true)
-        every { mockPost.id } returns EntityID(postId, mockk())
+        every { mockPost.id } returns postId
         every { mockPost.title } returns "Test Post"
-        every { mockPost.authorId } returns EntityID(userId, mockk())
+        every { mockPost.authorId } returns userId
         every { mockPost.createdAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
         every { mockPost.updatedAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
         every { mockPost.status } returns PostStatus.PUBLISHED
@@ -64,7 +63,7 @@ class CreatePostResolverTest : ResolverTestBase() {
             postRepository.create(
                 title = "New Post",
                 content = "New content",
-                authorId = mockUser.id.value,
+                authorId = mockUser.id,
                 createdAt = any(),
                 updatedAt = any()
             )

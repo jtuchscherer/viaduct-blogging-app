@@ -11,7 +11,6 @@ import org.tuchscherer.viadapp.resolvers.PostCommentsFieldResolver
 import org.tuchscherer.viadapp.resolvers.resolverbases.BlogPostResolvers
 import io.mockk.*
 import kotlinx.coroutines.runBlocking
-import org.jetbrains.exposed.v1.core.dao.id.EntityID
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -50,7 +49,7 @@ class PostFieldResolversTest : ResolverTestBase() {
         commentRepository = mockk<CommentRepository>()
 
         mockComment = mockk<Comment>()
-        every { mockComment.id } returns EntityID(commentId, mockk())
+        every { mockComment.id } returns commentId
         every { mockComment.content } returns "Test comment"
         every { mockComment.createdAt } returns LocalDateTime.of(2025, 1, 1, 10, 0)
 

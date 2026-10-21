@@ -40,24 +40,25 @@ class ExposedPostRepository : PostRepository {
         get() = (Posts.postType eq PostType.BLOG_POST) and (Posts.status eq PostStatus.PUBLISHED)
 
     override fun findById(id: UUID): Post? = transaction {
-        Post.findById(id)
+        PostEntity.findById(id)?.toRecord()
     }
 
     override fun findByIds(ids: List<UUID>): Map<UUID, Post> = transaction {
         if (ids.isEmpty()) return@transaction emptyMap()
-        Post.find { Posts.id inList ids.map { EntityID(it, Posts) } }
-            .associateBy { it.id.value }
+        PostEntity.find { Posts.id inList ids.map { EntityID(it, Posts) } }
+            .map { it.toRecord() }.associateBy { it.id }
     }
 
     // Deliberately unfiltered by status: an author must see their own drafts here.
     override fun findByAuthorId(authorId: UUID): List<Post> = transaction {
-        Post.find { (Posts.authorId eq authorId) and (Posts.postType eq PostType.BLOG_POST) }.toList()
+        PostEntity.find { (Posts.authorId eq authorId) and (Posts.postType eq PostType.BLOG_POST) }
+            .map { it.toRecord() }
     }
 
     // Published only: the public feed must never surface a draft, and filtering here means a
     // draft is not loaded at all rather than filtered out later.
     override fun findAll(): List<Post> = transaction {
-        Post.find { publishedBlogPosts }.toList()
+        PostEntity.find { publishedBlogPosts }.map { it.toRecord() }
     }
 
     override fun findPublishedProjection(
@@ -116,7 +117,7 @@ class ExposedPostRepository : PostRepository {
         updatedAt: LocalDateTime,
         status: String
     ): Post = transaction {
-        Post.new {
+        PostEntity.new {
             this.title = title
             this.content = content
             this.authorId = EntityID(authorId, Users)
@@ -125,64 +126,57 @@ class ExposedPostRepository : PostRepository {
             this.publishedAt = if (status == PostStatus.PUBLISHED) createdAt else null
             this.createdAt = createdAt
             this.updatedAt = updatedAt
-        }
+        }.toRecord()
     }
 
     override fun publishedIds(ids: List<UUID>): Set<UUID> = transaction {
         if (ids.isEmpty()) return@transaction emptySet()
-        Post.find {
+        PostEntity.find {
             (Posts.id inList ids.map { EntityID(it, Posts) }) and (Posts.status eq PostStatus.PUBLISHED)
         }.map { it.id.value }.toSet()
     }
 
     override fun updateStatus(id: UUID, status: String, publishedAt: LocalDateTime?): Post? =
         transaction {
-            Post.findById(id)?.also {
+            PostEntity.findById(id)?.also {
                 it.status = status
                 it.publishedAt = publishedAt
                 it.updatedAt = LocalDateTime.now()
                 it.flush()
-            }
+            }?.toRecord()
         }
-
-    override fun update(post: Post): Post = transaction {
-        post.also {
-            it.updatedAt = LocalDateTime.now()
-            it.flush()
-        }
-    }
 
     override fun updateById(
         id: UUID,
         title: String?,
         content: String?
     ): Post? = transaction {
-        val post = Post.findById(id) ?: return@transaction null
+        val post = PostEntity.findById(id) ?: return@transaction null
         title?.let { post.title = it }
         content?.let { post.content = it }
         post.updatedAt = LocalDateTime.now()
         post.flush()
-        post
+        post.toRecord()
     }
 
     override fun delete(id: UUID): Boolean = transaction {
-        val post = Post.findById(id) ?: return@transaction false
+        val post = PostEntity.findById(id) ?: return@transaction false
         deleteWithDependents(post)
         true
     }
 
     override fun findPage(limit: Int, offset: Int): List<Post> = transaction {
-        Post.find { publishedBlogPosts }
+        PostEntity.find { publishedBlogPosts }
             // Ordered by publication rather than creation, so a long-held draft appears as new
             // when it is finally published.
             .orderBy(Posts.publishedAt to SortOrder.DESC)
             .limit(limit)
             .offset(offset.toLong())
-            .toList()
+            .map { it.toRecord() }
     }
 
     override fun count(): Long = transaction {
-        Post.find { publishedBlogPosts }.count()
+        PostEntity.find { publishedBlogPosts }.count()
     }
 
     override fun getAuthorIdsByPostIds(postIds: List<UUID>): Map<UUID, UUID> = transaction {
@@ -193,11 +187,11 @@ class ExposedPostRepository : PostRepository {
     }
 
     override fun countByAuthorId(authorId: UUID): Long = transaction {
-        Post.find { Posts.authorId eq authorId }.count()
+        PostEntity.find { Posts.authorId eq authorId }.count()
     }
 
     override fun deleteByAuthorId(authorId: UUID): Int = transaction {
-        val posts = Post.find { Posts.authorId eq authorId }.toList()
+        val posts = PostEntity.find { Posts.authorId eq authorId }.toList()
         posts.forEach(::deleteWithDependents)
         posts.size
     }
@@ -207,9 +201,9 @@ class ExposedPostRepository : PostRepository {
      * the foreign-key constraints on Likes.postId and Comments.postId stay
      * satisfied. Must be called inside an existing transaction.
      */
-    private fun deleteWithDependents(post: Post) {
-        Like.find { Likes.postId eq post.id }.forEach { it.delete() }
-        Comment.find { Comments.postId eq post.id }.forEach { it.delete() }
+    private fun deleteWithDependents(post: PostEntity) {
+        LikeEntity.find { Likes.postId eq post.id }.forEach { it.delete() }
+        CommentEntity.find { Comments.postId eq post.id }.forEach { it.delete() }
         CheckedListItems.deleteWhere { CheckedListItems.postId eq post.id.value.toString() }
         PostViews.deleteWhere { PostViews.postId eq post.id.value.toString() }
         post.delete()

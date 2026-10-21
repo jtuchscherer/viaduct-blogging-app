@@ -17,21 +17,21 @@ import java.util.UUID
 class ExposedCommentRepository : CommentRepository {
 
     override fun findById(id: UUID): Comment? = transaction {
-        Comment.findById(id)
+        CommentEntity.findById(id)?.toRecord()
     }
 
     override fun findByIds(ids: List<UUID>): Map<UUID, Comment> = transaction {
         if (ids.isEmpty()) return@transaction emptyMap()
-        Comment.find { Comments.id inList ids.map { EntityID(it, Comments) } }
-            .associateBy { it.id.value }
+        CommentEntity.find { Comments.id inList ids.map { EntityID(it, Comments) } }
+            .map { it.toRecord() }.associateBy { it.id }
     }
 
     override fun findByPostId(postId: UUID): List<Comment> = transaction {
-        Comment.find { Comments.postId eq postId }.toList()
+        CommentEntity.find { Comments.postId eq postId }.map { it.toRecord() }
     }
 
     override fun findByAuthorId(authorId: UUID): List<Comment> = transaction {
-        Comment.find { Comments.authorId eq authorId }.toList()
+        CommentEntity.find { Comments.authorId eq authorId }.map { it.toRecord() }
     }
 
     override fun create(
@@ -40,22 +40,23 @@ class ExposedCommentRepository : CommentRepository {
         authorId: UUID,
         createdAt: LocalDateTime
     ): Comment = transaction {
-        Comment.new {
+        CommentEntity.new {
             this.content = content
             this.postId = EntityID(postId, Posts)
             this.authorId = EntityID(authorId, Users)
             this.createdAt = createdAt
-        }
+        }.toRecord()
     }
 
-    override fun update(comment: Comment): Comment = transaction {
-        comment.also {
-            it.flush()
-        }
+    override fun updateContent(id: UUID, content: String): Comment? = transaction {
+        val comment = CommentEntity.findById(id) ?: return@transaction null
+        comment.content = content
+        comment.flush()
+        comment.toRecord()
     }
 
     override fun delete(id: UUID): Boolean = transaction {
-        val comment = Comment.findById(id)
+        val comment = CommentEntity.findById(id)
         if (comment != null) {
             comment.delete()
             true
@@ -65,39 +66,39 @@ class ExposedCommentRepository : CommentRepository {
     }
 
     override fun countByPostId(postId: UUID): Long = transaction {
-        Comment.find { Comments.postId eq postId }.count()
+        CommentEntity.find { Comments.postId eq postId }.count()
     }
 
     override fun getAuthorForComment(commentId: UUID): org.tuchscherer.database.User? = transaction {
-        Comment.findById(commentId)?.author
+        CommentEntity.findById(commentId)?.author?.toRecord()
     }
 
     override fun getPostForComment(commentId: UUID): org.tuchscherer.database.Post? = transaction {
-        Comment.findById(commentId)?.post
+        CommentEntity.findById(commentId)?.post?.toRecord()
     }
 
     override fun findAll(): List<Comment> = transaction {
-        Comment.all().toList()
+        CommentEntity.all().map { it.toRecord() }
     }
 
     override fun findPage(limit: Int, offset: Int): List<Comment> = transaction {
-        Comment.all()
+        CommentEntity.all()
             .orderBy(Comments.createdAt to org.jetbrains.exposed.v1.core.SortOrder.DESC)
             .limit(limit)
             .offset(offset.toLong())
-            .toList()
+            .map { it.toRecord() }
     }
 
     override fun count(): Long = transaction {
-        Comment.all().count()
+        CommentEntity.all().count()
     }
 
     override fun countByUserId(userId: UUID): Long = transaction {
-        Comment.find { Comments.authorId eq userId }.count()
+        CommentEntity.find { Comments.authorId eq userId }.count()
     }
 
     override fun deleteByUserId(userId: UUID): Int = transaction {
-        val comments = Comment.find { Comments.authorId eq userId }.toList()
+        val comments = CommentEntity.find { Comments.authorId eq userId }.toList()
         val count = comments.size
         comments.forEach { it.delete() }
         count
