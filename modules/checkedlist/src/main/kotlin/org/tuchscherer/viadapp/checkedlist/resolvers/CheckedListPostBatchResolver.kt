@@ -1,6 +1,8 @@
 package org.tuchscherer.viadapp.checkedlist.resolvers
 
 import org.tuchscherer.checkedlist.port.PostCreationPort
+import org.tuchscherer.checkedlist.port.CheckedListCurrentUserProvider
+import org.tuchscherer.checkedlist.isVisibleTo
 import org.tuchscherer.shared.batchNodeResolve
 import org.tuchscherer.viadapp.checkedlist.resolverbases.NodeResolvers
 import org.koin.java.KoinJavaComponent.inject
@@ -16,12 +18,17 @@ import java.util.UUID
 @Resolver
 class CheckedListPostBatchResolver : NodeResolvers.CheckedListPost() {
     private val postCreationPort: PostCreationPort by inject(PostCreationPort::class.java)
+    private val users: CheckedListCurrentUserProvider by inject(CheckedListCurrentUserProvider::class.java)
 
     override suspend fun batchResolve(contexts: List<Context>): Map<Context, FieldValue<ViaductCheckedListPost>> =
         batchNodeResolve(
             contexts = contexts,
             extractId = { UUID.fromString(it.id.internalID) },
-            findByIds = postCreationPort::getPostsData,
+            findByIds = { ids ->
+                postCreationPort.getPostsData(ids).filterValues {
+                    it.isVisibleTo(contexts.firstOrNull()?.requestContext, users)
+                }
+            },
             transform = { data, ctx -> data.toViaductPost(ctx) },
             notFound = { id -> NoSuchElementException("CheckedListPost not found: $id") },
         )
