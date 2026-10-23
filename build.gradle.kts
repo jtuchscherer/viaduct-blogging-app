@@ -127,12 +127,17 @@ application {
 //     library publishing validation tasks. Not used during compilation.", per its own
 //     description) transitively depends on bouncycastle 1.80/1.80.2 — the same CVEs
 //     patched to 1.85 for the ASN.1 depth and certificate Name Constraints fixes.
-// Both are per-project configurations the Kotlin plugin creates on every project, so this
-// needs allprojects rather than the root-only configurations.all block below.
+// Both are per-project configurations, so these overrides must apply to every project.
 val opentelemetryVersion: String = libs.versions.opentelemetry.get()
 val bouncyCastleVersion: String = libs.versions.bouncycastle.get()
 val jacocoVersion: String = libs.versions.jacoco.get()
+val buildToolJacksonVersion: String by project
 allprojects {
+    // Subprojects resolve their own plugin graphs even when the root classloader
+    // already has patched Jackson. Keep those graphs safe for dependency submission too.
+    buildscript.configurations.configureEach {
+        resolutionStrategy.force("com.fasterxml.jackson:jackson-bom:$buildToolJacksonVersion")
+    }
     plugins.withId("org.jetbrains.kotlin.jvm") {
         extensions.configure<org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension> {
             jvmToolchain(25)

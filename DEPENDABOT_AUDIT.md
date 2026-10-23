@@ -1,6 +1,6 @@
 # Dependabot audit
 
-**Last Updated**: 2026-10-07
+**Last Updated**: 2026-10-23
 
 The original audit below records PR #66. Subsequent backend maintenance and its
 compatibility checks are documented in the final section.
@@ -285,3 +285,41 @@ retries disabled (**10 passed**):
 These successful isolated runs do not eliminate the browser-suite flakiness;
 the retries remain documented rather than treating the full runs as failure-free.
 No tests were skipped.
+
+## Jackson resolution follow-up — 2026-10-23
+
+The 16 remaining Jackson 2 alerts reported 2.17.3 through Viaduct's Gradle
+plugins. Investigation confirmed that the settings and root buildscript
+overrides were effective, but a separate subproject plugin graph still resolved
+2.17.3. This was a gap in override coverage.
+
+`buildToolJacksonVersion` now selects 2.22.3, matching the application catalog.
+The root build also applies the Jackson BOM override to every project's
+buildscript configurations. Settings and root overrides remain necessary because
+those plugins resolve before the root build's `allprojects` block executes.
+
+Dependency submission and Dependabot reporting continue to track dependency
+security. No custom version-validation script or CI task is added.
+
+The test audit found no new application behavior requiring backend unit or
+integration, frontend unit, query, or browser cases. Existing suites cover
+compatibility with the upgraded dependencies.
+
+A local-only snapshot using GitHub Dependency Graph Gradle Plugin 1.4.1 contains
+398 resolved coordinates. Its Jackson 2 artifacts are all 2.22.3, except
+annotations at 2.22, which uses two-part versions. No 2.17.3 or 2.18.11 copies
+remain. The snapshot was not submitted to GitHub; alert closure still requires
+default-branch submission after review and merge.
+
+The Clean Code audit confirmed that the overrides belong in their existing
+Gradle configuration phases; combining them would miss early plugin resolution.
+No application refactoring was needed.
+
+| Verification after removing the custom check | First complete round | Final round |
+|---|---|---|
+| Backend unit/integration | 694 passed, 0 skipped | 694 passed, 0 skipped |
+| Frontend type-check, lint, unit | All checks passed; 131 tests | All checks passed; 131 tests |
+| API/query | 167 passed | 167 passed |
+| Browser E2E | 426 passed, no retries | 426 passed, no retries |
+
+Both backend rounds cleared test results before running. No tests were skipped.
