@@ -1,9 +1,9 @@
 # Dependabot audit
 
-**Last Updated**: 2026-10-07
+**Last Updated**: 2026-10-23
 
-The original audit below records PR #66. Subsequent backend maintenance and its
-compatibility checks are documented in the final section.
+The original audit below records PR #66. Subsequent dependency maintenance and
+compatibility checks are documented in the follow-up sections.
 
 Audited all 55 open alerts after PR #65 merged: **2 critical, 24 high, 23 medium,
 6 low**. These changes remove the affected dependency versions for **all 26
@@ -285,3 +285,88 @@ retries disabled (**10 passed**):
 These successful isolated runs do not eliminate the browser-suite flakiness;
 the retries remain documented rather than treating the full runs as failure-free.
 No tests were skipped.
+
+## Jackson resolution follow-up — 2026-10-23
+
+The 16 remaining Jackson 2 alerts reported 2.17.3 through Viaduct's Gradle
+plugins. Investigation confirmed that the settings and root buildscript
+overrides were effective, but a separate subproject plugin graph still resolved
+2.17.3. This was a gap in override coverage.
+
+`buildToolJacksonVersion` now selects 2.22.3, matching the application catalog.
+The root build also applies the Jackson BOM override to every project's
+buildscript configurations. Settings and root overrides remain necessary because
+those plugins resolve before the root build's `allprojects` block executes.
+
+Dependency submission and Dependabot reporting continue to track dependency
+security. No custom version-validation script or CI task is added.
+
+The test audit found no new application behavior requiring backend unit or
+integration, frontend unit, query, or browser cases. Existing suites cover
+compatibility with the upgraded dependencies.
+
+A local-only snapshot using GitHub Dependency Graph Gradle Plugin 1.4.1 contains
+398 resolved coordinates. Its Jackson 2 artifacts are all 2.22.3, except
+annotations at 2.22, which uses two-part versions. No 2.17.3 or 2.18.11 copies
+remain. The snapshot was not submitted to GitHub; alert closure still requires
+default-branch submission after review and merge.
+
+The Clean Code audit confirmed that the overrides belong in their existing
+Gradle configuration phases; combining them would miss early plugin resolution.
+No application refactoring was needed.
+
+| Verification after removing the custom check | First complete round | Final round |
+|---|---|---|
+| Backend unit/integration | 694 passed, 0 skipped | 694 passed, 0 skipped |
+| Frontend type-check, lint, unit | All checks passed; 131 tests | All checks passed; 131 tests |
+| API/query | 167 passed | 167 passed |
+| Browser E2E | 426 passed, no retries | 426 passed, no retries |
+
+Both backend rounds cleared test results before running. No tests were skipped.
+
+## Frontend security follow-up — 2026-10-23
+
+The frontend lockfile had 11 open GitHub Dependabot alerts: DOMPurify #186 and
+#191, Vite #207–#211, Vitest/mocker #159, #160, and #212, and humanfs #155.
+An npm audit also identified three newer DOMPurify advisories and an fflate
+advisory. Its initial result listed seven affected packages, including transitive
+advisory effects, with one critical, one high, and five moderate results.
+
+| Dependency | Previous lockfile version | Patched version |
+|---|---|---|
+| DOMPurify | 3.4.13 | 3.4.17 |
+| Vite | 8.1.3 | 8.1.6 |
+| Vitest, UI, and mocker | 4.1.10 | 4.1.12 |
+| `@humanfs/node` (via ESLint) | 0.16.7 | 0.16.8 |
+| `fflate` (via Vitest UI) | 0.8.2 | 0.8.3 |
+
+The manifest raises the minimum patched versions of the direct dependencies;
+transitive patches fit their parents' existing ranges and need no new overrides.
+DOMPurify 3.4.17 also fixes GHSA-cg2g-xh64-v4q7, GHSA-mrv2-3pqr-j5jr, and
+GHSA-c6gr-qvv4-5v3f. The fflate update fixes GHSA-px8p-9vwx-vf98.
+The updated lockfile passes `npm audit` with zero vulnerabilities.
+
+The test audit found missing coverage for executable HTML in previews and post
+details. Added frontend unit cases check removal of event handlers and JavaScript
+links while preserving formatting and safe links. A browser test creates a post
+through the real API and checks both rendering surfaces for unsafe markup and
+execution. The application does not use DOMPurify's IN_PLACE, SAFE_FOR_TEMPLATES,
+or XHTML modes mentioned by the advisories. No backend or API behavior changed;
+existing backend and query suites provide compatibility coverage.
+
+The Clean Code audit found no further refactoring needed in the dependency
+declarations or added tests. No custom version checks or new overrides were added.
+The second frontend run exposed a detached-element assertion in the new post
+detail test during an asynchronous re-render. Assertions now read the current DOM
+inside `waitFor`; all six tests in that file passed five subsequent isolated runs.
+
+| Verification | First complete round | Final round |
+|---|---|---|
+| Backend unit/integration | 694 passed, 0 skipped | 694 passed, 0 skipped |
+| Frontend type-check, lint, unit | All checks passed; 134 tests | All checks passed; 134 tests |
+| API/query | 167 passed | 167 passed |
+| Browser E2E | 429 passed, no retries | 429 passed, no retries |
+
+A clean `npm ci`, the frontend production build, and `npm ls` for the patched
+packages all passed. GitHub alert closure requires these changes to reach the
+default branch; no alerts were dismissed manually. No tests were skipped.

@@ -14,7 +14,7 @@ for the module boundaries and an example query.
 
 - Java JDK 25 (used to compile, test, and run all backend modules)
 - Node.js + npm
-- `jq` — used by `query-tests.sh` to read JSON responses
+- `jq` — used by API tests and GraphQL schema checks to read JSON responses
 - (Optional) Podman + `podman compose` — for containerised deployment
 - (Optional) `psql` — only needed to run `seed-database.sh` manually
 - (Optional) Ollama — for AI features (rephrase, content suggestions)
@@ -187,6 +187,31 @@ Runs curl-based tests against the GraphQL and auth endpoints. Starts its own bac
 ```bash
 ./query-tests.sh
 ```
+
+### `schema-check.sh` — public GraphQL schema snapshot
+
+Builds and starts an isolated backend, introspects its public schema, and compares it with
+`schema/public-schema.snapshot`. CI runs this check to catch accidental changes to the API
+after module merging and scope filtering.
+
+```bash
+./schema-check.sh                 # fail if the public schema changed
+./schema-check.sh --update        # refresh after an intentional schema change
+```
+
+Review and commit the snapshot diff when updating it.
+
+The Bash helper `schema-normalize.sh` uses `jq` to turn introspection JSON into sorted text,
+so field ordering does not cause snapshot changes. You can also use it on a saved response:
+
+```bash
+./schema-normalize.sh < introspection.json
+bash schema-normalize-test.sh     # focused normalizer tests; no server needed
+```
+
+The snapshot records type kinds, field return types (including lists and nullability),
+input field names, and enum values. It does not record arguments, input field types,
+defaults, directives, or interface/union relationships.
 
 ### `seed-database.sh` — populate the database
 

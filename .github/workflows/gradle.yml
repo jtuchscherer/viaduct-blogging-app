@@ -78,6 +78,9 @@ jobs:
     - name: Run API E2E Tests
       run: bash query-tests.sh
 
+    - name: Test schema normalizer
+      run: bash schema-normalize-test.sh
+
     # Fails if the public GraphQL contract drifted from the committed snapshot. Intentional
     # changes are landed by re-running `./schema-check.sh --update` and committing the diff.
     - name: Check public GraphQL schema snapshot

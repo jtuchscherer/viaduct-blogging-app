@@ -11,14 +11,20 @@
 #   ./schema-check.sh            # verify the snapshot is current (CI mode — fails on drift)
 #   ./schema-check.sh --update   # rewrite the snapshot after an intentional schema change
 
-set -e
+set -euo pipefail
+
+if ! command -v jq > /dev/null 2>&1; then
+    echo "jq is required for schema checks. Install it and try again." >&2
+    exit 1
+fi
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/test-lib.sh"
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+source "$SCRIPT_DIR/test-lib.sh"
 
 SNAPSHOT=${SNAPSHOT:-schema/public-schema.snapshot}
 UPDATE=false
@@ -58,10 +64,10 @@ done
 echo -e "${GREEN}Backend ready${NC}"
 
 # Introspect and normalise. Sorting makes the snapshot stable against field-ordering churn.
-ACTUAL=$(curl -s -X POST "http://localhost:${GRAPHQL_PORT}/graphql" \
+ACTUAL=$(curl -fsS -X POST "http://localhost:${GRAPHQL_PORT}/graphql" \
     -H 'Content-Type: application/json' \
     -d '{"query":"{ __schema { types { name kind fields { name type { name kind ofType { name kind ofType { name kind ofType { name kind ofType { name kind } } } } } } inputFields { name } enumValues { name } } } }"}' \
-  | node "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/schema-normalize.mjs")
+  | bash "$SCRIPT_DIR/schema-normalize.sh")
 
 if [ -z "$ACTUAL" ]; then
     echo -e "${RED}✗ Introspection returned nothing${NC}"
