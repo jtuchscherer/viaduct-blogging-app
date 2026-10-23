@@ -58,6 +58,27 @@ function renderPage(mocks: unknown[]) {
   )
 }
 
+describe('PostDetailPage — rich-text safety', () => {
+  it('removes executable markup while preserving safe content and links', async () => {
+    const post = makePostMock()
+    post.result.data.node.content = '<p><strong>Safe body</strong></p>'
+      + '<img src="data:," onerror="alert(1)">'
+      + '<a href="javascript:alert(1)">Unsafe link</a>'
+      + '<a href="https://example.com">Safe link</a>'
+      + '<script>alert(1)</script>'
+
+    const { container } = renderPage([post, makeViewMock()])
+
+    await waitFor(() => {
+      const content = container.querySelector('.post-content')
+      expect(content?.querySelector('strong')?.textContent).toBe('Safe body')
+      expect(content?.querySelector('script, [onerror]')).toBeNull()
+      expect(screen.getByText('Unsafe link')).not.toHaveAttribute('href')
+      expect(screen.getByRole('link', { name: 'Safe link' })).toHaveAttribute('href', 'https://example.com')
+    })
+  })
+})
+
 describe('PostDetailPage — recordPostView mutation', () => {
   it('fires recordPostView on mount with the post ID from the URL', async () => {
     let mutationCalled = false

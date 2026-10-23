@@ -69,4 +69,14 @@ describe('getHtmlPreview', () => {
     expect(result).not.toContain('<script>')
     expect(result).toContain('Safe')
   })
+
+  it.each([
+    ['event handlers', '<p onclick="alert(1)"><strong>Safe</strong></p>', '[onclick]'],
+    ['JavaScript links', '<p><strong>Safe</strong><a href="javascript:alert(1)">Link</a></p>', 'a[href]'],
+  ])('removes %s while preserving safe formatting', (_label, html, unsafeSelector) => {
+    const result = new DOMParser().parseFromString(getHtmlPreview(html), 'text/html')
+
+    expect(result.querySelector(unsafeSelector)).toBeNull()
+    expect(result.querySelector('strong')?.textContent).toBe('Safe')
+  })
 })
