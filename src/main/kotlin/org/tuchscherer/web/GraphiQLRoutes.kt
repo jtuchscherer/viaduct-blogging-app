@@ -18,20 +18,27 @@ internal fun Route.graphiqlRoutes() {
     get("/favicon.ico") { call.respondResource("graphiql/favicon.ico") }
 }
 
+/**
+ * The query GraphiQL opens with. Every visitor to /graphiql runs this, so a schema change that
+ * leaves it behind greets them with a validation error instead of results. Hoisted out of the
+ * config so `GraphiQLDefaultQueryTest` can validate it against the real schema.
+ */
+internal val BLOGGING_DEFAULT_QUERY = """
+    query {
+      posts {
+        id
+        title
+        author { username }
+        likeCount
+      }
+    }
+""".trimIndent()
+
 private val bloggingGraphiQLHtml by lazy {
     graphiQLHtml(
         GraphiQLHtmlConfig(
             title = "Blogging App",
-            defaultQuery = """
-                query {
-                  posts {
-                    id
-                    title
-                    author { username }
-                    likeCount
-                  }
-                }
-            """.trimIndent(),
+            defaultQuery = BLOGGING_DEFAULT_QUERY,
             storageKey = "viaduct-blogging-app",
         )
     )

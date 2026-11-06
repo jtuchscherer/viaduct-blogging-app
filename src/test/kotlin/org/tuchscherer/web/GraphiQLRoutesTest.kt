@@ -20,6 +20,11 @@ class GraphiQLRoutesTest {
         assertTrue(html.contains("<title>Blogging App</title>"))
         assertTrue(html.contains("viaduct-blogging-app"))
         assertTrue(html.contains("url: '/graphql'"))
+        // Ties BLOGGING_DEFAULT_QUERY to what is actually served, so GraphiQLDefaultQueryTest
+        // validates the query a visitor really gets rather than an unused constant.
+        for (field in listOf("posts", "author", "likeCount")) {
+            assertTrue(html.contains(field), "served HTML should embed the default query's $field")
+        }
 
         val localAssets = Regex("(?:src=\"|href=\"|from '|loadJSX\\(')(/[^\"']+)")
             .findAll(html).map { it.groupValues[1] }.toSet()
